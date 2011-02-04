@@ -1,0 +1,11 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=Application
+Name=Petri-Foo
+GenericName=Petri-Foo
+Comment=Sound Sampler
+Icon=petri-foo-small.png
+TryExec=petri-foo
+Exec=petri-foo
+Terminal=false
+Categories=Application;AudioVideo;AudioVideoEditing;Music;

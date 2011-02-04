@@ -1,0 +1,16 @@
+#ifndef __CONTROL_H__
+#define __CONTROL_H__
+
+
+typedef enum {
+     CONTROL_PARAM_VOLUME,
+     CONTROL_PARAM_PANNING,
+     CONTROL_PARAM_CUTOFF,
+     CONTROL_PARAM_RESONANCE,
+     CONTROL_PARAM_PITCH,
+     CONTROL_PARAM_PORTAMENTO,
+     CONTROL_PARAM_PORTAMENTO_TIME
+} ControlParamType;
+
+
+#endif /* __CONTROL_H__ */

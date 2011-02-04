@@ -1,0 +1,65 @@
+-*- text -*-
+
+* Pete Bessman <ninjadroid@gazuga.net>
+
+  Founder, primary developer untill 2005-09-14
+
+
+
+* Alexander <aharvey@ij.net> 
+
+  modified midi.c to treat note-on events with velocity of 0x00 as
+  note-offs.
+
+* Dave Robillard <drobilla@connect.carleton.ca>
+
+  Lash support. Removed Gnome-ui requirement for about dialog.
+
+* David R. Clark <davidrclark@earthlink.net>
+
+  Invaluable testing, feedback, and discussion, as well as some nifty
+  sample generating programs.
+
+* Dimitry Baikov <dsbaikov@gmail.com>
+
+  Added support for MIDI CC events.
+  Update to jack_midi API.
+
+* Lars Luthman <lars.luthman@gmail.com>
+  
+  Jack-midi implementation.
+
+* Loki Davison <ltdav1@student.monash.edu>
+
+  Sync code, and initial implementation of lots of stuff which got
+  lost during The Cleansing.  Responsible for convincing ninjadroid to
+  keep on hacking.
+
+* Nedko Arnaudov <nedko@arnaudov.name>
+
+  Made specimen window resizeable.
+
+* peter <kickback@users.sourceforge.net>
+
+  Rewrote the build system during the year of limbo.
+
+* Sacha Berger <sacha@woanders.de> 
+
+  updated beef.c to reflect newly gained parameters.
+
+* Thorsten Wilms <t_w_@freenet.de>
+
+  UI advice, and designed the fansliders used extensively in the GUI.
+
+* Torben Hohn <torbenh@users.sourceforge.net> 
+
+  was an immense help to Pete in optimizing the waveform code (and he
+  pointed out that it needed to be done in the first place).
+
+
+
+
+
+* Eric Dantan Rzewnicki <eric@zhevny.com>
+
+  maintainer

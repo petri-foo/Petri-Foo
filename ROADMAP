@@ -1,0 +1,15 @@
+strip out old build system
+add new build system from  peter <zenadsl6252@zen.co.uk>
+  make it work with just specimen devel
+merge jack midi
+  test build
+  test functionality
+merge lash patch
+  test build
+  test functionality
+jack_client_new vs _open change
+release 0.5.2rcN
+  fix bugs
+    repeat
+release 0.5.2
+

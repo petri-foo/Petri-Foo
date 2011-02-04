@@ -1,0 +1,966 @@
+Flat profile:
+
+Each sample counts as 0.01 seconds.
+  %   cumulative   self              self     total           
+ time   seconds   seconds    calls  ms/call  ms/call  name    
+ 50.81     62.90    62.90   177156     0.36     0.68  patch_render_patch
+ 32.76    103.46    40.56 145601368     0.00     0.00  adsr_tick
+  7.58    112.85     9.39 72800684     0.00     0.00  cerp
+  4.84    118.84     6.00 36400342     0.00     0.00  advance
+  0.88    119.93     1.09     6048     0.18    20.23  mixer_mixdown
+  0.71    120.81     0.88     9388     0.09     0.09  adsr_release
+  0.58    121.53     0.72                             process
+  0.57    122.24     0.71    24192     0.03     5.00  patch_render
+  0.44    122.79     0.55        1   550.03   580.03  beef_read
+  0.35    123.22     0.44 11246142     0.00     0.00  lfo_get_val
+  0.13    123.39     0.17    24192     0.01     0.01  lfo_advance_all
+  0.08    123.49     0.11     2000     0.05     0.05  patch_release
+  0.08    123.59     0.10    10072     0.01     0.01  getticks
+  0.06    123.66     0.07        8     8.75     8.75  draw_wave
+  0.02    123.69     0.03     2000     0.02     0.03  patch_trigger
+  0.02    123.72     0.03        8     3.75     3.75  sample_load_file
+  0.02    123.74     0.02    11104     0.00     0.00  adsr_set_params
+  0.02    123.76     0.02                             __fixunsdfdi
+  0.02    123.78     0.02                             __fixunssfdi
+  0.01    123.79     0.01        8     1.25     1.25  draw_grid
+  0.00    123.79     0.01    43392     0.00     0.00  getrate
+  0.00    123.80     0.01        1     5.00     5.00  getname
+  0.00    123.80     0.01        1     5.00     5.00  stop
+  0.00    123.81     0.01                             patch_sample_unload
+  0.00    123.81     0.00    33312     0.00     0.00  sec2tick
+  0.00    123.81     0.00    11104     0.00     0.00  adsr_trigger
+  0.00    123.81     0.00    10072     0.00     0.00  getperiodsize
+  0.00    123.81     0.00     2776     0.00     0.01  patch_trigger_patch
+  0.00    123.81     0.00     2000     0.00     0.01  mixer_note_off
+  0.00    123.81     0.00     2000     0.00     0.01  mixer_note_on
+  0.00    123.81     0.00     1494     0.00     0.03  action
+  0.00    123.81     0.00      790     0.00     0.00  piano_get_type
+  0.00    123.81     0.00      495     0.00     0.00  get_current_patch
+  0.00    123.81     0.00      407     0.00     0.00  patch_get_note
+  0.00    123.81     0.00      386     0.00     0.00  patch_get_upper_note
+  0.00    123.81     0.00      384     0.00     0.00  piano_draw_noteoff
+  0.00    123.81     0.00      384     0.00     0.00  piano_note_off_internal
+  0.00    123.81     0.00      381     0.00     0.00  piano_draw_noteon
+  0.00    123.81     0.00      381     0.00     0.00  piano_note_on_internal
+  0.00    123.81     0.00      182     0.00     0.00  patch_get_param
+  0.00    123.81     0.00       64     0.00     0.00  patch_destroy
+  0.00    123.81     0.00       34     0.00     0.00  patch_set_env_attack
+  0.00    123.81     0.00       34     0.00     0.00  patch_set_env_decay
+  0.00    123.81     0.00       34     0.00     0.00  patch_set_env_sustain
+  0.00    123.81     0.00       33     0.00     0.00  waveform_get_type
+  0.00    123.81     0.00       32     0.00     0.00  adsr_init
+  0.00    123.81     0.00       32     0.00     0.00  patch_set_env_release
+  0.00    123.81     0.00       24     0.00     0.00  patch_set_env_amount
+  0.00    123.81     0.00       17     0.00     0.00  patch_get_frames
+  0.00    123.81     0.00       12     0.00     0.01  mixer_note_off_with_id
+  0.00    123.81     0.00       12     0.00     0.01  mixer_note_on_with_id
+  0.00    123.81     0.00       12     0.00     0.00  patch_release_with_id
+  0.00    123.81     0.00       12     0.00     0.01  patch_trigger_with_id
+  0.00    123.81     0.00       10     0.00     0.00  patch_set_lfo_amount
+  0.00    123.81     0.00        9     0.00     0.00  patch_set_channel
+  0.00    123.81     0.00        9     0.00     0.00  patch_set_lower_note
+  0.00    123.81     0.00        9     0.00     0.00  patch_set_range
+  0.00    123.81     0.00        9     0.00     0.00  patch_set_upper_note
+  0.00    123.81     0.00        8     0.00     0.00  draw_loop
+  0.00    123.81     0.00        8     0.00     0.00  patch_create
+  0.00    123.81     0.00        8     0.00     0.00  patch_get_loop_start
+  0.00    123.81     0.00        8     0.00     0.00  patch_get_loop_stop
+  0.00    123.81     0.00        8     0.00     0.00  patch_get_name
+  0.00    123.81     0.00        8     0.00     3.75  patch_sample_load
+  0.00    123.81     0.00        8     0.00     0.00  patch_set_cut
+  0.00    123.81     0.00        8     0.00     0.00  patch_set_cut_by
+  0.00    123.81     0.00        8     0.00     0.00  patch_set_cutoff
+  0.00    123.81     0.00        8     0.00     0.00  patch_set_loop_start
+  0.00    123.81     0.00        8     0.00     0.00  patch_set_loop_stop
+  0.00    123.81     0.00        8     0.00     0.00  patch_set_name
+  0.00    123.81     0.00        8     0.00     0.00  patch_set_note
+  0.00    123.81     0.00        8     0.00     0.00  patch_set_panning
+  0.00    123.81     0.00        8     0.00     0.00  patch_set_play_mode
+  0.00    123.81     0.00        8     0.00     0.00  patch_set_resonance
+  0.00    123.81     0.00        8     0.00     0.00  patch_set_sample_start
+  0.00    123.81     0.00        8     0.00     0.00  patch_set_sample_stop
+  0.00    123.81     0.00        8     0.00     0.00  patch_set_volume
+  0.00    123.81     0.00        8     0.00    10.00  waveform_draw
+  0.00    123.81     0.00        7     0.00     0.00  patch_get_sample
+  0.00    123.81     0.00        7     0.00     0.00  patch_get_sample_start
+  0.00    123.81     0.00        7     0.00     0.00  patch_get_sample_stop
+  0.00    123.81     0.00        5     0.00     0.00  patch_get_lower_note
+  0.00    123.81     0.00        5     0.00     0.00  patch_get_range
+  0.00    123.81     0.00        4     0.00     0.00  lfo_set_freq
+  0.00    123.81     0.00        4     0.00     0.00  lfo_set_shape
+  0.00    123.81     0.00        3     0.00     0.00  piano_draw_range
+  0.00    123.81     0.00        3     0.00     0.00  waveform_set_patch
+  0.00    123.81     0.00        2     0.00     0.00  getwidget
+  0.00    123.81     0.00        2     0.00     0.00  leash_get_client
+  0.00    123.81     0.00        2     0.00     0.00  patch_count
+  0.00    123.81     0.00        2     0.00     0.00  patch_dump
+  0.00    123.81     0.00        2     0.00     0.00  patch_get_channel
+  0.00    123.81     0.00        2     0.00     0.00  patch_get_cut
+  0.00    123.81     0.00        2     0.00     0.00  patch_get_cut_by
+  0.00    123.81     0.00        2     0.00     0.00  patch_get_display_index
+  0.00    123.81     0.00        2     0.00     0.00  patch_get_env_attack
+  0.00    123.81     0.00        2     0.00     0.00  patch_get_env_decay
+  0.00    123.81     0.00        2     0.00     0.00  patch_get_env_release
+  0.00    123.81     0.00        2     0.00     0.00  patch_get_env_sustain
+  0.00    123.81     0.00        2     0.00     0.00  patch_get_lfo
+  0.00    123.81     0.00        2     0.00     0.00  patch_get_lfo_amount
+  0.00    123.81     0.00        2     0.00     0.00  patch_get_panning
+  0.00    123.81     0.00        2     0.00     0.00  patch_get_sample_name
+  0.00    123.81     0.00        2     0.00     0.00  patch_get_volume
+  0.00    123.81     0.00        2     0.00     0.00  set_sensitive
+  0.00    123.81     0.00        2     0.00     0.00  waveform_new
+  0.00    123.81     0.00        1     0.00     5.00  audio_settings_init
+  0.00    123.81     0.00        1     0.00     0.00  bank_ops_open
+  0.00    123.81     0.00        1     0.00     0.00  bankbuilder_get_type
+  0.00    123.81     0.00        1     0.00     0.00  bankbuilder_new
+  0.00    123.81     0.00        1     0.00     0.00  filter_settings_init
+  0.00    123.81     0.00        1     0.00     0.00  getname
+  0.00    123.81     0.00        1     0.00     0.00  getwidget
+  0.00    123.81     0.00        1     0.00     5.00  gui_init
+  0.00    123.81     0.00        1     0.00     0.00  init
+  0.00    123.81     0.00        1     0.00     0.00  init
+  0.00    123.81     0.00        1     0.00     0.00  leash_init
+  0.00    123.81     0.00        1     0.00     0.00  lfo_get_freq
+  0.00    123.81     0.00        1     0.00     0.00  lfo_get_shape
+  0.00    123.81     0.00        1     0.00     0.00  lfo_get_sync
+  0.00    123.81     0.00        1     0.00     0.00  lfo_init
+  0.00    123.81     0.00        1     0.00     0.00  lfo_set_sync
+  0.00    123.81     0.00        1     0.00     0.00  lfo_settings_init
+  0.00    123.81     0.00        1     0.00     0.00  midi_start
+  0.00    123.81     0.00        1     0.00     0.00  midi_stop
+  0.00    123.81     0.00        1     0.00     0.00  mixer_set_volume
+  0.00    123.81     0.00        1     0.00     0.00  open_seq
+  0.00    123.81     0.00        1     0.00     0.00  param_settings_init
+  0.00    123.81     0.00        1     0.00     0.00  patch_destroy_all
+  0.00    123.81     0.00        1     0.00     0.00  patch_get_env_amount
+  0.00    123.81     0.00        1     0.00     0.00  patch_sample_reload_all
+  0.00    123.81     0.00        1     0.00     0.00  patch_set_lfo
+  0.00    123.81     0.00        1     0.00     0.00  playmode_settings_init
+  0.00    123.81     0.00        1     0.00     0.00  prepare_drivers
+  0.00    123.81     0.00        1     0.00     0.00  sample_editor_init
+  0.00    123.81     0.00        1     0.00     0.00  set_current_patch
+  0.00    123.81     0.00        1     0.00     0.00  start
+  0.00    123.81     0.00        1     0.00     0.00  update_interface
+  0.00    123.81     0.00        1     0.00     0.00  update_interface
+
+ %         the percentage of the total running time of the
+time       program used by this function.
+
+cumulative a running sum of the number of seconds accounted
+ seconds   for by this function and those listed above it.
+
+ self      the number of seconds accounted for by this
+seconds    function alone.  This is the major sort for this
+           listing.
+
+calls      the number of times this function was invoked, if
+           this function is profiled, else blank.
+ 
+ self      the average number of milliseconds spent in this
+ms/call    function per call, if this function is profiled,
+	   else blank.
+
+ total     the average number of milliseconds spent in this
+ms/call    function and its descendents per call, if this 
+	   function is profiled, else blank.
+
+name       the name of the function.  This is the minor sort
+           for this listing. The index shows the location of
+	   the function in the gprof listing. If the index is
+	   in parenthesis it shows where it would appear in
+	   the gprof listing if it were to be printed.
+
+		     Call graph (explanation follows)
+
+
+granularity: each sample hit covers 2 byte(s) for 0.01% of 123.81 seconds
+
+index % time    self  children    called     name
+                                                 <spontaneous>
+[1]     99.4    0.72  122.34                 process [1]
+                1.09  121.25    6048/6048        mixer_mixdown [2]
+-----------------------------------------------
+                1.09  121.25    6048/6048        process [1]
+[2]     98.8    1.09  121.25    6048         mixer_mixdown [2]
+                0.71  120.16   24192/24192       patch_render [3]
+                0.17    0.00   24192/24192       lfo_advance_all [12]
+                0.11    0.00    2000/2000        patch_release [13]
+                0.06    0.00    6048/10072       getticks [14]
+                0.03    0.02    2000/2000        patch_trigger [18]
+                0.00    0.00      12/12          patch_trigger_with_id [41]
+                0.00    0.00      12/12          patch_release_with_id [62]
+-----------------------------------------------
+                0.71  120.16   24192/24192       mixer_mixdown [2]
+[3]     97.6    0.71  120.16   24192         patch_render [3]
+               62.90   57.26  177156/177156      patch_render_patch [4]
+-----------------------------------------------
+               62.90   57.26  177156/177156      patch_render [3]
+[4]     97.1   62.90   57.26  177156         patch_render_patch [4]
+               40.56    0.00 145601368/145601368     adsr_tick [5]
+                9.39    0.00 72800684/72800684     cerp [6]
+                6.00    0.88 36400342/36400342     advance [7]
+                0.44    0.00 11246142/11246142     lfo_get_val [11]
+-----------------------------------------------
+               40.56    0.00 145601368/145601368     patch_render_patch [4]
+[5]     32.8   40.56    0.00 145601368         adsr_tick [5]
+-----------------------------------------------
+                9.39    0.00 72800684/72800684     patch_render_patch [4]
+[6]      7.6    9.39    0.00 72800684         cerp [6]
+-----------------------------------------------
+                6.00    0.88 36400342/36400342     patch_render_patch [4]
+[7]      5.6    6.00    0.88 36400342         advance [7]
+                0.88    0.00    9388/9388        adsr_release [8]
+-----------------------------------------------
+                0.88    0.00    9388/9388        advance [7]
+[8]      0.7    0.88    0.00    9388         adsr_release [8]
+-----------------------------------------------
+                0.55    0.03       1/1           open_bank_verify [10]
+[9]      0.5    0.55    0.03       1         beef_read [9]
+                0.00    0.03       8/8           patch_sample_load [22]
+                0.00    0.00      32/34          patch_set_env_attack [54]
+                0.00    0.00      32/34          patch_set_env_decay [55]
+                0.00    0.00      32/34          patch_set_env_sustain [56]
+                0.00    0.00      32/32          patch_set_env_release [59]
+                0.00    0.00      24/24          patch_set_env_amount [60]
+                0.00    0.00       8/8           patch_create [69]
+                0.00    0.00       8/8           patch_set_name [78]
+                0.00    0.00       8/9           patch_set_channel [64]
+                0.00    0.00       8/8           patch_set_note [79]
+                0.00    0.00       8/8           patch_set_volume [85]
+                0.00    0.00       8/8           patch_set_panning [80]
+                0.00    0.00       8/8           patch_set_play_mode [81]
+                0.00    0.00       8/8           patch_set_cut [73]
+                0.00    0.00       8/8           patch_set_cut_by [74]
+                0.00    0.00       8/9           patch_set_range [66]
+                0.00    0.00       8/9           patch_set_lower_note [65]
+                0.00    0.00       8/9           patch_set_upper_note [67]
+                0.00    0.00       8/8           patch_set_sample_start [83]
+                0.00    0.00       8/8           patch_set_sample_stop [84]
+                0.00    0.00       8/8           patch_set_loop_start [76]
+                0.00    0.00       8/8           patch_set_loop_stop [77]
+                0.00    0.00       8/8           patch_set_cutoff [75]
+                0.00    0.00       8/8           patch_set_resonance [82]
+                0.00    0.00       1/1           patch_destroy_all [134]
+-----------------------------------------------
+                                                 <spontaneous>
+[10]     0.5    0.00    0.58                 open_bank_verify [10]
+                0.55    0.03       1/1           beef_read [9]
+-----------------------------------------------
+                0.44    0.00 11246142/11246142     patch_render_patch [4]
+[11]     0.4    0.44    0.00 11246142         lfo_get_val [11]
+-----------------------------------------------
+                0.17    0.00   24192/24192       mixer_mixdown [2]
+[12]     0.1    0.17    0.00   24192         lfo_advance_all [12]
+-----------------------------------------------
+                0.11    0.00    2000/2000        mixer_mixdown [2]
+[13]     0.1    0.11    0.00    2000         patch_release [13]
+-----------------------------------------------
+                0.00    0.00      12/10072       mixer_note_off_with_id [39]
+                0.00    0.00      12/10072       mixer_note_on_with_id [40]
+                0.02    0.00    2000/10072       mixer_note_off [27]
+                0.02    0.00    2000/10072       mixer_note_on [28]
+                0.06    0.00    6048/10072       mixer_mixdown [2]
+[14]     0.1    0.10    0.00   10072         getticks [14]
+                0.00    0.00   10072/43392       getrate [31]
+                0.00    0.00   10072/10072       getperiodsize [43]
+-----------------------------------------------
+                0.00    0.08       8/8           waveform_expose [16]
+[15]     0.1    0.00    0.08       8         waveform_draw [15]
+                0.07    0.00       8/8           draw_wave [17]
+                0.01    0.00       8/8           draw_grid [29]
+                0.00    0.00       8/8           draw_loop [68]
+-----------------------------------------------
+                                                 <spontaneous>
+[16]     0.1    0.00    0.08                 waveform_expose [16]
+                0.00    0.08       8/8           waveform_draw [15]
+                0.00    0.00      16/33          waveform_get_type [57]
+-----------------------------------------------
+                0.07    0.00       8/8           waveform_draw [15]
+[17]     0.1    0.07    0.00       8         draw_wave [17]
+                0.00    0.00       7/7           patch_get_sample [86]
+                0.00    0.00       7/17          patch_get_frames [61]
+                0.00    0.00       7/7           patch_get_sample_start [87]
+                0.00    0.00       7/7           patch_get_sample_stop [88]
+-----------------------------------------------
+                0.03    0.02    2000/2000        mixer_mixdown [2]
+[18]     0.0    0.03    0.02    2000         patch_trigger [18]
+                0.00    0.02    2764/2776        patch_trigger_patch [23]
+-----------------------------------------------
+                0.00    0.04    1494/1494        poll_events [20]
+[19]     0.0    0.00    0.04    1494         action [19]
+                0.00    0.02    2000/2000        mixer_note_on [28]
+                0.00    0.02    2000/2000        mixer_note_off [27]
+-----------------------------------------------
+                                                 <spontaneous>
+[20]     0.0    0.00    0.04                 poll_events [20]
+                0.00    0.04    1494/1494        action [19]
+-----------------------------------------------
+                0.03    0.00       8/8           patch_sample_load [22]
+[21]     0.0    0.03    0.00       8         sample_load_file [21]
+                0.00    0.00       8/43392       getrate [31]
+-----------------------------------------------
+                0.00    0.03       8/8           beef_read [9]
+[22]     0.0    0.00    0.03       8         patch_sample_load [22]
+                0.03    0.00       8/8           sample_load_file [21]
+-----------------------------------------------
+                0.00    0.00      12/2776        patch_trigger_with_id [41]
+                0.00    0.02    2764/2776        patch_trigger [18]
+[23]     0.0    0.00    0.02    2776         patch_trigger_patch [23]
+                0.02    0.00   11104/11104       adsr_set_params [24]
+                0.00    0.00   11104/11104       adsr_trigger [42]
+-----------------------------------------------
+                0.02    0.00   11104/11104       patch_trigger_patch [23]
+[24]     0.0    0.02    0.00   11104         adsr_set_params [24]
+                0.00    0.00   33312/33312       sec2tick [37]
+-----------------------------------------------
+                                                 <spontaneous>
+[25]     0.0    0.02    0.00                 __fixunsdfdi [25]
+-----------------------------------------------
+                                                 <spontaneous>
+[26]     0.0    0.02    0.00                 __fixunssfdi [26]
+-----------------------------------------------
+                0.00    0.02    2000/2000        action [19]
+[27]     0.0    0.00    0.02    2000         mixer_note_off [27]
+                0.02    0.00    2000/10072       getticks [14]
+-----------------------------------------------
+                0.00    0.02    2000/2000        action [19]
+[28]     0.0    0.00    0.02    2000         mixer_note_on [28]
+                0.02    0.00    2000/10072       getticks [14]
+-----------------------------------------------
+                0.01    0.00       8/8           waveform_draw [15]
+[29]     0.0    0.01    0.00       8         draw_grid [29]
+-----------------------------------------------
+                                                 <spontaneous>
+[30]     0.0    0.00    0.01                 main [30]
+                0.00    0.01       1/1           gui_init [34]
+                0.01    0.00       1/1           stop [35]
+                0.00    0.00       1/1           leash_init [122]
+                0.00    0.00       1/1           lfo_init [126]
+                0.00    0.00       1/1           prepare_drivers [139]
+                0.00    0.00       1/1           midi_start [129]
+                0.00    0.00       1/1           start [142]
+                0.00    0.00       1/1           midi_stop [130]
+-----------------------------------------------
+                0.00    0.00       8/43392       sample_load_file [21]
+                0.00    0.00   10072/43392       getticks [14]
+                0.00    0.00   33312/43392       sec2tick [37]
+[31]     0.0    0.01    0.00   43392         getrate [31]
+-----------------------------------------------
+                0.00    0.01       1/1           gui_init [34]
+[32]     0.0    0.00    0.01       1         audio_settings_init [32]
+                0.01    0.00       1/1           getname [33]
+                0.00    0.00       2/2           getwidget [95]
+                0.00    0.00       1/1           getwidget [119]
+                0.00    0.00       1/1           getname [118]
+-----------------------------------------------
+                0.01    0.00       1/1           audio_settings_init [32]
+[33]     0.0    0.01    0.00       1         getname [33]
+-----------------------------------------------
+                0.00    0.01       1/1           main [30]
+[34]     0.0    0.00    0.01       1         gui_init [34]
+                0.00    0.01       1/1           audio_settings_init [32]
+                0.00    0.00       2/790         piano_get_type [44]
+                0.00    0.00       1/495         get_current_patch [45]
+                0.00    0.00       1/2           waveform_new [113]
+                0.00    0.00       1/1           bankbuilder_new [116]
+                0.00    0.00       1/1           sample_editor_init [140]
+                0.00    0.00       1/1           filter_settings_init [117]
+                0.00    0.00       1/1           playmode_settings_init [138]
+                0.00    0.00       1/1           param_settings_init [133]
+                0.00    0.00       1/1           lfo_settings_init [128]
+                0.00    0.00       1/1           update_interface [143]
+-----------------------------------------------
+                0.01    0.00       1/1           main [30]
+[35]     0.0    0.01    0.00       1         stop [35]
+-----------------------------------------------
+                                                 <spontaneous>
+[36]     0.0    0.01    0.00                 patch_sample_unload [36]
+-----------------------------------------------
+                0.00    0.00   33312/33312       adsr_set_params [24]
+[37]     0.0    0.00    0.00   33312         sec2tick [37]
+                0.00    0.00   33312/43392       getrate [31]
+-----------------------------------------------
+                                                 <spontaneous>
+[38]     0.0    0.00    0.00                 cb_play [38]
+                0.00    0.00      12/12          mixer_note_off_with_id [39]
+                0.00    0.00      12/12          mixer_note_on_with_id [40]
+                0.00    0.00      79/495         get_current_patch [45]
+                0.00    0.00      24/407         patch_get_note [46]
+-----------------------------------------------
+                0.00    0.00      12/12          cb_play [38]
+[39]     0.0    0.00    0.00      12         mixer_note_off_with_id [39]
+                0.00    0.00      12/10072       getticks [14]
+-----------------------------------------------
+                0.00    0.00      12/12          cb_play [38]
+[40]     0.0    0.00    0.00      12         mixer_note_on_with_id [40]
+                0.00    0.00      12/10072       getticks [14]
+-----------------------------------------------
+                0.00    0.00      12/12          mixer_mixdown [2]
+[41]     0.0    0.00    0.00      12         patch_trigger_with_id [41]
+                0.00    0.00      12/2776        patch_trigger_patch [23]
+-----------------------------------------------
+                0.00    0.00   11104/11104       patch_trigger_patch [23]
+[42]     0.0    0.00    0.00   11104         adsr_trigger [42]
+-----------------------------------------------
+                0.00    0.00   10072/10072       getticks [14]
+[43]     0.0    0.00    0.00   10072         getperiodsize [43]
+-----------------------------------------------
+                0.00    0.00       1/790         piano_set_property [249]
+                0.00    0.00       1/790         piano_item_realize [243]
+                0.00    0.00       2/790         gui_init [34]
+                0.00    0.00       2/790         piano_destroy [238]
+                0.00    0.00      19/790         piano_cb_event [236]
+                0.00    0.00     381/790         piano_note_on_internal [51]
+                0.00    0.00     384/790         piano_note_off_internal [49]
+[44]     0.0    0.00    0.00     790         piano_get_type [44]
+-----------------------------------------------
+                0.00    0.00       1/495         cb_chan_set [168]
+                0.00    0.00       1/495         cb_range_set [196]
+                0.00    0.00       1/495         cb_lower_note_set [183]
+                0.00    0.00       1/495         cb_upper_note_set [210]
+                0.00    0.00       1/495         cb_setting_clicked [205]
+                0.00    0.00       1/495         gui_init [34]
+                0.00    0.00       2/495         update_interface [144]
+                0.00    0.00       3/495         piano_draw_range [93]
+                0.00    0.00      24/495         cb_set [203]
+                0.00    0.00      79/495         cb_play [38]
+                0.00    0.00     381/495         piano_draw_noteon [50]
+[45]     0.0    0.00    0.00     495         get_current_patch [45]
+-----------------------------------------------
+                0.00    0.00       2/407         set_current_patch [141]
+                0.00    0.00      24/407         cb_play [38]
+                0.00    0.00     381/407         piano_draw_noteon [50]
+[46]     0.0    0.00    0.00     407         patch_get_note [46]
+-----------------------------------------------
+                0.00    0.00       2/386         set_current_patch [141]
+                0.00    0.00     384/386         piano_draw_range [93]
+[47]     0.0    0.00    0.00     386         patch_get_upper_note [47]
+-----------------------------------------------
+                0.00    0.00     384/384         piano_note_off_internal [49]
+[48]     0.0    0.00    0.00     384         piano_draw_noteoff [48]
+-----------------------------------------------
+                0.00    0.00     384/384         piano_draw_range [93]
+[49]     0.0    0.00    0.00     384         piano_note_off_internal [49]
+                0.00    0.00     384/790         piano_get_type [44]
+                0.00    0.00     384/384         piano_draw_noteoff [48]
+-----------------------------------------------
+                0.00    0.00     381/381         piano_note_on_internal [51]
+[50]     0.0    0.00    0.00     381         piano_draw_noteon [50]
+                0.00    0.00     381/495         get_current_patch [45]
+                0.00    0.00     381/407         patch_get_note [46]
+-----------------------------------------------
+                0.00    0.00     381/381         piano_draw_range [93]
+[51]     0.0    0.00    0.00     381         piano_note_on_internal [51]
+                0.00    0.00     381/790         piano_get_type [44]
+                0.00    0.00     381/381         piano_draw_noteon [50]
+-----------------------------------------------
+                0.00    0.00       1/182         patch_get_env_amount [135]
+                0.00    0.00       1/182         patch_set_lfo [137]
+                0.00    0.00       2/182         patch_get_env_attack [103]
+                0.00    0.00       2/182         patch_get_env_decay [104]
+                0.00    0.00       2/182         patch_get_env_sustain [106]
+                0.00    0.00       2/182         patch_get_env_release [105]
+                0.00    0.00       2/182         patch_get_lfo [107]
+                0.00    0.00       2/182         patch_get_lfo_amount [108]
+                0.00    0.00      10/182         patch_set_lfo_amount [63]
+                0.00    0.00      24/182         patch_set_env_amount [60]
+                0.00    0.00      32/182         patch_set_env_release [59]
+                0.00    0.00      34/182         patch_set_env_attack [54]
+                0.00    0.00      34/182         patch_set_env_decay [55]
+                0.00    0.00      34/182         patch_set_env_sustain [56]
+[52]     0.0    0.00    0.00     182         patch_get_param [52]
+-----------------------------------------------
+                0.00    0.00      64/64          patch_destroy_all [134]
+[53]     0.0    0.00    0.00      64         patch_destroy [53]
+-----------------------------------------------
+                0.00    0.00       2/34          cb_set [203]
+                0.00    0.00      32/34          beef_read [9]
+[54]     0.0    0.00    0.00      34         patch_set_env_attack [54]
+                0.00    0.00      34/182         patch_get_param [52]
+-----------------------------------------------
+                0.00    0.00       2/34          cb_set [203]
+                0.00    0.00      32/34          beef_read [9]
+[55]     0.0    0.00    0.00      34         patch_set_env_decay [55]
+                0.00    0.00      34/182         patch_get_param [52]
+-----------------------------------------------
+                0.00    0.00       2/34          cb_set [203]
+                0.00    0.00      32/34          beef_read [9]
+[56]     0.0    0.00    0.00      34         patch_set_env_sustain [56]
+                0.00    0.00      34/182         patch_get_param [52]
+-----------------------------------------------
+                0.00    0.00       1/33          waveform_realize [280]
+                0.00    0.00       2/33          waveform_destroy [274]
+                0.00    0.00       2/33          waveform_size_request [285]
+                0.00    0.00       2/33          waveform_new [113]
+                0.00    0.00       3/33          set_current_patch [141]
+                0.00    0.00       3/33          waveform_set_patch [94]
+                0.00    0.00       4/33          waveform_size_allocate [284]
+                0.00    0.00      16/33          waveform_expose [16]
+[57]     0.0    0.00    0.00      33         waveform_get_type [57]
+-----------------------------------------------
+                0.00    0.00      32/32          patch_create [69]
+[58]     0.0    0.00    0.00      32         adsr_init [58]
+-----------------------------------------------
+                0.00    0.00      32/32          beef_read [9]
+[59]     0.0    0.00    0.00      32         patch_set_env_release [59]
+                0.00    0.00      32/182         patch_get_param [52]
+-----------------------------------------------
+                0.00    0.00      24/24          beef_read [9]
+[60]     0.0    0.00    0.00      24         patch_set_env_amount [60]
+                0.00    0.00      24/182         patch_get_param [52]
+-----------------------------------------------
+                0.00    0.00       2/17          set_current_patch [141]
+                0.00    0.00       7/17          draw_wave [17]
+                0.00    0.00       8/17          draw_loop [68]
+[61]     0.0    0.00    0.00      17         patch_get_frames [61]
+-----------------------------------------------
+                0.00    0.00      12/12          mixer_mixdown [2]
+[62]     0.0    0.00    0.00      12         patch_release_with_id [62]
+-----------------------------------------------
+                0.00    0.00      10/10          cb_set [203]
+[63]     0.0    0.00    0.00      10         patch_set_lfo_amount [63]
+                0.00    0.00      10/182         patch_get_param [52]
+-----------------------------------------------
+                0.00    0.00       1/9           cb_chan_set [168]
+                0.00    0.00       8/9           beef_read [9]
+[64]     0.0    0.00    0.00       9         patch_set_channel [64]
+-----------------------------------------------
+                0.00    0.00       1/9           cb_lower_note_set [183]
+                0.00    0.00       8/9           beef_read [9]
+[65]     0.0    0.00    0.00       9         patch_set_lower_note [65]
+-----------------------------------------------
+                0.00    0.00       1/9           cb_range_set [196]
+                0.00    0.00       8/9           beef_read [9]
+[66]     0.0    0.00    0.00       9         patch_set_range [66]
+-----------------------------------------------
+                0.00    0.00       1/9           cb_upper_note_set [210]
+                0.00    0.00       8/9           beef_read [9]
+[67]     0.0    0.00    0.00       9         patch_set_upper_note [67]
+-----------------------------------------------
+                0.00    0.00       8/8           waveform_draw [15]
+[68]     0.0    0.00    0.00       8         draw_loop [68]
+                0.00    0.00       8/17          patch_get_frames [61]
+                0.00    0.00       8/8           patch_get_loop_start [70]
+                0.00    0.00       8/8           patch_get_loop_stop [71]
+-----------------------------------------------
+                0.00    0.00       8/8           beef_read [9]
+[69]     0.0    0.00    0.00       8         patch_create [69]
+                0.00    0.00      32/32          adsr_init [58]
+-----------------------------------------------
+                0.00    0.00       8/8           draw_loop [68]
+[70]     0.0    0.00    0.00       8         patch_get_loop_start [70]
+-----------------------------------------------
+                0.00    0.00       8/8           draw_loop [68]
+[71]     0.0    0.00    0.00       8         patch_get_loop_stop [71]
+-----------------------------------------------
+                0.00    0.00       8/8           update_interface [143]
+[72]     0.0    0.00    0.00       8         patch_get_name [72]
+-----------------------------------------------
+                0.00    0.00       8/8           beef_read [9]
+[73]     0.0    0.00    0.00       8         patch_set_cut [73]
+-----------------------------------------------
+                0.00    0.00       8/8           beef_read [9]
+[74]     0.0    0.00    0.00       8         patch_set_cut_by [74]
+-----------------------------------------------
+                0.00    0.00       8/8           beef_read [9]
+[75]     0.0    0.00    0.00       8         patch_set_cutoff [75]
+-----------------------------------------------
+                0.00    0.00       8/8           beef_read [9]
+[76]     0.0    0.00    0.00       8         patch_set_loop_start [76]
+-----------------------------------------------
+                0.00    0.00       8/8           beef_read [9]
+[77]     0.0    0.00    0.00       8         patch_set_loop_stop [77]
+-----------------------------------------------
+                0.00    0.00       8/8           beef_read [9]
+[78]     0.0    0.00    0.00       8         patch_set_name [78]
+-----------------------------------------------
+                0.00    0.00       8/8           beef_read [9]
+[79]     0.0    0.00    0.00       8         patch_set_note [79]
+-----------------------------------------------
+                0.00    0.00       8/8           beef_read [9]
+[80]     0.0    0.00    0.00       8         patch_set_panning [80]
+-----------------------------------------------
+                0.00    0.00       8/8           beef_read [9]
+[81]     0.0    0.00    0.00       8         patch_set_play_mode [81]
+-----------------------------------------------
+                0.00    0.00       8/8           beef_read [9]
+[82]     0.0    0.00    0.00       8         patch_set_resonance [82]
+-----------------------------------------------
+                0.00    0.00       8/8           beef_read [9]
+[83]     0.0    0.00    0.00       8         patch_set_sample_start [83]
+-----------------------------------------------
+                0.00    0.00       8/8           beef_read [9]
+[84]     0.0    0.00    0.00       8         patch_set_sample_stop [84]
+-----------------------------------------------
+                0.00    0.00       8/8           beef_read [9]
+[85]     0.0    0.00    0.00       8         patch_set_volume [85]
+-----------------------------------------------
+                0.00    0.00       7/7           draw_wave [17]
+[86]     0.0    0.00    0.00       7         patch_get_sample [86]
+-----------------------------------------------
+                0.00    0.00       7/7           draw_wave [17]
+[87]     0.0    0.00    0.00       7         patch_get_sample_start [87]
+-----------------------------------------------
+                0.00    0.00       7/7           draw_wave [17]
+[88]     0.0    0.00    0.00       7         patch_get_sample_stop [88]
+-----------------------------------------------
+                0.00    0.00       2/5           set_current_patch [141]
+                0.00    0.00       3/5           piano_draw_range [93]
+[89]     0.0    0.00    0.00       5         patch_get_lower_note [89]
+-----------------------------------------------
+                0.00    0.00       2/5           set_current_patch [141]
+                0.00    0.00       3/5           piano_draw_range [93]
+[90]     0.0    0.00    0.00       5         patch_get_range [90]
+-----------------------------------------------
+                0.00    0.00       4/4           lfo_init [126]
+[91]     0.0    0.00    0.00       4         lfo_set_freq [91]
+-----------------------------------------------
+                0.00    0.00       4/4           lfo_init [126]
+[92]     0.0    0.00    0.00       4         lfo_set_shape [92]
+-----------------------------------------------
+                0.00    0.00       1/3           cb_range_set [196]
+                0.00    0.00       1/3           cb_lower_note_set [183]
+                0.00    0.00       1/3           cb_upper_note_set [210]
+[93]     0.0    0.00    0.00       3         piano_draw_range [93]
+                0.00    0.00     384/386         patch_get_upper_note [47]
+                0.00    0.00     384/384         piano_note_off_internal [49]
+                0.00    0.00     381/381         piano_note_on_internal [51]
+                0.00    0.00       3/495         get_current_patch [45]
+                0.00    0.00       3/5           patch_get_range [90]
+                0.00    0.00       3/5           patch_get_lower_note [89]
+-----------------------------------------------
+                0.00    0.00       3/3           set_current_patch [141]
+[94]     0.0    0.00    0.00       3         waveform_set_patch [94]
+                0.00    0.00       3/33          waveform_get_type [57]
+-----------------------------------------------
+                0.00    0.00       2/2           audio_settings_init [32]
+[95]     0.0    0.00    0.00       2         getwidget [95]
+-----------------------------------------------
+                0.00    0.00       1/2           start [142]
+                0.00    0.00       1/2           open_seq [132]
+[96]     0.0    0.00    0.00       2         leash_get_client [96]
+-----------------------------------------------
+                0.00    0.00       2/2           patch_dump [98]
+[97]     0.0    0.00    0.00       2         patch_count [97]
+-----------------------------------------------
+                0.00    0.00       2/2           update_interface [143]
+[98]     0.0    0.00    0.00       2         patch_dump [98]
+                0.00    0.00       2/2           patch_count [97]
+-----------------------------------------------
+                0.00    0.00       2/2           set_current_patch [141]
+[99]     0.0    0.00    0.00       2         patch_get_channel [99]
+-----------------------------------------------
+                0.00    0.00       2/2           set_current_patch [141]
+[100]    0.0    0.00    0.00       2         patch_get_cut [100]
+-----------------------------------------------
+                0.00    0.00       2/2           set_current_patch [141]
+[101]    0.0    0.00    0.00       2         patch_get_cut_by [101]
+-----------------------------------------------
+                0.00    0.00       2/2           set_current_patch [141]
+[102]    0.0    0.00    0.00       2         patch_get_display_index [102]
+-----------------------------------------------
+                0.00    0.00       2/2           update_interface [144]
+[103]    0.0    0.00    0.00       2         patch_get_env_attack [103]
+                0.00    0.00       2/182         patch_get_param [52]
+-----------------------------------------------
+                0.00    0.00       2/2           update_interface [144]
+[104]    0.0    0.00    0.00       2         patch_get_env_decay [104]
+                0.00    0.00       2/182         patch_get_param [52]
+-----------------------------------------------
+                0.00    0.00       2/2           update_interface [144]
+[105]    0.0    0.00    0.00       2         patch_get_env_release [105]
+                0.00    0.00       2/182         patch_get_param [52]
+-----------------------------------------------
+                0.00    0.00       2/2           update_interface [144]
+[106]    0.0    0.00    0.00       2         patch_get_env_sustain [106]
+                0.00    0.00       2/182         patch_get_param [52]
+-----------------------------------------------
+                0.00    0.00       2/2           update_interface [144]
+[107]    0.0    0.00    0.00       2         patch_get_lfo [107]
+                0.00    0.00       2/182         patch_get_param [52]
+-----------------------------------------------
+                0.00    0.00       2/2           update_interface [144]
+[108]    0.0    0.00    0.00       2         patch_get_lfo_amount [108]
+                0.00    0.00       2/182         patch_get_param [52]
+-----------------------------------------------
+                0.00    0.00       2/2           set_current_patch [141]
+[109]    0.0    0.00    0.00       2         patch_get_panning [109]
+-----------------------------------------------
+                0.00    0.00       2/2           set_current_patch [141]
+[110]    0.0    0.00    0.00       2         patch_get_sample_name [110]
+-----------------------------------------------
+                0.00    0.00       2/2           set_current_patch [141]
+[111]    0.0    0.00    0.00       2         patch_get_volume [111]
+-----------------------------------------------
+                0.00    0.00       2/2           set_current_patch [141]
+[112]    0.0    0.00    0.00       2         set_sensitive [112]
+-----------------------------------------------
+                0.00    0.00       1/2           gui_init [34]
+                0.00    0.00       1/2           sample_editor_init [140]
+[113]    0.0    0.00    0.00       2         waveform_new [113]
+                0.00    0.00       2/33          waveform_get_type [57]
+-----------------------------------------------
+                0.00    0.00       1/1           cb_menu_file_open_bank [186]
+[114]    0.0    0.00    0.00       1         bank_ops_open [114]
+-----------------------------------------------
+                0.00    0.00       1/1           bankbuilder_new [116]
+[115]    0.0    0.00    0.00       1         bankbuilder_get_type [115]
+-----------------------------------------------
+                0.00    0.00       1/1           gui_init [34]
+[116]    0.0    0.00    0.00       1         bankbuilder_new [116]
+                0.00    0.00       1/1           bankbuilder_get_type [115]
+-----------------------------------------------
+                0.00    0.00       1/1           gui_init [34]
+[117]    0.0    0.00    0.00       1         filter_settings_init [117]
+-----------------------------------------------
+                0.00    0.00       1/1           audio_settings_init [32]
+[118]    0.0    0.00    0.00       1         getname [118]
+-----------------------------------------------
+                0.00    0.00       1/1           audio_settings_init [32]
+[119]    0.0    0.00    0.00       1         getwidget [119]
+-----------------------------------------------
+                0.00    0.00       1/1           prepare_drivers [139]
+[120]    0.0    0.00    0.00       1         init [120]
+-----------------------------------------------
+                0.00    0.00       1/1           prepare_drivers [139]
+[121]    0.0    0.00    0.00       1         init [121]
+-----------------------------------------------
+                0.00    0.00       1/1           main [30]
+[122]    0.0    0.00    0.00       1         leash_init [122]
+-----------------------------------------------
+                0.00    0.00       1/1           cb_lfo [181]
+[123]    0.0    0.00    0.00       1         lfo_get_freq [123]
+-----------------------------------------------
+                0.00    0.00       1/1           cb_lfo [181]
+[124]    0.0    0.00    0.00       1         lfo_get_shape [124]
+-----------------------------------------------
+                0.00    0.00       1/1           cb_lfo [181]
+[125]    0.0    0.00    0.00       1         lfo_get_sync [125]
+-----------------------------------------------
+                0.00    0.00       1/1           main [30]
+[126]    0.0    0.00    0.00       1         lfo_init [126]
+                0.00    0.00       4/4           lfo_set_freq [91]
+                0.00    0.00       4/4           lfo_set_shape [92]
+-----------------------------------------------
+                0.00    0.00       1/1           cb_sync [208]
+[127]    0.0    0.00    0.00       1         lfo_set_sync [127]
+-----------------------------------------------
+                0.00    0.00       1/1           gui_init [34]
+[128]    0.0    0.00    0.00       1         lfo_settings_init [128]
+-----------------------------------------------
+                0.00    0.00       1/1           main [30]
+[129]    0.0    0.00    0.00       1         midi_start [129]
+                0.00    0.00       1/1           open_seq [132]
+-----------------------------------------------
+                0.00    0.00       1/1           main [30]
+[130]    0.0    0.00    0.00       1         midi_stop [130]
+-----------------------------------------------
+                0.00    0.00       1/1           cb_master_vol_set [184]
+[131]    0.0    0.00    0.00       1         mixer_set_volume [131]
+-----------------------------------------------
+                0.00    0.00       1/1           midi_start [129]
+[132]    0.0    0.00    0.00       1         open_seq [132]
+                0.00    0.00       1/2           leash_get_client [96]
+-----------------------------------------------
+                0.00    0.00       1/1           gui_init [34]
+[133]    0.0    0.00    0.00       1         param_settings_init [133]
+-----------------------------------------------
+                0.00    0.00       1/1           beef_read [9]
+[134]    0.0    0.00    0.00       1         patch_destroy_all [134]
+                0.00    0.00      64/64          patch_destroy [53]
+-----------------------------------------------
+                0.00    0.00       1/1           update_interface [144]
+[135]    0.0    0.00    0.00       1         patch_get_env_amount [135]
+                0.00    0.00       1/182         patch_get_param [52]
+-----------------------------------------------
+                0.00    0.00       1/1           sample_rate_change [256]
+[136]    0.0    0.00    0.00       1         patch_sample_reload_all [136]
+-----------------------------------------------
+                0.00    0.00       1/1           cb_set [203]
+[137]    0.0    0.00    0.00       1         patch_set_lfo [137]
+                0.00    0.00       1/182         patch_get_param [52]
+-----------------------------------------------
+                0.00    0.00       1/1           gui_init [34]
+[138]    0.0    0.00    0.00       1         playmode_settings_init [138]
+-----------------------------------------------
+                0.00    0.00       1/1           main [30]
+[139]    0.0    0.00    0.00       1         prepare_drivers [139]
+                0.00    0.00       1/1           init [120]
+                0.00    0.00       1/1           init [121]
+-----------------------------------------------
+                0.00    0.00       1/1           gui_init [34]
+[140]    0.0    0.00    0.00       1         sample_editor_init [140]
+                0.00    0.00       1/2           waveform_new [113]
+-----------------------------------------------
+                0.00    0.00       1/1           update_interface [143]
+[141]    0.0    0.00    0.00       1         set_current_patch [141]
+                0.00    0.00       3/33          waveform_get_type [57]
+                0.00    0.00       3/3           waveform_set_patch [94]
+                0.00    0.00       2/2           patch_get_channel [99]
+                0.00    0.00       2/407         patch_get_note [46]
+                0.00    0.00       2/5           patch_get_range [90]
+                0.00    0.00       2/5           patch_get_lower_note [89]
+                0.00    0.00       2/386         patch_get_upper_note [47]
+                0.00    0.00       2/2           patch_get_volume [111]
+                0.00    0.00       2/2           patch_get_panning [109]
+                0.00    0.00       2/2           patch_get_cut [100]
+                0.00    0.00       2/2           patch_get_cut_by [101]
+                0.00    0.00       2/17          patch_get_frames [61]
+                0.00    0.00       2/2           patch_get_sample_name [110]
+                0.00    0.00       2/2           patch_get_display_index [102]
+                0.00    0.00       2/2           set_sensitive [112]
+-----------------------------------------------
+                0.00    0.00       1/1           main [30]
+[142]    0.0    0.00    0.00       1         start [142]
+                0.00    0.00       1/2           leash_get_client [96]
+-----------------------------------------------
+                0.00    0.00       1/1           gui_init [34]
+[143]    0.0    0.00    0.00       1         update_interface [143]
+                0.00    0.00       8/8           patch_get_name [72]
+                0.00    0.00       2/2           patch_dump [98]
+                0.00    0.00       1/1           set_current_patch [141]
+-----------------------------------------------
+                0.00    0.00       1/1           param_settings_show [230]
+[144]    0.0    0.00    0.00       1         update_interface [144]
+                0.00    0.00       2/495         get_current_patch [45]
+                0.00    0.00       2/2           patch_get_env_attack [103]
+                0.00    0.00       2/2           patch_get_env_decay [104]
+                0.00    0.00       2/2           patch_get_env_sustain [106]
+                0.00    0.00       2/2           patch_get_env_release [105]
+                0.00    0.00       2/2           patch_get_lfo [107]
+                0.00    0.00       2/2           patch_get_lfo_amount [108]
+                0.00    0.00       1/1           patch_get_env_amount [135]
+-----------------------------------------------
+
+ This table describes the call tree of the program, and was sorted by
+ the total amount of time spent in each function and its children.
+
+ Each entry in this table consists of several lines.  The line with the
+ index number at the left hand margin lists the current function.
+ The lines above it list the functions that called this function,
+ and the lines below it list the functions this one called.
+ This line lists:
+     index	A unique number given to each element of the table.
+		Index numbers are sorted numerically.
+		The index number is printed next to every function name so
+		it is easier to look up where the function in the table.
+
+     % time	This is the percentage of the `total' time that was spent
+		in this function and its children.  Note that due to
+		different viewpoints, functions excluded by options, etc,
+		these numbers will NOT add up to 100%.
+
+     self	This is the total amount of time spent in this function.
+
+     children	This is the total amount of time propagated into this
+		function by its children.
+
+     called	This is the number of times the function was called.
+		If the function called itself recursively, the number
+		only includes non-recursive calls, and is followed by
+		a `+' and the number of recursive calls.
+
+     name	The name of the current function.  The index number is
+		printed after it.  If the function is a member of a
+		cycle, the cycle number is printed between the
+		function's name and the index number.
+
+
+ For the function's parents, the fields have the following meanings:
+
+     self	This is the amount of time that was propagated directly
+		from the function into this parent.
+
+     children	This is the amount of time that was propagated from
+		the function's children into this parent.
+
+     called	This is the number of times this parent called the
+		function `/' the total number of times the function
+		was called.  Recursive calls to the function are not
+		included in the number after the `/'.
+
+     name	This is the name of the parent.  The parent's index
+		number is printed after it.  If the parent is a
+		member of a cycle, the cycle number is printed between
+		the name and the index number.
+
+ If the parents of the function cannot be determined, the word
+ `<spontaneous>' is printed in the `name' field, and all the other
+ fields are blank.
+
+ For the function's children, the fields have the following meanings:
+
+     self	This is the amount of time that was propagated directly
+		from the child into the function.
+
+     children	This is the amount of time that was propagated from the
+		child's children to the function.
+
+     called	This is the number of times the function called
+		this child `/' the total number of times the child
+		was called.  Recursive calls by the child are not
+		listed in the number after the `/'.
+
+     name	This is the name of the child.  The child's index
+		number is printed after it.  If the child is a
+		member of a cycle, the cycle number is printed
+		between the name and the index number.
+
+ If there are any cycles (circles) in the call graph, there is an
+ entry for the cycle-as-a-whole.  This entry shows who called the
+ cycle (as parents) and the members of the cycle (as children.)
+ The `+' recursive calls entry shows the number of function calls that
+ were internal to the cycle, and the calls entry for each member shows,
+ for that member, how many times it was called from other members of
+ the cycle.
+
+
+Index by function name
+
+  [25] __fixunsdfdi           [28] mixer_note_on          [60] patch_set_env_amount
+  [26] __fixunssfdi           [40] mixer_note_on_with_id  [54] patch_set_env_attack
+  [19] action (midi.c)       [131] mixer_set_volume       [55] patch_set_env_decay
+  [58] adsr_init             [132] open_seq (midi.c)      [59] patch_set_env_release
+   [8] adsr_release          [133] param_settings_init    [56] patch_set_env_sustain
+  [24] adsr_set_params        [97] patch_count           [137] patch_set_lfo
+   [5] adsr_tick              [69] patch_create           [63] patch_set_lfo_amount
+  [42] adsr_trigger           [53] patch_destroy          [76] patch_set_loop_start
+   [7] advance (patch.c)     [134] patch_destroy_all      [77] patch_set_loop_stop
+  [32] audio_settings_init    [98] patch_dump             [65] patch_set_lower_note
+ [114] bank_ops_open          [99] patch_get_channel      [78] patch_set_name
+ [115] bankbuilder_get_type  [100] patch_get_cut          [79] patch_set_note
+ [116] bankbuilder_new       [101] patch_get_cut_by       [80] patch_set_panning
+   [9] beef_read             [102] patch_get_display_index [81] patch_set_play_mode
+   [6] cerp                  [135] patch_get_env_amount   [66] patch_set_range
+  [29] draw_grid (waveform.c) [103] patch_get_env_attack  [82] patch_set_resonance
+  [68] draw_loop (waveform.c) [104] patch_get_env_decay   [83] patch_set_sample_start
+  [17] draw_wave (waveform.c) [105] patch_get_env_release [84] patch_set_sample_stop
+ [117] filter_settings_init  [106] patch_get_env_sustain  [67] patch_set_upper_note
+  [45] get_current_patch      [61] patch_get_frames       [85] patch_set_volume
+  [33] getname (alsadriver.c) [107] patch_get_lfo         [18] patch_trigger
+ [118] getname (jackdriver.c) [108] patch_get_lfo_amount  [23] patch_trigger_patch (patch.c)
+  [43] getperiodsize (jackdriver.c) [70] patch_get_loop_start [41] patch_trigger_with_id
+  [31] getrate (jackdriver.c) [71] patch_get_loop_stop    [48] piano_draw_noteoff (piano.c)
+  [14] getticks               [89] patch_get_lower_note   [50] piano_draw_noteon (piano.c)
+ [119] getwidget (alsadriver.c) [72] patch_get_name       [93] piano_draw_range
+  [95] getwidget (jackdriver.c) [46] patch_get_note       [44] piano_get_type
+  [34] gui_init              [109] patch_get_panning      [49] piano_note_off_internal (piano.c)
+ [120] init (alsadriver.c)    [52] patch_get_param (patch.c) [51] piano_note_on_internal (piano.c)
+ [121] init (jackdriver.c)    [90] patch_get_range       [138] playmode_settings_init
+  [96] leash_get_client       [86] patch_get_sample      [139] prepare_drivers
+ [122] leash_init            [110] patch_get_sample_name   [1] process (jackdriver.c)
+  [12] lfo_advance_all        [87] patch_get_sample_start [140] sample_editor_init
+ [123] lfo_get_freq           [88] patch_get_sample_stop  [21] sample_load_file
+ [124] lfo_get_shape          [47] patch_get_upper_note   [37] sec2tick
+ [125] lfo_get_sync          [111] patch_get_volume      [141] set_current_patch (gui.c)
+  [11] lfo_get_val            [13] patch_release         [112] set_sensitive (gui.c)
+ [126] lfo_init               [62] patch_release_with_id [142] start (jackdriver.c)
+  [91] lfo_set_freq            [3] patch_render           [35] stop (jackdriver.c)
+  [92] lfo_set_shape           [4] patch_render_patch (patch.c) [143] update_interface (gui.c)
+ [127] lfo_set_sync           [22] patch_sample_load     [144] update_interface (param-settings.c)
+ [128] lfo_settings_init     [136] patch_sample_reload_all [15] waveform_draw
+ [129] midi_start             [36] patch_sample_unload    [57] waveform_get_type
+ [130] midi_stop              [64] patch_set_channel     [113] waveform_new
+   [2] mixer_mixdown          [73] patch_set_cut          [94] waveform_set_patch
+  [27] mixer_note_off         [74] patch_set_cut_by
+  [39] mixer_note_off_with_id [75] patch_set_cutoff

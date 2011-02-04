@@ -1,0 +1,1033 @@
+2011-02-02  James Morris <james@jwm-art.net>
+	* yeah right like I remember: forked and made independant LFOs and
+	  ADSRs...
+
+2007-09-06  Juuso Alasuutari <juuso.alasuutari@gmail.com>
+	* src/gui/patchlist.c: Fixed regression introduced in rev 42 which
+	  made the patch list unscrollable, forcing the window height to
+	  grow as new patches were added.
+	* src/specimen.c: Unified code formatting.
+	* configure.ac: Removed -Werror from SPECIMEN_CFLAGS because it breaks
+	  compile with GCC 4.2. The warning comes from the ALSA library and
+	  is beyond our reach. Debian also implements the same fix in their
+	  latest specimen package. (Note to self: Request the Debian devel to
+	  also post any fixes upstream from now on.)
+	* src/specimen.c: Modified help text and changed client_name var to
+	  instance_name.
+	* src/instance.c, src/instance.h, src/Makefile.am: Added to introduce
+	  get_instance_name().
+	* src/jackdriver.c, src/driver.c, src/driver.h,
+	  src/gui/audio-settings.c, src/specimen.c, src/specimen.h: Changed
+	  DEFAULT_INSTANCE_NAME references in audio driver code to
+	  get_instance_name().
+	* src/lashdriver.c, src/specimen.c: Changed lash_init() to register
+	  client name from get_instance_name().
+	* src/gui/gui.c, src/specimen.c: Add instance name to window title
+	  if it's supplied.
+	* src/midi.c: Get sequencer client name from get_instance_name().
+
+2007-01-30  Eric Dantan Rzewnicki <eric@zhevny.com>
+    * added specimen.desktop for gnome/kde users.
+	* change to jackdriver.c for jack midi api update.
+	* changed jackdriver.c to use jack_client_open() instead of
+	jack_client_new(). This allows multiple specimen instances.
+	* added command line options for bank to load and jack client name
+	as submitted by Daniele Torelli <me@danieletorelli.net>.
+
+2006-08-11  Eric Dantan Rzewnicki <eric@zhevny.com>
+
+	* configure.ac, Makefile.am, src/Makefile.am, src/gui/Makefile.am,
+	pixmaps/Makefile.am, bootstrap, autogen.sh (symlink to bootstrap),
+	specimen.spec.in: changes merged from "0.5.1.1" branch
+	representing paugh's reworking of the build system.
+
+    * configure.ac: changed phat check to version 0.3.1. Need to check
+	with paugh about why this was changed from -devel tarball.
+
+	* src/jackdriver.c, src/mixer.h, src/mixer.c: applied jack-midi
+	patch from Lars Luthman. NOTE: this should probably be made
+	conditional on a check for a jack version with jack-midi support.
+
+	* src/lfo.h, src/driver.h, src/lashdriver.c, src/specimen.c,
+	src/gui/Makefile.in, src/gui/patchlist.h, src/gui/Makefile.am,
+	src/gui/gui.h, src/patch.h, src/lashdriver.h, src/specimen.h,
+	src/Makefile.am, configure.ac: applied specimen-lash.patch from
+	drobilla (I think ... or was it Loki? need to clarify this). The
+	pertinent changes are in lashdriver.[ch], specimen.c and the build
+	system. The other changes are all cosmetic. There may be some
+	slight confusion with the build system since this patch was made
+	before paugh's build system rework.
+
+
+2005-09-14  Pete Bessman  <ninjadroid@gazuga.net>
+
+	* src/midi.c (open_seq): Renamed sequencer client to "specimen" to
+	match up with the JACK client name.  Removed old LADCCA stuff that
+	was lying around.
+
+2005-08-06  Pete Bessman  <ninjadroid@gazuga.net>
+
+	* src/gui/gui.c (create_about): Fixed the author entry for me in
+	the about box.  It was missing the trailing >.  Chris thinks this
+	is a very big problem, and was quite concerned, and had a
+	discussion with me at great length on the matter.  This lead into
+	a speech about my direction in life, and his fear that my aimless
+	maunderings will find me a whisky drenched hobo in orleans.  So I
+	stabbed him.  That's OK.  He's fat, and fat people don't have the
+	same rights as you and I.  In fact, I propose using fat people as
+	an alternative fuel source.  Think about it.  We can have
+	concentration camps to make the authoritarians happy, and we can
+	burn the fat people to make the nanny staters happy, and we have a
+	sustainable and relatively clean (or at least, amusing) source of
+	energy to please the hippies.  Plus, we eliminate the need for any
+	sort of relations with despotic middle eastern countries.  Which
+	pretty much means that the next time johnny jihad bombs something,
+	the leftists are going to implode because they simply will not be
+	able to fashion any sort of apologia for our assailants that even
+	an autistic monkey could be persuaded to accept as plausible.
+
+	...
+
+	I fucked your mom last night.
+
+2005-08-02  Pete Bessman  <ninjadroid@gazuga.net>
+
+	* src/mixer.c (preview_render): use DEFAULT_VOLUME
+
+	* src/gui/sample-editor.c (cb_play): replace horribly broken velocity of 127 with 1.0
+
+	* src/patch.c: fixed cuts (they got broken when I fixed envelope
+	noteoffs for singleshots)
+
+2005-07-31  Pete Bessman  <ninjadroid@gazuga.net>
+
+	* src/gui/gui.c: added an about dialog.
+
+2005-07-27  Pete Bessman  <ninjadroid@gazuga.net>
+
+	* src/patch.c: fixed so that singleshot patches will still release
+	any envelopes they have turned on.
+
+2005-07-23  Pete Bessman  <ninjadroid@gazuga.net>
+
+	* src/gui/gui.c (cb_menu_patch_add): new patches now have same
+	channel as current one.
+
+	* src/gui/midisection.c (midi_section_set_patch): added code to
+	center keyboard around root note.
+
+2005-07-18  Pete Bessman  <ninjadroid@gazuga.net>
+
+	* src/beef.c (beef_write): added a missing cast for xmlChar (once
+	again, thanks to Suva)
+
+	* configure.ac: added libgnomecanvas-2.0 check for
+	pkg-config (thanks to Suva for pointing out it's abscence!)
+
+2005-07-12  Pete Bessman  <ninjadroid@gazuga.net>
+
+	* src/gui/patchsection.c: yanked out play and panic buttons.
+
+	* src/gui/gui.c: added a help menu and put the panic button (STFU!) in there.
+
+2005-07-09  Pete Bessman  <ninjadroid@gazuga.net>
+
+	* src/gui/channelsection.c, channelsection.h: split out from the
+	midisection for GUI alignment.
+
+	* README: updated to reflect new stuff.
+
+	* src/patch.c (patch_dump): changed sorting to go by channels and then note.
+
+	* src/gui/patchlist.c (patch_list_update): can now select either
+	by index or patch id; updated invocations to reflect change.
+
+2005-07-08  Pete Bessman  <ninjadroid@gazuga.net>
+
+	* src/gui/midisection.c: added code for setting root note and range through keyboard.
+
+2005-07-06  Pete Bessman  <ninjadroid@gazuga.net>
+
+	* src/patch.c (patch_trigger_with_id): verify note is in range before accepting.
+
+	* src/gui/midisection.c, midisection.h, gui.c: added new section for setting midi params.
+
+2005-07-03  Pete Bessman  <ninjadroid@gazuga.net>
+
+	* src/gui/patchsection.c: changed default title to the more appropriate "empty bank."
+
+	* src/gui/gui.c (gui_refresh): added function.
+
+	* src/specimen.c (main): added ability to load bank from cmdline.
+
+2005-06-17  Pete Bessman  <ninjadroid@gazuga.net>
+
+	* src/gui/patchsection.c, voicetab.c, filtertab.c: use
+	g_timeout_add() instead of g_idle_add() for refresh functions, and
+	set to newly defined GUI_REFRESH_TIMEOUT interval created in gui.h
+
+2005-06-04  Pete Bessman  <ninjadroid@gazuga.net>
+
+	* src/patch.c (filter): convert freso to logreso via lin_to_log() and apply.
+	(patch_create): use DEFAULT_VOLUME for new patch volumes.
+
+	* src/specimen.h (DEFAULT_VOLUME): renamed DEFVOL to
+	DEFAULT_VOLUME and modified source tree to reflect change.
+
+	* src/mixer.c (mixer_mixdown): convert 'volume' to 'logvol' via lin_to_log()
+	and apply that to samples.
+
+	* src/patch.c (gain): convert 'vol' to 'logvol' via lin_to_log()
+	and apply that to samples.
+
+	* src/mixer.c (mixer_init): set volume to DEFAULT_VOLUME.
+	(mixer_mixdown): renamed 'offset' to 'write' for clarity.
+	(mixer_flush): added code to clear preview.
+
+	* src/maths.c: added lin_to_log() and log_to_lin() to convert back
+	and forth between linear and logarithmic volumes.
+
+2004-11-30  Pete Bessman  <ninjadroid@gazuga.net>
+
+	* src/patch.c (prepare_pitch): fixed a bug which prevented
+	portamento from working properly when a sample had been tuned.
+
+2004-11-22  Pete Bessman  <ninjadroid@gazuga.net>
+
+	* src/gui/patchsection.c (play_cb): fixed play button to use
+	velocity of 1.0, not 127.
+
+2004-10-09  Pete Bessman  <ninjadroid@gazuga.net>
+
+	* src/gui/mastersection.c (master_section_init): added a bit of
+	vertical padding between the section and the contents beneath it.
+
+2004-10-08  Pete Bessman  <ninjadroid@gazuga.net>
+
+	* src/gui/lfotab.c (lfo_tab_init): set lower value of sync
+	sliderbutton to .25.
+
+	* src/gui/*: updated to reflect
+	adjustments to PhatSliderButton API change.
+
+2004-10-06  Pete Bessman  <ninjadroid@gazuga.net>
+
+	* applied c0ffs patches to move jitter correction code to mixer
+
+2004-10-03  Pete Bessman  <ninjadroid@gazuga.net>
+
+	* src/gui/envelopetab.c: Fixed locking of amount fan for volume
+	envelope.
+
+	* src/gui/patchsection.c: Added patch title display and panic button.
+
+	* src/gui/gui.c: Use PatchList to control our current patch now.
+
+	* src/gui/patchlist.c: Created the PatchList widget, a better way
+	to keep track of patches.
+
+	* src/gui/patchsection.c: Replaced patch_section_update() with
+	patch_section_set_patch().
+
+	* src/beef.c: Account for monophonic and legato properties.
+
+	* src/gui/voicetab.c: Implemented legato switch.
+
+	* src/patch.c: Implemented legato
+
+2004-10-02  Pete Bessman  <ninjadroid@gazuga.net>
+
+	* src/gui/voicetab.c: Implemented monophonic switch.
+
+	* src/gui/waveform.c: Now use an orange color to draw loop points.
+
+	* src/patch.c: Implemented manual declicking for patches without
+	volume envelopes.  Modified to handle LFO and Envelope switching.
+	Implemented monophonic patches.
+
+	* src/gui/lfotab.c: Implemented switch.
+
+	* src/gui/envelopetab.c: Implemented switch.
+
+	* src/gui/envelopetab.c, envelopetab.h: Adopt same behavior as
+	LfoTab when adjusting pitch modulation.  Enable the on/off check
+	box.
+
+	* src/beef.c: Added pitch_steps and monophonic properties.
+
+2004-10-01  Pete Bessman  <ninjadroid@gazuga.net>
+
+	* src/gui/gui.c (gui_init): Added (...) to end of Add, Rename, and
+	Settings menu entries.
+
+	* src/gui/filtertab.c (filter_tab_destroy): remove refresh() from idle loop
+
+	* src/gui/voicetab.c (voice_tab_destroy): remove refresh() from idle loop
+
+	* src/gui/patchsection.c (play_cb): changed to handle [button|key]-press-event
+	(stop_cb): changed to handle [button|key]-press-event
+	(connect): changed to connect [play|stop]_cb to [button|key]-press-event
+	(patch_section_destroy): remove refresh() from idle loop
+
+2004-09-30  Pete Bessman  <ninjadroid@gazuga.net>
+
+	* src/gui/voicetab.c, patchsection.c, filtertab.c (refresh): added
+	simple redisplay code so you can see the effects of MIDI CCs.
+
+	* src/patch.c, patch.h, control.h (new), midi.c, mixer.c mixer.h:
+	merged in c0ff's MIDI CC patch.
+
+	* src/midi.c (calc_bpm): use errmsg() to print cop-out message
+
+	* src/Makefile.am (specimen_SOURCES): added control.h
+
+2004-09-29  Pete Bessman  <ninjadroid@gazuga.net>
+
+	* src/patch.c (patch_duplicate): added code to store/restore lfo
+	tables
+
+	* src/gui/*: removed all old and unused files, finished up new interface.
+	wootzor to the max0r!
+
+2004-09-28  Pete Bessman  <ninjadroid@gazuga.net>
+
+	* src/gui/*: added hooks to new gui elements to read parameters
+	from the engine
+
+2004-09-27  Pete Bessman  <ninjadroid@gazuga.net>
+
+	* configure.ac: removed checks for ladcca and gtk-2.4, and removed
+	their use throughout the code
+
+	* gui.c: removed bank builder and piano, added calls for new GUI
+	components.
+
+	* bank-builder.*, piano.*, leash.*: DELETED!
+
+	* *tab.*, *secion.*: created new GUI components.  Not hooked up
+	yet.
+
+2004-08-06 Pete Bessman <ninjadroid@gazuga.net>
+
+	* beef.c: pitch is now saved/loaded, thanks to Rocco
+	(linuxmedia4@netscape.com) for pointing out that it wasn't
+	previously.
+
+2004-07-22 Pete Bessman <ninjadroid@gazuga.net>
+
+	* beef.c: committed changed version by Sacha Berger
+	(sacha@woanders.de) which accounts for new patch parameters.
+	
+2004-07-01 Pete Bessman <ninjadroid@gazuga.net>
+
+	* waveform.c: fixed the drawing to use the same concept behind
+	Brensenham's algorithm for better accuracy, optimized and cleaned
+	a bit.
+	
+2004-06-28 Pete Bessman <ninjadroid@gazuga.net>
+
+	* ROADMAP: updated to reflect Thorsten's GUI contributions; 0.9.X
+	is now an audit/pre-release phase.
+
+2004-06-21 Pete Bessman <ninjadroid@gazuga.net>
+
+	* lfo.c: restructured as a general class, share LFO tables now for
+	more memory efficiency.  Added "positive" attribute, which
+	constrains output from [0, 1] as opposed to [-1, 1] when set.
+	
+	* patch.c: added lfos at the voice level and global level on a
+	per-parameter basis.  Added special handlers for LFO and ADSR
+	amount setters for pitch, and added necessary code to advance(),
+	so that the amount parameter for pitch modulators effectively sets
+	the pitch that is reached.
+
+	* lfo-settings.c, lfo-settings.h: removed from source tree
+
+	* param-settings.c: added controls for LFO manipulation, adjusted
+	amount widgets and code to work intuitively with the user
+	(displaying amount in half-steps).
+
+	* release: 0.4.0, "Smooth"
+	...braaaaaaaiiinssss... gah...
+	
+2004-06-19 Pete Bessman <ninjadroid@gazuga.net>
+
+	* patch.c: added pitch setters/getters, and pitch_steps setters
+	getters.  Use pitch and pitch_steps to implement tuning.  Added
+	setters/getters for delay and hold phases of envelopes, modified
+	patch_create() to initialize those values.
+
+	* gui.c: added controls for pitch and pitch_steps
+
+	* adsr.c: added support for delay and hold phases
+	
+	* param-settings.c: increased precision of control for spinboxes,
+	added controls for delay and hold
+
+2004-06-17 Pete Bessman <ninjadroid@gazuga.net>
+
+	* param-settings.c: added pitch option
+
+	* patch.c: pitch is a parameter now, added pitchenv to PatchVoice
+	and pitch to Patch, modified advance() to handle pitch modulation.
+	Added properties necessary for portamento to work right to
+	PatchVoice and Patch and created setters/getters.  Implemented
+	portamento in patch_trigger_patch() and advance().
+
+	* gui.c: changed starting master volume value to 80, added
+	hooks for porta-params dialog
+
+	* porta-params.c, porta-params.h: created the portamento settings dialog
+	
+2004-06-15 Pete Bessman <ninjadroid@gazuga.net>
+
+	* gui.c: renamed "chokes" back to "cuts."  It would be appear that
+	neither naming scheme is terribly intuitive.  That being the case,
+	I'll go for the shorter one.
+
+	* patch.c: revised the order of volume scaling operations in
+	gain(); we now add the LFO value first, then apply the envelopes,
+	then apply velocity.
+
+2004-06-14 Pete Bessman <ninjadroid@gazuga.net>
+
+	* sample.c: converted to a full-blown object
+
+	* patch.c, mixer.c: adjustments to accomodate new sample.c
+
+	* patch.c: reduced maximum number of patches to 32 and polyphony
+	to 8.  This should tide us over until we have a global polyphony
+	limit.  Added a temporary table to hold LFO values during mixdown
+	process which render subroutines reference.  Added a hook int
+	driver_set_buffersize() to resize these tables when/if the
+	buffersize changes.
+
+	* driver.h, driver.c:  added driver_set_buffersize()
+
+	* mixer.c: removed lfo control and went back to "old" way of
+	calling patch_render with full block of frames.
+
+2004-06-13 Pete Bessman <ninjadroid@gazuga.net>
+
+	* configure.ac, Makefile.am: total rewrite, cleaning up
+	everything and removing redundancy between Makefiles.  Builds
+	that don't specify --enable-debug are also built with -O3 and
+	without -g.
+
+	* pixmaps: created a new dir for the pixmaps and a makefile to
+	manage them
+
+	* play.png, stop.png: redid these; they're prettier and smaller
+	now.  sodipodi > all
+
+	* specimen.h: changed the debug() macro to expand to nothing if
+	DEBUG isn't defined.  This should save us a handful of cycles
+	during optimized builds for free.
+
+	* patch.c: added patch_init/shutdown(), acting as a
+	constructor/destructor pair.  Created patch_lock() functions and
+	replaced explicit pthread_mutex_lock() calls with them.  Bugfixed
+	patch_create() so that new patches start of with PATCH_MIN_RELEASE
+	(lest the wrath of clicky samples be upon the unwitting user).
+
+	* mixer.c: added mixer_init/shutdown(), acting as a
+	constructor/destructor pair.  Added a mutex to the MixerPreview
+	structure and replaced locks on the sample mutex with locks on
+	this new mutex.
+
+	* sample.h, sample.c: removed mutex from Sample structure.  Having
+	it take care of locking for us was rather unhelpful.
+	
+2004-06-12 Pete Bessman <ninjadroid@gazuga.net>
+
+	* alsadriver.c: removed G_MAXINT* and replaced with hexadecimal
+	constants.  The G_MAXINT* features are only available in glib-2.4
+	which isn't in wide enough use among LADers yet.
+
+	* configure.ac: ripped out gthreads and added a check for pthreads
+	(their usage is cleaner than with gthreads).
+
+	* TODO, ROADMAP: updated these files at long last.
+	
+2004-06-11 Pete Bessman <ninjadroid@gazuga.net>
+
+	* sync.h, sync.c: added sync_set_method()
+
+	* alsadriver.c: calls sync_set_method() with SYNC_METHOD_MIDI
+	whenever it's config frame is shown.  Added code to restore
+	settings to their internal values if you close the audio-settings
+	window or switch to the jackdriver and back without actually ever
+	starting the alsa driver.  device is now stored with a GString.
+	Status is now stored with an atomic variable instead of a mutex
+	(we can get away with it... but why am I putting so much effort
+	into a doomed module).
+
+	* jackdriver.c: added a checkbox to use jack_transport syncing,
+	processed on cofig_frame shows.  Improved the transport code to
+	handle tempo changes (necessary in order to work with the
+	jack_transport shell, possibly necessary in general, a good idea
+	no matter what).
+
+	* patch.c: fixed a bug in patch_set_samplerate() where changes
+	wouldn't take effect until the next call.
+
+	* Released version 0.3.0, "Leading the Strike;" can't deny the
+	users LFOs any longer.
+	
+2004-06-10 Pete Bessman <ninjadroid@gazuga.net>
+
+	* lfo.c: changed lfo_advace() to use cubic interpolation
+
+	* mixer.c: changed FRAMES to 1 (these things should be run-time
+	configurable)
+
+	* patch.c: fixed a bug in patch_get_env_release() where the value
+	returned would always be zero.
+
+2004-06-09 Pete Bessman <ninjadroid@gazuga.net>
+
+	* global: made (mostly) sure the rules laid down in STYLE are followed (tons of fun)
+
+	* jackdriver.h, alsadriver.h: removed these files and replaced them with extern
+	references in driver.c
+
+	* jackdriver.c, alsadriver.h: removed custom *msg code, added
+	driver type to initializing message
+
+	* specimen.h: modified *msg macros to print __FUNCTION__
+
+	* patch.c: fixed an *insidious* bug in patch_render_patch() that
+	only manifests itself when switching samples.  If the new sample
+	has fewer frames than the original sample, and there are one or
+	more active voices with frame-positions greater than the new
+	number of frames, we get a good-ol-fashioned segfault when we
+	attempt to render those voices.  Took about an hour of focused
+	ninja debugging, could have been worse I suppose.  The solution
+	was to add a check in patch_render_patch() to make sure that
+	voices which exhibit such pathological behavior are ditched.
+
+	* patch.c: created functions patch_flush() and patch_flush_all()
+
+2004-06-08 Pete Bessman <ninjadroid@gazuga.net>
+
+	* driver.c, driver.h: created a new driver interface
+
+	* mixer.c, patch.c, ticks.c: changes to accomodate new driver
+	interface (the samplerate must be stored and cannot be explicitly
+	retrieved)
+
+	* jackdriver.c, patch.c: driver_set_samplerate() now called whenever
+	driver is successfully started and if the samplerate changes
+
+	* maths.c, maths.h: cerp() now demands an 8 bit fractional position value,
+	rather than shifting a 32bit one
+	
+	* patch.c: replaced bit-twiddling for hex in expression for the maximum value
+	of guint32 in patch_trigger_patch(), changed to accomodate new math.h
+
+	* Makefile.am, gui/Makefile.am: added -Werror to CFLAGS
+	
+2004-06-06 Pete Bessman <ninjadroid@gazuga.net>
+
+	* lfo.c: added a minor optimization to lfo_advance()
+
+	* lfo-settings.c: increased the maximum allowable frequency to 20
+
+	* patch.c: created a new function, patch_set_sample_rate(), removed patch_sample_reload_all()
+
+	* audio-settings.c: adjusted to use patch_set_sample_rate()
+
+	* globally: did some style cleanups to ensure consistency
+
+	* STYLE: a new file to hold the style guidelines
+
+	* PROFILE: a new file to hold the most recent gprof performance profile.
+	We need a streamlined way to do a profiling build.
+
+	* gprof-helper.c: ripped this file from the net to make gprof usable
+	in multithreaded environments.
+	
+2004-06-06 Loki Davison <ltdav1@student.monash.edu.au>
+
+	* lfo-settings.c: added ui for lfo sync.
+
+2004-06-05 Pete Bessman <ninjadroid@gazuga.net>
+
+	* patch.c: fixed a few bugs in the lfo handling code
+
+	* lfo.c: changes to allow for tempo syncing
+
+	* lfo-settings.c: tweaked Loki's lfo-sync code
+
+	* midi.c: a few cleanups (ph33r).  ALSA midi syncing doesn't seem
+	to work on 2.6.6 kernels, added a check for FPEs (should have been
+	there anyway).
+
+	* jackdriver.c: redid the jack syncing code (sorry Loki)
+	
+2004-06-04 Loki Davison <ltdav1@student.monash.edu.au>
+
+        * sync.c, sync.h, jack-driver.c, midi.c: created midi/jack syncing code
+
+2004-06-04 Pete Bessman <ninjadroid@gazuga.net>
+
+	* lfo.c, lfo.h: initial creation of the LFO module
+
+	* param-settings.c, param-settings.h: the files formerly known as
+	adsr-settings.*, moved here to accomodate our kludgey UI.
+
+	* gui.c:  removed the huge #ifdef commented block, and adjusted for
+	adsr-settings.* renaming.
+
+	* lfo-settings.c, lfo-settings.h: new gui interface to control LFOs.
+
+	* patch.c: added hooks to store lfo settings, rendering functions
+	now account for LFOs
+
+	* mixer.c: added LFO needed code
+
+	* audio-settings.c: added call to lfo_set_sample_rate() during
+	sample rate changes
+
+2004-05-28 Pete Bessman <ninjadroid@gazuga.net>
+
+	* configure.ac: removed redundant AC_CHECK_LIB for libsndfile, and
+	redundant gtk+-2.0 general pkg-config check
+
+	* bootsrap: added autoheader call
+
+	* Makefile.am: added GTK_FLAGS
+
+	* sample-editor.c: added Loki's change to use a spinbutton for zoom level
+
+	* adsr-settings.c: fixed amount spinbutton to be between -1.0 and 1.0
+
+	* adsr.c: fixed erroneous conversion of sustain time to ticks in adsr_set_params()
+	
+	* gui.c: made the scrollbar policy for the piano's viewport completely automatic
+
+	* patch.c: re-implemented envelopes for vol, pan, ffreq, and freso
+	with new rendering system.  Set minimum release value to prevent
+	clicks.
+
+	* midi.c: changed to *actually* ignore redundant start/stop commands
+	
+	* BUGS: created this file to keep track of known bugs
+	
+2004-05-27 Pete Bessman <ninjadroid@gazuga.net>
+
+	* Created a new set/get interface for patch envelopes
+
+	* Created a new patch_param_t for parameters which also
+	have envelope information
+
+	* Modified mixdown system so that each patch tracks
+	and renders its own voices (huge change)
+
+	* Created a new interface for note activation and deactivation
+
+	* Lots and lots of other little cleanups, tweaks, and optimizations
+	that I doubt anyone will notice.  Comparing the old against the new,
+	I'm amazed the old worked at all.
+
+2004-05-25 Loki Davison <ltdav1@student.monash.edu.au>
+	
+	* piano.c, gui.c: Got rid of the externs Pete hated and added some
+	helper functions instead. You can now drag and drop onto the file
+	button as well, loading a new sample.
+	
+	* configure.ac: added check for libsoundfile, some how we missed it.
+
+2004-05-24 Loki Davison <ltdav1@student.monash.edu.au>
+
+	* piano.c, bank-builder.c: Add multifile drag and drop support.
+
+	* piano.c: fixed horrible crash if you dragged of the end of the
+        piano, spotted by AudioFranky.
+
+2004-05-22 Loki Davison <ltdav1@student.monash.edu.au>
+
+	* bank-builder.c, gui.c: Added the ifdefs to check for gtk 2.4.
+	
+	* configure.ac: added test for gtk2.4.
+
+2004-05-20 Loki Davison <ltdav1@student.monash.edu.au>
+
+	* bank-builder.c, bank-builder.h: Added the new bank builder, requires
+	gtk 2.4 now.
+	
+	* piano.c: Added support for drag and drop creation of patches using
+	the bankbuilder.
+	
+	* gui.c: Changed the layout into 2 columes to support the bank
+	builder, added the bank builder and changed location of the piano.
+	
+	* README: added bit about drag and drop.
+
+2004-05-18 Pete Bessman <ninjadroid@gazuga.net>
+
+	* maths.c, maths.h: created these files and moved our
+	interpolation routines here.  This is the future home of all
+	future general purpose math routines.
+
+	* ticks.c, ticks.h: moved getticks() and friends here.  All time
+	related routines will go here in the future.
+	
+	* specimen.c, specimen.h: removed our in-house basename() and
+	substituted all uses of it for g_path_get_basename().
+
+	* specimen.h: fixed b0rken PIXMAPSDIR check/redef code.  Removed
+	that old and crappy thread_data_t stuff (go go gadget vestigial
+	newbie code).
+
+	* configure.ac: added --enable-debug option
+
+	* beef.c, patch.c: fixed a bug where loading a bank which has a
+	patch with no samplefile causing segfaults.
+	
+2004-05-12 Pete Bessman <ninjadroid@gazuga.net>
+
+	* midi.c: finally got around to cleaning this file up.
+
+	* patch.c, patch.h: finally got around to using a sensible
+	naming scheme for the functions here (patch_set_foo instead
+	of patch_foo_set), and it was all done automagically via the
+	beauty of sed.  Mmmmm... sed.
+
+2004-05-12 Loki Davison <ltdav1@student.monash.edu.au>
+
+	* sample-editor.c: Changed the zoom buttons to a scroll button with
+	acceleration and scroll wheel support, as suggested by AudioFranky.
+
+2004-05-10 Pete Bessman <ninjadroid@gazuga.net>
+
+	* gui.c: renamed "cuts" to "chokes", since the former caused
+	confusion.  Layout is now done with tables, and the piano widget
+	is packed into a viewport to keep things nice and tidy.
+
+	* waveform.c: fixed the aliasing problem, and adjusted the colors
+	a tad.  There are still a few slight accuracy problems left to
+	fix, as well as getting it to run smoothly with huge files.
+
+	* sample-editor.c: made the scroll bar have a finer-grained
+	resolution.
+	
+2004-05-09 Pete Bessman <ninjadroid@gazuga.net>
+
+	* midi.c: note-on events with velocity of 0x00 are now interpreted
+	as note-offs (thanks to Alexander <aharvey@ij.net> for the tip)
+
+	* piano.c: applied Loki's patch to purtify things a bit.
+
+	* sample-selector.c: selector now keeps track of its current directory.
+
+2004-05-08 Loki Davison <ltdav1@student.monash.edu.au>
+	
+	* piano.c, piano.h, gui.c : added new piano interface for showing
+	range and location. Based on the widget from Swami. 
+	
+	* configure.ac: Piano widget uses gnome_canvas so added check for it.
+	you don't need all of gnome to use it.
+	
+	* README: Added bit about how to use the piano.  
+
+2004-04-27 Loki Davison <ltdav1@student.monash.edu.au>
+
+	* cca.c : added this file to support Lash/Ladcca. Has the main lash
+	loop. Calls the gui to update about new patches.
+
+	* jackdriver.c, specimen.c, midi.c: Minor changes to support lash.
+	
+	* Makefile.am: includes the extra libs needed for lash.
+
+	* configure.ac: test for lash.
+
+2004-03-11 Pete Bessman <ninjadroid@ml1.net>
+
+	* patch.c: fixed bug where initial resonance and panning would
+	have whack values (thanks to Paul Brossier for spotting this bug).
+
+2004-02-24 Pete Bessman <ninjadroid@ml1.net>
+
+	* patch.c: exercised the power of memcpy to minimize grunt work in
+	patch_create() and patch_duplicate().  Support for resonance and
+	panning envelopes added.  Got rid of stupid conversions for pan
+	and volume setters/getters, that's the responsiblity of the
+	caller.  Envelopes can be turned on and off.
+
+	* adsr-settings.c: support for resonance and panning envelope added,
+	ability to turn envelopes on and off.
+
+	* mixer.c: support for resonance and panning envelope added.
+	Filtering is now done before gain adjustment.
+
+	* beef.c: cleaned up the file opening process, accomodated new
+	parameters.
+
+2004-02-24 Pete Bessman <ninjadroid@ml1.net>
+
+	* waveform.c: applied Torben Hohn's optimization patch to *great*
+	effect.  Made another tweak and it's running like a raped ape now.
+
+	* mixer.c, patch.c, patch.h, adsr-settings.c: added support for
+	cutoff ADSR.  Still pondering the best way to do this, wonder
+	if I ought to go for a completely modular approach.  Need to
+	sleep on it and ask around.
+
+2004-02-23 Pete Bessman <ninjadroid@ml1.net>
+
+	* Makefile.am, gui/Makefile.am: fixed to use $(pkgdatadir) instead
+	of @datadir@ when determining where to put the pixmaps (thanks
+	to Torben Hohn for the tip).
+
+	* configure.ac: removed useless dependency on gthread
+
+	* specimen.spec: included and modified Florin Andrei's rpm specfile
+	
+	* mixer.c: fixed a bug in the ping-pong looping logic.  This
+	has really been the bane of my existence as of late >:O
+
+2004-02-22 Pete Bessman <ninjadroid@ml1.net>
+
+	* adsr-settings: created interface to set adsr envelope parameters.
+
+	* path.c: added volume adsr parameters to patch structure and created
+	setters and getters.
+
+	* mixer.c: added support for volume adsr. Fixed a bug in the ping-pong
+	loop logic.
+	
+2004-02-22 Pete Bessman <ninjadroid@ml1.net>
+
+	* Complete source tree reorganization.  Subdirectories and
+	everything.  Much prettier now.  Ah.
+
+	* playmode-settings.c: created this file to contain the widgets
+	to set a patches play mode.
+
+	* gui.c: now uses playmode-settings.c to set play mode for a
+	patch.
+
+	* patch.c: play_mode_t restructured as a bit field, allowing
+	direction and duration properties to be separate but represented
+	in one variable.
+	
+	* mixer.c: more tweaks to improve quality and accuracy, in
+	addition to accomodating new restructuring of play_mode_t.  simple
+	lowpass filter and resonance support added.
+
+	* holy shit, I didn't sleep...
+	
+2004-02-21 Pete Bessman <ninjadroid@ml1.net>
+
+	* mixer.c: made a change so that notes in excess of the polyphony
+	limit take the place of the oldest note currently playing, rather
+	than being dropped.  Thanks to David R. Clark for bringing the
+	necessity of this to my attention.  Reimplemented the cubic
+	interpolation routine as a FIR (pow() was freakin' slow).  Made
+	some other optimizations, mainly by substituting floats with ints
+	and bitshifting.
+
+	* patch.c: added patch_duplicate() function.
+
+	* gui.c: added Duplicate to action menu.
+	
+2004-02-20 Pete Bessman <ninjadroid@ml1.net>
+
+	* mixer.c, mixer.h: moved mixing functions here.
+
+	* loadsample.c, loadsample.h: modularised sample loading into
+	here.
+
+2004-02-17 Pete Bessman <ninjadroid@ml1.net>
+
+	* gui.c: fixed a minor control interaction bug.
+
+	* Today marks the release of version 0.2.0 of Specimen, or the
+	"Mortal Wombat" release as those in the know refer to it.
+	Documentation has been painstakingly (snicker) prepared and is
+	available on the website.
+	
+2004-02-16 Pete Bessman <ninjadroid@ml1.net>
+
+	* waveform.c: supports range parameters so that it only draws a
+	specified part of the waveform.  This makes good zooming possible.
+	No, plastic doesn't make it possible.  Eat me.
+
+	* editsample.c: file initialized.  This is the interface for
+	editing sample play and loop start/stop points.  I dare say it's
+	halfway beastly.
+
+	* editsample.h: file initialized.  Contains prototypes for the
+	sample editing interface.
+
+	* patch.c: modified the play/loop point setters to modify other
+	parameters so that a sane configuration is maintained when unsane
+	arguments are given, rather than returning an error.  Came up with
+	better names for the enumerated event constants.  The
+	interpolation calls were simplified a bit and the whole mixdown
+	function now accounts for playing samples in both directions.
+
+	* gui.c: controls for ping pong mode and reverse mode added.
+	
+2004-02-15 Pete Bessman <ninjadroid@ml1.net>
+
+	* waveform.c: transformed into a custom gtk widget Waveform.
+	Drawing routine is significantly optmized.
+
+	* gui.c: now displays waveform using the new Waveform widget.
+
+2004-02-14 Pete Bessman <ninjadroid@ml1.net>
+
+	* gui.c: extirpated a very minor (but stylistically abominable)
+	bug in the way loop/play control constraints and values are set
+	during patch changes.
+
+	* waveform.c: now supports displaying loop and play points.
+
+	* patch.c: modified file writing to write patches in order of
+	their display index.  Fixed a *really* stupid bug in the sorting
+	part of patch_dump() (swapped twice instead of once...).
+	
+2004-02-13 Pete Bessman <ninjdroid@ml1.net>
+
+	* got off my lazy ass and started working on this again.
+
+	* alsadriver.c: made sure that we don't wait on threads that don't
+	exist when trying to shutdown when we aren't running.
+
+	* patch.c: replaced patch_id_get_all() with patch_dump(), which
+	does the same thing only better and sorted.  Created the function
+	patch_verify() for testing that a patch exists and is sane.  Right
+	now, this basically means ensuring that the specified patch is
+	active.  Any out-o-whack integer parameters will get constrained
+	to something reasonable by the nature of the gtk_spin_button
+	class.  I also created patch_deactivate_by_id() so that you can
+	preview looped samples without subjecting yourself to them for
+	eternity.  Eliminated places where ints were constantly being
+	converted to floats by storing those values as floats.
+
+	* gui.c: cleaned this up like your mother cleans my pole when the
+	rent's due.  Just kidding.  About your mom, I mean.  The code is
+	significantly cleaner, and accounts for the changes made to
+	patch.c.
+
+	* waveform.c: created this file, which contains the waveform
+	display code.  It's pretty much where it needs to be, now I just
+	have to use it on a grander scale.
+
+2004-02-09 Pete Bessman <ninjadroid@ml1.net>
+
+	* patch.c: fixed a few erroneous newlines in some of the returns
+	of patch_strerror().  Modified loop and play point setters to do
+	nothing if there is no sample for the specified patch (they used
+	to return errors).
+
+	* gui.c: changed cb_sample_load() to call update_interface()
+	instead of making changes to the sample button directly.
+
+2004-02-09 Pete Bessman <ninjadroid@ml1.net>
+
+	* patch.c: added display_index property to patches and a getter
+	for it.  Modified patch_create() to initialize it and
+	patch_destroy() to account for it.
+
+	* gui.c: update_interface() now organizes menu entries according
+	to display_index.
+
+2004-02-06 Pete Bessman <ninjadroid@ml1.net>
+
+	* patch.c: added patch_flush() to stop any events currently in the
+	queue. patch_mixdown() has been cleaned up a lot, it should be much
+	easier to expand on it in the future.
+
+	* audiosettings.c: calls patch_flush() whenever changing drivers
+	to clear out accumlated events.  Not doing this results in a nasty
+	pop sometimes, so this is a nice improvement.
+
+	* configure: got an autoconf/automake setup going on now.  What
+	a huge pain in the nuts that was.
+	
+2004-02-03 Pete Bessman <ninjadroid@ml1.net>
+
+	* patch.c: fixed another memory bug in the interpolation
+	section of patch_mixdown().
+	
+2004-02-03 Pete Bessman <ninjadroid@m1.net>
+
+	* gui.c: created a separate module for sample loading and
+	added much needed "load" and "preview" functions.
+
+	* patch.c: modularized sample loading and added support
+	for "previewing" a sample.
+
+2004-02-02 Pete Bessman <ninjadroid@ml1.net>
+
+	* gui.c: current_patch no longer as file scope.
+
+2004-02-01 Pete Bessman <ninjadroid@ml1.net>
+
+	* gui.c: removed useless call to update_interface when loading samples
+	that only served to disorient.
+
+	* patch.c: fixed a math bug in the cubic interpolation algorithm.
+	
+2004-01-31 Pete Bessman <ninjadroid@ml1.net>
+
+	* The first beta release of specimen, code named VOMITRON (those
+	of you who get that kick ass) is made today.  Believers rejoice,
+	sinners repent, etc. and so forth.
+	
+	* gui.c: controls added for loop points.
+
+	* patch.c: patch_mixdown() does looping.  File reading/writing
+	pays attention to sample start/stop info now.  Cuts work again.  I
+	think I fixed some audio quality bug also, but I'm not sure.
+	
+2004-01-27 Pete Bessman <ninjadroid@ml1.net>
+
+	* gui.c: controls added for manipulating sample start and stop points.
+
+	* patch.c: patch_mixdown() accommodates sample start and stop
+	parameters.
+
+2004-01-26 Pete Bessman <ninjadroid@ml1.net>
+
+	* bank.c: created a new file to handle the gui aspects of managing
+	patch banks.
+
+	* patch.c: set to use bank.c now.
+	
+2004-01-24 Pete Bessman <ninjadroid@ml1.net>
+
+	* patch.c: patch_mixdown() does real linear interpolation when pitch
+	scaling now.
+	
+	* patch.c: scant moments later, patch_mixdown() has been updated
+	to do REAL LIVE CUBIC INTERPOLATION OMG!!? WTF?!!?
+	
+	* patch.c: fixed what should have been a horrible memory addressing
+	bug and cleaned up the code a bit, excising gratuitous variables.
+	
+2004-01-23 Pete Bessman <ninjadroid@ml1.net>
+
+	* In celebration of another year of our Sun not going super nova
+	on us, another release of specimen has been made, monikered as the
+	"Little Pink Christina Aguieasfdflarea Monsters"
+	(HETAERA) release.  Midi velocity information isn't blatantly
+	ignored, cuts are implemented, and crummy pitch scaling has forced
+	its way into the code.
+
+2003-12-22 Pete Bessman <ninjadroid@ml1.net>
+
+	* Amateur hour continues with the "Winter is too friggin' cold"
+	(WITFC) release.  The driver interface has some semblance of taste
+	now, there is one mixdown function which does it's job well, and
+	the CLI babbles incessantly as always.
+	
+2003-11-25 Pete Bessman <ninjadroid@ml1.net>
+
+	* Initial ultra-mega-super-alpha release, code-named "It seemed
+	like a good idea at the time," or "ISLAGIATT" since acronyms are
+	way sweet.  Features a brain damaged output driver interface, slow
+	mixdown functions, and copius CLI output.

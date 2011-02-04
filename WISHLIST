@@ -1,0 +1,11 @@
+lash -everyone
+jack-midi -everyone
+
+multiple jack outs -thorwil, yves potin
+envelope, velocity controllable plugins -thorwil, larsl
+
+"I would like to see loopingfeatures like the Ensoniq samplers which should not
+add many cpu load.  For instance midi controlled loop start and end, loop
+offset and -let me call it so- PPG wavetablemode where the loop jumps always a
+defined amount so it switches waveforms. Ensoniq called it transwave."
+-Malte Steiner

@@ -1,0 +1,30 @@
+# http://www.gnu.org/software/automake
+
+Makefile.in
+
+# http://www.gnu.org/software/autoconf
+
+.deps/
+
+
+*.o
+*.lo
+*.sh
+*.swp
+
+aclocal.m4
+autom4te.cache/
+bootstrap
+compile
+config.guess
+config.*
+configure
+depcomp
+Makefile
+Makefile.in
+m4/
+missing
+
+libtool
+stamp-h1
+
