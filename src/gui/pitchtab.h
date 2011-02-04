@@ -32,15 +32,10 @@ struct _PitchTab
     guint       refresh;
     GtkWidget*  tuning_fan;
     GtkWidget*  range_sb;
-    GtkWidget*  mod1_opt;
+    GtkWidget*  mod1_combo;
     GtkWidget*  mod1_fan;
-    GtkWidget*  mod2_opt;
+    GtkWidget*  mod2_combo;
     GtkWidget*  mod2_fan;
-
-    GtkWidget*  freq_fan;
-    GtkWidget*  reso_fan;
-
-
 };
 
 struct _PitchTabClass

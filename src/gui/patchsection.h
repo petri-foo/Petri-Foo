@@ -33,6 +33,7 @@ struct _PatchSection
     GtkWidget* vel_tab;
     GtkWidget* env_tab;
     GtkWidget* lfo_tab;
+    GtkWidget* pitch_tab;
 };
 
 struct _PatchSectionClass

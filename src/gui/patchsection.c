@@ -14,6 +14,9 @@
 #include "patch.h"
 #include "mixer.h"
 
+#include "pitchtab.h"
+
+
 const char* deftitle = "<b>Empty Bank</b>";
 
 static GtkVBoxClass* parent_class;
@@ -276,6 +279,15 @@ static void patch_section_init(PatchSection* self)
     gtk_notebook_append_page(GTK_NOTEBOOK(self->notebook), self->voice_tab, label);
     gtk_widget_show(self->voice_tab);
     gtk_widget_show(label);
+
+
+    /* pitch page */
+    self->pitch_tab = pitch_tab_new();
+    label = gtk_label_new("Pitch");
+    gtk_notebook_append_page(GTK_NOTEBOOK(self->notebook), self->pitch_tab, label);
+    gtk_widget_show(self->pitch_tab);
+    gtk_widget_show(label);
+
 
     /* filter page */
     self->filter_tab = filter_tab_new();

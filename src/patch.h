@@ -124,7 +124,7 @@ int         patch_verify          (int id);
 /* returns a NULL terminated list of NULL terminated C strings */
 const char**    patch_adsr_names(void);
 const char**    patch_lfo_names(void);
-const char**    patch_mod_source_names(void);
+char**    patch_mod_source_names(void);
 
 /* playback and rendering functions  */
 void patch_control         (int chan, ControlParamType param, float value);

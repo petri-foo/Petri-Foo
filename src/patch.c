@@ -48,7 +48,8 @@ static void create_mod_source_names(void)
 
     for (i = MOD_SRC_FIRST_VLFO; i < MOD_SRC_LAST_VLFO; ++i)
     {
-        id = i - MOD_SRC_FIRST_VLFO;
+        id = (MOD_SRC_LAST_GLFO - MOD_SRC_FIRST_GLFO)
+             + (i - MOD_SRC_FIRST_VLFO);
         mod_source_names[i] = malloc(strlen(lfo_names[id]) + 1);
         strcpy(mod_source_names[i], lfo_names[id]);
     }
@@ -59,19 +60,14 @@ static void create_mod_source_names(void)
 }
 
 
-const char** patch_mod_source_names(void)
+char** patch_mod_source_names(void)
 {
-    if (mod_source_names == 0)
-        create_mod_source_names();
     return mod_source_names;
 }
 
 
 const char** patch_adsr_names(void)
 {
-
-    create_mod_source_names();
-
     int i;
 
     for (i = 0; adsr_names[i] != 0; ++i);
@@ -666,6 +662,9 @@ void patch_init ( )
         for (j = 0; j < PATCH_MAX_LFOS; ++j)
             patches[i].glfo_table[j] = NULL;
     }
+
+    create_mod_source_names();
+
     debug ("done\n");
 }
 
@@ -823,6 +822,15 @@ void patch_shutdown ( )
         sample_free (patches[i].sample);
         for (j = 0; j < PATCH_MAX_LFOS; j++)
             g_free (patches[i].glfo_table[j]);
+    }
+
+    if (mod_source_names)
+    {
+        for (i = 0; i < MOD_SRC_LAST; ++i)
+            if (mod_source_names[i])
+                free(mod_source_names[i]);
+
+        free(mod_source_names);
     }
 
     debug ("done\n");

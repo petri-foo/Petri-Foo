@@ -9,12 +9,10 @@ Makefile.in
 
 *.o
 *.lo
-*.sh
 *.swp
 
 aclocal.m4
 autom4te.cache/
-bootstrap
 compile
 config.guess
 config.*
