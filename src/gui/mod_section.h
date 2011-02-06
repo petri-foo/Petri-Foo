@@ -43,6 +43,7 @@ struct _ModSection
     GtkWidget*      param2;
 
     GtkWidget*      mod_env;
+    GtkWidget*      vel_sens;
 
     GtkWidget*      mod1_combo;
     GtkWidget*      mod1_amount;

@@ -1,67 +1,15 @@
--Add per-channel volume and panning parameters
+note: these items are in addition to features mentioned
+in the README as goals for Petri-Foo.
 
--Make the volume and channel MIDI controllers affect per-channel parameters
- instead of per-patch ones
 
--Add per-channel volume and panning controls to the GUI
+-Fix and remove artefacts arising from use of LAT for log_amplitude
+ function in maths.[ch] (research info online about alternatives
+ such as curved ADSRs  for example).
 
--Move the pitch bend parameter from patch data to a per-channel struct
+-Add context menu to patch list (I did this in June 2008 but it was
+ never taken).
 
--Make "loop to end" optional
+-Fix problem in sample viewer regard zoom and playback position
+ start (maybe need to confirm this problem).
 
--Create a better file format
 
--Make a sample browser
-
--Allow patches to have their own JACK ports
-
--Automatically append .beef to a filename when saving a bank if it
- doesn't have that already
-
--Make it possible to copy and paste whole parameter tabs
-
--A way to import a bunch of samples at once
-
--TOOLTIPS!  Or a status bar... or tooltips AND a statusbar!  This is
- low hanging fruit, any takers?  Please?  FOR THE LOVE OF GOD!!!
-
--Make the bank save-as dialog prompt you before overwriting
-an existing file
-
--Allow patches to host a few effects
-
--Allow for longer times in the Envelopes and LFOs using non-linear sliders
-
--Add more filter types
-
--Figure out why some parts of the gui don't redraw properly, such as
-the waveform and the audio-settings window
-
--Add a progressbar when loading soundfiles and banks
-
--Fix syncing drift
-
--Add snap and zero functions to sample editor
-
--Fix the timing code, it's gotta be broken somehow
-
--Add a CLI option to specify a custom gtkrc theme file.
-
--Allow sample playback to be looped indefinitely while fooling with
- parameters beyond just loop and playback points.
-
--Add the ability to export modified samples.
-
--Add undo
-
--Ask to save if any changes exist before quitting
-
--Enable optimized build
-
--Enable profiling build
-
--Stereo view in the loop editor
-
--Add a sampling capability
-
--Fix --enable-debug, which currently does nothing

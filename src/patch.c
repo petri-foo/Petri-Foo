@@ -1119,8 +1119,6 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
     v->fbr = 0;
     v->vel = vel;
 
-printf("amp env id:%d\n", p->vol.direct_mod_id);
-
     v->vol_mod1 =   mod_id_to_pointer(p->vol.mod1_id, p, v);
     v->vol_mod2 =   mod_id_to_pointer(p->vol.mod2_id, p, v);
     v->vol_direct = mod_id_to_pointer(p->vol.direct_mod_id, p, v);
@@ -1324,12 +1322,17 @@ inline static int gain (Patch* p, PatchVoice* v, int index, float* l, float* r)
         vol = 0.0;
 
     /* as a last step, make logarithmic */
-    logvol = log_amplitude(vol);
+   logvol = log_amplitude(vol);
 
     /* adjust amplitude */
+
+    *l *= vol;
+    *r *= vol;
+
+/*
     *l *= logvol;
     *r *= logvol;
-
+*/
     /* check to see if we've finished a release */
     if (v->released && v->vol_direct && *v->vol_direct < ALMOST_ZERO)
         return -1;

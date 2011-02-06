@@ -9,9 +9,8 @@ bank-ops.h sample-selector.c sample-selector.h mastersection.c		\
 mastersection.h patchsection.c patchsection.h sampletab.c sampletab.h	\
 voicetab.c voicetab.h filtertab.c filtertab.h velocitytab.c		\
 velocitytab.h envelopetab.c envelopetab.h lfotab.c lfotab.h		\
-amptab.c amptab.h pitchtab.c pitchtab.h mod_src.c mod_src.h \
-mod_section.c modsection.h \
-idselector.c idselector.h patchlist.c patchlist.h midisection.c	\
+mod_src.c mod_src.h mod_section.c modsection.h paramtab.c paramtab.h 	\
+idselector.c idselector.h patchlist.c patchlist.h midisection.c		\
 midisection.h channelsection.c channelsection.h
 
 INCLUDES = \

@@ -1,3 +1,16 @@
+2011-02-06  James Morris <james@jwm-art.net>
+	* removed amptab.[ch] and pitchtab.[ch] replaced with paramtab.[ch]
+          which can be used to generate the amplitude, pitch, and filter
+          tabs via mod_section.[ch].
+
+2011-02-05  James Morris <james@jwm-art.net>
+	* changed all occurrences of volume with amplitude. Includes
+	  capitalized variants. using sed.
+
+	* Slowly working on GUI. Removing Pitch/Amplitude (formerly volume)
+          from patchsection into dedicated pitch and amp tabs. Patchsection
+	  will now only contain the tabbed pages.
+
 2011-02-02  James Morris <james@jwm-art.net>
 	* yeah right like I remember: forked and made independant LFOs and
 	  ADSRs...

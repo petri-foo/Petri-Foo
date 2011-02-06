@@ -7,15 +7,12 @@
 #include "gui.h"
 #include "sampletab.h"
 #include "voicetab.h"
-#include "filtertab.h"
-#include "velocitytab.h"
 #include "envelopetab.h"
 #include "lfotab.h"
 #include "patch.h"
 #include "mixer.h"
 
-#include "pitchtab.h"
-#include "amptab.h"
+#include "paramtab.h"
 
 
 const char* deftitle = "<b>Empty Bank</b>";
@@ -134,58 +131,61 @@ static void patch_section_init(PatchSection* self)
     /* sample page */
     self->sample_tab = sample_tab_new();
     label = gtk_label_new("Sample");
-    gtk_notebook_append_page(GTK_NOTEBOOK(self->notebook), self->sample_tab, label);
+    gtk_notebook_append_page(GTK_NOTEBOOK(self->notebook),
+                                        self->sample_tab, label);
     gtk_widget_show(self->sample_tab);
-    gtk_widget_show(label);
-    
-    /* voice page */
-    self->voice_tab = voice_tab_new();
-    label = gtk_label_new("Voice");
-    gtk_notebook_append_page(GTK_NOTEBOOK(self->notebook), self->voice_tab, label);
-    gtk_widget_show(self->voice_tab);
     gtk_widget_show(label);
 
 
     /* Amp page */
-    self->amp_tab = amp_tab_new();
+    self->amp_tab = param_tab_new();
+    param_tab_set_param(PARAM_TAB(self->amp_tab), PATCH_PARAM_AMPLITUDE);
     label = gtk_label_new("Amp");
-    gtk_notebook_append_page(GTK_NOTEBOOK(self->notebook), self->amp_tab, label);
+    gtk_notebook_append_page(GTK_NOTEBOOK(self->notebook),
+                                        self->amp_tab, label);
     gtk_widget_show(self->amp_tab);
     gtk_widget_show(label);
 
     /* pitch page */
-    self->pitch_tab = pitch_tab_new();
+    self->pitch_tab = param_tab_new();
+    param_tab_set_param(PARAM_TAB(self->pitch_tab), PATCH_PARAM_PITCH);
     label = gtk_label_new("Pitch");
-    gtk_notebook_append_page(GTK_NOTEBOOK(self->notebook), self->pitch_tab, label);
+    gtk_notebook_append_page(GTK_NOTEBOOK(self->notebook),
+                                        self->pitch_tab, label);
     gtk_widget_show(self->pitch_tab);
     gtk_widget_show(label);
 
 
     /* filter page */
-    self->filter_tab = filter_tab_new();
+    self->filter_tab = param_tab_new();
+    param_tab_set_param(PARAM_TAB(self->filter_tab), PATCH_PARAM_CUTOFF);
     label = gtk_label_new("Filter");
-    gtk_notebook_append_page(GTK_NOTEBOOK(self->notebook), self->filter_tab, label);
+    gtk_notebook_append_page(GTK_NOTEBOOK(self->notebook),
+                                        self->filter_tab, label);
     gtk_widget_show(self->filter_tab);
     gtk_widget_show(label);
 
-    /* velocity page */
-    self->vel_tab = velocity_tab_new();
-    label = gtk_label_new("Velocity");
-    gtk_notebook_append_page(GTK_NOTEBOOK(self->notebook), self->vel_tab, label);
-    gtk_widget_show(self->vel_tab);
+    /* voice page */
+    self->voice_tab = voice_tab_new();
+    label = gtk_label_new("Voice");
+    gtk_notebook_append_page(GTK_NOTEBOOK(self->notebook),
+                                        self->voice_tab, label);
+    gtk_widget_show(self->voice_tab);
     gtk_widget_show(label);
 
     /* envelope page */
     self->env_tab = envelope_tab_new();
     label = gtk_label_new("EG");
-    gtk_notebook_append_page(GTK_NOTEBOOK(self->notebook), self->env_tab, label);
+    gtk_notebook_append_page(GTK_NOTEBOOK(self->notebook),
+                                        self->env_tab, label);
     gtk_widget_show(self->env_tab);
     gtk_widget_show(label);
 
     /* lfo page */
     self->lfo_tab = lfo_tab_new();
     label = gtk_label_new("LFO");
-    gtk_notebook_append_page(GTK_NOTEBOOK(self->notebook), self->lfo_tab, label);
+    gtk_notebook_append_page(GTK_NOTEBOOK(self->notebook),
+                                        self->lfo_tab, label);
     gtk_widget_show(self->lfo_tab);
     gtk_widget_show(label);
 
@@ -242,10 +242,11 @@ void patch_section_set_patch(PatchSection* self, int patch)
 
     sample_tab_set_patch(SAMPLE_TAB(self->sample_tab), patch);
     voice_tab_set_patch(VOICE_TAB(self->voice_tab), patch);
-    filter_tab_set_patch(FILTER_TAB(self->filter_tab), patch);
-    velocity_tab_set_patch(VELOCITY_TAB(self->vel_tab), patch);
+
+    param_tab_set_patch(PARAM_TAB(self->amp_tab), patch);
+    param_tab_set_patch(PARAM_TAB(self->pitch_tab), patch);
+    param_tab_set_patch(PARAM_TAB(self->filter_tab), patch);
+
     envelope_tab_set_patch(ENVELOPE_TAB(self->env_tab), patch);
     lfo_tab_set_patch(LFO_TAB(self->lfo_tab), patch);
-    pitch_tab_set_patch(PITCH_TAB(self->pitch_tab), patch);
-    amp_tab_set_patch(AMP_TAB(self->amp_tab), patch);
 }

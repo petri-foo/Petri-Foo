@@ -50,7 +50,7 @@ enum
 /* error codes */
 enum
 {
-     PATCH_PARAM_INVALID = -1,
+/*   PATCH_PARAM_INVALID = -1,  */
      PATCH_ID_INVALID = -2,
      PATCH_ALLOC_FAIL = -3,
      PATCH_NOTE_INVALID = -4,
@@ -93,11 +93,12 @@ typedef guint8 PatchPlayMode;
 /* code names for modulatable parameters */
 typedef enum
 {
-     PATCH_PARAM_AMPLITUDE,
-     PATCH_PARAM_PANNING,
-     PATCH_PARAM_CUTOFF,
-     PATCH_PARAM_RESONANCE,
-     PATCH_PARAM_PITCH
+    PATCH_PARAM_INVALID =       -1,
+    PATCH_PARAM_AMPLITUDE =    0,
+    PATCH_PARAM_PANNING,
+    PATCH_PARAM_CUTOFF,
+    PATCH_PARAM_RESONANCE,
+    PATCH_PARAM_PITCH
 }
 PatchParamType;
 
@@ -175,10 +176,6 @@ int patch_get_lfo_positive (int patch_id, int lfo_id, gboolean* val);
 int patch_get_lfo_shape    (int patch_id, int lfo_id, LFOShape* val);
 int patch_get_lfo_sync     (int patch_id, int lfo_id, gboolean* val);
 
-/* velocity */
-int patch_set_vel_amount (int id, PatchParamType param, float amt);
-int patch_get_vel_amount (int id, PatchParamType param, float* val);
-
 /* parameter setters */
 int patch_set_channel      (int id, int channel);
 int patch_set_cut          (int id, int cut);
@@ -234,6 +231,7 @@ int           patch_get_upper_note    (int id);
 float         patch_get_amplitude        (int id);
 
 /* param */
+
 int patch_param_get_value(int patch_id, PatchParamType, float* val);
 int patch_param_set_value(int patch_id, PatchParamType, float  val);
 
@@ -243,6 +241,7 @@ int patch_set_mod2_src(int patch_id, PatchParamType, int modsrc_id);
 int patch_set_mod1_amt(int patch_id, PatchParamType, float amount);
 int patch_set_mod2_amt(int patch_id, PatchParamType, float amount);
 int patch_set_amp_env(int patch_id, int modsrc_id);
+int patch_set_vel_amount(int id, PatchParamType param, float amt);
 
 /* modulation getters */
 int patch_get_mod1_src(int patch_id, PatchParamType, int* modsrc_id);
@@ -250,6 +249,7 @@ int patch_get_mod2_src(int patch_id, PatchParamType, int* modsrc_id);
 int patch_get_mod1_amt(int patch_id, PatchParamType, float* amount);
 int patch_get_mod2_amt(int patch_id, PatchParamType, float* amount);
 int patch_get_amp_env(int patch_id, int* modsrc_id);
+int patch_get_vel_amount(int id, PatchParamType param, float* val);
 
 
 #endif /* __PATCH_H__ */

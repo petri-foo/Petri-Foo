@@ -72,12 +72,20 @@ static void param2_cb(GtkWidget* w, ModSection* self)
     }
 }
 
+static void vel_sens_cb(GtkWidget* w, ModSection* self)
+{
+    if (self->param != PATCH_PARAM_PITCH)
+    {
+        float val  = phat_fan_slider_get_value(PHAT_FAN_SLIDER(w));
+        patch_set_vel_amount(self->patch_id, self->param, val);
+    }
+}
+
+
 static void mod_env_cb(GtkComboBox* combo, ModSection* self)
 {
-    debug("we're doing it man..\n");
     if (self->param == PATCH_PARAM_AMPLITUDE)
     {
-        debug("hell yeah, we really are..\n");
         mod_src_callback_helper(self->patch_id,
                                 MOD_ENV,
                                 self->model,
@@ -129,6 +137,9 @@ static void connect(ModSection* self)
     if (self->param == PATCH_PARAM_PITCH)
         g_signal_connect(G_OBJECT(self->param2),    "value-changed",
                         G_CALLBACK(param2_cb),      (gpointer) self);
+    else
+        g_signal_connect(G_OBJECT(self->vel_sens),  "value-changed",
+                        G_CALLBACK(vel_sens_cb),    (gpointer) self);
 
     if (self->param == PATCH_PARAM_AMPLITUDE)
         g_signal_connect(G_OBJECT(self->mod_env),   "changed",
@@ -153,6 +164,8 @@ static void block(ModSection* self)
     g_signal_handlers_block_by_func(self->param1,       param1_cb,  self);
     if (self->param == PATCH_PARAM_PITCH)
         g_signal_handlers_block_by_func(self->param2,   param2_cb,  self);
+    else
+        g_signal_handlers_block_by_func(self->vel_sens, vel_sens_cb,self);
 
     if (self->param == PATCH_PARAM_AMPLITUDE)
         g_signal_handlers_block_by_func(self->mod_env,  mod_env_cb, self);
@@ -170,7 +183,9 @@ static void unblock(ModSection* self)
 {
     g_signal_handlers_unblock_by_func(self->param1,     param1_cb,  self);
     if (self->param == PATCH_PARAM_PITCH)
-        g_signal_handlers_block_by_func(self->param2,   param2_cb,  self);
+        g_signal_handlers_unblock_by_func(self->param2,   param2_cb,  self);
+    else
+        g_signal_handlers_unblock_by_func(self->vel_sens, vel_sens_cb,self);
 
     if (self->param == PATCH_PARAM_AMPLITUDE)
         g_signal_handlers_unblock_by_func(self->mod_env,mod_env_cb, self);
@@ -220,6 +235,8 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
     GtkWidget* pad;
     GtkWidget* label;
 
+    const char* lstr;
+
     const char** param_names = patch_param_names();
 
     int y = 0;
@@ -264,10 +281,17 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
 
     ++y;
 
-    if (param == PATCH_PARAM_PITCH)
-        label = gtk_label_new("Tuning");
-    else
-        label = gtk_label_new(param_names[param]);
+    switch(param)
+    {
+    case PATCH_PARAM_AMPLITUDE: lstr = "Level";     break;
+    case PATCH_PARAM_PANNING:   lstr = "Position";  break;
+    case PATCH_PARAM_PITCH:     lstr = "Tuning";    break;
+    default:
+        lstr = param_names[param];
+        break;
+    }
+
+    label = gtk_label_new(lstr);
 
     gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
     gtk_table_attach(GTK_TABLE(table), label, 1, 2, y, y + 1,
@@ -288,6 +312,19 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
         gtk_table_attach(GTK_TABLE(table), self->param2, 5, 6, y, y + 1,
                                             GTK_EXPAND | GTK_FILL, 0, 0, 0);
         gtk_widget_show(self->param2);
+    }
+    else
+    {
+        /* velocity sensitivity */
+        label = gtk_label_new("Vel.Sens:");
+        gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
+        gtk_table_attach(t, label, 5, 6, y, y + 1, GTK_FILL, 0, 0, 0);
+        gtk_widget_show(label);
+
+        self->vel_sens = phat_hfan_slider_new_with_range(0.0, 0.0,
+                                                            1.0, 0.1);
+        gtk_table_attach_defaults(t, self->vel_sens, 7, 8, y, y + 1);
+        gtk_widget_show(self->vel_sens);
     }
 
     ++y;
@@ -384,6 +421,7 @@ void mod_section_set_patch(ModSection* self, int patch_id)
 {
     float param1;
     float param2;
+    float vsens;
     int envsrc, m1src, m2src;
     float m1amt, m2amt;
 
@@ -400,6 +438,8 @@ void mod_section_set_patch(ModSection* self, int patch_id)
 
     if (self->param == PATCH_PARAM_PITCH)
         param2 = patch_get_range(self->patch_id);
+    else
+        patch_get_vel_amount(patch_id, self->param, &vsens);
 
     if (self->param == PATCH_PARAM_AMPLITUDE)
         patch_get_amp_env(patch_id, &envsrc);
@@ -424,7 +464,9 @@ void mod_section_set_patch(ModSection* self, int patch_id)
 
     if (self->param == PATCH_PARAM_PITCH)
         phat_slider_button_set_value(PHAT_SLIDER_BUTTON(self->param2),
-                                                              param2);
+                                                                   param2);
+    else
+        phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->vel_sens), vsens);
 
     if (self->param == PATCH_PARAM_AMPLITUDE)
         gtk_combo_box_set_active_iter(GTK_COMBO_BOX(self->mod_env),

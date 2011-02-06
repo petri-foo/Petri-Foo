@@ -25,13 +25,15 @@ struct _PatchSection
 
     GtkWidget* notebook;
     GtkWidget* sample_tab;
-    GtkWidget* voice_tab;
+
+    GtkWidget* amp_tab;
+    GtkWidget* pitch_tab;
     GtkWidget* filter_tab;
-    GtkWidget* vel_tab;
+
+    GtkWidget* voice_tab;
+
     GtkWidget* env_tab;
     GtkWidget* lfo_tab;
-    GtkWidget* pitch_tab;
-    GtkWidget* amp_tab;
 };
 
 struct _PatchSectionClass
