@@ -23,9 +23,9 @@ inline static float delerp(float y0, float y1, float y)
    x  = fractional distance between y1 and y2 in unsigned integer form */
 float cerp(float y0, float y1, float y2, float y3, guint8 d);
 
-/* convert a floating-point linear volume value to its logarithmic
+/* convert a floating-point linear amplitude value to its logarithmic
  * equivalent */
-float log_volume(float x);
+float log_amplitude(float x);
 
 
 #endif /* __MATHS_H__ */

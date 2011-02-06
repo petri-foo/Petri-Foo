@@ -47,7 +47,7 @@ static void vol_cb(PhatFanSlider* fan, VelocityTab* self)
     float val;
 
     val = phat_fan_slider_get_value(fan);
-    patch_set_vel_amount(self->patch, PATCH_PARAM_VOLUME, val);
+    patch_set_vel_amount(self->patch, PATCH_PARAM_AMPLITUDE, val);
 }
 
 
@@ -161,7 +161,7 @@ static void velocity_tab_init(VelocityTab* self)
     gtk_widget_show(pad);
 
     /* vol fan */
-    label = gtk_label_new("Volume:");
+    label = gtk_label_new("Amplitude:");
     self->vol_fan = phat_hfan_slider_new_with_range(1.0, 0.0, 1.0, 0.01);
     gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
     gtk_table_attach(t, label, 1, 2, 2, 3, GTK_FILL, 0, 0, 0);
@@ -224,7 +224,7 @@ void velocity_tab_set_patch(VelocityTab* self, int patch)
     if (patch < 0)
 	return;
 
-    patch_get_vel_amount(patch, PATCH_PARAM_VOLUME, &vol);
+    patch_get_vel_amount(patch, PATCH_PARAM_AMPLITUDE, &vol);
     patch_get_vel_amount(patch, PATCH_PARAM_PANNING, &pan);
     patch_get_vel_amount(patch, PATCH_PARAM_CUTOFF, &freq);
     patch_get_vel_amount(patch, PATCH_PARAM_RESONANCE, &reso);

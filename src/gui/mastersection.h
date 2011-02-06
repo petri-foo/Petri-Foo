@@ -19,7 +19,7 @@ struct _MasterSection
     GtkVBox parent;
 
     /*< private >*/
-    GtkWidget* volume_fan;
+    GtkWidget* amplitude_fan;
 };
 
 struct _MasterSectionClass

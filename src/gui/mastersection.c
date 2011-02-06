@@ -43,12 +43,12 @@ static void master_section_class_init(MasterSectionClass* klass)
 }
 
 
-static void volume_changed_cb(PhatFanSlider* slider, gpointer data)
+static void amplitude_changed_cb(PhatFanSlider* slider, gpointer data)
 {
     float val;
 
     val = phat_fan_slider_get_value(slider);
-    mixer_set_volume(val);
+    mixer_set_amplitude(val);
 }
 
 
@@ -61,18 +61,18 @@ static void master_section_init(MasterSection* self)
 
     gtk_box_set_spacing(box, GUI_SPACING);
     
-    /* volume */
+    /* amplitude */
     label = gtk_label_new(NULL);
-    self->volume_fan = phat_hfan_slider_new_with_range(DEFAULT_VOLUME, 0.0, 1.0, 0.1);
+    self->amplitude_fan = phat_hfan_slider_new_with_range(DEFAULT_AMPLITUDE, 0.0, 1.0, 0.1);
     hbox = gtk_hbox_new(FALSE, GUI_TEXTSPACE);
 
     gtk_label_set_markup(GTK_LABEL(label), "<b>Master</b>");
     gtk_box_pack_start(GTK_BOX(hbox), label, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(hbox), self->volume_fan, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), self->amplitude_fan, TRUE, TRUE, 0);
     gtk_box_pack_start(box, hbox, FALSE, FALSE, 0);
 
     gtk_widget_show(label);
-    gtk_widget_show(self->volume_fan);
+    gtk_widget_show(self->amplitude_fan);
     gtk_widget_show(hbox);
 
     /* pad */
@@ -81,8 +81,8 @@ static void master_section_init(MasterSection* self)
     gtk_widget_show(pad);
     
     /* signal */
-    g_signal_connect(self->volume_fan, "value-changed",
-		     G_CALLBACK(volume_changed_cb), NULL);
+    g_signal_connect(self->amplitude_fan, "value-changed",
+		     G_CALLBACK(amplitude_changed_cb), NULL);
 }
 
 
@@ -94,12 +94,12 @@ GtkWidget* master_section_new(void)
 
 void master_section_update(MasterSection* self)
 {
-    float volume;
+    float amplitude;
 
-    volume = mixer_get_volume();
+    amplitude = mixer_get_amplitude();
 
-    g_signal_handlers_block_by_func(self->volume_fan, volume_changed_cb, NULL);
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->volume_fan), volume);
-    g_signal_handlers_unblock_by_func(self->volume_fan, volume_changed_cb, NULL);
+    g_signal_handlers_block_by_func(self->amplitude_fan, amplitude_changed_cb, NULL);
+    phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->amplitude_fan), amplitude);
+    g_signal_handlers_unblock_by_func(self->amplitude_fan, amplitude_changed_cb, NULL);
 }
     

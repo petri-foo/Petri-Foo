@@ -143,9 +143,9 @@ GtkWidget* id_selector_new(void)
 }
 
 
-void id_selector_set(IDSelector* ids, const char** item_names)
+void id_selector_set(IDSelector* ids, const char** item_names, int orient)
 {
-    GtkWidget* hbox;
+    GtkWidget* xbox;
     GtkBox* box;
     int i;
 
@@ -159,10 +159,13 @@ void id_selector_set(IDSelector* ids, const char** item_names)
     ids->names = malloc(sizeof(char*) * ids->item_count);
     ids->buttons = malloc(sizeof(GtkWidget*) * ids->item_count);
 
-    hbox = gtk_hbox_new(FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(ids), hbox, TRUE, FALSE, 0);
-    gtk_widget_show(hbox);
-    box = GTK_BOX(hbox);
+    xbox = (orient == ID_SELECTOR_H)
+                ? gtk_hbox_new(FALSE, 0)
+                : gtk_vbox_new(FALSE, 0);
+
+    gtk_box_pack_start(GTK_BOX(ids), xbox, TRUE, FALSE, 0);
+    gtk_widget_show(xbox);
+    box = GTK_BOX(xbox);
 
     for (i = 0; i < ids->item_count; ++i)
     {

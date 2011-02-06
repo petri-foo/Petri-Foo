@@ -67,7 +67,7 @@ typedef struct _MixerPreview
 MixerPreview;
 
 /* general variables */
-static float volume = 0.0;	/* master volume */
+static float amplitude = 0.0;	/* master amplitude */
 static MixerPreview preview;	/* current preview sample */
 static Event events[EVENTMAX];  /* events coming from the MIDI thread */
 static Event* volatile writer = events;
@@ -101,7 +101,7 @@ inline static void preview_render (float *buf, int frames)
 	       /* fill the buf with samples from preview (two samples per frame) */
 	       for (i = 0, j = preview.next_frame * 2;
 		    i < frames * 2 && j < preview.sample->frames * 2; i++, j++)
-		   buf[i] += preview.sample->sp[j] * log_volume(DEFAULT_VOLUME);
+		   buf[i] += preview.sample->sp[j] * log_amplitude(DEFAULT_AMPLITUDE);
 
 	       /* increment next frame indicator (half as much as the number of samples written) */
 	       if ((preview.next_frame = j / 2) >= preview.sample->frames)
@@ -141,7 +141,7 @@ void mixer_flush ( )
 void mixer_init ( )
 {
      debug ("initializing...\n");
-     volume = DEFAULT_VOLUME;
+     amplitude = DEFAULT_AMPLITUDE;
      pthread_mutex_init (&preview.mutex, NULL);
      preview.sample = sample_new ( );
      debug ("done\n");
@@ -239,8 +239,8 @@ void mixer_mixdown (float *buf, int frames)
 
      preview_render (buf, frames);
      
-     /* scale to master volume */
-     logvol = log_volume(volume);
+     /* scale to master amplitude */
+     logvol = log_amplitude(amplitude);
      for (i = 0; i < frames * 2; i++)
 	  buf[i] *= logvol;
 }
@@ -349,20 +349,20 @@ void mixer_preview (char *name)
      pthread_mutex_unlock (&preview.mutex);
 }
 
-/* set the master volume */
-int mixer_set_volume (float vol)
+/* set the master amplitude */
+int mixer_set_amplitude (float vol)
 {
      if (vol < 0.0 || vol > 1.0)
 	  return -1;
 
-     volume = vol;
+     amplitude = vol;
      return 0;
 }
 
-/* return the master volume */
-float mixer_get_volume(void)
+/* return the master amplitude */
+float mixer_get_amplitude(void)
 {
-    return volume;
+    return amplitude;
 }
 
 /* set internally assumed samplerate */

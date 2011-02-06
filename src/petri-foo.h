@@ -14,7 +14,7 @@ enum
     FUBAR = -69
 };
 
-#define DEFAULT_VOLUME 0.7 /* default volume stuff is set to, from 0 to 1 */
+#define DEFAULT_AMPLITUDE 0.7 /* default amplitude stuff is set to, from 0 to 1 */
 
 #ifndef PIXMAPSDIR
 # define PIXMAPSDIR INSTALLDIR"/petri-foo/pixmaps/"

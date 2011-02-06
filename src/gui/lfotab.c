@@ -20,7 +20,7 @@ enum
     MAXSTEPS = PATCH_MAX_PITCH_STEPS,
 };
 
-static GtkVBoxClass* parent_class;
+static GtkHBoxClass* parent_class;
 
 static void lfo_tab_class_init(LfoTabClass* klass);
 static void lfo_tab_init(LfoTab* self);
@@ -45,7 +45,7 @@ GType lfo_tab_get_type(void)
 		(GInstanceInitFunc) lfo_tab_init,
 	    };
 
-	type = g_type_register_static(GTK_TYPE_VBOX, "LfoTab", &info, 0);
+	type = g_type_register_static(GTK_TYPE_HBOX, "LfoTab", &info, 0);
     }
 
     return type;
@@ -72,7 +72,7 @@ static void set_sensitive(LfoTab* self, gboolean val)
 
     active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(self->sync_radio));
 
-    gtk_widget_set_sensitive(self->speed_fan, !active && val);
+    gtk_widget_set_sensitive(self->freq_fan, !active && val);
     gtk_widget_set_sensitive(self->beats_sb, active && val);
 }
 
@@ -134,7 +134,7 @@ static void sync_cb2(GtkToggleButton* button, LfoTab* self)
 }
 
 
-static void speed_cb(PhatFanSlider* fan, LfoTab* self)
+static void freq_cb(PhatFanSlider* fan, LfoTab* self)
 {
     patch_set_lfo_freq( self->patch,
                         id_selector_get_id(ID_SELECTOR(self->idsel)),
@@ -184,8 +184,8 @@ static void connect(LfoTab* self)
                     G_CALLBACK(on_cb2), (gpointer)self);
     g_signal_connect(G_OBJECT(self->shape_opt), "changed",
                     G_CALLBACK(shape_cb), (gpointer) self);
-    g_signal_connect(G_OBJECT(self->speed_fan), "value-changed",
-                    G_CALLBACK(speed_cb), (gpointer) self);
+    g_signal_connect(G_OBJECT(self->freq_fan), "value-changed",
+                    G_CALLBACK(freq_cb), (gpointer) self);
     g_signal_connect(G_OBJECT(self->sync_radio), "toggled",
                     G_CALLBACK(sync_cb), (gpointer) self);
     g_signal_connect(G_OBJECT(self->sync_radio), "toggled",
@@ -205,7 +205,7 @@ static void block(LfoTab* self)
 {
     g_signal_handlers_block_by_func(self->lfo_check, on_cb, self);
     g_signal_handlers_block_by_func(self->shape_opt, shape_cb, self);
-    g_signal_handlers_block_by_func(self->speed_fan, speed_cb, self);
+    g_signal_handlers_block_by_func(self->freq_fan, freq_cb, self);
     g_signal_handlers_block_by_func(self->sync_radio, sync_cb, self);
     g_signal_handlers_block_by_func(self->pos_check, positive_cb, self);
     g_signal_handlers_block_by_func(self->beats_sb, beats_cb, self);
@@ -218,7 +218,7 @@ static void unblock(LfoTab* self)
 {
     g_signal_handlers_unblock_by_func(self->lfo_check, on_cb, self);
     g_signal_handlers_unblock_by_func(self->shape_opt, shape_cb, self);
-    g_signal_handlers_unblock_by_func(self->speed_fan, speed_cb, self);    
+    g_signal_handlers_unblock_by_func(self->freq_fan, freq_cb, self);    
     g_signal_handlers_unblock_by_func(self->sync_radio, sync_cb, self);
     g_signal_handlers_unblock_by_func(self->pos_check, positive_cb, self);
     g_signal_handlers_unblock_by_func(self->beats_sb, beats_cb, self);
@@ -269,29 +269,34 @@ static void lfo_tab_init(LfoTab* self)
     GtkTable* t;
     GtkWidget* pad;
     GtkWidget* label;
-    
+
+    int y = 1;
+
     self->patch = -1;
     gtk_container_set_border_width(GTK_CONTAINER(self), GUI_BORDERSPACE);
 
+    /* table */
+
     /* parameter selector */
     self->idsel = id_selector_new();
-    id_selector_set(ID_SELECTOR(self->idsel), patch_lfo_names());
+    id_selector_set(ID_SELECTOR(self->idsel), patch_lfo_names(),
+                                                ID_SELECTOR_V);
     gtk_box_pack_start(box, self->idsel, FALSE, FALSE, 0);
     gtk_widget_show(self->idsel);
 
     /* selector padding */
-    pad = gui_vpad_new(GUI_SPACING);
+    pad = gui_hpad_new(GUI_SECSPACE);
     gtk_box_pack_start(box, pad, FALSE, FALSE, 0);
     gtk_widget_show(pad);
 
-    /* table */
-    table = gtk_table_new(10, 5, FALSE);
+    table = gtk_table_new(9, 5, FALSE);
     t = (GtkTable*) table;
     gtk_box_pack_start(box, table, FALSE, FALSE, 0);
     gtk_widget_show(table);
-    
+
+
     /* lfo title */
-    title = gui_title_new("LFO");
+    title = gui_title_new("Low Frequency Oscillator");
     self->lfo_check = gtk_check_button_new();
     gtk_container_add(GTK_CONTAINER(self->lfo_check), title);
     gtk_table_attach_defaults(t, self->lfo_check, 0, 5, 0, 1);
@@ -300,45 +305,49 @@ static void lfo_tab_init(LfoTab* self)
 
     /* indentation */
     pad = gui_hpad_new(GUI_INDENT);
-    gtk_table_attach(t, pad, 0, 1, 1, 2, 0, 0, 0, 0);
+    gtk_table_attach(t, pad, 0, 1, y, y + 1, 0, 0, 0, 0);
     gtk_widget_show(pad);
     
     /* lfo title padding */
     pad = gui_vpad_new(GUI_TITLESPACE);
-    gtk_table_attach(t, pad, 1, 2, 1, 2, 0, 0, 0, 0);
+    gtk_table_attach(t, pad, 1, 2, y, y + 1, 0, 0, 0, 0);
     gtk_widget_show(pad);
 
     /* label-fan column spacing */
     pad = gui_hpad_new(GUI_TEXTSPACE);
-    gtk_table_attach(t, pad, 2, 3, 1, 2, 0, 0, 0, 0);
+    gtk_table_attach(t, pad, 2, 3, y, y + 1, 0, 0, 0, 0);
     gtk_widget_show(pad);
+
+    ++y;
 
     /* shape */
     label = gtk_label_new("Shape:");
     self->shape_opt = shape_opt_new(self);
 
     gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
-    gtk_table_attach(t, label, 1, 2, 2, 3, GTK_FILL, 0, 0, 0);
-    gtk_table_attach_defaults(t, self->shape_opt, 3, 5, 2, 3);
+    gtk_table_attach(t, label, 1, 2, y, y + 1, GTK_FILL, 0, 0, 0);
+    gtk_table_attach(t, self->shape_opt, 3, 5, y, y + 1, GTK_FILL, 0, 0, 0);
 
     gtk_widget_show(label);
     gtk_widget_show(self->shape_opt);
 
-    gtk_table_set_row_spacing(t, 2, GUI_SPACING);
+    ++y;
 
-    /* speed */
-    label = gtk_label_new("Speed:");
+    /* freq */
+    label = gtk_label_new("Frequency:");
     self->free_radio = gtk_radio_button_new(NULL);
-    self->speed_fan = phat_hfan_slider_new_with_range(5.0, 0.0, 20.0, 0.1);
+    self->freq_fan = phat_hfan_slider_new_with_range(5.0, 0.0, 20.0, 0.1);
 
     gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
     gtk_table_attach(t, label, 1, 2, 3, 4, GTK_FILL, 0, 0, 0);
-    gtk_table_attach(t, self->free_radio, 2, 3, 3, 4, 0, 0, 0, 0);
-    gtk_table_attach_defaults(t, self->speed_fan, 3, 5, 3, 4);
+    gtk_table_attach(t, self->free_radio, 2, 3, y, y + 1, 0, 0, 0, 0);
+    gtk_table_attach_defaults(t, self->freq_fan, 3, 5, y, y + 1);
 
     gtk_widget_show(label);
     gtk_widget_show(self->free_radio);
-    gtk_widget_show(self->speed_fan);
+    gtk_widget_show(self->freq_fan);
+
+    ++y;
 
     /* sync */
     self->sync_radio = gtk_radio_button_new_from_widget(
@@ -348,50 +357,59 @@ static void lfo_tab_init(LfoTab* self)
 
     phat_slider_button_set_format(PHAT_SLIDER_BUTTON(self->beats_sb),
                                     -1, NULL, "Beats");
+
     phat_slider_button_set_threshold(PHAT_SLIDER_BUTTON(self->beats_sb),
                                     GUI_THRESHOLD);
 
-    gtk_table_attach(t, self->sync_radio, 2, 3, 4, 5, 0, 0, 0, 0);
-    gtk_table_attach_defaults(t, self->beats_sb, 3, 5, 4, 5);
+    gtk_table_attach(t, self->sync_radio, 2, 3, y, y + 1, 0, 0, 0, 0);
+    gtk_table_attach(t, self->beats_sb, 3, 5, y, y + 1, GTK_FILL, 0, 0, 0);
 
     gtk_widget_show(self->sync_radio);
     gtk_widget_show(self->beats_sb);
     gtk_widget_set_sensitive(self->beats_sb, FALSE);
 
-    gtk_table_set_row_spacing(t, 4, GUI_SPACING);
+    ++y;
+
+//    gtk_table_set_row_spacing(t, y, GUI_SPACING);
 
     /* delay fan */
     label = gtk_label_new("Delay:");
     self->delay_fan = phat_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
 
     gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
-    gtk_table_attach(t, label, 1, 2, 7, 8, GTK_FILL, 0, 0, 0);
-    gtk_table_attach_defaults(t, self->delay_fan, 3, 4, 7, 8);
+    gtk_table_attach(t, label, 1, 2, y, y + 1, GTK_FILL, 0, 0, 0);
+    gtk_table_attach_defaults(t, self->delay_fan, 3, 4, y, y + 1);
 
     gtk_widget_show(label);
     gtk_widget_show(self->delay_fan);
 
-    gtk_table_set_col_spacing(t, 3, GUI_SPACING*2);
+    ++y;
+
+//    gtk_table_set_col_spacing(t, 3, GUI_SPACING*2);
+
+printf("lfo:y:%d\n",y);
 
     /* attack fan */
     label = gtk_label_new("Attack:");
     self->attack_fan = phat_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
 
     gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
-    gtk_table_attach(t, label, 1, 2, 8, 9, GTK_FILL, 0, 0, 0);
-    gtk_table_attach_defaults(t, self->attack_fan, 3, 4, 8, 9);
+    gtk_table_attach(t, label, 1, 2, y, y + 1, GTK_FILL, 0, 0, 0);
+    gtk_table_attach_defaults(t, self->attack_fan, 3, 4, y, y + 1);
 
     gtk_widget_show(label);
     gtk_widget_show(self->attack_fan);
 
     /* positive */
     self->pos_check = gtk_check_button_new_with_label("Positive");
-    gtk_table_attach(t, self->pos_check, 4, 5, 8, 9, GTK_FILL, 0, 0, 0);
+    gtk_table_attach(t, self->pos_check, 4, 5, y, y + 1, GTK_FILL, 0, 0, 0);
     gtk_widget_show(self->pos_check);
 
-    gtk_table_set_row_spacing(t, 8, GUI_SPACING);
+    ++y;
 
-    gtk_widget_show(label);
+    gtk_widget_show(pad);
+
+    gtk_table_set_row_spacing(t, y, GUI_SPACING);
 
     set_sensitive(self, FALSE);
     connect(self);
@@ -402,7 +420,7 @@ static void update_lfo(LfoTab* self)
 {
     PatchParamType param;
     LFOShape shape;
-    float speed, beats, delay, attack, amount;
+    float freq, beats, delay, attack, amount;
     gboolean sync, global, positive;
     gboolean on;
 
@@ -411,7 +429,7 @@ static void update_lfo(LfoTab* self)
     id = id_selector_get_id(ID_SELECTOR(self->idsel));
 
     patch_get_lfo_shape(self->patch, id, &shape);
-    patch_get_lfo_freq(self->patch, id, &speed);
+    patch_get_lfo_freq(self->patch, id, &freq);
     patch_get_lfo_beats(self->patch, id, &beats);
     patch_get_lfo_delay(self->patch, id, &delay);
     patch_get_lfo_attack(self->patch, id, &attack);
@@ -421,7 +439,7 @@ static void update_lfo(LfoTab* self)
 
     block(self);
     
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->speed_fan), speed);
+    phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->freq_fan), freq);
     phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->delay_fan), delay);
     phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->attack_fan), attack);
 

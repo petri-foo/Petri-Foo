@@ -30,12 +30,10 @@ struct _PitchTab
     /*< private >*/
     int         patch;
     guint       refresh;
-    GtkWidget*  tuning_fan;
-    GtkWidget*  range_sb;
-    GtkWidget*  mod1_combo;
-    GtkWidget*  mod1_fan;
-    GtkWidget*  mod2_combo;
-    GtkWidget*  mod2_fan;
+
+    GtkWidget*      pitch;
+
+    GtkTreeModel*   model;
 };
 
 struct _PitchTabClass

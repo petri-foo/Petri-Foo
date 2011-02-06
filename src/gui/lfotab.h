@@ -16,7 +16,7 @@ typedef struct _LfoTab LfoTab;
 
 struct _LfoTab
 {
-    GtkVBox parent;
+    GtkHBox parent;
 
     /*< private >*/
     int patch;
@@ -27,7 +27,7 @@ struct _LfoTab
     GtkWidget* sync_radio;
     GtkWidget* beats_sb;
     GtkWidget* pos_check;
-    GtkWidget* speed_fan;
+    GtkWidget* freq_fan;
     GtkWidget* delay_fan;
     GtkWidget* attack_fan;
 };

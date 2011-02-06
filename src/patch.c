@@ -17,26 +17,62 @@
 #include "private/patch_data.h" /* the structs that were here */
 
 
-static const char* adsr_names[] = { "EG1", "EG2", "EG3", "EG4", 0 };
+static const char* adsr_names[] = {
+    "EG1", "EG2", "EG3", "EG4", "EG5", 0
+};
 
-static const char* lfo_names[] = {  "GLFO1", "GLFO2", "GLFO3", "GLFO4",
-                                    "VLFO1", "VLFO2", "VLFO3", "VLFO4", 0 };
+static const char* lfo_names[] = {
+    "GLFO1", "GLFO2", "GLFO3", "GLFO4", "GLFO5",
+    "VLFO1", "VLFO2", "VLFO3", "VLFO4", "VLFO5"
+};
 
+static const char* param_names[] = {
+    "Amplitude",
+    "Pan",
+    "Cutoff",
+    "Resonance",
+    "Pitch",
+};
 
 static char** mod_source_names = 0;
+
+static float one = 1.0;
 
 static void create_mod_source_names(void)
 {
     int i;
     int id;
 
+    /* check for mismatched counts etc: */
+    if (!patch_adsr_names() || !patch_lfo_names())
+    {
+        fprintf(stderr, "*** PROBLEM OF DEATH IS FORECAST ***\n");
+        return;
+    }
+
     mod_source_names = malloc(sizeof(*mod_source_names) * MOD_SRC_LAST);
+
+    const char none[] = "OFF";
+    const char one[] = "1.0";
+
+    mod_source_names[MOD_SRC_NONE] = malloc(strlen(none) + 1);
+    strcpy(mod_source_names[MOD_SRC_NONE], none);
+    mod_source_names[MOD_SRC_ONE] = malloc(strlen(one) + 1);
+    strcpy(mod_source_names[MOD_SRC_ONE], one);
 
     for (i = MOD_SRC_FIRST_EG; i < MOD_SRC_LAST_EG; ++i)
     {
         id = i - MOD_SRC_FIRST_EG;
-        mod_source_names[i] = malloc(strlen(adsr_names[id]) + 1);
-        strcpy(mod_source_names[i], adsr_names[id]);
+        if (adsr_names[id])
+        {
+            mod_source_names[i] = malloc(strlen(adsr_names[id]) + 1);
+            strcpy(mod_source_names[i], adsr_names[id]);
+        }
+        else
+        {
+            debug("adsr_names mismatch adsr count\n");
+            break;
+        }
     }
 
     for (i = MOD_SRC_FIRST_GLFO; i < MOD_SRC_LAST_GLFO; ++i)
@@ -55,7 +91,7 @@ static void create_mod_source_names(void)
     }
 
     for (i = 0; i < MOD_SRC_LAST; ++i)
-        printf("mod_source:%s\n", mod_source_names[i]);
+        printf("mod_source:%12s\tid:%4d\n", mod_source_names[i], i);
 
 }
 
@@ -105,6 +141,10 @@ const char** patch_lfo_names(void)
     return lfo_names;
 }
 
+const char** patch_param_names(void)
+{
+    return param_names;
+}
 
 /* the minimum envelope release value we'll allow (to prevent clicks) */
 const float PATCH_MIN_RELEASE = 0.05;
@@ -181,7 +221,7 @@ static int patch_get_param (PatchParam** p, int id, PatchParamType param)
 
     switch (param)
     {
-    case PATCH_PARAM_VOLUME:    *p = &patches[id].vol;      break;
+    case PATCH_PARAM_AMPLITUDE:    *p = &patches[id].vol;      break;
     case PATCH_PARAM_PANNING:   *p = &patches[id].pan;      break;
     case PATCH_PARAM_CUTOFF:    *p = &patches[id].ffreq;    break;
     case PATCH_PARAM_RESONANCE: *p = &patches[id].freso;    break;
@@ -314,8 +354,8 @@ int patch_create (const char *name)
         lfo_prepare (&patches[id].glfo[i]);
     }
 
-    /* volume */
-    patches[id].vol.val = DEFAULT_VOLUME;
+    /* amplitude */
+    patches[id].vol.val = DEFAULT_AMPLITUDE;
     patches[id].vol.mod1_id = MOD_SRC_NONE;
     patches[id].vol.mod2_id = MOD_SRC_NONE;
     patches[id].vol.mod1_amt = 0;
@@ -355,11 +395,12 @@ int patch_create (const char *name)
     patches[id].pitch.mod2_amt = 0;
     patches[id].pitch.vel_amt = 0;
 
+/*
     patch_set_mod1_src(id, PATCH_PARAM_PITCH, MOD_SRC_FIRST_EG + 1);
     patch_set_mod1_amt(id, PATCH_PARAM_PITCH, 0.25);
     patch_set_mod2_src(id, PATCH_PARAM_PITCH, MOD_SRC_FIRST_GLFO);
     patch_set_mod2_amt(id, PATCH_PARAM_PITCH, 0.25);
-
+*/
     /* default voice */
     defvoice.active = FALSE;
     defvoice.note = 0;
@@ -692,7 +733,7 @@ const char *patch_strerror (int error)
 	return "specified channel is invalid";
 	break;
     case PATCH_VOL_INVALID:
-	return "specified volume is invalid";
+	return "specified amplitude is invalid";
 	break;
     case PATCH_PLAY_MODE_INVALID:
 	return "specified patch play mode is invalid";
@@ -938,6 +979,9 @@ inline static void prepare_pitch(Patch* p, PatchVoice* v, int note)
 
 static inline float* mod_id_to_pointer(int id, Patch* p, PatchVoice* v)
 {
+    if (id == MOD_SRC_ONE)
+        return &one;
+
     if (id >= MOD_SRC_FIRST_EG
      && id <  MOD_SRC_LAST_EG)
     {
@@ -994,13 +1038,13 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
 
         /* we need to make sure that we don't grab a voice that is
          * busy trying to release itself, otherwise we'll take it
-         * over, only to be promptly reduced to zero volume and
+         * over, only to be promptly reduced to zero amplitude and
          * shut down... */
             else if (!p->voices[i].released)
                 break;
 
         /* ...however, if this is a singleshot patch being
-         * released by a noteoff, the volume won't be dropping, and we can 
+         * released by a noteoff, the amplitude won't be dropping, and we can 
          * proceed normally */
             else if (p->play_mode == PATCH_PLAY_SINGLESHOT
                      && p->voices[i].relmode == RELEASE_NOTEOFF)
@@ -1074,6 +1118,8 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
     v->flr = 0;
     v->fbr = 0;
     v->vel = vel;
+
+printf("amp env id:%d\n", p->vol.direct_mod_id);
 
     v->vol_mod1 =   mod_id_to_pointer(p->vol.mod1_id, p, v);
     v->vol_mod2 =   mod_id_to_pointer(p->vol.mod2_id, p, v);
@@ -1226,7 +1272,7 @@ static void filter (Patch* p, PatchVoice* v, int index,  float* l, float* r)
 	freso = 0.0;
 
     /* logify */
-    logreso = log_volume(freso);
+    logreso = log_amplitude(freso);
 
     /* left */
     v->fbl = logreso * v->fbl + ffreq * (*l - v->fll);
@@ -1239,7 +1285,7 @@ static void filter (Patch* p, PatchVoice* v, int index,  float* l, float* r)
     *r = v->flr;
 }
 
-/* a helper routine to adjust the volume of a frame */
+/* a helper routine to adjust the amplitude of a frame */
 inline static int gain (Patch* p, PatchVoice* v, int index, float* l, float* r)
 {
     float vol = 0.0;
@@ -1260,7 +1306,7 @@ inline static int gain (Patch* p, PatchVoice* v, int index, float* l, float* r)
             && !((p->play_mode & PATCH_PLAY_SINGLESHOT)
             && (v->relmode == RELEASE_NOTEOFF)))
     {
-        /* if the patch is singleshot and it doesn't have a volume
+        /* if the patch is singleshot and it doesn't have a amplitude
          * envelope, we want to let it finish playing in toto
          */
         vol *= v->declick_vol;
@@ -1278,14 +1324,14 @@ inline static int gain (Patch* p, PatchVoice* v, int index, float* l, float* r)
         vol = 0.0;
 
     /* as a last step, make logarithmic */
-    logvol = log_volume(vol);
+    logvol = log_amplitude(vol);
 
-    /* adjust volume */
+    /* adjust amplitude */
     *l *= logvol;
     *r *= logvol;
 
     /* check to see if we've finished a release */
-    if (v->released && vol < ALMOST_ZERO)
+    if (v->released && v->vol_direct && *v->vol_direct < ALMOST_ZERO)
         return -1;
 
     return 0;
@@ -1523,7 +1569,7 @@ inline static void patch_render_patch (Patch* p, float* buf, int nframes)
             pan        (p, v, j, &l, &r);
             filter     (p, v, j, &l, &r);
 
-            /* adjust volume and stop rendering if we finished
+            /* adjust amplitude and stop rendering if we finished
              * a release */
             if (gain (p, v, j, &l, &r) < 0)
                 done = TRUE;
@@ -1669,7 +1715,7 @@ static void patch_control_patch(Patch* p, ControlParamType param, float value)
 {
     switch( param )
     {
-    case CONTROL_PARAM_VOLUME:
+    case CONTROL_PARAM_AMPLITUDE:
 	p->vol.val = value;
 	break;
     case CONTROL_PARAM_PANNING:
@@ -2576,8 +2622,8 @@ int patch_set_upper_note (int id, int note)
     return 0;
 }
 
-/* set the volume */
-int patch_set_volume (int id, float vol)
+/* set the amplitude */
+int patch_set_amplitude (int id, float vol)
 {
 
     if (!isok (id))
@@ -2820,8 +2866,8 @@ int patch_get_upper_note (int id)
     return patches[id].upper_note;
 }
 
-/* get the volume */
-float patch_get_volume (int id)
+/* get the amplitude */
+float patch_get_amplitude (int id)
 {
     if (!isok (id))
 	return PATCH_ID_INVALID;
@@ -2840,7 +2886,7 @@ static int get_patch_param(int patch_id, PatchParamType param, PatchParam** p)
 
     switch(param)
     {
-    case PATCH_PARAM_VOLUME:    *p = &patches[patch_id].vol;      break;
+    case PATCH_PARAM_AMPLITUDE:    *p = &patches[patch_id].vol;      break;
     case PATCH_PARAM_PANNING:   *p = &patches[patch_id].pan;      break;
     case PATCH_PARAM_CUTOFF:    *p = &patches[patch_id].ffreq;    break;
     case PATCH_PARAM_RESONANCE: *p = &patches[patch_id].freso;    break;
@@ -2858,6 +2904,48 @@ static int mod_src_ok(int id)
         return PATCH_MOD_SRC_INVALID;
     return 0;
 }
+
+
+int patch_param_get_value(int patch_id, PatchParamType param, float* v)
+{
+    if (!isok(patch_id))
+        return PATCH_ID_INVALID;
+
+    switch(param)
+    {
+    case PATCH_PARAM_AMPLITUDE: *v = patches[patch_id].vol.val;     break;
+    case PATCH_PARAM_PANNING:   *v = patches[patch_id].pan.val;     break;
+    case PATCH_PARAM_CUTOFF:    *v = patches[patch_id].ffreq.val;   break;
+    case PATCH_PARAM_RESONANCE: *v = patches[patch_id].freso.val;   break;
+    case PATCH_PARAM_PITCH:     *v = patches[patch_id].pitch.val;   break;
+    default:
+        return PATCH_PARAM_INVALID;
+    }
+
+    return 0;
+}
+
+
+int patch_param_set_value(int patch_id, PatchParamType param, float v)
+{
+    if (!isok(patch_id))
+        return PATCH_ID_INVALID;
+
+    switch(param)
+    {
+    case PATCH_PARAM_AMPLITUDE: patches[patch_id].vol.val = v;      break;
+    case PATCH_PARAM_PANNING:   patches[patch_id].pan.val = v;      break;
+    case PATCH_PARAM_CUTOFF:    patches[patch_id].ffreq.val = v;    break;
+    case PATCH_PARAM_RESONANCE: patches[patch_id].freso.val = v;    break;
+    case PATCH_PARAM_PITCH:     patches[patch_id].pitch.val = v;    break;
+    default:
+        return PATCH_PARAM_INVALID;
+    }
+
+    return 0;
+}
+
+
 
 
 /*****************************************************************************/
@@ -2942,7 +3030,7 @@ int patch_set_mod2_amt(int patch_id, PatchParamType param, float amt)
     return 0;
 }
 
-int patch_set_volume_direct_src(int patch_id, int modsrc_id)
+int patch_set_amp_env(int patch_id, int modsrc_id)
 {
     int err;
 
@@ -3007,7 +3095,7 @@ int patch_get_mod2_amt(int patch_id, PatchParamType param, float* amount)
     return 0;
 }
 
-int patch_get_volume_direct_src(int patch_id, int* modsrc_id)
+int patch_get_amp_env(int patch_id, int* modsrc_id)
 {
     int err;
 

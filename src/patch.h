@@ -14,8 +14,8 @@ enum
     PATCH_VOICE_COUNT = 8,      /* maximum active voices per patch */
     PATCH_MAX_PITCH_STEPS = 48, /* maximum val allowable for pitch_steps */
 
-    PATCH_MAX_LFOS = 4, /* LFO's global in scope to patch */
-    VOICE_MAX_LFOS = 4, /* LFO's local only to a voice */
+    PATCH_MAX_LFOS = 5, /* LFO's global in scope to patch */
+    VOICE_MAX_LFOS = 5, /* LFO's local only to a voice */
     TOTAL_LFOS = PATCH_MAX_LFOS + VOICE_MAX_LFOS,
 
     /*  LFO id's are in range [0, TOTAL_LFOS - 1], where
@@ -23,13 +23,14 @@ enum
      *  and [PATCH_MAX_LFOS, TOTAL_LFOS - 1] are voice LFOs.
      */
 
-    VOICE_MAX_ENVS = 4
+    VOICE_MAX_ENVS = 5
 };
 
 
 enum
 {
     MOD_SRC_NONE = 0,
+    MOD_SRC_ONE,
     MOD_SRC_VEL,
     MOD_SRC_PITCH,
     MOD_SRC_NOISE,
@@ -92,7 +93,7 @@ typedef guint8 PatchPlayMode;
 /* code names for modulatable parameters */
 typedef enum
 {
-     PATCH_PARAM_VOLUME,
+     PATCH_PARAM_AMPLITUDE,
      PATCH_PARAM_PANNING,
      PATCH_PARAM_CUTOFF,
      PATCH_PARAM_RESONANCE,
@@ -124,6 +125,7 @@ int         patch_verify          (int id);
 /* returns a NULL terminated list of NULL terminated C strings */
 const char**    patch_adsr_names(void);
 const char**    patch_lfo_names(void);
+const char**    patch_param_names(void);
 char**    patch_mod_source_names(void);
 
 /* playback and rendering functions  */
@@ -200,7 +202,7 @@ int patch_set_resonance     (int id, float reso);
 int patch_set_sample_start (int id, int start);
 int patch_set_sample_stop  (int id, int stop);
 int patch_set_upper_note   (int id, int note);
-int patch_set_volume       (int id, float vol);
+int patch_set_amplitude       (int id, float vol);
 
 /* parameter getters */
 int           patch_get_channel       (int id);
@@ -229,21 +231,25 @@ char*         patch_get_sample_name   (int id);
 int           patch_get_sample_start  (int id);
 int           patch_get_sample_stop   (int id);
 int           patch_get_upper_note    (int id);
-float         patch_get_volume        (int id);
+float         patch_get_amplitude        (int id);
+
+/* param */
+int patch_param_get_value(int patch_id, PatchParamType, float* val);
+int patch_param_set_value(int patch_id, PatchParamType, float  val);
 
 /* modulation setters */
 int patch_set_mod1_src(int patch_id, PatchParamType, int modsrc_id);
 int patch_set_mod2_src(int patch_id, PatchParamType, int modsrc_id);
 int patch_set_mod1_amt(int patch_id, PatchParamType, float amount);
 int patch_set_mod2_amt(int patch_id, PatchParamType, float amount);
-int patch_set_volume_direct_src(int patch_id, int modsrc_id);
+int patch_set_amp_env(int patch_id, int modsrc_id);
 
 /* modulation getters */
 int patch_get_mod1_src(int patch_id, PatchParamType, int* modsrc_id);
 int patch_get_mod2_src(int patch_id, PatchParamType, int* modsrc_id);
 int patch_get_mod1_amt(int patch_id, PatchParamType, float* amount);
 int patch_get_mod2_amt(int patch_id, PatchParamType, float* amount);
-int patch_get_volume_direct_src(int patch_id, int* modsrc_id);
+int patch_get_amp_env(int patch_id, int* modsrc_id);
 
 
 #endif /* __PATCH_H__ */

@@ -361,7 +361,7 @@ float cerp(float y0, float y1, float y2, float y3, guint8 d)
 }
 
 
-float log_volume(float x)
+float log_amplitude(float x)
 {
     int i = x * (TABSIZE - 1);
     

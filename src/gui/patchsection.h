@@ -22,10 +22,7 @@ struct _PatchSection
     int patch;
     guint refresh;
     GtkWidget* title;
-    GtkWidget* volume_fan;
-    GtkWidget* pan_fan;
-    GtkWidget* pitch_fan;
-    GtkWidget* range_sb;
+
     GtkWidget* notebook;
     GtkWidget* sample_tab;
     GtkWidget* voice_tab;
@@ -34,6 +31,7 @@ struct _PatchSection
     GtkWidget* env_tab;
     GtkWidget* lfo_tab;
     GtkWidget* pitch_tab;
+    GtkWidget* amp_tab;
 };
 
 struct _PatchSectionClass

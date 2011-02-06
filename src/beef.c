@@ -27,12 +27,12 @@ int beef_write (char *name)
     xmlNodePtr xmlpatch;
 
 #define NR_OF_PPT 5
-    PatchParamType ppt_lst[NR_OF_PPT] = { PATCH_PARAM_VOLUME,
+    PatchParamType ppt_lst[NR_OF_PPT] = { PATCH_PARAM_AMPLITUDE,
 					  PATCH_PARAM_PANNING,
 					  PATCH_PARAM_CUTOFF,
 					  PATCH_PARAM_RESONANCE,
 					  PATCH_PARAM_PITCH };
-    char* ppt_names[NR_OF_PPT] = { "volume_",
+    char* ppt_names[NR_OF_PPT] = { "amplitude_",
 				   "panning_",
 				   "cutoff_",
 				   "resonance_",
@@ -72,8 +72,8 @@ int beef_write (char *name)
 	xmlNewTextChild (xmlpatch, NULL, (const xmlChar *) "note",
 			 (const xmlChar *) tmp);
 
-	sprintf (tmp, "%f", patch_get_volume (id[i]));
-	xmlNewTextChild (xmlpatch, NULL, (const xmlChar *) "volume",
+	sprintf (tmp, "%f", patch_get_amplitude (id[i]));
+	xmlNewTextChild (xmlpatch, NULL, (const xmlChar *) "amplitude",
 			 (const xmlChar *) tmp);
 
 	sprintf (tmp, "%f", patch_get_panning (id[i]));
@@ -423,12 +423,12 @@ int beef_read (char *path)
 
 		}
 		else if (!xmlStrcmp
-			 (cur->name, (const xmlChar *) "volume"))
+			 (cur->name, (const xmlChar *) "amplitude"))
 		{
 		    key =
 			xmlNodeListGetString (doc, cur->xmlChildrenNode,
 					      1);
-		    patch_set_volume (id, atof ((const char *) key));
+		    patch_set_amplitude (id, atof ((const char *) key));
 
 		}
 		else if (!xmlStrcmp (cur->name, (const xmlChar *) "pan"))
@@ -785,202 +785,202 @@ int beef_read (char *path)
 
 		}
 		else if (!xmlStrcmp
-			 (cur->name, (const xmlChar *) "volume_a"))
+			 (cur->name, (const xmlChar *) "amplitude_a"))
 		{
 		    key =
 			xmlNodeListGetString (doc, cur->xmlChildrenNode,
 					      1);
-		    patch_set_env_attack (id, PATCH_PARAM_VOLUME,
+		    patch_set_env_attack (id, PATCH_PARAM_AMPLITUDE,
 					  atof ((const char *) key));
 
 		}
 		else if (!xmlStrcmp
-			 (cur->name, (const xmlChar *) "volume_d"))
+			 (cur->name, (const xmlChar *) "amplitude_d"))
 		{
 		    key =
 			xmlNodeListGetString (doc, cur->xmlChildrenNode,
 					      1);
-		    patch_set_env_decay (id, PATCH_PARAM_VOLUME,
+		    patch_set_env_decay (id, PATCH_PARAM_AMPLITUDE,
 					 atof ((const char *) key));
 
 		}
 		else if (!xmlStrcmp
-			 (cur->name, (const xmlChar *) "volume_delay"))
+			 (cur->name, (const xmlChar *) "amplitude_delay"))
 		{
 		    key =
 			xmlNodeListGetString (doc, cur->xmlChildrenNode,
 					      1);
-		    patch_set_env_delay (id, PATCH_PARAM_VOLUME,
+		    patch_set_env_delay (id, PATCH_PARAM_AMPLITUDE,
 					 atof ((const char *) key));
 
 		}
 		else if (!xmlStrcmp
-			 (cur->name, (const xmlChar *) "volume_s"))
+			 (cur->name, (const xmlChar *) "amplitude_s"))
 		{
 		    key =
 			xmlNodeListGetString (doc, cur->xmlChildrenNode,
 					      1);
-		    patch_set_env_sustain (id, PATCH_PARAM_VOLUME,
+		    patch_set_env_sustain (id, PATCH_PARAM_AMPLITUDE,
 					   atof ((const char *) key));
 
 		}
 		else if (!xmlStrcmp
-			 (cur->name, (const xmlChar *) "volume_r"))
+			 (cur->name, (const xmlChar *) "amplitude_r"))
 		{
 		    key =
 			xmlNodeListGetString (doc, cur->xmlChildrenNode,
 					      1);
-		    patch_set_env_release (id, PATCH_PARAM_VOLUME,
+		    patch_set_env_release (id, PATCH_PARAM_AMPLITUDE,
 					   atof ((const char *) key));
 
 		}
 		else if (!xmlStrcmp
-			 (cur->name, (const xmlChar *) "volume_hold"))
+			 (cur->name, (const xmlChar *) "amplitude_hold"))
 		{
 		    key =
 			xmlNodeListGetString (doc, cur->xmlChildrenNode,
 					      1);
-		    patch_set_env_hold (id, PATCH_PARAM_VOLUME,
+		    patch_set_env_hold (id, PATCH_PARAM_AMPLITUDE,
 					atof ((const char *) key));
 
 		}
 		else if (!xmlStrcmp
-			 (cur->name, (const xmlChar *) "volume_amt"))
+			 (cur->name, (const xmlChar *) "amplitude_amt"))
 		{
 		    key =
 			xmlNodeListGetString (doc, cur->xmlChildrenNode,
 					      1);
-		    patch_set_env_amount (id, PATCH_PARAM_VOLUME,
+		    patch_set_env_amount (id, PATCH_PARAM_AMPLITUDE,
 					  atof ((const char *) key));
 
 		}
 		else if (!xmlStrcmp
-			 (cur->name, (const xmlChar *) "volume_vel_amt"))
+			 (cur->name, (const xmlChar *) "amplitude_vel_amt"))
 		{
 		    key =
 			xmlNodeListGetString (doc, cur->xmlChildrenNode,
 					      1);
-		    patch_set_vel_amount (id, PATCH_PARAM_VOLUME,
+		    patch_set_vel_amount (id, PATCH_PARAM_AMPLITUDE,
 					  atof ((const char *) key));
 
 		}
 		else if (!xmlStrcmp
-			 (cur->name, (const xmlChar *) "volume_env_on"))
+			 (cur->name, (const xmlChar *) "amplitude_env_on"))
 		{
 		    key =
 			xmlNodeListGetString (doc, cur->xmlChildrenNode,
 					      1);
-		    patch_set_env_on (id, PATCH_PARAM_VOLUME,
+		    patch_set_env_on (id, PATCH_PARAM_AMPLITUDE,
 				      xmlStrcmp (key, (const xmlChar *) "yes") == 0);
 
 		}
 		else if (!xmlStrcmp
-			 (cur->name, (const xmlChar *) "volume_lfo_a"))
+			 (cur->name, (const xmlChar *) "amplitude_lfo_a"))
 		{
 		    key =
 			xmlNodeListGetString (doc, cur->xmlChildrenNode,
 					      1);
-		    patch_set_lfo_attack (id, PATCH_PARAM_VOLUME,
+		    patch_set_lfo_attack (id, PATCH_PARAM_AMPLITUDE,
 					  atof ((const char *) key));
 
 		}
 		else if (!xmlStrcmp
-			 (cur->name, (const xmlChar *) "volume_lfo_delay"))
+			 (cur->name, (const xmlChar *) "amplitude_lfo_delay"))
 		{
 		    key =
 			xmlNodeListGetString (doc, cur->xmlChildrenNode,
 					      1);
-		    patch_set_lfo_delay (id, PATCH_PARAM_VOLUME,
+		    patch_set_lfo_delay (id, PATCH_PARAM_AMPLITUDE,
 					 atof ((const char *) key));
 
 		}
 		else if (!xmlStrcmp
-			 (cur->name, (const xmlChar *) "volume_lfo_amt"))
+			 (cur->name, (const xmlChar *) "amplitude_lfo_amt"))
 		{
 		    key =
 			xmlNodeListGetString (doc, cur->xmlChildrenNode,
 					      1);
-		    patch_set_lfo_amount (id, PATCH_PARAM_VOLUME,
+		    patch_set_lfo_amount (id, PATCH_PARAM_AMPLITUDE,
 					  atof ((const char *) key));
 
 		}
 		else if (!xmlStrcmp
-			 (cur->name, (const xmlChar *) "volume_lfo_on"))
+			 (cur->name, (const xmlChar *) "amplitude_lfo_on"))
 		{
 		    key =
 			xmlNodeListGetString (doc, cur->xmlChildrenNode,
 					      1);
-		    patch_set_lfo_on (id, PATCH_PARAM_VOLUME,
+		    patch_set_lfo_on (id, PATCH_PARAM_AMPLITUDE,
 				      xmlStrcmp (key, (const xmlChar *) "yes") == 0);
 
 		}
 		else if (!xmlStrcmp
-			 (cur->name, (const xmlChar *) "volume_lfo_beats"))
+			 (cur->name, (const xmlChar *) "amplitude_lfo_beats"))
 		{
 		    key =
 			xmlNodeListGetString (doc, cur->xmlChildrenNode,
 					      1);
-		    patch_set_lfo_beats (id, PATCH_PARAM_VOLUME,
+		    patch_set_lfo_beats (id, PATCH_PARAM_AMPLITUDE,
 					 atof ((const char *) key));
 
 		}
 		else if (!xmlStrcmp
-			 (cur->name, (const xmlChar *) "volume_lfo_freq"))
+			 (cur->name, (const xmlChar *) "amplitude_lfo_freq"))
 		{
 		    key =
 			xmlNodeListGetString (doc, cur->xmlChildrenNode,
 					      1);
-		    patch_set_lfo_freq (id, PATCH_PARAM_VOLUME,
+		    patch_set_lfo_freq (id, PATCH_PARAM_AMPLITUDE,
 					atof ((const char *) key));
 
 		}
 		else if (!xmlStrcmp
-			 (cur->name, (const xmlChar *) "volume_lfo_positive"))
+			 (cur->name, (const xmlChar *) "amplitude_lfo_positive"))
 		{
 		    key =
 			xmlNodeListGetString (doc, cur->xmlChildrenNode,
 					      1);
-		    patch_set_lfo_positive (id, PATCH_PARAM_VOLUME,
+		    patch_set_lfo_positive (id, PATCH_PARAM_AMPLITUDE,
 					    xmlStrcmp (key, (const xmlChar *) "yes") == 0);
 
 		}
 		else if (!xmlStrcmp
-			 (cur->name, (const xmlChar *) "volume_lfo_global"))
+			 (cur->name, (const xmlChar *) "amplitude_lfo_global"))
 		{
 		    key =
 			xmlNodeListGetString (doc, cur->xmlChildrenNode,
 					      1);
-		    patch_set_lfo_global (id, PATCH_PARAM_VOLUME,
+		    patch_set_lfo_global (id, PATCH_PARAM_AMPLITUDE,
 					  xmlStrcmp (key, (const xmlChar *) "yes") == 0);
 
 		}
 		else if (!xmlStrcmp
-			 (cur->name, (const xmlChar *) "volume_lfo_sync"))
+			 (cur->name, (const xmlChar *) "amplitude_lfo_sync"))
 		{
 		    key =
 			xmlNodeListGetString (doc, cur->xmlChildrenNode,
 					      1);
-		    patch_set_lfo_sync (id, PATCH_PARAM_VOLUME,
+		    patch_set_lfo_sync (id, PATCH_PARAM_AMPLITUDE,
 					xmlStrcmp (key, (const xmlChar *) "yes") == 0);
 
 		}
 		else if (!xmlStrcmp
-			 (cur->name, (const xmlChar *) "volume_lfo_shape"))
+			 (cur->name, (const xmlChar *) "amplitude_lfo_shape"))
 		{
 		    key =
 			xmlNodeListGetString (doc, cur->xmlChildrenNode,
 					      1);
 		    if (xmlStrcmp (key, (const xmlChar *) "sine") == 0)
-			patch_set_lfo_shape (id, PATCH_PARAM_VOLUME,
+			patch_set_lfo_shape (id, PATCH_PARAM_AMPLITUDE,
 					     LFO_SHAPE_SINE);
 		    else if (xmlStrcmp (key, (const xmlChar *) "triangle") == 0)
-			patch_set_lfo_shape (id, PATCH_PARAM_VOLUME,
+			patch_set_lfo_shape (id, PATCH_PARAM_AMPLITUDE,
 					     LFO_SHAPE_TRIANGLE);
 		    else if (xmlStrcmp (key, (const xmlChar *) "saw") == 0)
-			patch_set_lfo_shape (id, PATCH_PARAM_VOLUME,
+			patch_set_lfo_shape (id, PATCH_PARAM_AMPLITUDE,
 					     LFO_SHAPE_SAW);
 		    else if (xmlStrcmp (key, (const xmlChar *) "square") == 0)
-			patch_set_lfo_shape (id, PATCH_PARAM_VOLUME,
+			patch_set_lfo_shape (id, PATCH_PARAM_AMPLITUDE,
 					     LFO_SHAPE_SQUARE);
 
 		}

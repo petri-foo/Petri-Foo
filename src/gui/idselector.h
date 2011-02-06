@@ -15,6 +15,12 @@ G_BEGIN_DECLS
 typedef struct _IDSelectorClass IDSelectorClass;
 typedef struct _IDSelector IDSelector;
 
+enum {
+    ID_SELECTOR_H = 1,
+    ID_SELECTOR_V
+};
+
+
 struct _IDSelector
 {
     GtkHBox parent;
@@ -40,7 +46,7 @@ GType id_selector_get_type(void);
 
 GtkWidget* id_selector_new(void);
 
-void id_selector_set(IDSelector*, const char** item_names);
+void id_selector_set(IDSelector*, const char** item_names, int orientation);
 
 
 int         id_selector_get_id(IDSelector*);

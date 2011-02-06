@@ -17,8 +17,8 @@ void  mixer_direct_note_on   (int chan, int note, float vel, Tick tick);
 void  mixer_direct_control   (int chan, ControlParamType param, 
 			      float value, Tick tick);
 void  mixer_preview          (char* name);
-int   mixer_set_volume       (float volume);
-float mixer_get_volume       (void);
+int   mixer_set_amplitude       (float amplitude);
+float mixer_get_amplitude       (void);
 void  mixer_set_samplerate   (int rate);
 void  mixer_shutdown         (void);
 

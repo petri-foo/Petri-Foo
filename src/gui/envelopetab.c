@@ -194,7 +194,8 @@ static void envelope_tab_init(EnvelopeTab* self)
 
     /* parameter selector */
     self->idsel = id_selector_new();
-    id_selector_set(ID_SELECTOR(self->idsel), patch_adsr_names());
+    id_selector_set(ID_SELECTOR(self->idsel), patch_adsr_names(),
+                                                ID_SELECTOR_H);
     gtk_box_pack_start(box, self->idsel, FALSE, FALSE, 0);
     gtk_widget_show(self->idsel);
 
@@ -210,7 +211,7 @@ static void envelope_tab_init(EnvelopeTab* self)
     gtk_widget_show(table);
     
     /* envelope title  */
-    title = gui_title_new("Envelope");
+    title = gui_title_new("Envelope Generator");
     self->env_check = gtk_check_button_new();
     gtk_container_add(GTK_CONTAINER(self->env_check), title);
     gtk_table_attach_defaults(t, self->env_check, 0, 4, 0, 1);
@@ -288,7 +289,7 @@ static void envelope_tab_init(EnvelopeTab* self)
 
     gtk_table_set_row_spacing(t, 7, GUI_SPACING);
 
-    set_sensitive(self, TRUE);
+    set_sensitive(self, FALSE);
     connect(self);
 }
 
