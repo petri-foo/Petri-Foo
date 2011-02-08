@@ -91,21 +91,29 @@ void param_tab_set_param(ParamTab* self, PatchParamType param)
 
     switch(param)
     {
-     case PATCH_PARAM_AMPLITUDE:
-     case PATCH_PARAM_PANNING:
+    case PATCH_PARAM_AMPLITUDE:
+    case PATCH_PARAM_PANNING:
         ms1 = PATCH_PARAM_AMPLITUDE;
         ms2 = PATCH_PARAM_PANNING;
         break;
 
-     case PATCH_PARAM_CUTOFF:
-     case PATCH_PARAM_RESONANCE:
+    case PATCH_PARAM_CUTOFF:
+    case PATCH_PARAM_RESONANCE:
         ms1 = PATCH_PARAM_CUTOFF;
         ms2 = PATCH_PARAM_RESONANCE;
         break;
 
-     case PATCH_PARAM_PITCH:
+    case PATCH_PARAM_PITCH:
         ms1 = PATCH_PARAM_PITCH;
         break;
+
+    case PATCH_PARAM_LFO_FREQ:
+        ms1 = PATCH_PARAM_LFO_FREQ;
+        break;
+
+    default:
+        debug ("unrecognised parameter for param tab\n");
+        return;
     }
 
     if (ms1 != PATCH_PARAM_INVALID)

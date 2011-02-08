@@ -19,7 +19,8 @@ struct _LfoTab
     GtkHBox parent;
 
     /*< private >*/
-    int patch;
+    int patch_id;
+    int lfo_id;
     GtkWidget* idsel;
     GtkWidget* shape_opt;
     GtkWidget* lfo_check;
@@ -30,6 +31,10 @@ struct _LfoTab
     GtkWidget* freq_fan;
     GtkWidget* delay_fan;
     GtkWidget* attack_fan;
+    GtkWidget* mod1_combo;
+    GtkWidget* mod2_combo;
+    GtkWidget* mod1_amount;
+    GtkWidget* mod2_amount;
 };
 
 struct _LfoTabClass

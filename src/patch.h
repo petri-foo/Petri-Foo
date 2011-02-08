@@ -31,7 +31,6 @@ enum
 {
     MOD_SRC_NONE = 0,
     MOD_SRC_ONE,
-    MOD_SRC_VEL,
     MOD_SRC_PITCH,
     MOD_SRC_NOISE,
 
@@ -41,7 +40,7 @@ enum
     MOD_SRC_FIRST_GLFO,
     MOD_SRC_LAST_GLFO = MOD_SRC_FIRST_GLFO + PATCH_MAX_LFOS,
     MOD_SRC_FIRST_VLFO,
-    MOD_SRC_LAST_VLFO = MOD_SRC_FIRST_VLFO + VOICE_MAX_ENVS,
+    MOD_SRC_LAST_VLFO = MOD_SRC_FIRST_VLFO + VOICE_MAX_LFOS,
 
     MOD_SRC_LAST
 };
@@ -98,7 +97,8 @@ typedef enum
     PATCH_PARAM_PANNING,
     PATCH_PARAM_CUTOFF,
     PATCH_PARAM_RESONANCE,
-    PATCH_PARAM_PITCH
+    PATCH_PARAM_PITCH,
+    PATCH_PARAM_LFO_FREQ
 }
 PatchParamType;
 
@@ -250,6 +250,18 @@ int patch_get_mod1_amt(int patch_id, PatchParamType, float* amount);
 int patch_get_mod2_amt(int patch_id, PatchParamType, float* amount);
 int patch_get_amp_env(int patch_id, int* modsrc_id);
 int patch_get_vel_amount(int id, PatchParamType param, float* val);
+
+/* lfo modulation setters */
+int patch_set_lfo_mod1_src(int patch_id, int lfo_id, int modsrc_id);
+int patch_set_lfo_mod2_src(int patch_id, int lfo_id, int modsrc_id);
+int patch_set_lfo_mod1_amt(int patch_id, int lfo_id, float amount);
+int patch_set_lfo_mod2_amt(int patch_id, int lfo_id, float amount);
+
+/* lfo modulation getters */
+int patch_get_lfo_mod1_src(int patch_id, int lfo_id, int* modsrc_id);
+int patch_get_lfo_mod2_src(int patch_id, int lfo_id, int* modsrc_id);
+int patch_get_lfo_mod1_amt(int patch_id, int lfo_id, float* amount);
+int patch_get_lfo_mod2_amt(int patch_id, int lfo_id, float* amount);
 
 
 #endif /* __PATCH_H__ */

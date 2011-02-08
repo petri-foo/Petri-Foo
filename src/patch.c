@@ -32,6 +32,7 @@ static const char* param_names[] = {
     "Cutoff",
     "Resonance",
     "Pitch",
+    "Frequency Modulation"
 };
 
 static char** mod_source_names = 0;
@@ -227,6 +228,7 @@ static int patch_get_param (PatchParam** p, int id, PatchParamType param)
     case PATCH_PARAM_RESONANCE: *p = &patches[id].freso;    break;
     case PATCH_PARAM_PITCH:     *p = &patches[id].pitch;    break;
     default:
+        debug ("Invalid request for address of param\n");
         return PATCH_PARAM_INVALID;
     }
 
@@ -255,6 +257,39 @@ inline static void patch_unlock (int id)
     pthread_mutex_unlock (&patches[id].mutex);
 }
 
+
+
+static float* mod_id_to_pointer(int id, Patch* p, PatchVoice* v)
+{
+    if (id == MOD_SRC_ONE)
+        return &one;
+
+    if (id >= MOD_SRC_FIRST_EG
+     && id <  MOD_SRC_LAST_EG)
+    {
+        int env_id = id - MOD_SRC_FIRST_EG;
+        return &v->env[env_id].val;
+    }
+
+    if (id >= MOD_SRC_FIRST_GLFO
+     && id <  MOD_SRC_LAST_GLFO)
+    {
+        int lfo_id = id - MOD_SRC_FIRST_GLFO;
+        return &p->glfo[lfo_id].val;
+    }
+
+    if (id >= MOD_SRC_FIRST_VLFO
+     && id <  MOD_SRC_LAST_VLFO)
+    {
+        int lfo_id = id - MOD_SRC_FIRST_VLFO;
+        return &v->lfo[lfo_id].val;
+    }
+    return 0;
+}
+
+
+
+
 /* triggers all global LFOs if they are used with amounts greater than 0 */
 inline static void patch_trigger_global_lfos ( )
 {
@@ -263,11 +298,26 @@ inline static void patch_trigger_global_lfos ( )
     debug ("retriggering...\n");
     for (i = 0; i < PATCH_COUNT; i++)
     {
+        Patch* p = &patches[i];
         for (j = 0; j < PATCH_MAX_LFOS; j++)
+        {
+            p->glfo[j].freq_mod1 =
+                mod_id_to_pointer(p->glfo_params[j].mod1_id, p, NULL);
+
+            p->glfo[j].freq_mod2 =
+                mod_id_to_pointer(p->glfo_params[j].mod2_id, p, NULL);
+
+            p->glfo[j].mod1_amt = p->glfo_params[j].mod1_amt;
+            p->glfo[j].mod2_amt = p->glfo_params[j].mod2_amt;
+
             lfo_trigger(&patches[i].glfo[j], &patches[i].glfo_params[j]);
+        }
     }
     debug ("done\n");
-}     
+}
+
+
+
 /*****************************************************************************/
 /************************ UTILITY FUNCTIONS **********************************/
 /*****************************************************************************/
@@ -395,12 +445,6 @@ int patch_create (const char *name)
     patches[id].pitch.mod2_amt = 0;
     patches[id].pitch.vel_amt = 0;
 
-/*
-    patch_set_mod1_src(id, PATCH_PARAM_PITCH, MOD_SRC_FIRST_EG + 1);
-    patch_set_mod1_amt(id, PATCH_PARAM_PITCH, 0.25);
-    patch_set_mod2_src(id, PATCH_PARAM_PITCH, MOD_SRC_FIRST_GLFO);
-    patch_set_mod2_amt(id, PATCH_PARAM_PITCH, 0.25);
-*/
     /* default voice */
     defvoice.active = FALSE;
     defvoice.note = 0;
@@ -977,35 +1021,6 @@ inline static void prepare_pitch(Patch* p, PatchVoice* v, int note)
 }
 
 
-static inline float* mod_id_to_pointer(int id, Patch* p, PatchVoice* v)
-{
-    if (id == MOD_SRC_ONE)
-        return &one;
-
-    if (id >= MOD_SRC_FIRST_EG
-     && id <  MOD_SRC_LAST_EG)
-    {
-        int env_id = id - MOD_SRC_FIRST_EG;
-        return &v->env[env_id].val;
-    }
-
-    if (id >= MOD_SRC_FIRST_GLFO
-     && id <  MOD_SRC_LAST_GLFO)
-    {
-        int lfo_id = id - MOD_SRC_FIRST_GLFO;
-        return &p->glfo[lfo_id].val;
-    }
-
-    if (id >= MOD_SRC_FIRST_VLFO
-     && id <  MOD_SRC_LAST_VLFO)
-    {
-        int lfo_id = id - MOD_SRC_FIRST_VLFO;
-        return &v->lfo[lfo_id].val;
-    }
-    return 0;
-}
-
-
 
 /* a helper function to activate a voice for a patch */
 inline static void
@@ -1131,6 +1146,9 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
     v->pitch_mod1 = mod_id_to_pointer(p->pitch.mod1_id, p, v);
     v->pitch_mod2 = mod_id_to_pointer(p->pitch.mod2_id, p, v);
 
+    
+
+
     /* setup direction */
     if (!(p->mono && p->legato && v->active))
     {
@@ -1158,6 +1176,15 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
 
     for (j = 0; j < VOICE_MAX_LFOS; j++)
     {
+        v->lfo[j].freq_mod1 =
+            mod_id_to_pointer(p->vlfo_params[j].mod1_id, p, v);
+
+        v->lfo[j].freq_mod2 =
+            mod_id_to_pointer(p->vlfo_params[j].mod2_id, p, v);
+
+        v->lfo[j].mod1_amt = p->vlfo_params[j].mod1_amt;
+        v->lfo[j].mod2_amt = p->vlfo_params[j].mod2_amt;
+
         lfo_trigger (&v->lfo[j], &p->vlfo_params[j]);
     }
 
@@ -2889,7 +2916,7 @@ static int get_patch_param(int patch_id, PatchParamType param, PatchParam** p)
 
     switch(param)
     {
-    case PATCH_PARAM_AMPLITUDE:    *p = &patches[patch_id].vol;      break;
+    case PATCH_PARAM_AMPLITUDE: *p = &patches[patch_id].vol;      break;
     case PATCH_PARAM_PANNING:   *p = &patches[patch_id].pan;      break;
     case PATCH_PARAM_CUTOFF:    *p = &patches[patch_id].ffreq;    break;
     case PATCH_PARAM_RESONANCE: *p = &patches[patch_id].freso;    break;
@@ -3047,9 +3074,11 @@ int patch_set_amp_env(int patch_id, int modsrc_id)
     return 0;
 }
 
-/*****************************************************************************/
-/************************* MODULATION GETTERS ********************************/
-/*****************************************************************************/
+
+/**************************************************************************/
+/********************** MODULATION GETTERS ********************************/
+/**************************************************************************/
+
 int patch_get_mod1_src(int patch_id, PatchParamType param, int* modsrc_id)
 {
     PatchParam* p;
@@ -3106,5 +3135,97 @@ int patch_get_amp_env(int patch_id, int* modsrc_id)
         return PATCH_ID_INVALID;
 
     *modsrc_id = patches[patch_id].vol.direct_mod_id;
+    return 0;
+}
+
+
+
+/**************************************************************************/
+/********************** MODULATION SETTERS ********************************/
+/**************************************************************************/
+
+int patch_set_lfo_mod1_src(int patch_id, int lfo_id, int modsrc_id)
+{
+    LFOParams* lfopar;
+    int err; 
+    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))
+        return err;
+    lfopar->mod1_id = modsrc_id;
+    return 0;
+}
+
+int patch_set_lfo_mod2_src(int patch_id, int lfo_id, int modsrc_id)
+{
+    LFOParams* lfopar;
+    int err; 
+    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))
+        return err;
+    lfopar->mod2_id = modsrc_id;
+    return 0;
+}
+
+int patch_set_lfo_mod1_amt(int patch_id, int lfo_id, float amount)
+{
+    LFOParams* lfopar;
+    LFO* lfo;
+    int err; 
+    if ((err = lfo_from_id(patch_id, lfo_id, &lfo, &lfopar)))
+        return err;
+    lfopar->mod1_amt = amount;
+    return 0;
+}
+
+int patch_set_lfo_mod2_amt(int patch_id, int lfo_id, float amount)
+{
+    LFOParams* lfopar;
+    int err; 
+    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))
+        return err;
+    lfopar->mod2_amt = amount;
+    return 0;
+}
+
+
+
+/**************************************************************************/
+/********************** MODULATION GETTERS ********************************/
+/**************************************************************************/
+int patch_get_lfo_mod1_src(int patch_id, int lfo_id, int* modsrc_id)
+{
+    LFOParams* lfopar;
+    int err; 
+    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))
+        return err;
+    *modsrc_id = lfopar->mod1_id;
+    return 0;
+}
+
+int patch_get_lfo_mod2_src(int patch_id, int lfo_id, int* modsrc_id)
+{
+    LFOParams* lfopar;
+    int err; 
+    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))
+        return err;
+    *modsrc_id = lfopar->mod2_id;
+    return 0;
+}
+
+int patch_get_lfo_mod1_amt(int patch_id, int lfo_id, float* amount)
+{
+    LFOParams* lfopar;
+    int err; 
+    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))
+        return err;
+    *amount = lfopar->mod1_amt;
+    return 0;
+}
+
+int patch_get_lfo_mod2_amt(int patch_id, int lfo_id, float* amount)
+{
+    LFOParams* lfopar;
+    int err; 
+    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))
+        return err;
+    *amount = lfopar->mod2_amt;
     return 0;
 }

@@ -36,13 +36,14 @@ struct _ModSection
     /*< private >*/
     int             patch_id;
     guint           refresh;
+    gboolean        mod_only;
 
     PatchParamType  param;
 
     GtkWidget*      param1;
     GtkWidget*      param2;
 
-    GtkWidget*      mod_env;
+    GtkWidget*      env_combo;
     GtkWidget*      vel_sens;
 
     GtkWidget*      mod1_combo;
@@ -50,8 +51,6 @@ struct _ModSection
 
     GtkWidget*      mod2_combo;
     GtkWidget*      mod2_amount;
-
-    GtkTreeModel*  model;
 };
 
 
@@ -66,7 +65,13 @@ struct _ModSectionClass
 GType       mod_section_get_type(void);
 
 GtkWidget*  mod_section_new(void);
+void        mod_section_set_mod_only(ModSection*);
 void        mod_section_set_param(ModSection*, PatchParamType);
+
+void        mod_section_set_lfo_id(ModSection*, int lfo_id);
+void        mod_section_set_list_global(ModSection*);
+void        mod_section_set_list_all(ModSection*);
+
 void        mod_section_set_patch(ModSection*, int patch_id);
 
 

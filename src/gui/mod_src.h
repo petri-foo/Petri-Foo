@@ -11,11 +11,15 @@ enum {
     MOD_IN2
 };
 
+enum {
+    /* mod src combo model IDs: */
+    MOD_SRC_INPUTS_UNKNOWN =    -1,
+    MOD_SRC_INPUTS_ALL =        0,
+    MOD_SRC_INPUTS_GLOBAL =     1
+};
 
-GtkTreeModel*   mod_src_tree_model(void);
 
-
-GtkWidget*      mod_src_new_combo_with_cell(void);
+GtkWidget*      mod_src_new_combo_with_cell();
 
 /*  mod_src_new_pitch_adjustment
         creates a phat slider button with semitones label within.
@@ -32,12 +36,24 @@ GtkWidget*      mod_src_new_pitch_adjustment(void);
 */
 gboolean        mod_src_callback_helper(int patch_id,
                                         int input,
-                                        GtkTreeModel* model,
                                         GtkComboBox* combo,
                                         PatchParamType par);
 
-gboolean        mod_src_get_tree_iter_from_id(  GtkTreeModel* model,
+gboolean        mod_src_callback_helper_lfo(int patch_id,
+                                            int input,
+                                            GtkComboBox* combo,
+                                            int lfo_id);
+
+/*  mod_src_combo_get_iter_with_id
+        searches the GtkTreeModel combo is using for GtkTreeIter
+        with mod_src_id value.
+*/
+gboolean        mod_src_combo_get_iter_with_id( GtkComboBox*,
                                                 int mod_src_id,
                                                 GtkTreeIter*);
+
+gboolean        mod_src_combo_set_model(GtkComboBox*, int model_id);
+
+int             mod_src_combo_get_model_id(GtkComboBox*);
 
 #endif

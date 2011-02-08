@@ -5,6 +5,8 @@
 #include "idselector.h"
 #include "lfo.h"
 #include "patch.h"
+#include "mod_src.h"
+
 
 /* must match order of items in menu */
 enum
@@ -69,15 +71,20 @@ static void set_sensitive(LfoTab* self, gboolean val)
     gtk_widget_set_sensitive(self->pos_check, val);
     gtk_widget_set_sensitive(self->delay_fan, val);
     gtk_widget_set_sensitive(self->attack_fan, val);
+    gtk_widget_set_sensitive(self->mod1_combo, val);
+    gtk_widget_set_sensitive(self->mod2_combo, val);
+    gtk_widget_set_sensitive(self->mod1_amount, val);
+    gtk_widget_set_sensitive(self->mod2_amount, val);
 
-    active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(self->sync_radio));
+    active  = gtk_toggle_button_get_active(
+                                GTK_TOGGLE_BUTTON(self->sync_radio));
 
     gtk_widget_set_sensitive(self->freq_fan, !active && val);
     gtk_widget_set_sensitive(self->beats_sb, active && val);
 }
 
 
-static void param_cb(IDSelector* ids, LfoTab* self)
+static void idsel_cb(IDSelector* ids, LfoTab* self)
 {
     update_lfo(self);
 }
@@ -85,8 +92,7 @@ static void param_cb(IDSelector* ids, LfoTab* self)
 
 static void on_cb(GtkToggleButton* button, LfoTab* self)
 {
-    patch_set_lfo_on(self->patch,
-            id_selector_get_id(ID_SELECTOR(self->idsel)),
+    patch_set_lfo_on(self->patch_id, self->lfo_id,
                     gtk_toggle_button_get_active(button));
 }
 
@@ -112,16 +118,13 @@ static void shape_cb(GtkOptionMenu* opt, LfoTab* self)
     default:        shape = LFO_SHAPE_SINE;     break;
     }
 
-    patch_set_lfo_shape(self->patch,
-            id_selector_get_id(ID_SELECTOR(self->idsel)),
-            shape);
+    patch_set_lfo_shape(self->patch_id, self->lfo_id, shape);
 }
 
 
 static void sync_cb(GtkToggleButton* button, LfoTab* self)
 {
-    patch_set_lfo_sync(self->patch, 
-            id_selector_get_id(ID_SELECTOR(self->idsel)),
+    patch_set_lfo_sync(self->patch_id, self->lfo_id,
             gtk_toggle_button_get_active(button));
 }
 
@@ -136,48 +139,73 @@ static void sync_cb2(GtkToggleButton* button, LfoTab* self)
 
 static void freq_cb(PhatFanSlider* fan, LfoTab* self)
 {
-    patch_set_lfo_freq( self->patch,
-                        id_selector_get_id(ID_SELECTOR(self->idsel)),
+    patch_set_lfo_freq( self->patch_id, self->lfo_id,
                         phat_fan_slider_get_value(fan));
 }
 
 
 static void beats_cb(PhatSliderButton* button, LfoTab* self)
 {
-    patch_set_lfo_beats(self->patch,
-                        id_selector_get_id(ID_SELECTOR(self->idsel)),
+    patch_set_lfo_beats(self->patch_id, self->lfo_id,
                         phat_slider_button_get_value(button));
 }
 
-
 static void positive_cb(GtkToggleButton* button, LfoTab* self)
 {
-    patch_set_lfo_positive(self->patch, 
-                        id_selector_get_id(ID_SELECTOR(self->idsel)),
+    patch_set_lfo_positive(self->patch_id, self->lfo_id,
                         gtk_toggle_button_get_active(button));
 }
 
 
 static void delay_cb(PhatFanSlider* fan, LfoTab* self)
 {
-    patch_set_lfo_delay(self->patch,
-                        id_selector_get_id(ID_SELECTOR(self->idsel)),
+    patch_set_lfo_delay(self->patch_id, self->lfo_id,
                         phat_fan_slider_get_value(fan));
 }
 
 
 static void attack_cb(PhatFanSlider* fan, LfoTab* self)
 {
-    patch_set_lfo_attack(self->patch,
-                        id_selector_get_id(ID_SELECTOR(self->idsel)),
+    patch_set_lfo_attack(self->patch_id, self->lfo_id,
                         phat_fan_slider_get_value(fan));
 }
 
+static void mod_src_cb(GtkComboBox* combo, LfoTab* self)
+{
+    int input_id;
+
+    if (combo == GTK_COMBO_BOX(self->mod1_combo))
+        input_id = MOD_IN1;
+    else if (combo == GTK_COMBO_BOX(self->mod2_combo))
+        input_id = MOD_IN2;
+    else
+    {
+        debug ("mod_src_cb called from unrecognised combo box\n");
+        return;
+    }
+
+    mod_src_callback_helper_lfo(self->patch_id, input_id,
+                                        combo,self->lfo_id);
+}
+
+static void mod_amount_cb(GtkWidget* w, LfoTab* self)
+{
+    float val = phat_fan_slider_get_value(PHAT_FAN_SLIDER(w));
+
+    if (w == self->mod1_amount)
+        patch_set_lfo_mod1_amt(self->patch_id, self->lfo_id, val);
+    else if (w == self->mod2_amount)
+        patch_set_lfo_mod2_amt(self->patch_id, self->lfo_id, val);
+    else
+    {
+        debug ("mod_amount_cb called from unrecognised widget\n");
+    }
+}
 
 static void connect(LfoTab* self)
 {
     g_signal_connect(G_OBJECT(self->idsel), "changed",
-                    G_CALLBACK(param_cb), (gpointer) self);
+                    G_CALLBACK(idsel_cb), (gpointer) self);
     g_signal_connect(G_OBJECT(self->lfo_check), "toggled",
                     G_CALLBACK(on_cb), (gpointer)self);
     g_signal_connect(G_OBJECT(self->lfo_check), "toggled",
@@ -198,6 +226,18 @@ static void connect(LfoTab* self)
                     G_CALLBACK(delay_cb), (gpointer) self);
     g_signal_connect(G_OBJECT(self->attack_fan), "value-changed",
                     G_CALLBACK(attack_cb), (gpointer) self);
+
+    g_signal_connect(G_OBJECT(self->mod1_combo),    "changed",
+                        G_CALLBACK(mod_src_cb),    (gpointer) self);
+
+    g_signal_connect(G_OBJECT(self->mod1_amount),   "value-changed",
+                        G_CALLBACK(mod_amount_cb), (gpointer) self);
+
+    g_signal_connect(G_OBJECT(self->mod2_combo),    "changed",
+                        G_CALLBACK(mod_src_cb),    (gpointer) self);
+
+    g_signal_connect(G_OBJECT(self->mod2_amount),   "value-changed",
+                        G_CALLBACK(mod_amount_cb), (gpointer) self);
 }
 
 
@@ -272,7 +312,7 @@ static void lfo_tab_init(LfoTab* self)
 
     int y = 1;
 
-    self->patch = -1;
+    self->patch_id = -1;
     gtk_container_set_border_width(GTK_CONTAINER(self), GUI_BORDERSPACE);
 
     /* table */
@@ -339,7 +379,7 @@ static void lfo_tab_init(LfoTab* self)
     self->freq_fan = phat_hfan_slider_new_with_range(5.0, 0.0, 20.0, 0.1);
 
     gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
-    gtk_table_attach(t, label, 1, 2, 3, 4, GTK_FILL, 0, 0, 0);
+    gtk_table_attach(t, label, 1, 2, y, y + 1, GTK_FILL, 0, 0, 0);
     gtk_table_attach(t, self->free_radio, 2, 3, y, y + 1, 0, 0, 0, 0);
     gtk_table_attach_defaults(t, self->freq_fan, 3, 5, y, y + 1);
 
@@ -370,6 +410,59 @@ static void lfo_tab_init(LfoTab* self)
 
     ++y;
 
+
+    /* mod1 input source */
+    label = gtk_label_new("Freq.Mod1:");
+    gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
+    gtk_table_attach(t, label, 1, 2, y, y + 1, GTK_FILL, 0, 0, 0);
+    gtk_widget_show(label);
+
+    self->mod1_combo = mod_src_new_combo_with_cell();
+    gtk_table_attach_defaults(t, self->mod1_combo, 3, 5, y, y + 1);
+    gtk_widget_show(self->mod1_combo);
+
+    ++y;
+
+    label = gtk_label_new("Amount:");
+    gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
+    gtk_table_attach(t, label, 1, 2, y, y + 1, GTK_FILL, 0, 0, 0);
+    gtk_widget_show(label);
+
+    self->mod1_amount = phat_hfan_slider_new_with_range(0.0, -1.0,
+                                                        1.0, 0.1);
+    gtk_table_attach_defaults(t, self->mod1_amount, 3, 5, y, y + 1);
+    gtk_widget_show(self->mod1_amount);
+
+    ++y;
+
+    /* mod2 input source */
+    label = gtk_label_new("Freq.Mod2:");
+    gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
+    gtk_table_attach(t, label, 1, 2, y, y + 1, GTK_FILL, 0, 0, 0);
+    gtk_widget_show(label);
+
+    self->mod2_combo = mod_src_new_combo_with_cell();
+    gtk_table_attach_defaults(t, self->mod2_combo, 3, 5, y, y + 1);
+    gtk_widget_show(self->mod2_combo);
+
+    ++y;
+
+    label = gtk_label_new("Amount:");
+    gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
+    gtk_table_attach(t, label, 1, 2, y, y + 1, GTK_FILL, 0, 0, 0);
+    gtk_widget_show(label);
+
+    self->mod2_amount = phat_hfan_slider_new_with_range(0.0, -1.0,
+                                                        1.0, 0.1);
+    gtk_table_attach_defaults(t, self->mod2_amount, 3, 5, y, y + 1);
+    gtk_widget_show(self->mod2_amount);
+
+    ++y;
+
+
+
+
+
 //    gtk_table_set_row_spacing(t, y, GUI_SPACING);
 
     /* delay fan */
@@ -386,8 +479,6 @@ static void lfo_tab_init(LfoTab* self)
     ++y;
 
 //    gtk_table_set_col_spacing(t, 3, GUI_SPACING*2);
-
-printf("lfo:y:%d\n",y);
 
     /* attack fan */
     label = gtk_label_new("Attack:");
@@ -409,8 +500,8 @@ printf("lfo:y:%d\n",y);
 
     gtk_widget_show(pad);
 
-    gtk_table_set_row_spacing(t, y, GUI_SPACING);
 
+    /* done */
     set_sensitive(self, FALSE);
     connect(self);
 }
@@ -424,21 +515,41 @@ static void update_lfo(LfoTab* self)
     gboolean sync, global, positive;
     gboolean on;
 
-    int id;
+    int   mod1src, mod2src;
+    float mod1amt, mod2amt;
 
-    id = id_selector_get_id(ID_SELECTOR(self->idsel));
+    GtkTreeIter m1iter, m2iter;
 
-    patch_get_lfo_shape(self->patch, id, &shape);
-    patch_get_lfo_freq(self->patch, id, &freq);
-    patch_get_lfo_beats(self->patch, id, &beats);
-    patch_get_lfo_delay(self->patch, id, &delay);
-    patch_get_lfo_attack(self->patch, id, &attack);
-    patch_get_lfo_sync(self->patch, id, &sync);
-    patch_get_lfo_positive(self->patch, id, &positive);
-    patch_get_lfo_on(self->patch, id, &on);
+    self->lfo_id = id_selector_get_id(ID_SELECTOR(self->idsel));
+
+    patch_get_lfo_shape(    self->patch_id, self->lfo_id, &shape);
+    patch_get_lfo_freq(     self->patch_id, self->lfo_id, &freq);
+    patch_get_lfo_beats(    self->patch_id, self->lfo_id, &beats);
+    patch_get_lfo_delay(    self->patch_id, self->lfo_id, &delay);
+    patch_get_lfo_attack(   self->patch_id, self->lfo_id, &attack);
+    patch_get_lfo_sync(     self->patch_id, self->lfo_id, &sync);
+    patch_get_lfo_positive( self->patch_id, self->lfo_id, &positive);
+    patch_get_lfo_on(       self->patch_id, self->lfo_id, &on);
+
+    patch_get_lfo_mod1_src( self->patch_id, self->lfo_id, &mod1src);
+    patch_get_lfo_mod1_amt( self->patch_id, self->lfo_id, &mod1amt);
+    patch_get_lfo_mod2_src( self->patch_id, self->lfo_id, &mod2src);
+    patch_get_lfo_mod2_amt( self->patch_id, self->lfo_id, &mod2amt);
+
+    if (!mod_src_combo_get_iter_with_id(GTK_COMBO_BOX(self->mod1_combo),
+                                                        mod1src, &m1iter))
+    {
+        debug("failed to get lfo mod1 source id from combo box\n");
+    }
+
+    if (!mod_src_combo_get_iter_with_id(GTK_COMBO_BOX(self->mod2_combo),
+                                                        mod2src, &m2iter))
+    {
+        debug("failed to get lfo mod2 source id from combo box\n");
+    }
 
     block(self);
-    
+
     phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->freq_fan), freq);
     phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->delay_fan), delay);
     phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->attack_fan), attack);
@@ -475,6 +586,12 @@ static void update_lfo(LfoTab* self)
         break;
     }
 
+    gtk_combo_box_set_active_iter(GTK_COMBO_BOX(self->mod1_combo), &m1iter);
+    gtk_combo_box_set_active_iter(GTK_COMBO_BOX(self->mod2_combo), &m2iter);
+
+    phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->mod1_amount), mod1amt);
+    phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->mod2_amount), mod2amt);
+
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(self->lfo_check), on);
 
     unblock(self);
@@ -487,11 +604,11 @@ GtkWidget* lfo_tab_new(void)
 }
 
 
-void lfo_tab_set_patch(LfoTab* self, int patch)
+void lfo_tab_set_patch(LfoTab* self, int patch_id)
 {
-    self->patch = patch;
+    self->patch_id = patch_id;
 
-    if (patch < 0)
+    if (patch_id < 0)
 	return;
 
     update_lfo(self);

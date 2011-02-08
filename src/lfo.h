@@ -37,6 +37,12 @@ typedef struct _LFOParams
      gboolean positive; /* oscillate from [0, 1] instead of [-1, 1] */
      float delay;       /* in seconds */
      float attack;      /* in seconds */
+
+    int     mod1_id;    /* ID of modulation source */
+    float   mod1_amt;   /* amount of modulation we add [-1.0, 1.0]  */
+
+    int     mod2_id;
+    float   mod2_amt;
 }
 LFOParams;
 
@@ -53,9 +59,10 @@ typedef struct _LFO
      Tick attack;
      Tick attack_ticks; /* how far along we are in the attack phase */
 
-    float* freq_mod1_in;
-    float  freq_mod1_rad; /* -1 to +1 */
-    float  freq_mod1_mid; /* 0 to 1 */
+    float*  freq_mod1;
+    float*  freq_mod2;
+    float   mod1_amt;
+    float   mod2_amt;
 }
 LFO;
 

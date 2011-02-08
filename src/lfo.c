@@ -85,7 +85,6 @@ void lfo_prepare (LFO* lfo)
      lfo->delay = 0;
      lfo->attack = 0;
      lfo->attack_ticks = 0;
-     lfo->freq_mod1_in = 0;
 }
 
 void lfo_trigger (LFO* lfo, LFOParams* params)
@@ -138,10 +137,10 @@ float lfo_tick (LFO* lfo)
 	  return lfo->val;
      }
 
-     lfo->phase += lfo->inc * (lfo->freq_mod1_in && lfo->freq_mod1_rad > 0
-        ? (lfo->freq_mod1_mid +
-                *lfo->freq_mod1_in * lfo->freq_mod1_rad)
-        : 1);
+     lfo->phase
+      += lfo->inc
+        * (lfo->freq_mod1 ? (1 + *lfo->freq_mod1 * lfo->mod1_amt) : 1)
+        * (lfo->freq_mod2 ? (1 + *lfo->freq_mod2 * lfo->mod2_amt) : 1);
 
      /* calculate new value */
      index = lfo->phase >> 24;
