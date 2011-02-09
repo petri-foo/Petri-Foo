@@ -26,3 +26,6 @@ missing
 libtool
 stamp-h1
 
+src/gui/libgui.a
+src/petri-foo
+
