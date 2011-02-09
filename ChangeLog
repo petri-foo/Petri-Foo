@@ -1,3 +1,11 @@
+2011-02-09  James Morris <james@jwm-art.net>
+	* fixed bug caused by usage of wrong patch_* function for tuning
+	  steps.
+
+	* fixed GLFO output lists to only consist of global (ie non-voice)
+          outputs (ie only GLFO outputs can modulate GLFOs, which is as it
+	  should be).
+
 2011-02-06  James Morris <james@jwm-art.net>
 	* removed amptab.[ch] and pitchtab.[ch] replaced with paramtab.[ch]
           which can be used to generate the amplitude, pitch, and filter

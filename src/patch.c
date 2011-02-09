@@ -41,6 +41,9 @@ static float one = 1.0;
 
 static void create_mod_source_names(void)
 {
+    const char none[] = "OFF";
+    const char one[] = "1.0";
+
     int i;
     int id;
 
@@ -53,8 +56,8 @@ static void create_mod_source_names(void)
 
     mod_source_names = malloc(sizeof(*mod_source_names) * MOD_SRC_LAST);
 
-    const char none[] = "OFF";
-    const char one[] = "1.0";
+    for (i = 0; i < MOD_SRC_LAST; ++i)
+        mod_source_names[i] = 0;
 
     mod_source_names[MOD_SRC_NONE] = malloc(strlen(none) + 1);
     strcpy(mod_source_names[MOD_SRC_NONE], none);

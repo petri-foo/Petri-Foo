@@ -62,7 +62,8 @@ static void param2_cb(GtkWidget* w, ModSection* self)
     if (self->param == PATCH_PARAM_PITCH)
     {
         float val = phat_slider_button_get_value(PHAT_SLIDER_BUTTON(w));
-        patch_set_range(self->patch_id, val);
+//        patch_set_range(self->patch_id, val);
+        patch_set_pitch_steps(self->patch_id, val);
     }
 }
 
@@ -492,7 +493,7 @@ void mod_section_set_patch(ModSection* self, int patch_id)
     patch_param_get_value(self->patch_id, self->param, &param1);
 
     if (self->param == PATCH_PARAM_PITCH)
-        param2 = patch_get_range(self->patch_id);
+        param2 = patch_get_pitch_steps(self->patch_id);
     else
         patch_get_vel_amount(patch_id, self->param, &vsens);
 
@@ -536,7 +537,7 @@ get_mod_srcs:
 
     if (self->param == PATCH_PARAM_PITCH)
         phat_slider_button_set_value(PHAT_SLIDER_BUTTON(self->param2),
-                                                                   param2);
+                                                                param2);
     else
         phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->vel_sens), vsens);
 
@@ -553,9 +554,9 @@ set_mod_srcs:
     if (self->param == PATCH_PARAM_PITCH)
     {
         phat_slider_button_set_value(PHAT_SLIDER_BUTTON(self->mod1_amount),
-                                                                    m1amt);
+                                            m1amt * PATCH_MAX_PITCH_STEPS);
         phat_slider_button_set_value(PHAT_SLIDER_BUTTON(self->mod2_amount),
-                                                                    m2amt);
+                                            m2amt * PATCH_MAX_PITCH_STEPS);
     }
     else
     {

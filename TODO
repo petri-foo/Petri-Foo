@@ -12,4 +12,6 @@ in the README as goals for Petri-Foo.
 -Fix problem in sample viewer regard zoom and playback position
  start (maybe need to confirm this problem).
 
+-Restore refresh functions in most GTK GUI classes
+
 
