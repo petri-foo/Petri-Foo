@@ -195,13 +195,17 @@ gboolean mod_src_combo_set_model(GtkComboBox* combo, int model_id)
     switch(model_id)
     {
     case MOD_SRC_INPUTS_ALL:
+        debug("MOD_SRC_INPUTS_ALL\n");
         model = GTK_TREE_MODEL(mod_src_list_all);
         break;
 
     case MOD_SRC_INPUTS_GLOBAL:
+        debug("MOD_SRC_INPUTS_GLOBAL\n");
         model = GTK_TREE_MODEL(mod_src_list_global);
         break;
+
     default:
+        debug("glorious fail\n");
         return FALSE;
     }
 

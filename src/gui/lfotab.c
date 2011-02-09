@@ -522,6 +522,15 @@ static void update_lfo(LfoTab* self)
 
     self->lfo_id = id_selector_get_id(ID_SELECTOR(self->idsel));
 
+    int mod_srcs = (patch_lfo_is_global(self->lfo_id + MOD_SRC_FIRST_GLFO)
+                        ? MOD_SRC_INPUTS_GLOBAL
+                        : MOD_SRC_INPUTS_ALL);
+
+    block(self);
+    mod_src_combo_set_model(GTK_COMBO_BOX(self->mod1_combo), mod_srcs);
+    mod_src_combo_set_model(GTK_COMBO_BOX(self->mod2_combo), mod_srcs);
+    unblock(self);
+
     patch_get_lfo_shape(    self->patch_id, self->lfo_id, &shape);
     patch_get_lfo_freq(     self->patch_id, self->lfo_id, &freq);
     patch_get_lfo_beats(    self->patch_id, self->lfo_id, &beats);

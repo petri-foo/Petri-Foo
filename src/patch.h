@@ -230,6 +230,10 @@ int           patch_get_sample_stop   (int id);
 int           patch_get_upper_note    (int id);
 float         patch_get_amplitude        (int id);
 
+
+gboolean    patch_lfo_is_global(int lfo_id);
+
+
 /* param */
 
 int patch_param_get_value(int patch_id, PatchParamType, float* val);

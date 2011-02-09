@@ -97,6 +97,15 @@ static void create_mod_source_names(void)
 }
 
 
+gboolean patch_lfo_is_global(int lfo_id)
+{
+    if (lfo_id >= MOD_SRC_FIRST_GLFO && lfo_id < MOD_SRC_LAST_GLFO)
+        return TRUE;
+
+    return FALSE;
+}
+
+
 char** patch_mod_source_names(void)
 {
     return mod_source_names;
