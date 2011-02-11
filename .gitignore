@@ -28,4 +28,5 @@ stamp-h1
 
 src/gui/libgui.a
 src/petri-foo
+src/sine.wav
 

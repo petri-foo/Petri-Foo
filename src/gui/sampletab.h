@@ -25,6 +25,7 @@ struct _SampleTab
     GtkWidget* file_label;
     GtkWidget* file_button;
     GtkWidget* reverse_check;
+    GtkWidget* to_end_check;
 };
 
 struct _SampleTabClass

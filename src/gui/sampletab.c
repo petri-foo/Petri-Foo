@@ -57,31 +57,58 @@ static void update_file_button(SampleTab* self)
 {
     char* name;
     char* base;
-    
+
     name = patch_get_sample_name(self->patch);
 
     if (*name == '\0')
     {
-	gtk_label_set_text(GTK_LABEL(self->file_label), "Load Sample");
+        gtk_label_set_text(GTK_LABEL(self->file_label), "Load Sample");
     }
     else
     {
-	base = g_path_get_basename(name);
-	gtk_label_set_text(GTK_LABEL(self->file_label), base);
-	g_free(base);
+        base = g_path_get_basename(name);
+        gtk_label_set_text(GTK_LABEL(self->file_label), base);
+        g_free(base);
     }
     g_free(name);
+}
+
+
+static void update_to_end_check(SampleTab* self)
+{
+    int val;
+    PatchPlayMode mode = 0;
+
+    val = gtk_option_menu_get_history(GTK_OPTION_MENU(self->mode_opt));
+
+    switch (val)
+    {
+    case LOOP:
+    case PINGPONG:
+        gtk_widget_set_sensitive(self->to_end_check, TRUE);
+        break;
+    default:
+        gtk_widget_set_sensitive(self->to_end_check, FALSE);
+        break;
+    }
+
+    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(self->to_end_check)))
+        mode |= PATCH_PLAY_TO_END;
+    else
+        mode &= ~PATCH_PLAY_TO_END;
+
+    patch_set_play_mode(self->patch, mode);
 }
 
 
 static gboolean waveform_cb(GtkWidget* wf, GdkEventButton* event, SampleTab* self)
 {
      if (event->button == 1)
-	  sample_editor_show(self->patch);
+        sample_editor_show(self->patch);
 
      /* this doesn't work! */
      gtk_widget_queue_draw(wf);
-     
+
      return FALSE;
 }
 
@@ -90,7 +117,6 @@ static void set_mode(SampleTab* self)
 {
     int val;
     PatchPlayMode mode = 0;
-    
 
     val = gtk_option_menu_get_history(GTK_OPTION_MENU(self->mode_opt));
 
@@ -115,9 +141,19 @@ static void set_mode(SampleTab* self)
     else
 	mode |= PATCH_PLAY_FORWARD;
 
+    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(self->to_end_check)))
+        mode |= PATCH_PLAY_TO_END;
+    else
+        mode &= ~PATCH_PLAY_TO_END;
+
+    update_to_end_check(self);
     patch_set_play_mode(self->patch, mode);
 }
-    
+
+static void to_end_cb(GtkOptionMenu* opt, SampleTab* self)
+{
+    set_mode(self);
+}
 
 static void mode_cb(GtkOptionMenu* opt, SampleTab* self)
 {
@@ -149,6 +185,8 @@ static void connect(SampleTab* self)
 		     G_CALLBACK(reverse_cb), (gpointer) self);
     g_signal_connect(G_OBJECT(self->file_button), "clicked",
 		     G_CALLBACK(file_cb), (gpointer) self);
+    g_signal_connect(G_OBJECT(self->to_end_check), "toggled",
+		     G_CALLBACK(to_end_cb), (gpointer) self);
 }
 
 
@@ -156,6 +194,7 @@ static void block(SampleTab* self)
 {
     g_signal_handlers_block_by_func(self->mode_opt, mode_cb, self);
     g_signal_handlers_block_by_func(self->reverse_check, reverse_cb, self);
+    g_signal_handlers_block_by_func(self->to_end_check, to_end_cb, self);
 }
 
 
@@ -163,6 +202,7 @@ static void unblock(SampleTab* self)
 {
     g_signal_handlers_unblock_by_func(self->mode_opt, mode_cb, self);
     g_signal_handlers_unblock_by_func(self->reverse_check, reverse_cb, self);
+    g_signal_handlers_unblock_by_func(self->to_end_check, to_end_cb, self);
 }
 
 
@@ -284,6 +324,11 @@ static void sample_tab_init(SampleTab* self)
     gtk_box_pack_start(GTK_BOX(hbox), self->reverse_check, TRUE, TRUE, 0);
     gtk_widget_show(self->reverse_check);
 
+    /* to end check */
+    self->to_end_check = gtk_check_button_new_with_label("To End");
+    gtk_box_pack_start(GTK_BOX(hbox), self->to_end_check, TRUE, TRUE, 0);
+    gtk_widget_show(self->to_end_check);
+
     connect(self);
 }
 
@@ -316,6 +361,9 @@ void sample_tab_set_patch(SampleTab* self, int patch)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(self->reverse_check),
 				     mode & PATCH_PLAY_REVERSE);
 
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(self->to_end_check),
+				     mode & PATCH_PLAY_TO_END);
+
 	if (mode & PATCH_PLAY_TRIM)
 	{
 	    gtk_option_menu_set_history(GTK_OPTION_MENU(self->mode_opt), TRIM);
@@ -333,5 +381,6 @@ void sample_tab_set_patch(SampleTab* self, int patch)
 	    gtk_option_menu_set_history(GTK_OPTION_MENU(self->mode_opt), SINGLESHOT);
 	}
     }
+    update_to_end_check(self);
     unblock(self);
 }

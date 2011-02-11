@@ -21,6 +21,8 @@ typedef struct _PatchVoice
                              * this voice (negative if N/A) */
     release_t relmode;      /* how release activated (noteoff or cutoff) */
     gboolean  released;     /* whether we've been released or not */
+    gboolean  to_end;       /* whether we're to go to end of sample after
+                               loop or not */
     float     declick_vol;  /* current volume for declick phase */
     int       dir;          /* current direction
                              * (forward == 1, reverse == -1) */
@@ -58,6 +60,9 @@ typedef struct _PatchVoice
     float     flr;		/* lowpass filter buffer, right */
     float     fbl;		/* bandpass filter buffer, left */
     float     fbr;		/* bandpass filter buffer, right */
+
+    float   xfl;    /* xfade buffer left */
+    float   xfr;    /* xfade buffer right */
 } PatchVoice;
 
 
@@ -101,6 +106,7 @@ typedef struct _Patch
     int      sample_stop;	/* the last frame to play */
     int      loop_start;	/* the first frame to loop at */
     int      loop_stop;		/* the last frame to loop at */
+    int      sample_xfade;  /* number of samples to xfade sample */
     gboolean porta;		/* whether portamento is being used or not */
     float    porta_secs;	/* length of portamento slides in seconds */
     int      pitch_steps;	/* range of pitch.val in halfsteps */

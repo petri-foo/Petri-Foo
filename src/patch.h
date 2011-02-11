@@ -83,7 +83,13 @@ enum
 
      /* ping pong mode can be set independently of all the other
       * params, but it should only be tested for if PATCH_PLAY_LOOP is set */
-     PATCH_PLAY_PINGPONG = 1 << 5
+     PATCH_PLAY_PINGPONG = 1 << 5,
+
+    /*  patch play to end should only be tested for if PATCH_PLAY_LOOP is
+        set. if active, after note_off, playback continues past loop end
+        toward sample end
+     */
+     PATCH_PLAY_TO_END = 1 << 6
 };
 
 /* type for playmode bitfield */
@@ -199,7 +205,8 @@ int patch_set_resonance     (int id, float reso);
 int patch_set_sample_start (int id, int start);
 int patch_set_sample_stop  (int id, int stop);
 int patch_set_upper_note   (int id, int note);
-int patch_set_amplitude       (int id, float vol);
+int patch_set_amplitude    (int id, float vol);
+int patch_set_sample_xfade (int id, int samples);
 
 /* parameter getters */
 int           patch_get_channel       (int id);
@@ -228,7 +235,8 @@ char*         patch_get_sample_name   (int id);
 int           patch_get_sample_start  (int id);
 int           patch_get_sample_stop   (int id);
 int           patch_get_upper_note    (int id);
-float         patch_get_amplitude        (int id);
+float         patch_get_amplitude     (int id);
+int           patch_get_sample_xfade  (int id);
 
 
 gboolean    patch_lfo_is_global(int lfo_id);

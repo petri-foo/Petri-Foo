@@ -25,8 +25,11 @@ static float range = 1.0;
 static int old_play_start, old_play_stop;
 static int old_loop_start, old_loop_stop;
 static int patch;
+static int old_xfade;
+
 static GtkWidget *spin_loop_start, *spin_loop_end;
 static GtkWidget *spin_play_start, *spin_play_end;
+static GtkWidget* spin_xfade;
 
 static void cb_close (GtkWidget * widget, gpointer data)
 {
@@ -173,6 +176,11 @@ static void cb_play_changed (GtkWidget * spin, gpointer data)
 
     gtk_widget_queue_draw (waveform);
 }
+
+static void cb_xfade_changed ()
+{
+}
+
 
 static void cb_wf_changed ()
 {
@@ -355,6 +363,16 @@ void sample_editor_init (GtkWidget * parent)
      gtk_widget_show (spin_loop_end);
      g_signal_connect (G_OBJECT (spin_loop_end), "value-changed",
 		       G_CALLBACK (cb_loop_changed), NULL);
+
+     label = gtk_label_new ("X-Fade:");
+     gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, FALSE, 0);
+     gtk_widget_show (label);
+
+     spin_xfade = gtk_spin_button_new_with_range(0, 1, 1);
+     gtk_box_pack_start (GTK_BOX (hbox), spin_xfade, FALSE, FALSE, 0);
+     gtk_widget_show (spin_xfade);
+     g_signal_connect (G_OBJECT (spin_xfade), "value-changed",
+		       G_CALLBACK (cb_xfade_changed), NULL);
 
      /* loop points clear button */
      button = gtk_button_new_with_label ("Loop");

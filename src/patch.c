@@ -378,6 +378,7 @@ int patch_create (const char *name)
     patches[id].cut_by = 0;
     patches[id].sample_start = 0;
     patches[id].sample_stop = 0;
+    patches[id].sample_xfade = 0;
     patches[id].loop_start = 0;
     patches[id].loop_stop = 0;
     patches[id].porta = FALSE;
@@ -829,10 +830,12 @@ int patch_sample_load (int id, const char *name)
     val = sample_load_file (patches[id].sample, name, samplerate);
 
     /* set the sample/loop start/stop point appropriately */
+    patches[id].sample_xfade = 50;
     patches[id].sample_start = 0;
     patches[id].sample_stop = patches[id].sample->frames - 1;
     patches[id].loop_start = 0;
-    patches[id].loop_stop = patches[id].sample->frames - 1;
+    patches[id].loop_stop =
+        patches[id].sample->frames - 1 - patches[id].sample_xfade;
 
     patch_unlock (id);
     return val;
@@ -853,6 +856,7 @@ void patch_sample_unload (int id)
     patches[id].sample_stop = 0;
     patches[id].loop_start = 0;
     patches[id].loop_stop = 0;
+    patches[id].sample_xfade = 0;
 
     patch_unlock (id);
 }
@@ -1138,6 +1142,7 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
     v->relset = -1;		/* N/A at this time */
     v->relmode = RELEASE_NONE;
     v->released = FALSE;
+    v->to_end = FALSE;
     v->declick_vol = 1.0;
     v->note = note;
     v->fll = 0;
@@ -1479,7 +1484,7 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
     }
 
     /* adjust our indices according to our play mode */
-    if (p->play_mode & PATCH_PLAY_LOOP)
+    if (p->play_mode & PATCH_PLAY_LOOP && !v->to_end)
     {
         if (p->play_mode & PATCH_PLAY_PINGPONG)
         {
@@ -1528,6 +1533,9 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
                 adsr_release (&v->env[j]);
             }
             v->released = TRUE;
+
+            if (p->play_mode & PATCH_PLAY_TO_END)
+                v->to_end = TRUE;
         }
         else
         {
@@ -2368,6 +2376,68 @@ int patch_set_legato(int id, gboolean val)
 }
     
 
+/* set the point within the sample to begin playing */
+int patch_set_sample_start (int id, int start)
+{
+    if (!isok (id))
+	return PATCH_ID_INVALID;
+
+    if (patches[id].sample->sp == NULL)
+	return 0;
+
+    if (start < 0)
+    {
+	debug ("refusing to set negative sample start point\n");
+	return PATCH_PARAM_INVALID;
+    }
+
+    if (start > patches[id].sample_stop)
+    {
+	debug ("refusing to set incongruous sample start point\n");
+	return PATCH_PARAM_INVALID;
+    }
+
+    if (start + patches[id].sample_xfade >= patches[id].sample_stop)
+    {
+	debug ("refusing to set sample start point without room for xfade\n");
+	return PATCH_PARAM_INVALID;
+    }
+
+    patches[id].sample_start = start;
+    return 0;
+}
+
+/* set the point within the sample to stop playing */
+int patch_set_sample_stop (int id, int stop)
+{
+    if (!isok (id))
+	return PATCH_ID_INVALID;
+
+    if (patches[id].sample->sp == NULL)
+	return 0;
+
+    if (stop >= patches[id].sample->frames)
+    {
+	debug ("refusing to set sample stop greater than sample frame count\n");
+	return PATCH_PARAM_INVALID;
+    }
+
+    if (stop < patches[id].sample_start)
+    {
+	debug ("refusing to set incongruous sample stop point\n");
+	return PATCH_PARAM_INVALID;
+    }
+
+    if (stop >= patches[id].sample->frames - patches[id].sample_xfade)
+    {
+	debug ("refusing to set sample stop point without room for xfade\n");
+	return PATCH_PARAM_INVALID;
+    }
+
+    patches[id].sample_stop = stop;
+    return 0;
+}
+
 /* sets the start loop point */
 int patch_set_loop_start (int id, int start)
 {
@@ -2379,7 +2449,7 @@ int patch_set_loop_start (int id, int start)
 
     if (start < patches[id].sample_start)
 	start = patches[id].sample_start;
-    else if (start > patches[id].sample_stop)
+    else if (start >= patches[id].sample_stop)
 	start = patches[id].sample_stop;
 
     patches[id].loop_start = start;
@@ -2409,6 +2479,38 @@ int patch_set_loop_stop (int id, int stop)
 
     return 0;
 }
+
+int patch_set_sample_xfade (int id, int samples)
+{
+    if (!isok (id))
+	return PATCH_ID_INVALID;
+
+    if (patches[id].sample->sp == NULL)
+	return 0;
+
+    if (samples < 0)
+    {
+	debug ("refusing to set negative xfade length\n");
+	return PATCH_PARAM_INVALID;
+    }
+
+
+    if (patches[id].sample_start + samples >= patches[id].sample_stop)
+    {
+	debug ("refusing to set xfade length greater than samples between start and stop\n");
+	return PATCH_PARAM_INVALID;
+    }
+
+    if (patches[id].sample_stop + samples > patches[id].sample->frames)
+    {
+	debug ("refusing to set xfade length greater than length after stop\n");
+	return PATCH_PARAM_INVALID;
+    }
+
+    patches[id].sample_xfade = samples;
+    return 0;
+}
+
 
 /* sets the lower note of a patch's range */
 int patch_set_lower_note (int id, int note)
@@ -2601,55 +2703,6 @@ int patch_set_resonance (int id, float reso)
     return 0;
 }
 
-/* set the point within the sample to begin playing */
-int patch_set_sample_start (int id, int start)
-{
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-
-    if (patches[id].sample->sp == NULL)
-	return 0;
-
-    if (start < 0)
-    {
-	debug ("refusing to set negative sample start point\n");
-	return PATCH_PARAM_INVALID;
-    }
-
-    if (start > patches[id].sample_stop)
-    {
-	debug ("refusing to set incongruous sample start point\n");
-	return PATCH_PARAM_INVALID;
-    }
-
-    patches[id].sample_start = start;
-    return 0;
-}
-
-/* set the point within the sample to stop playing */
-int patch_set_sample_stop (int id, int stop)
-{
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-
-    if (patches[id].sample->sp == NULL)
-	return 0;
-
-    if (stop >= patches[id].sample->frames)
-    {
-	debug ("refusing to set sample stop greater than sample frame count\n");
-	return PATCH_PARAM_INVALID;
-    }
-
-    if (stop < patches[id].sample_start)
-    {
-	debug ("refusing to set incongruous sample stop point\n");
-	return PATCH_PARAM_INVALID;
-    }
-
-    patches[id].sample_stop = stop;
-    return 0;
-}
 
 /* set the upper note of a patch's range */
 int patch_set_upper_note (int id, int note)
@@ -2742,6 +2795,22 @@ gboolean patch_get_legato(int id)
     return patches[id].legato;
 }   
 
+/* get the starting playback point */
+int patch_get_sample_start (int id)
+{
+    if (!isok (id))
+	return PATCH_ID_INVALID;
+    return patches[id].sample_start;
+}
+
+/* get the stopping playback point */
+int patch_get_sample_stop (int id)
+{
+    if (!isok (id))
+	return PATCH_ID_INVALID;
+    return patches[id].sample_stop;
+}
+
 /* get the starting loop point */
 int patch_get_loop_start (int id)
 {
@@ -2756,6 +2825,14 @@ int patch_get_loop_stop (int id)
     if (!isok (id))
 	return PATCH_ID_INVALID;
     return patches[id].loop_stop;
+}
+
+/* get the starting playback point */
+int patch_get_sample_xfade (int id)
+{
+    if (!isok (id))
+	return PATCH_ID_INVALID;
+    return patches[id].sample_xfade;
 }
 
 /* get the lower note */
@@ -2882,22 +2959,6 @@ char *patch_get_sample_name (int id)
     else
 	name = strdup (sample_get_file (patches[id].sample));
     return name;
-}
-
-/* get the starting playback point */
-int patch_get_sample_start (int id)
-{
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-    return patches[id].sample_start;
-}
-
-/* get the stopping playback point */
-int patch_get_sample_stop (int id)
-{
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-    return patches[id].sample_stop;
 }
 
 /* get the upper note */
