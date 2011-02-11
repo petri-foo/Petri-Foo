@@ -6,6 +6,15 @@
 #include "patch.h"
 #include "waveform.h"
 
+/* signals */
+enum
+{
+    CHANGED,
+    LAST_SIGNAL,
+};
+
+static int signals[LAST_SIGNAL];
+
 /* colors: from 0 to 65535 */
 enum
 {
@@ -93,13 +102,13 @@ GType waveform_get_type ( )
      return wf_type;
 }
 
-static void waveform_class_init (WaveformClass * class)
+static void waveform_class_init (WaveformClass * klass)
 {
      GtkObjectClass *object_class;
      GtkWidgetClass *widget_class;
 
-     object_class = (GtkObjectClass *) class;
-     widget_class = (GtkWidgetClass *) class;
+     object_class = (GtkObjectClass *) klass;
+     widget_class = (GtkWidgetClass *) klass;
 
      parent_class = gtk_type_class (gtk_widget_get_type ( ));
 
@@ -110,6 +119,15 @@ static void waveform_class_init (WaveformClass * class)
      widget_class->size_request = waveform_size_request;
      widget_class->size_allocate = waveform_size_allocate;
      widget_class->button_press_event = waveform_button_press;
+
+     signals[CHANGED] =
+	  g_signal_new ("changed",
+			G_TYPE_FROM_CLASS (klass),
+			G_SIGNAL_RUN_FIRST | G_SIGNAL_ACTION,
+			G_STRUCT_OFFSET (WaveformClass, changed),
+			NULL, NULL,
+			g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
+
 }
 
 static void waveform_init (Waveform * wf)
@@ -305,6 +323,7 @@ waveform_button_press (GtkWidget * widget, GdkEventButton * event)
 	  }
      }
 
+     g_signal_emit_by_name(G_OBJECT(wf), "changed");
      gtk_widget_queue_draw (widget);
      return FALSE;
 }
@@ -410,7 +429,7 @@ inline static void draw_wave (Waveform* wf, GdkDrawable* surface,
 	  int ferr = 0;		/* frame error value */
 	  int visframes		/* number of frames that will be drawn */
 	       = stop - start;
-	  
+
 	  for (x = 0; x < w; x++)
 	  {
 	       if ((ferr += visframes) >= w)
@@ -421,11 +440,11 @@ inline static void draw_wave (Waveform* wf, GdkDrawable* surface,
 	       {
 		    continue;
 	       }
-	       
+
 	       y = (wav[f*2] + 1) / 2 * h;
 
 	       /* set line color */
-	       if (f < play_start * 2 || f > play_stop * 2)
+	       if (f < play_start || f > play_stop)
 	       {
 		    color.red = WAVE_RO;
 		    color.green = WAVE_GO;
@@ -463,11 +482,11 @@ inline static void draw_wave (Waveform* wf, GdkDrawable* surface,
 	  int s = 0;		/* sample index */
 	  int visframes		/* number of frames that will be drawn */
 	       = stop - start;
-	  
+
 	  for (f = start; f < stop; f++)
 	  {
 	       s = f * 2;
-	       
+
 	       if (wav[s] > maxy)
 	       {
 		    maxy = wav[s];
@@ -504,7 +523,7 @@ inline static void draw_wave (Waveform* wf, GdkDrawable* surface,
 	       /* calculate drawing coordinates */
 	       draw_miny = (miny + 1) / 2 * h;
 	       draw_maxy = (maxy + 1) / 2 * h;
-	       
+
 	       /* connect to previously drawn segment; we put off
 		* converting the lm??y values so that they don't get
 		* calculated if they aren't needed (efficiency) */

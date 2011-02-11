@@ -25,6 +25,8 @@ struct _waveform
 struct _waveform_class
 {
      GtkWidgetClass parent_class;
+
+     void (*changed)(Waveform* self);
 };
 
 GtkWidget* waveform_new             (int id, int w, int h, gboolean interactive);
