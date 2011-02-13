@@ -63,6 +63,18 @@ typedef struct _PatchVoice
 
     float   xfl;    /* xfade buffer left */
     float   xfr;    /* xfade buffer right */
+
+
+    float   xfade_step;
+    float   fade_in_step;
+    float   fade_out_step;
+
+    int xfade_smp;
+    int fadein_smp;
+    int fadeout_smp;
+    
+    
+
 } PatchVoice;
 
 
@@ -106,7 +118,11 @@ typedef struct _Patch
     int      sample_stop;	/* the last frame to play */
     int      loop_start;	/* the first frame to loop at */
     int      loop_stop;		/* the last frame to loop at */
-    int      sample_xfade;  /* number of samples to xfade sample */
+
+    int     sample_xfade;
+    int     sample_fade_in;
+    int     sample_fade_out;
+
     gboolean porta;		/* whether portamento is being used or not */
     float    porta_secs;	/* length of portamento slides in seconds */
     int      pitch_steps;	/* range of pitch.val in halfsteps */

@@ -1,3 +1,7 @@
+2011-02-13  James Morris <james@jwm-art.net>
+	* house keeping: transferred patch_*_names functions into
+	  mod_src_*_names functions.
+
 2011-02-09  James Morris <james@jwm-art.net>
 	* fixed bug caused by usage of wrong patch_* function for tuning
 	  steps.

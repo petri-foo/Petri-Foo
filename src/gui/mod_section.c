@@ -227,10 +227,10 @@ static gboolean refresh(gpointer data)
 
 static void mod_section_init(ModSection* self)
 {
-    debug("init");
     self->patch_id = -1;
     self->mod_only = FALSE;
     self->param = PATCH_PARAM_INVALID;
+    self->refresh = -1;
 }
 
 
@@ -253,7 +253,7 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
     float range_hi = 1.0;
 
     const char* lstr;
-    const char** param_names = patch_param_names();
+    const char** param_names = mod_src_param_names();
 
     int y = 0;
 
@@ -409,10 +409,16 @@ create_mod_srcs:
 
     /* done */
     connect(self);
-/*
-    self->refresh = g_timeout_add(GUI_REFRESH_TIMEOUT, refresh,
+
+    switch(param)
+    {
+    case PATCH_PARAM_AMPLITUDE:
+        self->refresh = g_timeout_add(GUI_REFRESH_TIMEOUT,  refresh,
                                                         (gpointer) self);
-*/
+        break;
+    default:
+        self->refresh = -1;
+    }
 }
 
 
@@ -447,14 +453,17 @@ static void mod_section_destroy(GtkObject* object)
     ModSection* self = MOD_SECTION(object);
     GtkObjectClass* klass = GTK_OBJECT_CLASS(parent_class);
 
-    if (!g_source_remove(self->refresh))
+    if (self->refresh != -1)
     {
-        debug("failed to remove refresh function from idle loop: %u\n",
-                                                        self->refresh);
-    }
-    else
-    {
-        debug("refresh function removed\n");
+        if (!g_source_remove(self->refresh))
+        {
+            debug("failed to remove refresh function from idle loop: %u\n",
+                                                            self->refresh);
+        }
+        else
+        {
+            debug("refresh function removed\n");
+        }
     }
 
     if (klass->destroy)
@@ -479,8 +488,6 @@ void mod_section_set_patch(ModSection* self, int patch_id)
     GtkTreeIter enviter;
     GtkTreeIter m1iter;
     GtkTreeIter m2iter;
-
-    debug("here\n");
 
     self->patch_id = patch_id;
 

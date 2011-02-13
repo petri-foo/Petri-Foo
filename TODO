@@ -9,9 +9,9 @@ in the README as goals for Petri-Foo.
 -Add context menu to patch list (I did this in June 2008 but it was
  never taken).
 
--Fix problem in sample viewer regard zoom and playback position
- start (maybe need to confirm this problem).
-
 -Restore refresh functions in most GTK GUI classes
 
+
+-Port deprecated GDK line drawing code to Cairo (ie sample editor)
+  - quite important if we want Petri-Foo to live a long life.
 

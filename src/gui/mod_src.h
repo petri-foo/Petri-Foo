@@ -56,4 +56,14 @@ gboolean        mod_src_combo_set_model(GtkComboBox*, int model_id);
 
 int             mod_src_combo_get_model_id(GtkComboBox*);
 
+
+void            mod_src_create_names(void);
+void            mod_src_destroy_names(void);
+
+char**          mod_src_get_names(void);
+
+const char**    mod_src_adsr_names(void);
+const char**    mod_src_lfo_names(void);
+const char**    mod_src_param_names(void);
+
 #endif

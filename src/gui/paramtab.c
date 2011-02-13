@@ -59,18 +59,7 @@ static void param_tab_init(ParamTab* self)
 
 static void param_tab_destroy(GtkObject* object)
 {
-    ParamTab* self = PARAM_TAB(object);
     GtkObjectClass* klass = GTK_OBJECT_CLASS(parent_class);
-
-    if (!g_source_remove(self->refresh))
-    {
-        debug("failed to remove refresh function from idle loop: %u\n",
-                                                        self->refresh);
-    }
-    else
-    {
-        debug("refresh function removed\n");
-    }
 
     if (klass->destroy)
         klass->destroy(object);
@@ -105,10 +94,6 @@ void param_tab_set_param(ParamTab* self, PatchParamType param)
 
     case PATCH_PARAM_PITCH:
         ms1 = PATCH_PARAM_PITCH;
-        break;
-
-    case PATCH_PARAM_LFO_FREQ:
-        ms1 = PATCH_PARAM_LFO_FREQ;
         break;
 
     default:

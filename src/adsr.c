@@ -21,6 +21,8 @@ void adsr_trigger (ADSR* env)
 {
      env->state = ADSR_STATE_DELAY;
      env->ticks = 0;
+     env->val = 0;
+     env->rval = 0;
 }
 
 void adsr_release (ADSR* env)

@@ -13,6 +13,8 @@ static GtkWidget *waveform;
 static GtkWidget *hscroll;
 static GtkAdjustment *hscrolladj;
 
+static GtkWidget* wf_thumb = 0;
+
 enum
 {
      ZOOM_MIN = 1,
@@ -25,10 +27,13 @@ static float range = 1.0;
 static int old_play_start, old_play_stop;
 static int old_loop_start, old_loop_stop;
 static int patch;
-static int old_xfade;
+static int old_xfade, old_fade_in, old_fade_out;
 
 static GtkWidget *spin_loop_start, *spin_loop_end;
 static GtkWidget *spin_play_start, *spin_play_end;
+
+static GtkWidget* spin_fade_in;
+static GtkWidget* spin_fade_out;
 static GtkWidget* spin_xfade;
 
 static void cb_close (GtkWidget * widget, gpointer data)
@@ -100,7 +105,8 @@ static void cb_scroll (GtkWidget * scroll, gpointer data)
 
 static void cb_loop_changed (GtkWidget * spin, gpointer data)
 {
-    int start = patch_get_loop_start (patch), end = patch_get_loop_stop (patch);
+    int start = patch_get_loop_start (patch);
+    int end = patch_get_loop_stop (patch);
     int val;
 
     if (ignore_callback)
@@ -108,16 +114,21 @@ static void cb_loop_changed (GtkWidget * spin, gpointer data)
 
     ignore_callback = 1;
 
-    if (spin == spin_loop_start) {
-        val = (int)gtk_spin_button_get_value (GTK_SPIN_BUTTON (spin_loop_start));
+    if (spin == spin_loop_start)
+    {
+        val = gtk_spin_button_get_value_as_int(
+                                GTK_SPIN_BUTTON (spin_loop_start));
         if (val != start)
         {
-            patch_set_loop_start (patch, val);
+            patch_set_loop_start(patch, val);
             start = val;
         }
     }
-    if (spin == spin_loop_end) {
-        val = (int)gtk_spin_button_get_value (GTK_SPIN_BUTTON (spin_loop_end));
+
+    if (spin == spin_loop_end)
+    {
+        val = gtk_spin_button_get_value_as_int(
+                                GTK_SPIN_BUTTON(spin_loop_end));
         if (val != end)
         {
             patch_set_loop_stop (patch, val);
@@ -134,42 +145,52 @@ static void cb_play_changed (GtkWidget * spin, gpointer data)
 {
     if (ignore_callback)
         return;
-    int start = patch_get_sample_start(patch), end = patch_get_sample_stop(patch);
+
+    int start = patch_get_sample_start(patch);
+    int end = patch_get_sample_stop(patch);
     int nframes = patch_get_frames (patch);
     int val;
-
-    if (ignore_callback)
-        return;
 
     ignore_callback = 1;
 
     gboolean changed = FALSE;
 
-    if (spin == spin_play_start) {
-        val = (int)gtk_spin_button_get_value (GTK_SPIN_BUTTON (spin_play_start));
+    if (spin == spin_play_start)
+    {
+        val = gtk_spin_button_get_value_as_int(
+                                GTK_SPIN_BUTTON(spin_play_start));
         if (val != start)
         {
             patch_set_sample_start (patch, val);
             start = val;
-            gtk_spin_button_set_range (GTK_SPIN_BUTTON (spin_play_end), start + 1, nframes - 1);
+            gtk_spin_button_set_range(
+                                GTK_SPIN_BUTTON (spin_play_end),
+                                            start + 1, nframes - 1);
             changed = TRUE;
         }
     }
-    if (spin == spin_play_end) {
-        val = (int)gtk_spin_button_get_value (GTK_SPIN_BUTTON (spin_play_end));
+
+    if (spin == spin_play_end)
+    {
+        val = gtk_spin_button_get_value_as_int(
+                            GTK_SPIN_BUTTON(spin_play_end));
         if (val != end)
         {
             patch_set_sample_stop (patch, val);
             end = val;
-            gtk_spin_button_set_range (GTK_SPIN_BUTTON (spin_play_start), 0, end - 1);
+            gtk_spin_button_set_range(
+                        GTK_SPIN_BUTTON(spin_play_start), 0, end - 1);
+
             changed = TRUE;
         }
     }
 
     if (changed)
     {
-        gtk_spin_button_set_range(GTK_SPIN_BUTTON(spin_loop_start), start, end);
-        gtk_spin_button_set_range(GTK_SPIN_BUTTON(spin_loop_end), start, end);
+        gtk_spin_button_set_range(
+                        GTK_SPIN_BUTTON(spin_loop_start), start, end);
+        gtk_spin_button_set_range(
+                        GTK_SPIN_BUTTON(spin_loop_end), start, end);
     }
 
     ignore_callback = 0;
@@ -177,8 +198,75 @@ static void cb_play_changed (GtkWidget * spin, gpointer data)
     gtk_widget_queue_draw (waveform);
 }
 
-static void cb_xfade_changed ()
+
+static void cb_xfade_changed (GtkWidget * spin, gpointer data)
 {
+    if (ignore_callback)
+        return;
+ 
+    int xfade = patch_get_sample_xfade(patch);
+    int nframes = patch_get_frames(patch);
+    int val;
+
+    val = gtk_spin_button_get_value_as_int(
+                            GTK_SPIN_BUTTON (spin_xfade));
+    if (val != xfade)
+    {
+        patch_set_sample_xfade(patch, val);
+        xfade = val;
+        gtk_spin_button_set_range(
+                    GTK_SPIN_BUTTON(spin_xfade), xfade - 1, xfade + 1);
+    }
+
+    gtk_widget_queue_draw(waveform);
+}
+
+
+static void cb_fade_in_changed (GtkWidget * spin, gpointer data)
+{
+    if (ignore_callback)
+        return;
+ 
+    int fade_in = patch_get_sample_fade_in(patch);
+    int nframes = patch_get_frames(patch);
+    int val;
+
+    val = gtk_spin_button_get_value_as_int(
+                            GTK_SPIN_BUTTON(spin_fade_in));
+    if (val != fade_in)
+    {
+        patch_set_sample_fade_in(patch, val);
+        fade_in = val;
+        gtk_spin_button_set_range(
+                        GTK_SPIN_BUTTON(spin_fade_in),
+                                            fade_in - 1, fade_in + 1);
+    }
+
+    gtk_widget_queue_draw(waveform);
+}
+
+
+static void cb_fade_out_changed (GtkWidget * spin, gpointer data)
+{
+    if (ignore_callback)
+        return;
+ 
+    int fade_out = patch_get_sample_fade_out(patch);
+    int nframes = patch_get_frames(patch);
+    int val;
+
+    val = gtk_spin_button_get_value_as_int(
+                            GTK_SPIN_BUTTON(spin_fade_out));
+    if (val != fade_out)
+    {
+        patch_set_sample_fade_out(patch, val);
+        fade_out = val;
+        gtk_spin_button_set_range(
+                        GTK_SPIN_BUTTON(spin_fade_out),
+                                            fade_out - 1, fade_out + 1);
+    }
+
+    gtk_widget_queue_draw(waveform);
 }
 
 
@@ -186,6 +274,7 @@ static void cb_wf_changed ()
 {
     sample_editor_update_play();
     sample_editor_update_loop();
+    waveform_draw(WAVEFORM(wf_thumb));
 }
 
 static void cb_zoom (GtkAdjustment * adj, GtkWidget * spinbutton)
@@ -266,6 +355,13 @@ void sample_editor_update_play()
     gtk_spin_button_set_value (GTK_SPIN_BUTTON (spin_play_end), patch_get_sample_stop (patch));
     ignore_callback = 0;
 }
+
+
+void sample_editor_set_thumb(GtkWidget* thumb)
+{
+    wf_thumb = thumb;
+}
+
 
 void sample_editor_init (GtkWidget * parent)
 {
@@ -364,16 +460,6 @@ void sample_editor_init (GtkWidget * parent)
      g_signal_connect (G_OBJECT (spin_loop_end), "value-changed",
 		       G_CALLBACK (cb_loop_changed), NULL);
 
-     label = gtk_label_new ("X-Fade:");
-     gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, FALSE, 0);
-     gtk_widget_show (label);
-
-     spin_xfade = gtk_spin_button_new_with_range(0, 1, 1);
-     gtk_box_pack_start (GTK_BOX (hbox), spin_xfade, FALSE, FALSE, 0);
-     gtk_widget_show (spin_xfade);
-     g_signal_connect (G_OBJECT (spin_xfade), "value-changed",
-		       G_CALLBACK (cb_xfade_changed), NULL);
-
      /* loop points clear button */
      button = gtk_button_new_with_label ("Loop");
      gtk_box_pack_end (GTK_BOX (hbox), button, FALSE, FALSE, 0);
@@ -416,7 +502,9 @@ void sample_editor_init (GtkWidget * parent)
      gtk_box_pack_start (GTK_BOX (master_vbox), hbox, FALSE, FALSE, 0);
      gtk_widget_show (hbox);
 
+
      /* zoom spinbutton */
+
      label = gtk_label_new ("Zoom:");
      gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, FALSE, 0);
      gtk_widget_show (label);
@@ -429,6 +517,44 @@ void sample_editor_init (GtkWidget * parent)
      g_signal_connect (G_OBJECT (zoom_adj), "value_changed",
 		       G_CALLBACK (cb_zoom), (gpointer) spinbutton);
      gtk_widget_show (spinbutton);
+
+
+    /* fade in */
+/*
+     label = gtk_label_new ("Fade In:");
+     gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, FALSE, 0);
+     gtk_widget_show (label);
+
+     spin_fade_in = gtk_spin_button_new_with_range(0, 1, 1);
+     gtk_box_pack_start (GTK_BOX (hbox), spin_fade_in, FALSE, FALSE, 0);
+     gtk_widget_show (spin_fade_in);
+     g_signal_connect (G_OBJECT (spin_fade_in), "value-changed",
+		       G_CALLBACK (cb_fade_in_changed), NULL);
+*/
+    /* fade out */
+/*
+     label = gtk_label_new ("Fade Out:");
+     gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, FALSE, 0);
+     gtk_widget_show (label);
+
+     spin_fade_out = gtk_spin_button_new_with_range(0, 1, 1);
+     gtk_box_pack_start (GTK_BOX (hbox), spin_fade_out, FALSE, FALSE, 0);
+     gtk_widget_show (spin_fade_out);
+     g_signal_connect (G_OBJECT (spin_fade_out), "value-changed",
+		       G_CALLBACK (cb_fade_out_changed), NULL);
+*/
+    /* xfade*/
+/*
+     label = gtk_label_new ("X-Fade:");
+     gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, FALSE, 0);
+     gtk_widget_show (label);
+
+     spin_xfade = gtk_spin_button_new_with_range(0, 1, 1);
+     gtk_box_pack_start (GTK_BOX (hbox), spin_xfade, FALSE, FALSE, 0);
+     gtk_widget_show (spin_xfade);
+     g_signal_connect (G_OBJECT (spin_xfade), "value-changed",
+		       G_CALLBACK (cb_xfade_changed), NULL);
+*/
 
      /* close button */
      button = gtk_button_new_from_stock (GTK_STOCK_CLOSE);

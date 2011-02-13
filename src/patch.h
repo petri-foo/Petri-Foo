@@ -129,11 +129,6 @@ void        patch_sync            (float bpm);
 int         patch_verify          (int id);
 
 
-/* returns a NULL terminated list of NULL terminated C strings */
-const char**    patch_adsr_names(void);
-const char**    patch_lfo_names(void);
-const char**    patch_param_names(void);
-char**    patch_mod_source_names(void);
 
 /* playback and rendering functions  */
 void patch_control         (int chan, ControlParamType param, float value);
@@ -207,6 +202,8 @@ int patch_set_sample_stop  (int id, int stop);
 int patch_set_upper_note   (int id, int note);
 int patch_set_amplitude    (int id, float vol);
 int patch_set_sample_xfade (int id, int samples);
+int patch_set_sample_fade_in (int id, int samples);
+int patch_set_sample_fade_out(int id, int samples);
 
 /* parameter getters */
 int           patch_get_channel       (int id);
@@ -237,6 +234,8 @@ int           patch_get_sample_stop   (int id);
 int           patch_get_upper_note    (int id);
 float         patch_get_amplitude     (int id);
 int           patch_get_sample_xfade  (int id);
+int           patch_get_sample_fade_in (int id);
+int           patch_get_sample_fade_out(int id);
 
 
 gboolean    patch_lfo_is_global(int lfo_id);

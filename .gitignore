@@ -10,6 +10,7 @@ Makefile.in
 *.o
 *.lo
 *.swp
+*.wav
 
 aclocal.m4
 autom4te.cache/
@@ -28,5 +29,4 @@ stamp-h1
 
 src/gui/libgui.a
 src/petri-foo
-src/sine.wav
 

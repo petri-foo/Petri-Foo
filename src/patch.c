@@ -17,147 +17,22 @@
 #include "private/patch_data.h" /* the structs that were here */
 
 
-static const char* adsr_names[] = {
-    "EG1", "EG2", "EG3", "EG4", "EG5", 0
-};
-
-static const char* lfo_names[] = {
-    "GLFO1", "GLFO2", "GLFO3", "GLFO4", "GLFO5",
-    "VLFO1", "VLFO2", "VLFO3", "VLFO4", "VLFO5"
-};
-
-static const char* param_names[] = {
-    "Amplitude",
-    "Pan",
-    "Cutoff",
-    "Resonance",
-    "Pitch",
-    "Frequency Modulation"
-};
-
-static char** mod_source_names = 0;
 
 static float one = 1.0;
-
-static void create_mod_source_names(void)
-{
-    const char none[] = "OFF";
-    const char one[] = "1.0";
-
-    int i;
-    int id;
-
-    /* check for mismatched counts etc: */
-    if (!patch_adsr_names() || !patch_lfo_names())
-    {
-        fprintf(stderr, "*** PROBLEM OF DEATH IS FORECAST ***\n");
-        return;
-    }
-
-    mod_source_names = malloc(sizeof(*mod_source_names) * MOD_SRC_LAST);
-
-    for (i = 0; i < MOD_SRC_LAST; ++i)
-        mod_source_names[i] = 0;
-
-    mod_source_names[MOD_SRC_NONE] = malloc(strlen(none) + 1);
-    strcpy(mod_source_names[MOD_SRC_NONE], none);
-    mod_source_names[MOD_SRC_ONE] = malloc(strlen(one) + 1);
-    strcpy(mod_source_names[MOD_SRC_ONE], one);
-
-    for (i = MOD_SRC_FIRST_EG; i < MOD_SRC_LAST_EG; ++i)
-    {
-        id = i - MOD_SRC_FIRST_EG;
-        if (adsr_names[id])
-        {
-            mod_source_names[i] = malloc(strlen(adsr_names[id]) + 1);
-            strcpy(mod_source_names[i], adsr_names[id]);
-        }
-        else
-        {
-            debug("adsr_names mismatch adsr count\n");
-            break;
-        }
-    }
-
-    for (i = MOD_SRC_FIRST_GLFO; i < MOD_SRC_LAST_GLFO; ++i)
-    {
-        id = i - MOD_SRC_FIRST_GLFO;
-        mod_source_names[i] = malloc(strlen(lfo_names[id]) + 1);
-        strcpy(mod_source_names[i], lfo_names[id]);
-    }
-
-    for (i = MOD_SRC_FIRST_VLFO; i < MOD_SRC_LAST_VLFO; ++i)
-    {
-        id = (MOD_SRC_LAST_GLFO - MOD_SRC_FIRST_GLFO)
-             + (i - MOD_SRC_FIRST_VLFO);
-        mod_source_names[i] = malloc(strlen(lfo_names[id]) + 1);
-        strcpy(mod_source_names[i], lfo_names[id]);
-    }
-
-    for (i = 0; i < MOD_SRC_LAST; ++i)
-        printf("mod_source:%12s\tid:%4d\n", mod_source_names[i], i);
-
-}
 
 
 gboolean patch_lfo_is_global(int lfo_id)
 {
-    if (lfo_id >= MOD_SRC_FIRST_GLFO && lfo_id < MOD_SRC_LAST_GLFO)
+    if (lfo_id >= 0 && lfo_id < MOD_SRC_LAST_GLFO - MOD_SRC_FIRST_GLFO)
+    {
+        debug("lfo_is_global:input:%d TRUE\n", lfo_id)
         return TRUE;
+    }
 
+    debug("lfo_is_global:input:%d FALSE\n", lfo_id)
     return FALSE;
 }
 
-
-char** patch_mod_source_names(void)
-{
-    return mod_source_names;
-}
-
-
-const char** patch_adsr_names(void)
-{
-    int i;
-
-    for (i = 0; adsr_names[i] != 0; ++i);
-
-    if (i != VOICE_MAX_ENVS)
-    {
-        fprintf(stderr,
-                "Friendly warning to the programmer:\n"
-                "You've either changed the enum value for VOICE_MAX_ENVS\n"
-                "Or you've changed the list of ADSR names\n"
-                "In either case it's broken now. Please fix!\n");
-        return 0;
-    }
-
-    return adsr_names;
-}
-
-const char** patch_lfo_names(void)
-{
-    int i;
-
-    for (i = 0; lfo_names[i] != 0; ++i);
-
-    if (i != TOTAL_LFOS)
-    {
-        fprintf(stderr,
-                "Friendly warning to the programmer:\n"
-                "You've either changed the enum value for PATCH_MAX_LFOS\n"
-                "and/or ther enum value VOICE_MAX_LFOS\n"
-                "Or you've changed the list of LFO names\n"
-                "In either case it's broken now. Please fix!\n");
-        return 0;
-    }
-
-    return lfo_names;
-}
-
-const char** patch_param_names(void)
-{
-    return param_names;
-}
 
 /* the minimum envelope release value we'll allow (to prevent clicks) */
 const float PATCH_MIN_RELEASE = 0.05;
@@ -234,7 +109,7 @@ static int patch_get_param (PatchParam** p, int id, PatchParamType param)
 
     switch (param)
     {
-    case PATCH_PARAM_AMPLITUDE:    *p = &patches[id].vol;      break;
+    case PATCH_PARAM_AMPLITUDE: *p = &patches[id].vol;      break;
     case PATCH_PARAM_PANNING:   *p = &patches[id].pan;      break;
     case PATCH_PARAM_CUTOFF:    *p = &patches[id].ffreq;    break;
     case PATCH_PARAM_RESONANCE: *p = &patches[id].freso;    break;
@@ -273,6 +148,11 @@ inline static void patch_unlock (int id)
 
 static float* mod_id_to_pointer(int id, Patch* p, PatchVoice* v)
 {
+    if (!id)
+        return 0;
+
+//    debug("mod:%d\n",id);
+
     if (id == MOD_SRC_ONE)
         return &one;
 
@@ -296,35 +176,40 @@ static float* mod_id_to_pointer(int id, Patch* p, PatchVoice* v)
         int lfo_id = id - MOD_SRC_FIRST_VLFO;
         return &v->lfo[lfo_id].val;
     }
+
+    debug("unknown modulation source:%d\n", id);
+
     return 0;
 }
 
 
+inline static void patch_trigger_global_lfo(int patch_id, LFO* lfo,
+                                                          LFOParams* lfopar)
+{
+    Patch* p = &patches[patch_id];
+    lfo->freq_mod1 = mod_id_to_pointer(lfopar->mod1_id, p, NULL);
+    lfo->freq_mod2 = mod_id_to_pointer(lfopar->mod2_id, p, NULL);
+    lfo_trigger(lfo, lfopar);
+}
 
 
 /* triggers all global LFOs if they are used with amounts greater than 0 */
 inline static void patch_trigger_global_lfos ( )
 {
-    int i,j;
+    int patch_id, lfo_id;
 
-    debug ("retriggering...\n");
-    for (i = 0; i < PATCH_COUNT; i++)
+    debug ("retriggering global LFOs...\n");
+
+    for (patch_id = 0; patch_id < PATCH_COUNT; patch_id++)
     {
-        Patch* p = &patches[i];
-        for (j = 0; j < PATCH_MAX_LFOS; j++)
+        for (lfo_id = 0; lfo_id < PATCH_MAX_LFOS; lfo_id++)
         {
-            p->glfo[j].freq_mod1 =
-                mod_id_to_pointer(p->glfo_params[j].mod1_id, p, NULL);
-
-            p->glfo[j].freq_mod2 =
-                mod_id_to_pointer(p->glfo_params[j].mod2_id, p, NULL);
-
-            p->glfo[j].mod1_amt = p->glfo_params[j].mod1_amt;
-            p->glfo[j].mod2_amt = p->glfo_params[j].mod2_amt;
-
-            lfo_trigger(&patches[i].glfo[j], &patches[i].glfo_params[j]);
+            LFO* lfo =          &patches[patch_id].glfo[lfo_id];
+            LFOParams* lfopar = &patches[patch_id].glfo_params[lfo_id];
+            patch_trigger_global_lfo(patch_id, lfo, lfopar);
         }
     }
+
     debug ("done\n");
 }
 
@@ -378,7 +263,11 @@ int patch_create (const char *name)
     patches[id].cut_by = 0;
     patches[id].sample_start = 0;
     patches[id].sample_stop = 0;
+
     patches[id].sample_xfade = 0;
+    patches[id].sample_fade_in = 0;
+    patches[id].sample_fade_out = 0;
+
     patches[id].loop_start = 0;
     patches[id].loop_stop = 0;
     patches[id].porta = FALSE;
@@ -761,8 +650,6 @@ void patch_init ( )
             patches[i].glfo_table[j] = NULL;
     }
 
-    create_mod_source_names();
-
     debug ("done\n");
 }
 
@@ -830,12 +717,14 @@ int patch_sample_load (int id, const char *name)
     val = sample_load_file (patches[id].sample, name, samplerate);
 
     /* set the sample/loop start/stop point appropriately */
-    patches[id].sample_xfade = 50;
+    patches[id].sample_xfade = 0;
+    patches[id].sample_fade_in = 0;
+    patches[id].sample_fade_out = 0;
+
     patches[id].sample_start = 0;
     patches[id].sample_stop = patches[id].sample->frames - 1;
     patches[id].loop_start = 0;
-    patches[id].loop_stop =
-        patches[id].sample->frames - 1 - patches[id].sample_xfade;
+    patches[id].loop_stop = patches[id].sample->frames - 1;
 
     patch_unlock (id);
     return val;
@@ -857,6 +746,8 @@ void patch_sample_unload (int id)
     patches[id].loop_start = 0;
     patches[id].loop_stop = 0;
     patches[id].sample_xfade = 0;
+    patches[id].sample_fade_in = 0;
+    patches[id].sample_fade_out = 0;
 
     patch_unlock (id);
 }
@@ -923,15 +814,6 @@ void patch_shutdown ( )
         sample_free (patches[i].sample);
         for (j = 0; j < PATCH_MAX_LFOS; j++)
             g_free (patches[i].glfo_table[j]);
-    }
-
-    if (mod_source_names)
-    {
-        for (i = 0; i < MOD_SRC_LAST; ++i)
-            if (mod_source_names[i])
-                free(mod_source_names[i]);
-
-        free(mod_source_names);
     }
 
     debug ("done\n");
@@ -1104,6 +986,9 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
             v->relset = -1;	/* cancel any pending release */
             v->relmode = RELEASE_NONE;
             prepare_pitch(p, v, note);
+
+            debug ("the rest of this function is irrelevant now...\n");
+
             return;     /* the rest of this function is
                          * irrelevant now, fuck it */
         }
@@ -1143,7 +1028,19 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
     v->relmode = RELEASE_NONE;
     v->released = FALSE;
     v->to_end = FALSE;
+
+/*
+    v->declick_vol = 0.0;
+    debug("***forcing declick vol to 1.0 while not implemented****\n");
+*/
+
     v->declick_vol = 1.0;
+
+/* fades not implemented: */
+    v->xfade_step =     1.0f / p->sample_xfade;
+    v->fade_in_step =   1.0f / p->sample_fade_in;
+    v->fade_out_step =  1.0f / p->sample_fade_out;
+
     v->note = note;
     v->fll = 0;
     v->fbl = 0;
@@ -1162,8 +1059,6 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
     v->freso_mod2 = mod_id_to_pointer(p->freso.mod2_id, p, v);
     v->pitch_mod1 = mod_id_to_pointer(p->pitch.mod1_id, p, v);
     v->pitch_mod2 = mod_id_to_pointer(p->pitch.mod2_id, p, v);
-
-    
 
 
     /* setup direction */
@@ -1202,6 +1097,12 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
         v->lfo[j].mod1_amt = p->vlfo_params[j].mod1_amt;
         v->lfo[j].mod2_amt = p->vlfo_params[j].mod2_amt;
 
+/*
+        debug("lfo:%d fm1:%p fm2:%p am1:%f am2:%f\n",
+                j,  v->lfo[j].freq_mod1,    v->lfo[j].freq_mod2,
+                    v->lfo[j].mod1_amt,     v->lfo[j].mod2_amt );
+                
+*/
         lfo_trigger (&v->lfo[j], &p->vlfo_params[j]);
     }
 
@@ -1281,7 +1182,7 @@ static void filter (Patch* p, PatchVoice* v, int index,  float* l, float* r)
     ffreq = p->ffreq.val;
 
     if (v->ffreq_mod1 != NULL)
-        ffreq += *v->ffreq_mod1 * p->ffreq.mod2_amt;
+        ffreq += *v->ffreq_mod1 * p->ffreq.mod1_amt;
 
     if (v->ffreq_mod2 != NULL)
         ffreq += *v->ffreq_mod2 * p->ffreq.mod2_amt;
@@ -1344,13 +1245,19 @@ inline static int gain (Patch* p, PatchVoice* v, int index, float* l, float* r)
 
     if (v->vol_direct != NULL)
         vol *= *v->vol_direct;
+
+    /*  declick_vol will be 1.0 at all times other than during
+        a crossfade (how to handle that?) and sample fades in/out
+        but that's not implemented.
+    vol *= v->declick_vol;
+    */
     else if (v->released
             && !((p->play_mode & PATCH_PLAY_SINGLESHOT)
             && (v->relmode == RELEASE_NOTEOFF)))
     {
-        /* if the patch is singleshot and it doesn't have a amplitude
-         * envelope, we want to let it finish playing in toto
-         */
+        // if the patch is singleshot and it doesn't have a amplitude
+         // envelope, we want to let it finish playing in toto
+         //
         vol *= v->declick_vol;
         v->declick_vol -= declick_dec;
     }
@@ -1422,7 +1329,8 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
         /* we don't multiply against p->pitch.lfo_amount because the
          * "amount" variable has already been expressed in the
          * values of lfo_pitch_max and lfo_pitch_min (the same logic
-         * applies when handling the envelopes below) */
+         * applies when handling the envelopes below)
+         */
         if (scale >= 0.0)
         {
             pitch *= lerp (1.0, p->mod1_pitch_max, scale);
@@ -1455,12 +1363,18 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
         pitch = lerp (pitch, pitch * v->vel, p->pitch.vel_amt);
     }
 
+    /*  pitch == rate for stepping through original sample,
+        therefor    1.0 == natural rate,
+                    0.5 == octave below,
+                    2.0 == octave above.
+     */
+
     if (recalc)
     {
         v->stepi = pitch;
         v->stepf = (pitch - v->stepi) * (0xFFFFFFFFU);
     }
-     
+
     /* advance our position indices */
     if (v->dir > 0)
     {
@@ -1516,7 +1430,6 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
         if (((v->dir > 0) && (v->posi > p->sample_stop))
             || ((v->dir < 0) && (v->posi < p->sample_start)))
         {
-
             /* we need to let our caller know that they are out of
              * samples */
             return -1;
@@ -2047,6 +1960,10 @@ int patch_set_lfo_on (int patch_id, int lfo_id, gboolean state)
         return err;
 
     lfopar->lfo_on = state;
+
+    if (lfo)
+        lfo_trigger(lfo, lfopar);
+
     return 0;
 }
 
@@ -2397,9 +2314,9 @@ int patch_set_sample_start (int id, int start)
 	return PATCH_PARAM_INVALID;
     }
 
-    if (start + patches[id].sample_xfade >= patches[id].sample_stop)
+    if (start + patches[id].sample_fade_in >= patches[id].sample_stop)
     {
-	debug ("refusing to set sample start point without room for xfade\n");
+	debug ("refusing to set sample start point without room for fade-in\n");
 	return PATCH_PARAM_INVALID;
     }
 
@@ -2428,9 +2345,9 @@ int patch_set_sample_stop (int id, int stop)
 	return PATCH_PARAM_INVALID;
     }
 
-    if (stop >= patches[id].sample->frames - patches[id].sample_xfade)
+    if (stop >= patches[id].sample->frames - patches[id].sample_fade_out)
     {
-	debug ("refusing to set sample stop point without room for xfade\n");
+	debug ("refusing to set sample stop point without room for fade-out\n");
 	return PATCH_PARAM_INVALID;
     }
 
@@ -2483,31 +2400,79 @@ int patch_set_loop_stop (int id, int stop)
 int patch_set_sample_xfade (int id, int samples)
 {
     if (!isok (id))
-	return PATCH_ID_INVALID;
+        return PATCH_ID_INVALID;
 
     if (patches[id].sample->sp == NULL)
-	return 0;
+        return 0;
 
     if (samples < 0)
     {
-	debug ("refusing to set negative xfade length\n");
-	return PATCH_PARAM_INVALID;
+        debug ("refusing to set negative xfade length\n");
+        return PATCH_PARAM_INVALID;
     }
 
-
-    if (patches[id].sample_start + samples >= patches[id].sample_stop)
+    if (patches[id].loop_start + samples >= patches[id].sample_stop)
     {
-	debug ("refusing to set xfade length greater than samples between start and stop\n");
-	return PATCH_PARAM_INVALID;
+        debug ("refusing to set xfade length greater than samples between start and stop\n");
+        return PATCH_PARAM_INVALID;
     }
 
     if (patches[id].sample_stop + samples > patches[id].sample->frames)
     {
-	debug ("refusing to set xfade length greater than length after stop\n");
-	return PATCH_PARAM_INVALID;
+        debug ("refusing to set xfade length greater than length after stop\n");
+        return PATCH_PARAM_INVALID;
     }
 
     patches[id].sample_xfade = samples;
+    return 0;
+}
+
+int patch_set_sample_fade_in (int id, int samples)
+{
+    if (!isok (id))
+        return PATCH_ID_INVALID;
+
+    if (patches[id].sample->sp == NULL)
+        return 0;
+
+    if (samples < 0)
+    {
+        debug ("refusing to set negative fade-in length\n");
+        return PATCH_PARAM_INVALID;
+    }
+
+    if (patches[id].sample_start + samples >= patches[id].sample_stop)
+    {
+        debug ("refusing to set fade-in length greater than samples between start and stop\n");
+        return PATCH_PARAM_INVALID;
+    }
+
+    patches[id].sample_fade_in = samples;
+    return 0;
+}
+
+
+int patch_set_sample_fade_out (int id, int samples)
+{
+    if (!isok (id))
+        return PATCH_ID_INVALID;
+
+    if (patches[id].sample->sp == NULL)
+        return 0;
+
+    if (samples < 0)
+    {
+        debug ("refusing to set negative fade-out length\n");
+        return PATCH_PARAM_INVALID;
+    }
+
+    if (patches[id].sample_stop + samples > patches[id].sample->frames)
+    {
+        debug ("refusing to set fade-out length greater than length after stop\n");
+        return PATCH_PARAM_INVALID;
+    }
+
+    patches[id].sample_fade_out = samples;
     return 0;
 }
 
@@ -2833,6 +2798,20 @@ int patch_get_sample_xfade (int id)
     if (!isok (id))
 	return PATCH_ID_INVALID;
     return patches[id].sample_xfade;
+}
+
+int patch_get_sample_fade_in (int id)
+{
+    if (!isok (id))
+	return PATCH_ID_INVALID;
+    return patches[id].sample_fade_in;
+}
+
+int patch_get_sample_fade_out (int id)
+{
+    if (!isok (id))
+	return PATCH_ID_INVALID;
+    return patches[id].sample_fade_out;
 }
 
 /* get the lower note */
@@ -3219,42 +3198,61 @@ int patch_get_amp_env(int patch_id, int* modsrc_id)
 
 int patch_set_lfo_mod1_src(int patch_id, int lfo_id, int modsrc_id)
 {
+    LFO* lfo;
     LFOParams* lfopar;
     int err; 
-    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))
+    if ((err = lfo_from_id(patch_id, lfo_id, &lfo, &lfopar)))
         return err;
     lfopar->mod1_id = modsrc_id;
+
+    if (lfo)
+        patch_trigger_global_lfo(patch_id, lfo, lfopar);
+
     return 0;
 }
 
 int patch_set_lfo_mod2_src(int patch_id, int lfo_id, int modsrc_id)
 {
+    LFO* lfo;
     LFOParams* lfopar;
     int err; 
-    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))
+    if ((err = lfo_from_id(patch_id, lfo_id, &lfo, &lfopar)))
         return err;
     lfopar->mod2_id = modsrc_id;
+
+    if (lfo)
+        patch_trigger_global_lfo(patch_id, lfo, lfopar);
+
     return 0;
 }
 
 int patch_set_lfo_mod1_amt(int patch_id, int lfo_id, float amount)
 {
-    LFOParams* lfopar;
     LFO* lfo;
+    LFOParams* lfopar;
     int err; 
     if ((err = lfo_from_id(patch_id, lfo_id, &lfo, &lfopar)))
         return err;
     lfopar->mod1_amt = amount;
+
+    if (lfo)
+        patch_trigger_global_lfo(patch_id, lfo, lfopar);
+
     return 0;
 }
 
 int patch_set_lfo_mod2_amt(int patch_id, int lfo_id, float amount)
 {
+    LFO* lfo;
     LFOParams* lfopar;
     int err; 
-    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))
+    if ((err = lfo_from_id(patch_id, lfo_id, &lfo, &lfopar)))
         return err;
     lfopar->mod2_amt = amount;
+
+    if (lfo)
+        patch_trigger_global_lfo(patch_id, lfo, lfopar);
+
     return 0;
 }
 

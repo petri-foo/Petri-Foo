@@ -319,7 +319,7 @@ static void lfo_tab_init(LfoTab* self)
 
     /* parameter selector */
     self->idsel = id_selector_new();
-    id_selector_set(ID_SELECTOR(self->idsel), patch_lfo_names(),
+    id_selector_set(ID_SELECTOR(self->idsel), mod_src_lfo_names(),
                                                 ID_SELECTOR_V);
     gtk_box_pack_start(box, self->idsel, FALSE, FALSE, 0);
     gtk_widget_show(self->idsel);
@@ -522,7 +522,7 @@ static void update_lfo(LfoTab* self)
 
     self->lfo_id = id_selector_get_id(ID_SELECTOR(self->idsel));
 
-    int mod_srcs = (patch_lfo_is_global(self->lfo_id + MOD_SRC_FIRST_GLFO)
+    int mod_srcs = (patch_lfo_is_global(self->lfo_id)
                         ? MOD_SRC_INPUTS_GLOBAL
                         : MOD_SRC_INPUTS_ALL);
 

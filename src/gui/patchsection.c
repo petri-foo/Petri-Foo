@@ -155,7 +155,6 @@ static void patch_section_init(PatchSection* self)
     gtk_widget_show(self->pitch_tab);
     gtk_widget_show(label);
 
-
     /* filter page */
     self->filter_tab = param_tab_new();
     param_tab_set_param(PARAM_TAB(self->filter_tab), PATCH_PARAM_CUTOFF);
@@ -198,17 +197,8 @@ static void patch_section_destroy(GtkObject* object)
     PatchSection* self = PATCH_SECTION(object);
     GtkObjectClass* klass = GTK_OBJECT_CLASS(parent_class);
 
-    if (!g_source_remove(self->refresh))
-    {
-	debug("failed to remove refresh function from idle loop: %u\n", self->refresh);
-    }
-    else
-    {
-	debug("refresh function removed\n");
-    }
-    
     if (klass->destroy)
-	klass->destroy(object);
+        klass->destroy(object);
 }
 
 

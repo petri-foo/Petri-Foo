@@ -103,13 +103,17 @@ static void update_to_end_check(SampleTab* self)
 
 static gboolean waveform_cb(GtkWidget* wf, GdkEventButton* event, SampleTab* self)
 {
-     if (event->button == 1)
+    if (event->button == 1)
+    {
         sample_editor_show(self->patch);
 
-     /* this doesn't work! */
-     gtk_widget_queue_draw(wf);
+        debug("sample_editor created.... and done with?\n");
+    }
 
-     return FALSE;
+     /* this doesn't work! */
+    gtk_widget_queue_draw(wf);
+
+    return FALSE;
 }
 
 
@@ -298,6 +302,7 @@ static void sample_tab_init(SampleTab* self)
     self->waveform = waveform_new(self->patch, 256, 64, FALSE);
     gtk_box_pack_start(GTK_BOX(vbox), self->waveform, TRUE, TRUE, 0);
     gtk_widget_show(self->waveform);
+    sample_editor_set_thumb(self->waveform);
 
     /* section padding */
     pad = gui_vpad_new(GUI_SECSPACE);

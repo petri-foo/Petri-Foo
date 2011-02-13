@@ -194,7 +194,7 @@ static void envelope_tab_init(EnvelopeTab* self)
 
     /* parameter selector */
     self->idsel = id_selector_new();
-    id_selector_set(ID_SELECTOR(self->idsel), patch_adsr_names(),
+    id_selector_set(ID_SELECTOR(self->idsel), mod_src_adsr_names(),
                                                 ID_SELECTOR_H);
     gtk_box_pack_start(box, self->idsel, FALSE, FALSE, 0);
     gtk_widget_show(self->idsel);

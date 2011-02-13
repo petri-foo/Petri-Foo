@@ -135,6 +135,9 @@ static gboolean cb_delete (GtkWidget* widget, GdkEvent* event,
 static void cb_quit (GtkWidget* widget, gpointer data)
 {
     debug ("Quitting\n");
+
+    mod_src_destroy_names();
+
     gtk_main_quit ( );
 }
 
@@ -414,6 +417,8 @@ int gui_init(void)
     GtkWidget* vbox;
 
     debug ("Initializing GUI\n");
+
+    mod_src_create_names();
 
     /* main window */
     window = gtk_window_new (GTK_WINDOW_TOPLEVEL);

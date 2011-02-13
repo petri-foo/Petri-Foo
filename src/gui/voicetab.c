@@ -192,6 +192,8 @@ static void voice_tab_init(VoiceTab* self)
     GtkWidget* label;
 
     self->patch = -1;
+    self->refresh = -1;
+
     gtk_container_set_border_width(GTK_CONTAINER(self), GUI_BORDERSPACE);
 
     /* table */
@@ -291,17 +293,20 @@ static void voice_tab_destroy(GtkObject* object)
     VoiceTab* self = VOICE_TAB(object);
     GtkObjectClass* klass = GTK_OBJECT_CLASS(parent_class);
 
+debug("hi there>> refresh:%d\n",self->refresh);
+
     if (!g_source_remove(self->refresh))
     {
-	debug("failed to remove refresh function from idle loop: %u\n", self->refresh);
+        debug("failed to remove refresh function from idle loop: %u\n",
+                                                            self->refresh);
     }
     else
     {
-	debug("refresh function removed\n");
+        debug("refresh function removed\n");
     }
-    
+
     if (klass->destroy)
-	klass->destroy(object);
+        klass->destroy(object);
 }
 
 

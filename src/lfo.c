@@ -123,6 +123,9 @@ void lfo_trigger (LFO* lfo, LFOParams* params)
      lfo->attack = ticks_secs_to_ticks (params->attack);
      lfo->attack_ticks = 0;
      lfo->phase = 0;
+     lfo->val = 0;
+     lfo->mod1_amt = params->mod1_amt;
+     lfo->mod2_amt = params->mod2_amt;
 }
 
 float lfo_tick (LFO* lfo)

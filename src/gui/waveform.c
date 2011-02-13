@@ -26,6 +26,13 @@ enum
      BACK_B1 = 5000,
      BACK_B2 = 20000,
 
+     BACK_LOOP_R1 = 0,
+     BACK_LOOP_R2 = 0,
+     BACK_LOOP_G1 = 2500,
+     BACK_LOOP_G2 = 10000,
+     BACK_LOOP_B1 = 0,
+     BACK_LOOP_B2 = 0,
+
      /* grid colors */
      GRID_R1 = 0,
      GRID_R2 = 0,
@@ -51,9 +58,16 @@ enum
      WAVE_BO = 30000,
 
      /* color to draw loop points */
-     LOOP_R = 50000,
-     LOOP_G = 30000,
-     LOOP_B = 20000,
+     LOOP_R = 20000,
+     LOOP_G = 50000,
+     LOOP_B = 30000,
+
+
+    /*  colour for loop section */
+    LOOPSEL_R = LOOP_R,
+    LOOPSEL_G = LOOP_G,
+    LOOPSEL_B = LOOP_B,
+
 };
 
 /* forward declarations */
@@ -329,24 +343,87 @@ waveform_button_press (GtkWidget * widget, GdkEventButton * event)
 }
 
 /* draw background gradient */
-inline static void draw_back (GdkDrawable * surface, int w, int h,
+inline static void draw_back (Waveform* wf, GdkDrawable * surface, int w, int h,
 			      GdkGC * gc)
 {
      int y;
      int center = h / 2;
      float d;
-     GdkColor color;
+    GdkColor bg;
+    GdkColor bg_loop;
 
-     for (y = 0; y < h; y++)
-     {
-	  d = 1.0 - (abs (y - center) * 1.0 / (center));
-	  color.red = BACK_R1 * (1 - d) + BACK_R2 * d;
-	  color.green = BACK_G1 * (1 - d) + BACK_G2 * d;
-	  color.blue = BACK_B1 * (1 - d) + BACK_B2 * d;
-	  gdk_gc_set_rgb_fg_color (gc, &color);
+    int x1, x2;
 
-	  gdk_draw_line (surface, gc, 0, y, w - 1, y);
-     }
+     int frames;
+     int start, stop;
+     int loop_start, loop_stop;
+     float ppf;
+
+     frames = patch_get_frames (wf->patch);
+     start = frames * wf->range_start;
+     stop = frames * wf->range_stop;
+     loop_start = patch_get_loop_start (wf->patch);
+     loop_stop = patch_get_loop_stop (wf->patch);
+     ppf = w / (stop - start * 1.0);
+
+    loop_start = (loop_start - start) * ppf;
+    loop_stop = (loop_stop - start) * ppf;
+
+    printf("loop start:%d loop stop:%d\n", loop_start, loop_stop);
+    printf("w:%d start:%d stop:%d\n",w,start,stop);
+
+    for (y = 0; y < h; y++)
+    {
+        d = 1.0 - (abs (y - center) * 1.0 / (center));
+
+        bg.red =   BACK_R1 * (1 - d) + BACK_R2 * d;
+        bg.green = BACK_G1 * (1 - d) + BACK_G2 * d;
+        bg.blue =  BACK_B1 * (1 - d) + BACK_B2 * d;
+
+        bg_loop.red =   BACK_LOOP_R1 * (1 - d) + BACK_LOOP_R2 * d;
+        bg_loop.green = BACK_LOOP_G1 * (1 - d) + BACK_LOOP_G2 * d;
+        bg_loop.blue =  BACK_LOOP_B1 * (1 - d) + BACK_LOOP_B2 * d;
+
+        if (loop_start > w - 1 || loop_stop < 0)
+        {   /* loop is not visible */
+            gdk_gc_set_rgb_fg_color (gc, &bg);
+            gdk_draw_line (surface, gc, 0, y, w - 1, y);
+            continue;
+        }
+
+        if (loop_start <= 0 && loop_stop >= w - 1)
+        {   /* only loop is visible */
+            gdk_gc_set_rgb_fg_color (gc, &bg_loop);
+            gdk_draw_line (surface, gc, 0, y, w - 1, y);
+            continue;
+        }
+
+        if (loop_start > 0) /* loop start point is visible */
+        {
+            /* draw bg before loop start */
+            gdk_gc_set_rgb_fg_color (gc, &bg);
+            gdk_draw_line (surface, gc, 0, y, loop_start - 1, y);
+
+            if (loop_stop < w - 1)  /* entire loop is visible       */
+            {                       /* (and is smaller than window) */
+                gdk_draw_line (surface, gc, loop_stop, y, w - 1, y);
+                gdk_gc_set_rgb_fg_color (gc, &bg_loop);
+                gdk_draw_line (surface, gc, loop_start, y, loop_stop-1, y);
+            }
+            else
+            {
+                gdk_gc_set_rgb_fg_color (gc, &bg_loop);
+                gdk_draw_line (surface, gc, loop_start, y, w - 1, y);
+            }
+            continue;
+        }
+
+        /* only loop stop point visible */
+        gdk_gc_set_rgb_fg_color (gc, &bg_loop);
+        gdk_draw_line (surface, gc, 0, y, loop_stop - 1, y);
+        gdk_gc_set_rgb_fg_color (gc, &bg);
+        gdk_draw_line (surface, gc, loop_stop, y, w - 1, y);
+    }
 }
 
 /* draw grid gradient */
@@ -402,6 +479,7 @@ inline static void draw_wave (Waveform* wf, GdkDrawable* surface,
      int center = h / 2;
      int frames;
      int play_start, play_stop;
+     int loop_start, loop_stop;
      int start, stop;
      const float* wav;
      GdkColor color;
@@ -417,6 +495,8 @@ inline static void draw_wave (Waveform* wf, GdkDrawable* surface,
      stop = frames * wf->range_stop;
      play_start = patch_get_sample_start (wf->patch);
      play_stop = patch_get_sample_stop (wf->patch);
+     loop_start = patch_get_loop_start (wf->patch);
+     loop_stop = patch_get_loop_stop (wf->patch);
 
      /* draw waveform when pixels >= frames */
      if (w >= (stop - start))
@@ -512,7 +592,13 @@ inline static void draw_wave (Waveform* wf, GdkDrawable* surface,
 		    color.green = WAVE_GO;
 		    color.blue = WAVE_BO;
 	       }
-	       else
+	       else if (f >= loop_start && f <= loop_stop)
+	       {
+		    color.red = LOOPSEL_R;
+		    color.green = LOOPSEL_G;
+		    color.blue = LOOPSEL_B;
+	       }
+           else
 	       {
 		    color.red = WAVE_R;
 		    color.green = WAVE_G;
@@ -603,7 +689,7 @@ void waveform_draw (Waveform * wf)
      gc = gdk_gc_new (GDK_DRAWABLE (widget->window));
 
      /* draw each component */
-     draw_back (GDK_DRAWABLE (widget->window), w, h, gc);
+     draw_back (wf, GDK_DRAWABLE (widget->window), w, h, gc);
      draw_grid (GDK_DRAWABLE (widget->window), w, h, gc);
      draw_wave (wf, GDK_DRAWABLE (widget->window), w, h, gc);
      draw_loop (wf, GDK_DRAWABLE (widget->window), w, h, gc);
