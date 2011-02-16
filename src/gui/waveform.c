@@ -43,9 +43,9 @@ static int signals[LAST_SIGNAL];
 #define GRID_B1 0.228885
 #define GRID_B2 0.457771
 
-#define CENT_R 0
-#define CENT_G 0.228885
-#define CENT_B 0.457771
+#define CENT_R 0.214443
+#define CENT_G 0.328885
+#define CENT_B 0.557771
 
 #define WAVE_DEAD_R 0.25
 #define WAVE_DEAD_G 0.25
@@ -178,8 +178,6 @@ waveform_size_request (GtkWidget * widget, GtkRequisition * requisition)
 
     requisition->width = p->width;
     requisition->height = p->height;
-
-    debug("size_request:%d x %d\n", p->width, p->height);
 }
 
 
@@ -188,12 +186,8 @@ waveform_configure(GtkWidget * widget, GdkEventConfigure * event)
 {
     WaveformPrivate* p = WAVEFORM_GET_PRIVATE(widget);
 
-debug("CONFIGURE\n");
-
     p->width = widget->allocation.width;
     p->height = widget->allocation.height;
-
-debug("allocation w:%d h:%d\n",p->width, p->height);
 
     if (p->pixmap)
         gdk_pixmap_unref(p->pixmap);
@@ -210,6 +204,7 @@ static gboolean
 waveform_expose (GtkWidget * widget, GdkEventExpose * event)
 {
     WaveformPrivate* p;
+    cairo_t* cr;
 
     g_return_val_if_fail (widget != NULL, FALSE);
     g_return_val_if_fail (IS_WAVEFORM (widget), FALSE);
@@ -226,13 +221,11 @@ waveform_expose (GtkWidget * widget, GdkEventExpose * event)
     if (event->area.width == p->width && event->area.height == p->height)
         waveform_draw(WAVEFORM(widget));
 
-    gdk_draw_drawable(widget->window,
-                      widget->style->fg_gc[GTK_WIDGET_STATE(widget)],
-                      p->pixmap,
-                      event->area.x, event->area.y,
-                      event->area.x, event->area.y,
-                      event->area.width, event->area.height);
-
+    cr = gdk_cairo_create (widget->window);
+    gdk_cairo_set_source_pixmap (cr, p->pixmap, 0, 0);
+    gdk_cairo_rectangle (cr, &event->area);
+    cairo_fill (cr);
+    cairo_destroy (cr);
     return TRUE;
 }
 
@@ -242,7 +235,7 @@ waveform_button_press (GtkWidget * widget, GdkEventButton * event)
 {
     Waveform *wf;
     WaveformPrivate* p;
-debug("button press\n");
+
     int frames;
     int start;
     int stop;
@@ -338,6 +331,7 @@ cr_rect(cairo_t* cr, double x1, double y1, double x2, double y2)
 {
     cairo_rectangle(cr, x1, y1, x2 - x1, y2 - y1);
 }
+
 
 static void draw_back(WaveformPrivate* p, int w, int h, cairo_t* cr)
 {
@@ -475,6 +469,51 @@ done:
 }
 
 
+static void draw_grid(WaveformPrivate* p, int w, int h, cairo_t* cr)
+{
+    int x, y;
+    int center = h / 2;
+    float d;
+    int step = h / GRID_Y;
+
+    cairo_pattern_t *fg = cairo_pattern_create_linear (0, 0, 0, h);
+
+    cairo_pattern_add_color_stop_rgb(fg, 0.0, GRID_R1, GRID_G1, GRID_B1 );
+    cairo_pattern_add_color_stop_rgb(fg, 0.5, GRID_R2, GRID_G2, GRID_B2 );
+    cairo_pattern_add_color_stop_rgb(fg, 1.0, GRID_R1, GRID_G1, GRID_B1 );
+
+    cairo_set_source(cr, fg);
+    cairo_set_line_width(cr, 1.0);
+
+    /*  Massive improvement here using Cairo drawing with gradients
+     *  over GDK and extra for-loops. The 0.5 bs keeps the lines sharp.
+     */
+
+    for (x = 0; x < w; x += step)
+    {
+        cairo_move_to(cr, 0.5 + x, 0.5);
+        cairo_line_to(cr, 0.5 + x, 0.5 + h);
+        cairo_stroke(cr);
+    }
+
+    for (y = step; y < center; y += step)
+    {
+        cairo_move_to (cr, 0.5,         0.5 + center - y);
+        cairo_line_to (cr, 0.5 + w - 1, 0.5 + center - y);
+        cairo_move_to (cr, 0.5,         0.5 + center + y);
+        cairo_line_to (cr, 0.5 + w - 1, 0.5 + center + y);
+        cairo_stroke(cr);
+    }
+
+    cairo_set_source_rgb(cr, CENT_R, CENT_G, CENT_B);
+
+    cairo_move_to (cr, 0.5,         0.5 + center);
+    cairo_line_to (cr, 0.5 + w - 1, 0.5 + center);
+    cairo_stroke(cr);
+}
+
+
+
 static void draw_wave(WaveformPrivate* p, int w, int h, cairo_t* cr)
 {
     int center = h / 2;
@@ -509,6 +548,9 @@ static void draw_wave(WaveformPrivate* p, int w, int h, cairo_t* cr)
         int ferr = 0;   /* frame error value */
         int visframes = stop - start;   /* number of frames that 
                                          * will be drawn */
+
+        cairo_set_line_width(cr, 1.0);
+
         for (x = 0; x < w; x++)
         {
             if ((ferr += visframes) >= w)
@@ -538,7 +580,6 @@ static void draw_wave(WaveformPrivate* p, int w, int h, cairo_t* cr)
                                             WAVE_PLAY_B );
             }
 
-            cairo_set_line_width(cr, 1.0);
             cairo_move_to (cr, lx, ly);
             cairo_line_to (cr, x, y);
             cairo_stroke(cr);
@@ -561,6 +602,8 @@ static void draw_wave(WaveformPrivate* p, int w, int h, cairo_t* cr)
         int f = 0;          /* frame index */
         int s = 0;          /* sample index */
         int visframes = stop - start;
+
+        cairo_set_line_width(cr, 1.0);
 
         for (f = start; f < stop; f++)
         {
@@ -607,22 +650,16 @@ static void draw_wave(WaveformPrivate* p, int w, int h, cairo_t* cr)
             {
                 cairo_move_to (cr, lx, (lminy+1)/2 * h);
                 cairo_line_to (cr, x, draw_maxy);
-/*              gdk_draw_line(surface, gc, lx, (lminy+1)/2 * h, x,
-                                                                draw_maxy);
-*/          }
+            cairo_stroke(cr);
+            }
             else if (miny > lmaxy)
             {
                 cairo_move_to (cr, lx, (lmaxy+1)/2 * h);
                 cairo_line_to (cr, x, draw_miny);
-/*              gdk_draw_line (surface, gc, lx, (lmaxy+1)/2 * h, x,
-                                                                draw_miny);
-*/
+            cairo_stroke(cr);
             }
 
             /* connect min val to max val */
-/*          gdk_draw_line (surface, gc, x, draw_miny, x, draw_maxy);
-*/
-            cairo_set_line_width(cr, 1.0);
             cairo_move_to (cr, x, draw_miny);
             cairo_line_to (cr, x, draw_maxy);
 
@@ -640,6 +677,64 @@ static void draw_wave(WaveformPrivate* p, int w, int h, cairo_t* cr)
             maxy = -2;
         }
     }
+}
+
+
+void draw_mark(WaveformPrivate* p, int w, int h, cairo_t* cr)
+{
+    int frames;
+    int start, stop;
+    int play_start, play_stop;
+    int loop_start, loop_stop;
+    float ppf;
+
+    frames = patch_get_frames (p->patch);
+    start = frames * p->range_start;
+    stop = frames * p->range_stop;
+    play_start = patch_get_sample_start (p->patch);
+    play_stop = patch_get_sample_stop (p->patch);
+    loop_start = patch_get_loop_start (p->patch);
+    loop_stop = patch_get_loop_stop (p->patch);
+
+    ppf = w / (stop - start * 1.0);
+
+    cairo_set_line_width(cr, 1.0);
+
+    cairo_set_source_rgb(cr, WAVE_PLAY_R, WAVE_PLAY_G, WAVE_PLAY_B);
+
+    if (play_start > start)
+    {
+        play_start = (play_start - start) * ppf;
+        cairo_move_to(cr, 0.5 + play_start, 0);
+        cairo_line_to(cr, 0.5 + play_start, h - 1);
+    }
+
+    if (play_stop < stop)
+    {
+        play_stop = (play_stop - start) * ppf;
+        cairo_move_to(cr, 0.5 + play_stop, 0);
+        cairo_line_to(cr, 0.5 + play_stop, h - 1);
+    }
+
+    cairo_stroke(cr);
+
+    cairo_set_source_rgb(cr, WAVE_LOOP_R, WAVE_LOOP_G, WAVE_LOOP_B);
+
+    if (loop_start > start)
+    {
+        loop_start = (loop_start - start) * ppf;
+        cairo_move_to(cr, 0.5 + loop_start, 0);
+        cairo_line_to(cr, 0.5 + loop_start, h - 1);
+    }
+
+    if (loop_stop < stop)
+    {
+        loop_stop = (loop_stop - start) * ppf;
+        cairo_move_to(cr, 0.5 + loop_stop, 0);
+        cairo_line_to(cr, 0.5 + loop_stop, h - 1);
+    }
+
+    cairo_stroke(cr);
 }
 
 
@@ -662,19 +757,11 @@ static void waveform_draw(Waveform * wf)
     cairo_stroke(cr);
 
     draw_back(p, p->width, p->height, cr);
+    draw_grid(p, p->width, p->height, cr);
     draw_wave(p, p->width, p->height, cr);
+    draw_mark(p, p->width, p->height, cr);
 
     cairo_destroy(cr);
-
-    /* draw each component */
-/*
-    draw_back (p, GDK_DRAWABLE (widget->window), w, h, gc);
-    draw_grid (GDK_DRAWABLE (widget->window), w, h, gc);
-    draw_wave (p, GDK_DRAWABLE (widget->window), w, h, gc);
-    draw_loop (p, GDK_DRAWABLE (widget->window), w, h, gc);
-
-    g_object_unref (gc);
-*/
 }
 
 

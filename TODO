@@ -12,7 +12,7 @@ in the README as goals for Petri-Foo.
 -Restore refresh functions in most GTK GUI classes
 
 
--Port deprecated GDK line drawing code to Cairo (ie sample editor)
+-Port deprecated GDK line drawing code to Cairo (sample editor done)
   - quite important if we want Petri-Foo to live a long life.
 
 
