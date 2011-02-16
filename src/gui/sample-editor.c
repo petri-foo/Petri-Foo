@@ -63,7 +63,7 @@ static void cb_reset (GtkWidget * widget, gpointer data)
      sample_editor_update_loop();
      sample_editor_update_play();
 
-     gtk_widget_queue_draw (waveform);
+    gtk_widget_queue_draw(waveform);
 }
 
 static void cb_clear (GtkWidget * widget, char *op)
@@ -92,7 +92,7 @@ static void cb_clear (GtkWidget * widget, char *op)
       sample_editor_update_play();
      }
 
-     gtk_widget_queue_draw (waveform);
+    gtk_widget_queue_draw(waveform);
 }
 
 static void cb_scroll (GtkWidget * scroll, gpointer data)
@@ -138,7 +138,7 @@ static void cb_loop_changed (GtkWidget * spin, gpointer data)
 
     ignore_callback = 0;
 
-    gtk_widget_queue_draw (waveform);
+    gtk_widget_queue_draw(waveform);
 }
 
 static void cb_play_changed (GtkWidget * spin, gpointer data)
@@ -195,7 +195,7 @@ static void cb_play_changed (GtkWidget * spin, gpointer data)
 
     ignore_callback = 0;
 
-    gtk_widget_queue_draw (waveform);
+    gtk_widget_queue_draw(waveform);
 }
 
 
@@ -274,7 +274,8 @@ static void cb_wf_changed ()
 {
     sample_editor_update_play();
     sample_editor_update_loop();
-    waveform_draw(WAVEFORM(wf_thumb));
+    gtk_widget_queue_draw(wf_thumb);
+//    waveform_draw(WAVEFORM(wf_thumb));
 }
 
 static void cb_zoom (GtkAdjustment * adj, GtkWidget * spinbutton)
@@ -313,13 +314,16 @@ static void cb_zoom (GtkAdjustment * adj, GtkWidget * spinbutton)
      range = 1.0 - max;
 
      /* we emit this signal so that the waveform will get redrawn with
-      * the new dimensions */
-     g_signal_emit_by_name (G_OBJECT (hscroll), "value-changed");
+      * the new dimensions 
+      */
+    g_signal_emit_by_name (G_OBJECT (hscroll), "value-changed");
 }
 
 void sample_editor_show (int id)
 {
      waveform_set_patch (WAVEFORM (waveform), id);
+    /* ugh 
+     waveform_draw(WAVEFORM(waveform));*/
      patch = id;
 
      old_play_start = patch_get_sample_start (id);
@@ -481,7 +485,10 @@ void sample_editor_init (GtkWidget * parent)
      gtk_widget_show (label);
 
      /* waveform */
-     waveform = waveform_new (-1, 512, 256, TRUE);
+     waveform = waveform_new();
+     waveform_set_patch(        WAVEFORM(waveform), -1);
+     waveform_set_size(         WAVEFORM(waveform),  512, 256);
+     waveform_set_interactive(  WAVEFORM(waveform), TRUE);
      gtk_box_pack_start (GTK_BOX (master_vbox), waveform, TRUE, TRUE, 0);
      gtk_widget_show (waveform);
      g_signal_connect (G_OBJECT (waveform), "changed",

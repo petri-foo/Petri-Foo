@@ -175,7 +175,14 @@ static void file_cb(GtkButton* button, SampleTab* self)
 {
     sample_selector_show(self->patch);
     update_file_button(self);
+
     gtk_widget_queue_draw(self->waveform);
+
+/*  FIXEME: waveform confusion over drawing,
+ *  gtk_widget_queue_draw(self->waveform);
+ *  the above no longer works since moving from GDK to Cairo.
+ */
+/*    waveform_draw(self->waveform);*/
 }
 
 
@@ -299,7 +306,12 @@ static void sample_tab_init(SampleTab* self)
     gtk_widget_show(self->file_button); 
 
     /* waveform preview */
-    self->waveform = waveform_new(self->patch, 256, 64, FALSE);
+    self->waveform = waveform_new();
+
+
+    waveform_set_patch(         WAVEFORM(self->waveform), self->patch);
+    waveform_set_size(          WAVEFORM(self->waveform), 256, 64);
+    waveform_set_interactive(   WAVEFORM(self->waveform), FALSE);
     gtk_box_pack_start(GTK_BOX(vbox), self->waveform, TRUE, TRUE, 0);
     gtk_widget_show(self->waveform);
     sample_editor_set_thumb(self->waveform);

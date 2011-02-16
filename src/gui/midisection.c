@@ -54,6 +54,8 @@ GType midi_section_get_type(void)
 
 static void pressed_cb(GtkWidget* widget, int key, MidiSection* self)
 {
+return;
+
     /* a ghetto form of set-insensitive */
     if (self->patch < 0)
 	return;
@@ -64,6 +66,8 @@ static void pressed_cb(GtkWidget* widget, int key, MidiSection* self)
 
 static void released_cb(GtkWidget* widget, int key, MidiSection* self)
 {
+return;
+
     /* a ghetto form of set-insensitive */
     if (self->patch < 0)
 	return;

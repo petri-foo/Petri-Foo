@@ -15,3 +15,6 @@ in the README as goals for Petri-Foo.
 -Port deprecated GDK line drawing code to Cairo (ie sample editor)
   - quite important if we want Petri-Foo to live a long life.
 
+
+-Get data members residing in GUI GtkObjectClass into private data structs.
+

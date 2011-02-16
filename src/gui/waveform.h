@@ -3,42 +3,53 @@
 
 #include <gtk/gtk.h>
 
-#define WAVEFORM(obj)         GTK_CHECK_CAST(obj, waveform_get_type( ), Waveform)
-#define WAVEFORM_CLASS(klass) GTK_CHECK_CLASS_CAST(klass, waveform_get_type( ), WaveformClass)
-#define IS_WAVEFORM(obj)      GTK_CHECK_TYPE(obj, waveform_get_type( ))
+#define WAVEFORM_TYPE           (waveform_get_type ())
+#define WAVEFORM(obj)           (G_TYPE_CHECK_INSTANCE_CAST ((obj), \
+                                    WAVEFORM_TYPE, Waveform))
 
-typedef struct _waveform       Waveform;
-typedef struct _waveform_class WaveformClass;
+#define IS_WAVEFORM(obj)        (G_TYPE_CHECK_INSTANCE_TYPE ((obj), \
+                                    WAVEFORM_TYPE))
+
+#define WAVEFORM_CLASS(klass)   (G_TYPE_CHECK_CLASS_CAST ((klass),  \
+                                    WAVEFORM_TYPE, WaveformClass))
+
+#define IS_WAVEFORM_CLASS(klass)(G_TYPE_CHECK_CLASS_TYPE ((klass),  \
+                                    WAVEFORM_TYPE))
+
+#define WAVEFORM_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj),  \
+                                    WAVEFORM_TYPE,  WaveformClass))
+
+
+typedef struct _Waveform       Waveform;
+typedef struct _WaveformClass WaveformClass;
 
 /* instance definition */
-struct _waveform
+struct _Waveform
 {
-     GtkWidget parent_object;
-
-     gboolean interactive;
-     int width, height;
-     float range_start, range_stop;
-     int patch;
+     GtkDrawingArea parent_instance;
 };
 
 /* class definition */
-struct _waveform_class
+struct _WaveformClass
 {
-     GtkWidgetClass parent_class;
-
-     void (*changed)(Waveform* self);
+    GtkDrawingAreaClass parent_class;
+    void (*changed)(Waveform* self);
 };
 
-GtkWidget* waveform_new             (int id, int w, int h, gboolean interactive);
-GType      waveform_get_type        ( );
-void       waveform_draw            (Waveform* wf);
+
+GType      waveform_get_type        (void);
+
+GtkWidget* waveform_new             (void);
+
 void       waveform_set_patch       (Waveform* wf, int id);
 void       waveform_set_size        (Waveform* wf, int w, int h);
 void       waveform_set_range       (Waveform* wf, float start, float stop);
 void       waveform_set_interactive (Waveform* wf, gboolean interactive);
 int        waveform_get_patch       (Waveform* wf);
 void       waveform_get_size        (Waveform* wf, int* w, int* h);
-void       waveform_get_range       (Waveform* wf, float* start, float* stop);
+void       waveform_get_range       (Waveform* wf,  float* start,
+                                                    float* stop);
+
 gboolean   waveform_get_interactive (Waveform* wf);
 
 #endif /* __WAVEFORM_H__ */

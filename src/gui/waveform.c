@@ -15,777 +15,756 @@ enum
 
 static int signals[LAST_SIGNAL];
 
-/* colors: from 0 to 65535 */
+#define BG_DEAD_R1 0
+#define BG_DEAD_R2 0.075
+#define BG_DEAD_G1 0
+#define BG_DEAD_G2 0
+#define BG_DEAD_B1 0
+#define BG_DEAD_B2 0
+
+#define BG_PLAY_R1 0
+#define BG_PLAY_R2 0
+#define BG_PLAY_G1 0
+#define BG_PLAY_G2 0
+#define BG_PLAY_B1 0.0762951
+#define BG_PLAY_B2 0.30518
+
+#define BG_LOOP_R1 0
+#define BG_LOOP_R2 0
+#define BG_LOOP_G1 0.0381476
+#define BG_LOOP_G2 0.15259
+#define BG_LOOP_B1 0
+#define BG_LOOP_B2 0
+
+#define GRID_R1 0
+#define GRID_R2 0
+#define GRID_G1 0.0762951
+#define GRID_G2 0.15259
+#define GRID_B1 0.228885
+#define GRID_B2 0.457771
+
+#define CENT_R 0
+#define CENT_G 0.228885
+#define CENT_B 0.457771
+
+#define WAVE_DEAD_R 0.25
+#define WAVE_DEAD_G 0.25
+#define WAVE_DEAD_B 0.25
+
+#define WAVE_PLAY_R 0
+#define WAVE_PLAY_G 0.610361
+#define WAVE_PLAY_B 0.915541
+
+#define WAVE_LOOP_R 0.30518
+#define WAVE_LOOP_G 0.762951
+#define WAVE_LOOP_B 0.457771
+
 enum
 {
-     /* background fades from 1 to 2 values */
-     BACK_R1 = 0,
-     BACK_R2 = 0,
-     BACK_G1 = 0,
-     BACK_G2 = 0,
-     BACK_B1 = 5000,
-     BACK_B2 = 20000,
-
-     BACK_LOOP_R1 = 0,
-     BACK_LOOP_R2 = 0,
-     BACK_LOOP_G1 = 2500,
-     BACK_LOOP_G2 = 10000,
-     BACK_LOOP_B1 = 0,
-     BACK_LOOP_B2 = 0,
-
-     /* grid colors */
-     GRID_R1 = 0,
-     GRID_R2 = 0,
-     GRID_G1 = 5000,
-     GRID_G2 = 10000,
-     GRID_B1 = 15000,
-     GRID_B2 = 30000,
-     GRID_Y = 8,			/* number of sqaures in Y direction */
-
-     /* color for center line */
-     CENT_R = 0000,
-     CENT_G = 15000,
-     CENT_B = 30000,
-
-     /* colors for waveform */
-     WAVE_R = 0000,
-     WAVE_G = 40000,
-     WAVE_B = 60000,
-
-     /* color to draw parts of waveform outside of start/stop points */
-     WAVE_RO = 0,
-     WAVE_GO = 20000,
-     WAVE_BO = 30000,
-
-     /* color to draw loop points */
-     LOOP_R = 20000,
-     LOOP_G = 50000,
-     LOOP_B = 30000,
-
-
-    /*  colour for loop section */
-    LOOPSEL_R = LOOP_R,
-    LOOPSEL_G = LOOP_G,
-    LOOPSEL_B = LOOP_B,
-
+     GRID_Y = 8 /* number of sqaures in Y direction */
 };
+
+
+G_DEFINE_TYPE(Waveform, waveform, GTK_TYPE_DRAWING_AREA)
+
+
+typedef struct _WaveformPrivate WaveformPrivate;
+
+#define WAVEFORM_GET_PRIVATE(obj) \
+    (G_TYPE_INSTANCE_GET_PRIVATE((obj), WAVEFORM_TYPE, WaveformPrivate))
+
+
+struct _WaveformPrivate
+{
+    GdkPixmap * pixmap;
+    gboolean   interactive;
+    int        width;
+    int        height;
+    float      range_start;
+    float      range_stop;
+    int patch;
+};
+
 
 /* forward declarations */
 static void waveform_class_init (WaveformClass * wf);
+
 static void waveform_init (Waveform * wf);
 static void waveform_destroy (GtkObject * object);
+
 static void waveform_realize (GtkWidget * widget);
+
 static void waveform_size_request (GtkWidget * widget,
-				   GtkRequisition * requisition);
+                                    GtkRequisition * requisition);
 
 static void waveform_size_allocate (GtkWidget * widget,
-				    GtkAllocation * allocation);
+                                    GtkAllocation * allocation);
 
-static gboolean waveform_expose (GtkWidget * widget,
-				 GdkEventExpose * event);
+static gboolean waveform_expose(GtkWidget * widget,
+                                    GdkEventExpose * event);
 
-static gboolean waveform_button_press (GtkWidget * widget,
-				       GdkEventButton * event);
+static gboolean waveform_button_press(GtkWidget * widget,
+                                    GdkEventButton * event);
 
-/* local data */
-static GtkWidgetClass *parent_class = NULL;
+static gboolean waveform_configure(GtkWidget * widget,
+                                    GdkEventConfigure * event);
 
-GType waveform_get_type ( )
-{
-     static GType wf_type = 0;
+static void waveform_draw(Waveform * wf);
 
-     if (!wf_type)
-     {
-	  static const GTypeInfo wf_info = {
-	       sizeof (WaveformClass),
-	       NULL,
-	       NULL,
-	       (GClassInitFunc) waveform_class_init,
-	       NULL,
-	       NULL,
-	       sizeof (Waveform),
-	       0,
-	       (GInstanceInitFunc) waveform_init,
-	  };
-
-	  wf_type =
-	       g_type_register_static (GTK_TYPE_WIDGET, "Waveform", &wf_info,
-				       0);
-     }
-
-     return wf_type;
-}
 
 static void waveform_class_init (WaveformClass * klass)
 {
-     GtkObjectClass *object_class;
-     GtkWidgetClass *widget_class;
+    GtkObjectClass *object_class = GTK_OBJECT_CLASS(klass);
+    GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(klass);
 
-     object_class = (GtkObjectClass *) klass;
-     widget_class = (GtkWidgetClass *) klass;
+    object_class->destroy =         waveform_destroy;
 
-     parent_class = gtk_type_class (gtk_widget_get_type ( ));
+    widget_class->expose_event =        waveform_expose;
+    widget_class->configure_event =     waveform_configure;
+    widget_class->size_request =        waveform_size_request;
+    widget_class->button_press_event =  waveform_button_press;
 
-     object_class->destroy = waveform_destroy;
+    signals[CHANGED] =
+        g_signal_new ("changed",
+                        G_TYPE_FROM_CLASS (klass),
+                        G_SIGNAL_RUN_FIRST | G_SIGNAL_ACTION,
+                        G_STRUCT_OFFSET (WaveformClass, changed),
+                        NULL, NULL,
+                        g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 
-     widget_class->realize = waveform_realize;
-     widget_class->expose_event = waveform_expose;
-     widget_class->size_request = waveform_size_request;
-     widget_class->size_allocate = waveform_size_allocate;
-     widget_class->button_press_event = waveform_button_press;
-
-     signals[CHANGED] =
-	  g_signal_new ("changed",
-			G_TYPE_FROM_CLASS (klass),
-			G_SIGNAL_RUN_FIRST | G_SIGNAL_ACTION,
-			G_STRUCT_OFFSET (WaveformClass, changed),
-			NULL, NULL,
-			g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
-
+    g_type_class_add_private(object_class, sizeof(WaveformPrivate));
 }
+
 
 static void waveform_init (Waveform * wf)
 {
-     wf->interactive = FALSE;
-     wf->width = 0;
-     wf->height = 0;
-     wf->patch = -1;
-     wf->range_start = 0.0;
-     wf->range_stop = 1.0;
+    WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
+
+    gtk_widget_add_events(GTK_WIDGET(wf), GDK_BUTTON_PRESS_MASK
+                                        | GDK_BUTTON_RELEASE_MASK   );
+
+    p->pixmap = NULL;
+    p->interactive = FALSE;
+    p->width = 0;
+    p->height = 0;
+    p->patch = -1;
+    p->range_start = 0.0;
+    p->range_stop = 1.0;
 }
+
 
 static void waveform_destroy (GtkObject * object)
 {
-     g_return_if_fail (object != NULL);
-     g_return_if_fail (IS_WAVEFORM (object));
+    WaveformPrivate* p;
 
-     if (GTK_OBJECT_CLASS (parent_class)->destroy)
-	  GTK_OBJECT_CLASS (parent_class)->destroy (object);
+    g_return_if_fail (object != NULL);
+    g_return_if_fail (IS_WAVEFORM (object));
+
+    p = WAVEFORM_GET_PRIVATE(object);
+
+    if (p->pixmap)
+    {
+        gdk_pixmap_unref(p->pixmap);
+        p->pixmap = NULL;
+    }
 }
 
-static void waveform_realize (GtkWidget * widget)
-{
-     GdkWindowAttr attributes;
-     gint attributes_mask;
 
-     g_return_if_fail (widget != NULL);
-     g_return_if_fail (IS_WAVEFORM (widget));
-
-     GTK_WIDGET_SET_FLAGS (widget, GTK_REALIZED);
-
-     attributes.x = widget->allocation.x;
-     attributes.y = widget->allocation.y;
-     attributes.width = widget->allocation.width;
-     attributes.height = widget->allocation.height;
-     attributes.wclass = GDK_INPUT_OUTPUT;
-     attributes.window_type = GDK_WINDOW_CHILD;
-     attributes.event_mask = gtk_widget_get_events (widget) |
-	  GDK_EXPOSURE_MASK | GDK_BUTTON_PRESS_MASK |
-	  GDK_BUTTON_RELEASE_MASK | GDK_POINTER_MOTION_MASK |
-	  GDK_POINTER_MOTION_HINT_MASK;
-     attributes.visual = gtk_widget_get_visual (widget);
-     attributes.colormap = gtk_widget_get_colormap (widget);
-
-     attributes_mask =
-	  GDK_WA_X | GDK_WA_Y | GDK_WA_VISUAL | GDK_WA_COLORMAP;
-     widget->window =
-	  gdk_window_new (widget->parent->window, &attributes,
-			  attributes_mask);
-
-     widget->style = gtk_style_attach (widget->style, widget->window);
-
-     gdk_window_set_user_data (widget->window, widget);
-
-     gtk_style_set_background (widget->style, widget->window,
-			       GTK_STATE_ACTIVE);
-}
 
 static void
 waveform_size_request (GtkWidget * widget, GtkRequisition * requisition)
 {
-     requisition->width = WAVEFORM (widget)->width;
-     requisition->height = WAVEFORM (widget)->height;
+    WaveformPrivate* p = WAVEFORM_GET_PRIVATE(widget);
+
+    requisition->width = p->width;
+    requisition->height = p->height;
+
+    debug("size_request:%d x %d\n", p->width, p->height);
 }
 
-static void
-waveform_size_allocate (GtkWidget * widget, GtkAllocation * allocation)
+
+static gboolean
+waveform_configure(GtkWidget * widget, GdkEventConfigure * event)
 {
-     Waveform *wf;
+    WaveformPrivate* p = WAVEFORM_GET_PRIVATE(widget);
 
-     g_return_if_fail (widget != NULL);
-     g_return_if_fail (IS_WAVEFORM (widget));
-     g_return_if_fail (allocation != NULL);
+debug("CONFIGURE\n");
 
-     widget->allocation = *allocation;
-     wf = WAVEFORM (widget);
-     wf->width = allocation->width;
-     wf->height = allocation->height;
+    p->width = widget->allocation.width;
+    p->height = widget->allocation.height;
 
-     if (GTK_WIDGET_REALIZED (widget))
-     {
+debug("allocation w:%d h:%d\n",p->width, p->height);
 
-	  gdk_window_move_resize (widget->window,
-				  allocation->x, allocation->y,
-				  allocation->width, allocation->height);
+    if (p->pixmap)
+        gdk_pixmap_unref(p->pixmap);
 
-     }
+    p->pixmap = gdk_pixmap_new(widget->window, p->width, p->height, -1);
+
+    waveform_draw(WAVEFORM(widget));
+
+    return TRUE;
 }
+
 
 static gboolean
 waveform_expose (GtkWidget * widget, GdkEventExpose * event)
 {
-     g_return_val_if_fail (widget != NULL, FALSE);
-     g_return_val_if_fail (IS_WAVEFORM (widget), FALSE);
-     g_return_val_if_fail (event != NULL, FALSE);
+    WaveformPrivate* p;
 
-     if (event->count > 0)
-	  return FALSE;
+    g_return_val_if_fail (widget != NULL, FALSE);
+    g_return_val_if_fail (IS_WAVEFORM (widget), FALSE);
+    g_return_val_if_fail (event != NULL, FALSE);
+    g_return_val_if_fail (event->count == 0, FALSE);
 
-     waveform_draw (WAVEFORM (widget));
-     return FALSE;
+    p = WAVEFORM_GET_PRIVATE(widget);
+
+    /*  Assume that when event dimensions match waveform dimensions
+     *  the entire waveform-widget needs to be redrawn fully (ie it's
+     *  been scrolled or zoomed into). Any events which are only partial
+     *  are assumed only to require redrawing of the pixmap.
+     */
+    if (event->area.width == p->width && event->area.height == p->height)
+        waveform_draw(WAVEFORM(widget));
+
+    gdk_draw_drawable(widget->window,
+                      widget->style->fg_gc[GTK_WIDGET_STATE(widget)],
+                      p->pixmap,
+                      event->area.x, event->area.y,
+                      event->area.x, event->area.y,
+                      event->area.width, event->area.height);
+
+    return TRUE;
 }
+
 
 static gboolean
 waveform_button_press (GtkWidget * widget, GdkEventButton * event)
 {
-     Waveform *wf;
-     int frames;
-     int start;
-     int stop;
-     float fpp;			/* frames per pixel */
-     int sel, control, chaos;
+    Waveform *wf;
+    WaveformPrivate* p;
+debug("button press\n");
+    int frames;
+    int start;
+    int stop;
+    float fpp;			// frames per pixel 
+    int sel, control, chaos;
 
-     g_return_val_if_fail (widget != NULL, FALSE);
-     g_return_val_if_fail (IS_WAVEFORM (widget), FALSE);
-     g_return_val_if_fail (event != NULL, FALSE);
-     if (!WAVEFORM (widget)->interactive)
-     {
-	  return FALSE;
-     }
+    g_return_val_if_fail (widget != NULL, FALSE);
+    g_return_val_if_fail (IS_WAVEFORM (widget), FALSE);
+    g_return_val_if_fail (event != NULL, FALSE);
 
-     wf = WAVEFORM (widget);
-     frames = patch_get_frames (wf->patch);
-     start = wf->range_start * frames;
-     stop = wf->range_stop * frames;
-     fpp = (stop - start) * 1.0 / wf->width;
+    wf = WAVEFORM (widget);
+    p = WAVEFORM_GET_PRIVATE(widget);
 
-     sel = (event->x * fpp) + start;	/* sel is now set to the frame
-					 * which corresponds to where the
-					 * user clicked */
-     if (event->type == GDK_BUTTON_PRESS)
-     {
+    if (!p->interactive)
+        return FALSE;
 
-	  /* during this process we ensure that values aren't set
-	   * which are bogus in relation to each other.  For example,
-	   * we make sure that the sample starting point is not
-	   * greater than it's stopping point.
-	   */
+    frames = patch_get_frames (p->patch);
+    start = p->range_start * frames;
+    stop =  p->range_stop * frames;
+    fpp = (stop - start) * 1.0 / p->width;
 
-	  /* left button: start point */
-	  /* anything else: stop point */
-	  if (event->state & GDK_CONTROL_MASK)
-	  {			/* we set play points for control clicks */
-	       if (event->button == 1)
-	       {
-		    control = patch_get_sample_stop (wf->patch);
-		    if (sel < control)
-		    {
-			 patch_set_sample_start (wf->patch, sel);
-
-			 /* adjust starting loop point if we need to */
-			 chaos = patch_get_loop_start (wf->patch);
-			 if (sel > chaos)
-			      patch_set_loop_start (wf->patch, sel);
-		    }
-	       }
-	       else
-	       {
-
-		    control = patch_get_sample_start (wf->patch);
-		    if (sel > control)
-		    {
-			 patch_set_sample_stop (wf->patch, sel);
-
-			 /* adjust stopping loop point if we need to */
-			 chaos = patch_get_loop_stop (wf->patch);
-			 if (sel < chaos)
-			      patch_set_loop_stop (wf->patch, sel);
-		    }
-	       }
-	  }
-	  else
-	  {			/* otherwise, we set loop points */
-	       if (event->button == 1)
-	       {
-		    control = patch_get_sample_start (wf->patch);
-		    chaos = patch_get_loop_stop (wf->patch);
-		    if (sel > control && sel < chaos)
-		    {
-			 patch_set_loop_start (wf->patch, sel);
-		    }
-	       }
-	       else
-	       {
-
-		    control = patch_get_sample_stop (wf->patch);
-		    chaos = patch_get_loop_start (wf->patch);
-		    if (sel < control && sel > chaos)
-		    {
-			 patch_set_loop_stop (wf->patch, sel);
-		    }
-	       }
-	  }
-     }
-
-     g_signal_emit_by_name(G_OBJECT(wf), "changed");
-     gtk_widget_queue_draw (widget);
-     return FALSE;
-}
-
-/* draw background gradient */
-inline static void draw_back (Waveform* wf, GdkDrawable * surface, int w, int h,
-			      GdkGC * gc)
-{
-     int y;
-     int center = h / 2;
-     float d;
-    GdkColor bg;
-    GdkColor bg_loop;
-
-    int x1, x2;
-
-     int frames;
-     int start, stop;
-     int loop_start, loop_stop;
-     float ppf;
-
-     frames = patch_get_frames (wf->patch);
-     start = frames * wf->range_start;
-     stop = frames * wf->range_stop;
-     loop_start = patch_get_loop_start (wf->patch);
-     loop_stop = patch_get_loop_stop (wf->patch);
-     ppf = w / (stop - start * 1.0);
-
-    loop_start = (loop_start - start) * ppf;
-    loop_stop = (loop_stop - start) * ppf;
-
-    printf("loop start:%d loop stop:%d\n", loop_start, loop_stop);
-    printf("w:%d start:%d stop:%d\n",w,start,stop);
-
-    for (y = 0; y < h; y++)
+    sel = (event->x * fpp) + start; /* sel is now set to the frame
+                                     * which corresponds to where the
+                                     * user clicked */
+    if (event->type == GDK_BUTTON_PRESS)
     {
-        d = 1.0 - (abs (y - center) * 1.0 / (center));
 
-        bg.red =   BACK_R1 * (1 - d) + BACK_R2 * d;
-        bg.green = BACK_G1 * (1 - d) + BACK_G2 * d;
-        bg.blue =  BACK_B1 * (1 - d) + BACK_B2 * d;
+        /* during this process we ensure that values aren't set
+         * which are bogus in relation to each other.  For example,
+         * we make sure that the sample starting point is not
+         * greater than it's stopping point.
+         */
 
-        bg_loop.red =   BACK_LOOP_R1 * (1 - d) + BACK_LOOP_R2 * d;
-        bg_loop.green = BACK_LOOP_G1 * (1 - d) + BACK_LOOP_G2 * d;
-        bg_loop.blue =  BACK_LOOP_B1 * (1 - d) + BACK_LOOP_B2 * d;
+        /* left button: start point
+         * anything else: stop point */
 
-        if (loop_start > w - 1 || loop_stop < 0)
-        {   /* loop is not visible */
-            gdk_gc_set_rgb_fg_color (gc, &bg);
-            gdk_draw_line (surface, gc, 0, y, w - 1, y);
-            continue;
-        }
-
-        if (loop_start <= 0 && loop_stop >= w - 1)
-        {   /* only loop is visible */
-            gdk_gc_set_rgb_fg_color (gc, &bg_loop);
-            gdk_draw_line (surface, gc, 0, y, w - 1, y);
-            continue;
-        }
-
-        if (loop_start > 0) /* loop start point is visible */
-        {
-            /* draw bg before loop start */
-            gdk_gc_set_rgb_fg_color (gc, &bg);
-            gdk_draw_line (surface, gc, 0, y, loop_start - 1, y);
-
-            if (loop_stop < w - 1)  /* entire loop is visible       */
-            {                       /* (and is smaller than window) */
-                gdk_draw_line (surface, gc, loop_stop, y, w - 1, y);
-                gdk_gc_set_rgb_fg_color (gc, &bg_loop);
-                gdk_draw_line (surface, gc, loop_start, y, loop_stop-1, y);
+        if (event->state & GDK_CONTROL_MASK)
+        {   /* we set play points for control clicks */
+            if (event->button == 1)
+            {
+                control = patch_get_sample_stop (p->patch);
+                if (sel < control)
+                {
+                    patch_set_sample_start (p->patch, sel);
+                    /* adjust starting loop point if we need to */
+                    chaos = patch_get_loop_start (p->patch);
+                    if (sel > chaos)
+                        patch_set_loop_start (p->patch, sel);
+                }
             }
             else
             {
-                gdk_gc_set_rgb_fg_color (gc, &bg_loop);
-                gdk_draw_line (surface, gc, loop_start, y, w - 1, y);
+                control = patch_get_sample_start (p->patch);
+                if (sel > control)
+                {
+                    patch_set_sample_stop (p->patch, sel);
+                    /* adjust stopping loop point if we need to */
+                    chaos = patch_get_loop_stop (p->patch);
+                    if (sel < chaos)
+                        patch_set_loop_stop (p->patch, sel);
+                }
             }
-            continue;
         }
+        else
+        {   /* otherwise, we set loop points */
+            if (event->button == 1)
+            {
+                control = patch_get_sample_start (p->patch);
+                chaos = patch_get_loop_stop (p->patch);
+                if (sel > control && sel < chaos)
+                    patch_set_loop_start (p->patch, sel);
+            }
+            else
+            {
+                control = patch_get_sample_stop (p->patch);
+                chaos = patch_get_loop_start (p->patch);
+                if (sel < control && sel > chaos)
+                    patch_set_loop_stop (p->patch, sel);
+            }
+        }
+    }
 
-        /* only loop stop point visible */
-        gdk_gc_set_rgb_fg_color (gc, &bg_loop);
-        gdk_draw_line (surface, gc, 0, y, loop_stop - 1, y);
-        gdk_gc_set_rgb_fg_color (gc, &bg);
-        gdk_draw_line (surface, gc, loop_stop, y, w - 1, y);
+    g_signal_emit_by_name(G_OBJECT(wf), "changed");
+    waveform_draw(WAVEFORM(wf));
+    gtk_widget_queue_draw (widget);
+
+    return FALSE;
+}
+
+
+inline static void
+cr_rect(cairo_t* cr, double x1, double y1, double x2, double y2)
+{
+    cairo_rectangle(cr, x1, y1, x2 - x1, y2 - y1);
+}
+
+static void draw_back(WaveformPrivate* p, int w, int h, cairo_t* cr)
+{
+    int y;
+    int center = h / 2;
+    float d;
+
+    int frames;
+    int start, stop;
+    int play_start, play_stop;
+    int loop_start, loop_stop;
+    float ppf;
+
+    cairo_pattern_t *bg_dead;
+    cairo_pattern_t *bg_play;
+    cairo_pattern_t *bg_loop;
+
+    frames = patch_get_frames (p->patch);
+
+    if (frames > 0)
+    {
+        start = frames * p->range_start;
+        stop = frames * p->range_stop;
+        play_start = patch_get_sample_start(p->patch);
+        play_stop = patch_get_sample_stop(p->patch);
+        loop_start = patch_get_loop_start (p->patch);
+        loop_stop = patch_get_loop_stop (p->patch);
+
+        ppf = w / (stop - start * 1.0);
+
+        play_start = (play_start - start) * ppf;
+        play_stop = (play_stop - start) * ppf;
+        loop_start = (loop_start - start) * ppf;
+        loop_stop = (loop_stop - start) * ppf;
+    }
+    else
+    {   /* initialize so that a dead background is drawn */
+        play_start = play_stop = loop_start = loop_stop = w;
+    }
+
+    bg_dead = cairo_pattern_create_linear (0, 0, 0, h);
+    bg_play = cairo_pattern_create_linear (0, 0, 0, h);
+    bg_loop = cairo_pattern_create_linear (0, 0, 0, h);
+
+    cairo_pattern_add_color_stop_rgb (bg_dead, 0.0, BG_DEAD_R1,
+                                                    BG_DEAD_G1,
+                                                    BG_DEAD_B1);
+    cairo_pattern_add_color_stop_rgb (bg_dead, 0.5, BG_DEAD_R2,
+                                                    BG_DEAD_G2,
+                                                    BG_DEAD_B2);
+    cairo_pattern_add_color_stop_rgb (bg_dead, 1.0, BG_DEAD_R1,
+                                                    BG_DEAD_G1,
+                                                    BG_DEAD_B1);
+
+    cairo_pattern_add_color_stop_rgb (bg_play, 0.0, BG_PLAY_R1,
+                                                    BG_PLAY_G1,
+                                                    BG_PLAY_B1);
+    cairo_pattern_add_color_stop_rgb (bg_play, 0.5, BG_PLAY_R2,
+                                                    BG_PLAY_G2,
+                                                    BG_PLAY_B2);
+    cairo_pattern_add_color_stop_rgb (bg_play, 1.0, BG_PLAY_R1,
+                                                    BG_PLAY_G1,
+                                                    BG_PLAY_B1);
+
+    cairo_pattern_add_color_stop_rgb (bg_loop, 0.0, BG_LOOP_R1,
+                                                    BG_LOOP_G1,
+                                                    BG_LOOP_B1);
+    cairo_pattern_add_color_stop_rgb (bg_loop, 0.5, BG_LOOP_R2,
+                                                    BG_LOOP_G2,
+                                                    BG_LOOP_B2);
+    cairo_pattern_add_color_stop_rgb (bg_loop, 1.0, BG_LOOP_R1,
+                                                    BG_LOOP_G1,
+                                                    BG_LOOP_B1);
+
+    if (play_start > 0)
+    {   /* show left dead area if visible */
+        int w1 = (play_start < w - 1) ? play_start : w - 1;
+        cairo_rectangle (cr, 0, 0, w1, h);
+        cairo_set_source (cr, bg_dead);
+        cairo_fill (cr);
+
+        if (play_start > w - 1)
+            goto done;
+    }
+
+    if (loop_start > 0)
+    {   /* show left play area if visible */
+        int x1 = (play_start > 0) ? play_start : 0;
+        int x2 = (loop_start < w - 1) ? loop_start : w - 1;
+        cr_rect(cr, x1, 0, x2, h);
+        cairo_set_source (cr, bg_play);
+        cairo_fill (cr);
+
+        if (loop_start > w - 1)
+            goto done;
+    }
+
+    if (loop_start < w - 1 && loop_stop > 0)
+    {
+        /* the loop is visible, but are it's start/stop points? */
+        int x1 = (loop_start > 0) ? loop_start: 0;
+        int x2 = (loop_stop < w - 1) ? loop_stop : w - 1;
+        cr_rect(cr, x1, 0, x2, h);
+        cairo_set_source(cr, bg_loop);
+        cairo_fill(cr);
+
+        if (loop_stop > w - 1)
+            goto done;
+    }
+
+    if (loop_stop < w - 1)
+    {   /* right play area visible */
+        int x1 = (loop_stop > 0) ? loop_stop : 0;
+        int x2 = (play_stop < w - 1) ? play_stop : w - 1;
+        cr_rect(cr, x1, 0, x2, h);
+        cairo_set_source(cr, bg_play);
+        cairo_fill(cr);
+
+        if (play_stop > w - 1)
+            goto done;
+    }
+
+    if (play_stop < w - 1)
+    {   /* right dead area visible */
+        int x1 = (play_stop > 0) ? play_stop : 0;
+        cr_rect(cr, x1, 0, w, h);
+        cairo_set_source(cr, bg_dead);
+        cairo_fill(cr);
+    }
+
+done:
+    cairo_pattern_destroy(bg_dead);
+    cairo_pattern_destroy(bg_play);
+    cairo_pattern_destroy(bg_loop);
+}
+
+
+static void draw_wave(WaveformPrivate* p, int w, int h, cairo_t* cr)
+{
+    int center = h / 2;
+    int frames;
+    int play_start, play_stop;
+    int loop_start, loop_stop;
+    int start, stop;
+    const float* wav;
+
+    if (p->patch < 0)
+        return;
+
+    if ((wav = patch_get_sample (p->patch)) == NULL)
+        return;
+
+    frames = patch_get_frames (p->patch);
+    start = frames * p->range_start;
+    stop = frames * p->range_stop;
+    play_start = patch_get_sample_start (p->patch);
+    play_stop = patch_get_sample_stop (p->patch);
+    loop_start = patch_get_loop_start (p->patch);
+    loop_stop = patch_get_loop_stop (p->patch);
+
+    /* draw waveform when pixels >= frames */
+    if (w >= (stop - start))
+    {
+        int lx = 0;     /* last x val */
+        int ly = center;/* last y val */
+        int x = 0;      /* x index */
+        int y = 0;      /* y val */
+        int f = start;  /* frame index */
+        int ferr = 0;   /* frame error value */
+        int visframes = stop - start;   /* number of frames that 
+                                         * will be drawn */
+        for (x = 0; x < w; x++)
+        {
+            if ((ferr += visframes) >= w)
+                ferr -= w;
+            else
+                continue;
+
+            y = (wav[f*2] + 1) / 2 * h;
+
+            /* set line color */
+            if (f < play_start || f > play_stop)
+            {
+                cairo_set_source_rgb(cr,    WAVE_DEAD_R,
+                                            WAVE_DEAD_G,
+                                            WAVE_DEAD_B );
+            }
+            else if (f >= loop_start && f <= loop_stop)
+            {
+                cairo_set_source_rgb(cr,    WAVE_LOOP_R,
+                                            WAVE_LOOP_G,
+                                            WAVE_LOOP_B );
+            }
+            else
+            {
+                cairo_set_source_rgb(cr,    WAVE_PLAY_R,
+                                            WAVE_PLAY_G,
+                                            WAVE_PLAY_B );
+            }
+
+            cairo_set_line_width(cr, 1.0);
+            cairo_move_to (cr, lx, ly);
+            cairo_line_to (cr, x, y);
+            cairo_stroke(cr);
+            f++;
+            lx = x;
+            ly = y;
+        }
+    }
+    else /* draw waveform when pixels < frames */
+    {
+        float lminy = 0;    /* last min val */
+        float lmaxy = 0;    /* last max val */
+        float miny = 2;     /* min val found over interval */
+        float maxy = -2;    /* max val found over interval */
+        int draw_miny = 0;  /* pixel value of miny */
+        int draw_maxy = 0;  /* pixel value of maxy */
+        int lx = 0;	        /* last x value (prevents trouble when x == 0)*/
+        int xerr = 0;       /* x error value */
+        int x = 0;          /* x index */
+        int f = 0;          /* frame index */
+        int s = 0;          /* sample index */
+        int visframes = stop - start;
+
+        for (f = start; f < stop; f++)
+        {
+            s = f * 2;
+
+            if (wav[s] > maxy)
+                maxy = wav[s];
+
+            if (wav[s] < miny)
+                miny = wav[s];
+
+            if ((xerr += w) >= visframes)
+                xerr -= visframes;
+            else
+                continue;
+
+            if (f < play_start || f > play_stop)
+            {
+                cairo_set_source_rgb(cr,    WAVE_DEAD_R,
+                                            WAVE_DEAD_G,
+                                            WAVE_DEAD_B );
+            }
+            else if (f >= loop_start && f <= loop_stop)
+            {
+                cairo_set_source_rgb(cr,    WAVE_LOOP_R,
+                                            WAVE_LOOP_G,
+                                            WAVE_LOOP_B );
+            }
+            else
+            {
+                cairo_set_source_rgb(cr,    WAVE_PLAY_R,
+                                            WAVE_PLAY_G,
+                                            WAVE_PLAY_B );
+            }
+
+            /* calculate drawing coordinates */
+            draw_miny = (miny + 1) / 2 * h;
+            draw_maxy = (maxy + 1) / 2 * h;
+
+            /* connect to previously drawn segment; we put off
+             * converting the lm??y values so that they don't get
+             * calculated if they aren't needed (efficiency) */
+            if (maxy < lminy)
+            {
+                cairo_move_to (cr, lx, (lminy+1)/2 * h);
+                cairo_line_to (cr, x, draw_maxy);
+/*              gdk_draw_line(surface, gc, lx, (lminy+1)/2 * h, x,
+                                                                draw_maxy);
+*/          }
+            else if (miny > lmaxy)
+            {
+                cairo_move_to (cr, lx, (lmaxy+1)/2 * h);
+                cairo_line_to (cr, x, draw_miny);
+/*              gdk_draw_line (surface, gc, lx, (lmaxy+1)/2 * h, x,
+                                                                draw_miny);
+*/
+            }
+
+            /* connect min val to max val */
+/*          gdk_draw_line (surface, gc, x, draw_miny, x, draw_maxy);
+*/
+            cairo_set_line_width(cr, 1.0);
+            cairo_move_to (cr, x, draw_miny);
+            cairo_line_to (cr, x, draw_maxy);
+
+            cairo_stroke(cr);
+
+
+            /* reset all vars */
+            lx = x++;
+            lminy = miny;
+            lmaxy = maxy;
+
+            /* this trick ensures that miny and maxy will be set at
+            * least once */
+            miny = 2;
+            maxy = -2;
+        }
     }
 }
 
-/* draw grid gradient */
-inline static void draw_grid (GdkDrawable * surface, int w, int h,
-			      GdkGC * gc)
+
+static void waveform_draw(Waveform * wf)
 {
-     int x, y;
-     int center = h / 2;
-     float d;
-     GdkColor color;
+    GtkWidget* widget = GTK_WIDGET(wf);
+    WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
 
-     for (y = 0; y < h; y++)
-     {
-	  d = 1.0 - (abs (y - center) * 1.0 / (center));
-	  if (y == center)
-	  {
-	       color.red = CENT_R;
-	       color.green = CENT_G;
-	       color.blue = CENT_B;
-	  }
-	  else
-	  {
-	       color.red = GRID_R1 * (1 - d) + GRID_R2 * d;
-	       color.green = GRID_G1 * (1 - d) + GRID_G2 * d;
-	       color.blue = GRID_B1 * (1 - d) + GRID_B2 * d;
-	  }
-	  gdk_gc_set_rgb_fg_color (gc, &color);
+    cairo_t* cr;
 
-	  /* draw horizontal line */
-	  if (y % (h / GRID_Y) == 0)
-	  {
+    if (!GTK_WIDGET_REALIZED (widget))
+        return;
 
-	       gdk_draw_line (surface, gc, 0, y, w - 1, y);
+    cr = gdk_cairo_create(p->pixmap);
 
-	  }
-	  else
-	  {
+    cairo_rectangle(cr, 0, 0, p->width, p->height);
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_fill_preserve(cr);
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_stroke(cr);
 
-	       /* draw vertical line components */
-	       for (x = (h / GRID_Y); x < w; x += (h / GRID_Y))
-	       {
-		    gdk_draw_point (surface, gc, x, y);
-	       }
-	  }
-     }
+    draw_back(p, p->width, p->height, cr);
+    draw_wave(p, p->width, p->height, cr);
+
+    cairo_destroy(cr);
+
+    /* draw each component */
+/*
+    draw_back (p, GDK_DRAWABLE (widget->window), w, h, gc);
+    draw_grid (GDK_DRAWABLE (widget->window), w, h, gc);
+    draw_wave (p, GDK_DRAWABLE (widget->window), w, h, gc);
+    draw_loop (p, GDK_DRAWABLE (widget->window), w, h, gc);
+
+    g_object_unref (gc);
+*/
 }
 
-/* draw waveform, using a method similar to Brensenham's Line-Drawing
- * Algorithm */
-inline static void draw_wave (Waveform* wf, GdkDrawable* surface,
-			      int w, int h, GdkGC* gc)
+
+GtkWidget *waveform_new (void)
 {
-     int center = h / 2;
-     int frames;
-     int play_start, play_stop;
-     int loop_start, loop_stop;
-     int start, stop;
-     const float* wav;
-     GdkColor color;
-
-     if (wf->patch < 0)
-	  return;
-
-     if ((wav = patch_get_sample (wf->patch)) == NULL)
-	  return;
-
-     frames = patch_get_frames (wf->patch);
-     start = frames * wf->range_start;
-     stop = frames * wf->range_stop;
-     play_start = patch_get_sample_start (wf->patch);
-     play_stop = patch_get_sample_stop (wf->patch);
-     loop_start = patch_get_loop_start (wf->patch);
-     loop_stop = patch_get_loop_stop (wf->patch);
-
-     /* draw waveform when pixels >= frames */
-     if (w >= (stop - start))
-     {
-	  int lx = 0;		/* last x val */
-	  int ly = center;	/* last y val */
-	  int x = 0;		/* x index */
-	  int y = 0;		/* y val */
-	  int f = start;	/* frame index */
-	  int ferr = 0;		/* frame error value */
-	  int visframes		/* number of frames that will be drawn */
-	       = stop - start;
-
-	  for (x = 0; x < w; x++)
-	  {
-	       if ((ferr += visframes) >= w)
-	       {
-		    ferr -= w;
-	       }
-	       else
-	       {
-		    continue;
-	       }
-
-	       y = (wav[f*2] + 1) / 2 * h;
-
-	       /* set line color */
-	       if (f < play_start || f > play_stop)
-	       {
-		    color.red = WAVE_RO;
-		    color.green = WAVE_GO;
-		    color.blue = WAVE_BO;
-	       }
-	       else
-	       {
-		    color.red = WAVE_R;
-		    color.green = WAVE_G;
-		    color.blue = WAVE_B;
-	       }
-
-	       gdk_gc_set_rgb_fg_color (gc, &color);
-	       gdk_draw_line (surface, gc, lx, ly, x, y);
-
-	       f++;
-	       lx = x;
-	       ly = y;
-	  }
-     }
-
-     /* draw waveform when pixels < frames */
-     else
-     {
-	  float lminy = 0;	/* last min val */
-	  float lmaxy = 0;	/* last max val */
-	  float miny = 2;	/* min val found over interval */
-	  float maxy = -2;	/* max val found over interval */
-	  int draw_miny = 0;	/* pixel value of miny */
-	  int draw_maxy = 0;	/* pixel value of maxy */
-	  int lx = 0;		/* last x value (prevents trouble when x == 0) */
-	  int xerr = 0;		/* x error value */
-	  int x = 0;		/* x index */
-	  int f = 0;		/* frame index */
-	  int s = 0;		/* sample index */
-	  int visframes		/* number of frames that will be drawn */
-	       = stop - start;
-
-	  for (f = start; f < stop; f++)
-	  {
-	       s = f * 2;
-
-	       if (wav[s] > maxy)
-	       {
-		    maxy = wav[s];
-	       }
-	       if (wav[s] < miny)
-	       {
-		    miny = wav[s];
-	       }
-
-	       if ((xerr += w) >= visframes)
-	       {
-		    xerr -= visframes;
-	       }
-	       else
-	       {
-		    continue;
-	       }
-
-	       /* set color of line */
-	       if (f < play_start || f > play_stop)
-	       {
-		    color.red = WAVE_RO;
-		    color.green = WAVE_GO;
-		    color.blue = WAVE_BO;
-	       }
-	       else if (f >= loop_start && f <= loop_stop)
-	       {
-		    color.red = LOOPSEL_R;
-		    color.green = LOOPSEL_G;
-		    color.blue = LOOPSEL_B;
-	       }
-           else
-	       {
-		    color.red = WAVE_R;
-		    color.green = WAVE_G;
-		    color.blue = WAVE_B;
-	       }
-	       gdk_gc_set_rgb_fg_color (gc, &color);
-
-	       /* calculate drawing coordinates */
-	       draw_miny = (miny + 1) / 2 * h;
-	       draw_maxy = (maxy + 1) / 2 * h;
-
-	       /* connect to previously drawn segment; we put off
-		* converting the lm??y values so that they don't get
-		* calculated if they aren't needed (efficiency) */
-	       if (maxy < lminy)
-	       {
-		    gdk_draw_line (surface, gc, lx, (lminy+1)/2 * h, x, draw_maxy);
-	       }
-	       else if (miny > lmaxy)
-	       {
-		    gdk_draw_line (surface, gc, lx, (lmaxy+1)/2 * h, x, draw_miny);
-	       }
-
-	       /* connect min val to max val */
-	       gdk_draw_line (surface, gc, x, draw_miny, x, draw_maxy);
-
-	       /* reset all vars */
-	       lx = x++;
-	       lminy = miny;
-	       lmaxy = maxy;
-
-	       /* this trick ensures that miny and maxy will be set at
-		* least once */
-	       miny = 2;
-	       maxy = -2;
-	  }
-     }
+    return GTK_WIDGET(g_object_new(WAVEFORM_TYPE, NULL));
 }
 
-inline static void draw_loop (Waveform * wf, GdkDrawable * surface, int w,
-			      int h, GdkGC * gc)
-{
-     int frames;
-     int start, stop;
-     int loop_start, loop_stop;
-     float ppf;
-     GdkColor color;
-
-     frames = patch_get_frames (wf->patch);
-     start = frames * wf->range_start;
-     stop = frames * wf->range_stop;
-     loop_start = patch_get_loop_start (wf->patch);
-     loop_stop = patch_get_loop_stop (wf->patch);
-     ppf = w / (stop - start * 1.0);
-
-     /* prepare to draw loop points */
-     color.red = LOOP_R;
-     color.green = LOOP_G;
-     color.blue = LOOP_B;
-     gdk_gc_set_rgb_fg_color (gc, &color);
-     gdk_gc_set_function (gc, GDK_COPY);
-
-     /* draw starting loop point */
-     if (loop_start > start)
-     {
-	  loop_start = (loop_start - start) * ppf;
-	  gdk_draw_line (surface, gc, loop_start, 0, loop_start, h - 1);
-     }
-
-     /* draw stopping loop point */
-     if (loop_stop < stop)
-     {
-	  loop_stop = (loop_stop - start) * ppf;
-	  gdk_draw_line (surface, gc, loop_stop, 0, loop_stop, h - 1);
-     }
-}
-
-void waveform_draw (Waveform * wf)
-{
-     GtkWidget *widget = GTK_WIDGET (wf);
-     GdkGC *gc;
-     int w, h;			/* width and height of drawing area */
-
-     /* prepate to draw */
-     if (!GTK_WIDGET_REALIZED (widget))
-	  return;
-     gdk_drawable_get_size (GDK_DRAWABLE (widget->window), &w, &h);
-     gc = gdk_gc_new (GDK_DRAWABLE (widget->window));
-
-     /* draw each component */
-     draw_back (wf, GDK_DRAWABLE (widget->window), w, h, gc);
-     draw_grid (GDK_DRAWABLE (widget->window), w, h, gc);
-     draw_wave (wf, GDK_DRAWABLE (widget->window), w, h, gc);
-     draw_loop (wf, GDK_DRAWABLE (widget->window), w, h, gc);
-
-     g_object_unref (gc);
-}
-
-GtkWidget *waveform_new (int id, int w, int h, gboolean interactive)
-{
-     Waveform *wf;
-
-     wf = g_object_new (waveform_get_type ( ), NULL);
-
-     wf->patch = id;
-     wf->width = w;
-     wf->height = h;
-     wf->interactive = interactive;
-
-     return GTK_WIDGET (wf);
-}
 
 void waveform_set_patch (Waveform * wf, int id)
 {
-     g_return_if_fail (wf != NULL);
-     g_return_if_fail (IS_WAVEFORM (wf));
-
-     wf->patch = id;
-
-     gtk_widget_queue_draw (GTK_WIDGET (wf));
+    g_return_if_fail (wf != NULL);
+    g_return_if_fail (IS_WAVEFORM (wf));
+    WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
+    p->patch = id;
+    gtk_widget_queue_draw (GTK_WIDGET (wf));
 }
+
 
 void waveform_set_size (Waveform * wf, int w, int h)
 {
-     g_return_if_fail (wf != NULL);
-     g_return_if_fail (IS_WAVEFORM (wf));
-
-     wf->width = w;
-     wf->height = h;
-
-     gtk_widget_queue_resize (GTK_WIDGET (wf));
+    g_return_if_fail (wf != NULL);
+    g_return_if_fail (IS_WAVEFORM (wf));
+    WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
+    p->width = w;
+    p->height = h;
+    gtk_widget_queue_resize (GTK_WIDGET (wf));
 }
+
 
 void waveform_set_interactive (Waveform * wf, gboolean interactive)
 {
-     g_return_if_fail (wf != NULL);
-     g_return_if_fail (IS_WAVEFORM (wf));
-
-     wf->interactive = interactive;
-
-     gtk_widget_queue_draw (GTK_WIDGET (wf));
+    g_return_if_fail (wf != NULL);
+    g_return_if_fail (IS_WAVEFORM (wf));
+    WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
+    p->interactive = interactive;
+    gtk_widget_queue_draw (GTK_WIDGET (wf));
 }
+
 
 void waveform_set_range (Waveform * wf, float start, float stop)
 {
-     g_return_if_fail (wf != NULL);
-     g_return_if_fail (IS_WAVEFORM (wf));
+    g_return_if_fail (wf != NULL);
+    g_return_if_fail (IS_WAVEFORM (wf));
+    WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
 
-     wf->range_start = (start < 0.0 || start > 1.0
-			|| start > stop) ? 0.0 : start;
-     wf->range_stop = (stop < 0.0 || start > 1.0
-		       || start > stop) ? 1.0 : stop;
+    p->range_start = (start < 0.0 || start > 1.0 || start > stop)
+                            ? 0.0 
+                            : start;
 
-     gtk_widget_queue_draw (GTK_WIDGET (wf));
+    p->range_stop = (stop < 0.0 || start > 1.0 || start > stop)
+                            ? 1.0
+                            : stop;
+
+    gtk_widget_queue_draw (GTK_WIDGET (wf));
 }
+
 
 int waveform_get_patch (Waveform * wf)
 {
-     g_return_val_if_fail (wf != NULL, -1);
-     g_return_val_if_fail (IS_WAVEFORM (wf), -1);
-
-     return wf->patch;
+    g_return_val_if_fail (wf != NULL, -1);
+    g_return_val_if_fail (IS_WAVEFORM (wf), -1);
+    return WAVEFORM_GET_PRIVATE(wf)->patch;
 }
+
 
 void waveform_get_size (Waveform * wf, int *w, int *h)
 {
-     g_return_if_fail (wf != NULL);
-     g_return_if_fail (IS_WAVEFORM (wf));
-
-     *w = wf->width;
-     *h = wf->height;
-     return;
+    g_return_if_fail (wf != NULL);
+    g_return_if_fail (IS_WAVEFORM (wf));
+    WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
+    *w = p->width;
+    *h = p->height;
+    return;
 }
+
 
 gboolean waveform_get_interactive (Waveform * wf)
 {
      g_return_val_if_fail (wf != NULL, FALSE);
      g_return_val_if_fail (IS_WAVEFORM (wf), FALSE);
-
-     return wf->interactive;
+     return WAVEFORM_GET_PRIVATE(wf)->interactive;
 }
+
 
 void waveform_get_range (Waveform * wf, float *start, float *stop)
 {
-     g_return_if_fail (wf != NULL);
-     g_return_if_fail (IS_WAVEFORM (wf));
-
-     *start = wf->range_start;
-     *stop = wf->range_stop;
+    g_return_if_fail (wf != NULL);
+    g_return_if_fail (IS_WAVEFORM (wf));
+    WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
+    *start = p->range_start;
+    *stop = p->range_stop;
 }
