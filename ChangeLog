@@ -1,3 +1,15 @@
+2011-02-17  James Morris <james@jwm-art.net>
+	* bisected the monolithic patch.[ch] to form patch_util.[ch].
+	  within patch.[ch], all the setters and getters have gone,
+	  along with a few functions necessary for them.
+	  unfortunately, this means some variables are no longer static
+	  to patch.c and are declared extern in private/patch_data.h.
+	  such is the cost of bisecting 3000 lines of code of one file
+          to form two files.
+
+	* lots of other changes probably more exciting than this have
+	  not of course been added to the changelog :-P
+
 2011-02-13  James Morris <james@jwm-art.net>
 	* house keeping: transferred patch_*_names functions into
 	  mod_src_*_names functions.

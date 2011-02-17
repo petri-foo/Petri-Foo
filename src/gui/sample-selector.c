@@ -5,8 +5,8 @@
 #include <gtk/gtk.h>
 #include "gui.h"
 #include "petri-foo.h"
-#include "patch.h"
 #include "mixer.h"
+#include "patch_util.h"
 
 static int patch;
 static char *old_file = NULL;

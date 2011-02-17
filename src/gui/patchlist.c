@@ -2,7 +2,7 @@
 #include "patchlist.h"
 #include "gui.h"
 #include "petri-foo.h"
-#include "patch.h"
+#include "patch_util.h"
 
 /* magic numbers */
 enum

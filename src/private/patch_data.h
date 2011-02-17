@@ -183,5 +183,31 @@ typedef struct _Patch
 } Patch;
 
 
+extern const float PATCH_MIN_RELEASE;
+extern Patch patches[PATCH_COUNT];
+
+
+#define INLINE_ISOK_DEF                                             \
+inline static int isok (int id)                                     \
+{                                                                   \
+    if (id < 0 || id >= PATCH_COUNT || !patches[id].active)         \
+        return 0;                                                   \
+    return 1;                                                       \
+}
+
+
+#define INLINE_PATCH_TRIGGER_GLOBAL_LFO_DEF                         \
+inline static void                                                  \
+patch_trigger_global_lfo(int patch_id, LFO* lfo, LFOParams* lfopar) \
+{                                                                   \
+    Patch* p = &patches[patch_id];                                  \
+    lfo->freq_mod1 = mod_id_to_pointer(lfopar->mod1_id, p, NULL);   \
+    lfo->freq_mod2 = mod_id_to_pointer(lfopar->mod2_id, p, NULL);   \
+    lfo_trigger(lfo, lfopar);                                       \
+}
+
+
+float* mod_id_to_pointer(int id, Patch* p, PatchVoice* v);
+
 
 #endif

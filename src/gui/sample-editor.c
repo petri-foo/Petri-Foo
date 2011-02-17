@@ -2,7 +2,7 @@
 #include <string.h>
 #include <gtk/gtk.h>
 #include "petri-foo.h"
-#include "patch.h"
+#include "patch_util.h"
 #include "waveform.h"
 #include "gui.h"
 #include "mixer.h"
@@ -205,7 +205,6 @@ static void cb_xfade_changed (GtkWidget * spin, gpointer data)
         return;
  
     int xfade = patch_get_sample_xfade(patch);
-    int nframes = patch_get_frames(patch);
     int val;
 
     val = gtk_spin_button_get_value_as_int(
@@ -228,7 +227,6 @@ static void cb_fade_in_changed (GtkWidget * spin, gpointer data)
         return;
  
     int fade_in = patch_get_sample_fade_in(patch);
-    int nframes = patch_get_frames(patch);
     int val;
 
     val = gtk_spin_button_get_value_as_int(
@@ -252,7 +250,6 @@ static void cb_fade_out_changed (GtkWidget * spin, gpointer data)
         return;
  
     int fade_out = patch_get_sample_fade_out(patch);
-    int nframes = patch_get_frames(patch);
     int val;
 
     val = gtk_spin_button_get_value_as_int(

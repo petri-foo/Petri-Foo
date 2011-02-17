@@ -9,10 +9,9 @@
 #include "voicetab.h"
 #include "envelopetab.h"
 #include "lfotab.h"
-#include "patch.h"
 #include "mixer.h"
-
 #include "paramtab.h"
+#include "patch_util.h"
 
 
 const char* deftitle = "<b>Empty Bank</b>";
@@ -194,7 +193,6 @@ static void patch_section_init(PatchSection* self)
 
 static void patch_section_destroy(GtkObject* object)
 {
-    PatchSection* self = PATCH_SECTION(object);
     GtkObjectClass* klass = GTK_OBJECT_CLASS(parent_class);
 
     if (klass->destroy)

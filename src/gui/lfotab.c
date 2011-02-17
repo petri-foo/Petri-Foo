@@ -4,8 +4,8 @@
 #include "gui.h"
 #include "idselector.h"
 #include "lfo.h"
-#include "patch.h"
 #include "mod_src.h"
+#include "patch_util.h"
 
 
 /* must match order of items in menu */
@@ -459,10 +459,6 @@ static void lfo_tab_init(LfoTab* self)
 
     ++y;
 
-
-
-
-
 //    gtk_table_set_row_spacing(t, y, GUI_SPACING);
 
     /* delay fan */
@@ -509,10 +505,9 @@ static void lfo_tab_init(LfoTab* self)
 
 static void update_lfo(LfoTab* self)
 {
-    PatchParamType param;
     LFOShape shape;
-    float freq, beats, delay, attack, amount;
-    gboolean sync, global, positive;
+    float freq, beats, delay, attack;
+    gboolean sync, positive;
     gboolean on;
 
     int   mod1src, mod2src;

@@ -6,8 +6,9 @@
 #include "gui.h"
 #include "patchlist.h"
 #include "midi.h"
-#include "patch.h"
 #include "mixer.h"
+#include "patch_util.h"
+
 
 static GtkVBoxClass* parent_class;
 

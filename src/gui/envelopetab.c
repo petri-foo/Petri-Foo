@@ -3,7 +3,8 @@
 #include "envelopetab.h"
 #include "gui.h"
 #include "idselector.h"
-#include "patch.h"
+#include "mod_src.h"
+#include "patch_util.h"
 
 enum
 {

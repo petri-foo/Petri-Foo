@@ -6,7 +6,7 @@
 
 #include "instance.h"
 #include "petri-foo.h"
-#include "patch.h"
+
 #include "mixer.h"
 #include "gui.h"
 #include "patchsection.h"
@@ -19,6 +19,8 @@
 #include "sample-selector.h"
 #include "bank-ops.h"
 #include "audio-settings.h"
+#include "mod_src.h"
+#include "patch_util.h"
 
 /* windows */
 static GtkWidget* window;

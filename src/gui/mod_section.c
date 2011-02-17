@@ -3,7 +3,7 @@
 
 #include "mod_section.h"
 #include "gui.h"
-#include "patch.h"
+#include "patch_util.h"
 
 #include "mod_src.h"
 
@@ -208,7 +208,7 @@ unblock_mod_srcs:
 static gboolean refresh(gpointer data)
 {
     float param1, param2;
-
+/* FIXME: we need to look into this refresh stuff I seem to recall */
     ModSection* self = MOD_SECTION(data);
 
     if (self->patch_id < 0)

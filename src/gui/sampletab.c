@@ -2,10 +2,10 @@
 #include "sampletab.h"
 #include "gui.h"
 #include "waveform.h"
-#include "patch.h"
 #include "mixer.h"
 #include "sample-selector.h"
 #include "sample-editor.h"
+#include "patch_util.h"
 
 static GtkVBoxClass* parent_class;
 

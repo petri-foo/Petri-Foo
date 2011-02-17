@@ -2,8 +2,8 @@
 
 #include "gui.h"
 #include "mod_src.h"
-#include "patch.h"
 #include "petri-foo.h"
+#include "patch_util.h"
 
 
 #include <string.h>

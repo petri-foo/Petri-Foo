@@ -2,7 +2,7 @@
 #include <phat/phat.h>
 #include "voicetab.h"
 #include "gui.h"
-#include "patch.h"
+#include "patch_util.h"
 
 static GtkVBoxClass* parent_class;
 

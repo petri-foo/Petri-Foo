@@ -5,8 +5,8 @@
 #include <string.h>
 
 #include "petri-foo.h"
-#include "patch.h"
 #include "waveform.h"
+#include "patch_util.h"
 
 /* signals */
 enum
@@ -94,13 +94,8 @@ static void waveform_class_init (WaveformClass * wf);
 static void waveform_init (Waveform * wf);
 static void waveform_destroy (GtkObject * object);
 
-static void waveform_realize (GtkWidget * widget);
-
 static void waveform_size_request (GtkWidget * widget,
                                     GtkRequisition * requisition);
-
-static void waveform_size_allocate (GtkWidget * widget,
-                                    GtkAllocation * allocation);
 
 static gboolean waveform_expose(GtkWidget * widget,
                                     GdkEventExpose * event);
@@ -337,10 +332,6 @@ cr_rect(cairo_t* cr, double x1, double y1, double x2, double y2)
 
 static void draw_back(WaveformPrivate* p, int w, int h, cairo_t* cr)
 {
-    int y;
-    int center = h / 2;
-    float d;
-
     int frames;
     int start, stop;
     int play_start, play_stop;
@@ -475,7 +466,6 @@ static void draw_grid(WaveformPrivate* p, int w, int h, cairo_t* cr)
 {
     int x, y;
     int center = h / 2;
-    float d;
     int step = h / GRID_Y;
 
     cairo_pattern_t *fg = cairo_pattern_create_linear (0, 0, 0, h);
