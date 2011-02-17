@@ -25,6 +25,8 @@ AC_ARG_ENABLE([lash],
         [disable lash support (default is NO)])],
     [if test x$enable_lash = xno; then with_lash=no ; fi])
 
+echo with_lash:$with_lash
+
 AM_CONDITIONAL(WITH_LASH, [test "$with_lash" = "yes"])
 
 # standard autoconf checks
@@ -109,10 +111,11 @@ PKG_CHECK_MODULES(PHAT, phat >= 0.3.1, HAVE_PHAT="yes", config_error="yes")
 AC_SUBST(PHAT_CFLAGS)
 AC_SUBST(PHAT_LIBS)
 
-if test x$enable_lash = xyes; then
+if test x$with_lash = xyes; then
 
-PKG_CHECK_MODULES(LASH, lash-1.0 >= 0.5.0, HAVE_LASH="yes", config_error="no")
-if test "x$HAVE_LASH" = xyes ; then
+have_lash=no
+PKG_CHECK_MODULES(LASH, lash-1.0 >= 0.5.0, have_lash="yes", config_error="no")
+if test x$have_lash = xyes ; then
   AC_DEFINE([HAVE_LASH], [], [Define if we have lash.])
   AC_SUBST(LASH_CFLAGS)
   AC_SUBST(LASH_LIBS)
