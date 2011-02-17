@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <gtk/gtk.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "petri-foo.h"
 #include "patch.h"
@@ -680,6 +682,25 @@ static void draw_wave(WaveformPrivate* p, int w, int h, cairo_t* cr)
 }
 
 
+char* int_to_str(int n, const char* fmt)
+{
+    char buf[80];
+
+    if (snprintf(buf, 80, fmt, n) < 0)
+        return 0;
+
+    int len = strlen(buf);
+    char* str = malloc(len + 1);
+
+    if (!str)
+        return 0;
+
+    strcpy(str, buf);
+
+    return str;
+}
+
+
 void draw_mark(WaveformPrivate* p, int w, int h, cairo_t* cr)
 {
     int frames;
@@ -688,7 +709,20 @@ void draw_mark(WaveformPrivate* p, int w, int h, cairo_t* cr)
     int loop_start, loop_stop;
     float ppf;
 
+    float textheight = w * (32.0f / 1680);
+
+    char* pstart = "play";
+    char* pstop = pstart;
+    char* lstart = "loop";
+    char* lstop = lstart;
+
+    cairo_text_extents_t extents;
+
     frames = patch_get_frames (p->patch);
+
+    if (frames <= 0)
+        return;
+
     start = frames * p->range_start;
     stop = frames * p->range_stop;
     play_start = patch_get_sample_start (p->patch);
@@ -700,13 +734,38 @@ void draw_mark(WaveformPrivate* p, int w, int h, cairo_t* cr)
 
     cairo_set_line_width(cr, 1.0);
 
+    if (p->interactive)
+    {
+        pstart = int_to_str(play_start, "%d");
+        pstop = int_to_str(play_stop, "%d");
+        lstart = int_to_str(loop_start, "%d");
+        lstop = int_to_str(loop_stop, "%d");
+
+        cairo_select_font_face (cr, "Sans", CAIRO_FONT_SLANT_NORMAL,
+                                            CAIRO_FONT_WEIGHT_NORMAL );
+        if (textheight < 8.0)
+            textheight = 8.0;
+        else if (textheight > 16.0)
+            textheight = 16.0;
+
+        cairo_set_font_size (cr, textheight);
+    }
+
     cairo_set_source_rgb(cr, WAVE_PLAY_R, WAVE_PLAY_G, WAVE_PLAY_B);
 
-    if (play_start > start)
+    if (play_start >= start)
     {
         play_start = (play_start - start) * ppf;
         cairo_move_to(cr, 0.5 + play_start, 0);
         cairo_line_to(cr, 0.5 + play_start, h - 1);
+
+        if (p->interactive)
+        {
+            cairo_text_extents (cr, pstart, &extents);
+            cairo_move_to(cr, 0.5 + play_start + 1,
+                                    extents.height - extents.y_bearing);
+            cairo_show_text (cr, pstart);
+        }
     }
 
     if (play_stop < stop)
@@ -714,17 +773,32 @@ void draw_mark(WaveformPrivate* p, int w, int h, cairo_t* cr)
         play_stop = (play_stop - start) * ppf;
         cairo_move_to(cr, 0.5 + play_stop, 0);
         cairo_line_to(cr, 0.5 + play_stop, h - 1);
+
+        if (p->interactive)
+        {
+            cairo_text_extents (cr, pstop, &extents);
+            cairo_move_to(cr, 0.5 + play_stop - extents.x_advance
+                          - extents.x_bearing - 1, h + extents.y_bearing);
+            cairo_show_text (cr, pstop);
+        }
     }
 
     cairo_stroke(cr);
 
     cairo_set_source_rgb(cr, WAVE_LOOP_R, WAVE_LOOP_G, WAVE_LOOP_B);
 
-    if (loop_start > start)
+    if (loop_start >= start)
     {
         loop_start = (loop_start - start) * ppf;
         cairo_move_to(cr, 0.5 + loop_start, 0);
         cairo_line_to(cr, 0.5 + loop_start, h - 1);
+
+        if (p->interactive)
+        {
+            cairo_text_extents (cr, lstart, &extents);
+            cairo_move_to(cr, 0.5 + loop_start + 1, h + extents.y_bearing);
+            cairo_show_text (cr, lstart);
+        }
     }
 
     if (loop_stop < stop)
@@ -732,9 +806,27 @@ void draw_mark(WaveformPrivate* p, int w, int h, cairo_t* cr)
         loop_stop = (loop_stop - start) * ppf;
         cairo_move_to(cr, 0.5 + loop_stop, 0);
         cairo_line_to(cr, 0.5 + loop_stop, h - 1);
+
+        if (p->interactive)
+        {
+            cairo_text_extents (cr, lstop, &extents);
+            cairo_move_to(cr, 0.5 + loop_stop
+                                - extents.x_advance
+                                - extents.x_bearing - 1,
+                            extents.height - extents.y_bearing);
+            cairo_show_text (cr, lstop);
+        }
     }
 
     cairo_stroke(cr);
+
+    if (p->interactive)
+    {
+        free(pstart);
+        free(pstop);
+        free(lstart);
+        free(lstop);
+    }
 }
 
 

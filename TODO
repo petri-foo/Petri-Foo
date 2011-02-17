@@ -18,3 +18,9 @@ in the README as goals for Petri-Foo.
 
 -Get data members residing in GUI GtkObjectClass into private data structs.
 
+
+-Sample Editor
+    + two tool modes: pointer, and zoom
+    + zoom tool: select area and zoom
+    + pointer tool: *drag* play/loop point markers
+    + zoom in/out/all buttons

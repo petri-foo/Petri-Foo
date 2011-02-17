@@ -104,15 +104,10 @@ static void update_to_end_check(SampleTab* self)
 static gboolean waveform_cb(GtkWidget* wf, GdkEventButton* event, SampleTab* self)
 {
     if (event->button == 1)
-    {
-        sample_editor_show(self->patch);
-
-        debug("sample_editor created.... and done with?\n");
+    {   /* don't open the sample-editor if there is no sample! */
+        if (patch_get_frames (self->patch))
+            sample_editor_show(self->patch);
     }
-
-     /* this doesn't work! */
-    gtk_widget_queue_draw(wf);
-
     return FALSE;
 }
 
@@ -177,12 +172,6 @@ static void file_cb(GtkButton* button, SampleTab* self)
     update_file_button(self);
 
     gtk_widget_queue_draw(self->waveform);
-
-/*  FIXEME: waveform confusion over drawing,
- *  gtk_widget_queue_draw(self->waveform);
- *  the above no longer works since moving from GDK to Cairo.
- */
-/*    waveform_draw(self->waveform);*/
 }
 
 
