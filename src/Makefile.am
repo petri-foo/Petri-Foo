@@ -7,7 +7,7 @@ sample.h driver.c driver.h midi.c midi.h patch.c patch.h petri-foo.c	\
 petri-foo.h beef.c beef.h maths.c maths.h ticks.c ticks.h adsr.c adsr.h	\
 lfo.c lfo.h sync.c sync.h control.h instance.c instance.h
                                                                                                                                                                         
-if HAVE_LASH                                                                                                                                                            
+if WITH_LASH                                                                                                                                                            
 petri_foo_SOURCES += lashdriver.c lashdriver.h                                                                                                                           
 endif
 
