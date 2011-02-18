@@ -13,7 +13,7 @@
 #include "driver.h"		/* for DRIVER_DEFAULT_SAMPLERATE */
 #include "midi.h"		/* for MIDI_CHANS */
 
-#include "patch_util.h"
+#include "patch_set_and_get.h"
 
 #include "private/patch_data.h" /* the structs that were here */
 
@@ -54,29 +54,6 @@ Patch patches[PATCH_COUNT];
 /* inline static int isok(int id) see private/patch_data.h */
 INLINE_ISOK_DEF
 
-
-
-/* a utility function which finds the PatchParam* associated with
- * a particular PatchParamType */
-static int patch_get_param (PatchParam** p, int id, PatchParamType param)
-{
-    if (!isok (id))
-        return PATCH_ID_INVALID;
-
-    switch (param)
-    {
-    case PATCH_PARAM_AMPLITUDE: *p = &patches[id].vol;      break;
-    case PATCH_PARAM_PANNING:   *p = &patches[id].pan;      break;
-    case PATCH_PARAM_CUTOFF:    *p = &patches[id].ffreq;    break;
-    case PATCH_PARAM_RESONANCE: *p = &patches[id].freso;    break;
-    case PATCH_PARAM_PITCH:     *p = &patches[id].pitch;    break;
-    default:
-        debug ("Invalid request for address of param\n");
-        return PATCH_PARAM_INVALID;
-    }
-
-    return 0;
-}
 
 /* locks a patch so that it will be ignored by patch_render() */
 inline static void patch_lock (int id)
@@ -1632,45 +1609,5 @@ void patch_control(int chan, ControlParamType param, float value)
 
     return;
 }
-
-/**************************************************************************/
-/************************ VELOCITY FUNCTIONS ******************************/
-/**************************************************************************/
-
-int patch_set_vel_amount (int id, PatchParamType param, float amt)
-{
-    PatchParam* p;
-    int err;
-     
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-
-    if ((err = patch_get_param (&p, id, param)) < 0)
-	return err;
-
-    if (amt < 0.0 || amt > 1.0)
-	return PATCH_PARAM_INVALID;
-
-    p->vel_amt = amt;
-    return 0;
-}
-     
-int patch_get_vel_amount (int id, PatchParamType param, float* val)
-{
-    PatchParam* p;
-    int err;
-     
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-
-    if ((err = patch_get_param (&p, id, param)) < 0)
-	return err;
-
-    *val = p->vel_amt;
-    return 0;
-}
-
-
-
 
 

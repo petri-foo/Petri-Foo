@@ -20,7 +20,7 @@
 #include "bank-ops.h"
 #include "audio-settings.h"
 #include "mod_src.h"
-#include "patch_util.h"
+#include "patch_set_and_get.h"
 
 /* windows */
 static GtkWidget* window;

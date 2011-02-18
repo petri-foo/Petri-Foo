@@ -5,7 +5,7 @@
 #include "mixer.h"
 #include "sample-selector.h"
 #include "sample-editor.h"
-#include "patch_util.h"
+#include "patch_set_and_get.h"
 
 static GtkVBoxClass* parent_class;
 

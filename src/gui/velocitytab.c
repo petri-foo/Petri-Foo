@@ -2,7 +2,7 @@
 #include <phat/phat.h>
 #include "velocitytab.h"
 #include "gui.h"
-#include "patch_util.h"
+#include "patch_set_and_get.h"
 
 
 static GtkVBoxClass* parent_class;

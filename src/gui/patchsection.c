@@ -11,7 +11,7 @@
 #include "lfotab.h"
 #include "mixer.h"
 #include "paramtab.h"
-#include "patch_util.h"
+#include "patch_set_and_get.h"
 
 
 const char* deftitle = "<b>Empty Bank</b>";

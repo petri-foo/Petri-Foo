@@ -6,7 +6,7 @@
 #include "gui.h"
 #include "petri-foo.h"
 #include "mixer.h"
-#include "patch_util.h"
+#include "patch_set_and_get.h"
 
 static int patch;
 static char *old_file = NULL;

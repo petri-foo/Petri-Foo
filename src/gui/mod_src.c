@@ -3,7 +3,7 @@
 #include "gui.h"
 #include "mod_src.h"
 #include "petri-foo.h"
-#include "patch_util.h"
+#include "patch_set_and_get.h"
 
 
 #include <string.h>

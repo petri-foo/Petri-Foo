@@ -4,7 +4,7 @@
 #include "gui.h"
 #include "idselector.h"
 #include "mod_src.h"
-#include "patch_util.h"
+#include "patch_set_and_get.h"
 
 enum
 {

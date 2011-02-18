@@ -3,7 +3,7 @@
 
 #include "mod_section.h"
 #include "gui.h"
-#include "patch_util.h"
+#include "patch_set_and_get.h"
 
 #include "mod_src.h"
 

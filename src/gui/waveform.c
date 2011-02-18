@@ -6,7 +6,7 @@
 
 #include "petri-foo.h"
 #include "waveform.h"
-#include "patch_util.h"
+#include "patch_set_and_get.h"
 
 /* signals */
 enum

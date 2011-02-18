@@ -5,7 +5,7 @@
 #include "idselector.h"
 #include "lfo.h"
 #include "mod_src.h"
-#include "patch_util.h"
+#include "patch_set_and_get.h"
 
 
 /* must match order of items in menu */

@@ -2,7 +2,7 @@
 #include <string.h>
 #include <gtk/gtk.h>
 #include "petri-foo.h"
-#include "patch_util.h"
+#include "patch_set_and_get.h"
 #include "waveform.h"
 #include "gui.h"
 #include "mixer.h"
