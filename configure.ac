@@ -13,8 +13,9 @@ AC_ARG_ENABLE([debug],
     [if test x$enable_debug = xyes; then with_debug=yes ; fi])
 
 if test x$with_debug = xno; then
-    CFLAGS="-O3"
+    CFLAGS="-O3 -std=gnu99"
 else
+    CFLAGS="-O0 -std=gnu99 -ggdb -Wextra -DGTK_DISABLE_DEPRECATED -DGDK_DISABLE_DEPRECATED"
     AC_DEFINE(DEBUG, 1, [[whether to display debugging output or not]])
 fi
 
@@ -82,22 +83,8 @@ AC_SUBST(LIBSAMPLERATE_CFLAGS)
 AC_SUBST(LIBSAMPLERATE_LIBS)
 
 # jack
-PKG_CHECK_MODULES(JACK, jack >= 0.99.0, HAVE_JACK="yes", config_error="yes")
+PKG_CHECK_MODULES(JACK, jack >= 0.116.0, HAVE_JACK="yes", config_error="yes")
 if test "x$HAVE_JACK" = xyes ; then
-  PKG_CHECK_MODULES(JACK_MIDI, jack >= 0.105.0, HAVE_JACK_MIDI="yes", config_error="no")
-  if test "x$HAVE_JACK_MIDI" = xyes; then
-    AC_DEFINE([HAVE_JACK_MIDI], [], [Define if we have jack midi support.])
-  else
-    PKG_CHECK_MODULES(OLD_JACK_MIDI, jack >= 0.102.27, HAVE_OLD_JACK_MIDI="yes", config_error="no")
-    if test "x$HAVE_OLD_JACK_MIDI" = xyes; then
-      AC_DEFINE([HAVE_OLD_JACK_MIDI], [], [Define if we have old jack midi support.])
-    else
-      PKG_CHECK_MODULES(OLDEST_JACK_MIDI, jack >= 0.102.0, HAVE_OLDEST_JACK_MIDI="yes", config_error="no")
-      if test "x$HAVE_OLDEST_JACK_MIDI" = xyes; then
-        AC_DEFINE([HAVE_OLDEST_JACK_MIDI], [], [Define if we have oldest jack midi support.])
-      fi
-    fi 
-  fi
   AC_CHECK_HEADER( jack/session.h, HAVE_JACK_SESSION="yes", HAVE_JACK_SESSION="no" )
   if test "x$HAVE_JACK_SESSION" = xyes; then
     AC_DEFINE([HAVE_JACK_SESSION], [], [Define if we have jack session support.])
@@ -139,14 +126,8 @@ else
     echo "optimized"
 fi
 echo -n "      Jack midi support: "
-if test "x$HAVE_JACK_MIDI" = xyes; then
-    echo "yes with jack >= 0.105.0"
-elif test "x$HAVE_OLD_JACK_MIDI" = xyes; then
-    echo "yes with jack >= 0.102.27"
-elif test "x$HAVE_OLDEST_JACK_MIDI" = xyes; then
-    echo "yes with jack >= 0.102.0 and < 0.102.27"
-else
-    echo "no"
+if test "x$HAVE_JACK" = xyes ; then
+    echo "yes with jack >= 0.116.0"
 fi
 
 echo -n "           LASH support: "
