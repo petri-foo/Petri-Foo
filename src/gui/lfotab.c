@@ -6,6 +6,7 @@
 #include "lfo.h"
 #include "mod_src.h"
 #include "patch_set_and_get.h"
+#include "basic_combos.h"
 
 
 /* must match order of items in menu */
@@ -22,49 +23,29 @@ enum
     MAXSTEPS = PATCH_MAX_PITCH_STEPS,
 };
 
-static GtkHBoxClass* parent_class;
 
+/*
+static GtkHBoxClass* parent_class;
 static void lfo_tab_class_init(LfoTabClass* klass);
 static void lfo_tab_init(LfoTab* self);
+*/
+
+G_DEFINE_TYPE(LfoTab, lfo_tab, GTK_TYPE_HBOX)
+
 static void update_lfo(LfoTab* self);
-
-GType lfo_tab_get_type(void)
-{
-    static GType type = 0;
-
-    if (!type)
-    {
-	static const GTypeInfo info =
-	    {
-		sizeof (LfoTabClass),
-		NULL,
-		NULL,
-		(GClassInitFunc) lfo_tab_class_init,
-		NULL,
-		NULL,
-		sizeof (LfoTab),
-		0,
-		(GInstanceInitFunc) lfo_tab_init,
-	    };
-
-	type = g_type_register_static(GTK_TYPE_HBOX, "LfoTab", &info, 0);
-    }
-
-    return type;
-}
 
 
 static void lfo_tab_class_init(LfoTabClass* klass)
 {
-    parent_class = g_type_class_peek_parent(klass);
+    lfo_tab_parent_class = g_type_class_peek_parent(klass);
 }
 
 
 static void set_sensitive(LfoTab* self, gboolean val)
 {
     gboolean active;
-    
-    gtk_widget_set_sensitive(self->shape_opt, val);
+
+    gtk_widget_set_sensitive(self->shape_combo, val);
     gtk_widget_set_sensitive(self->free_radio, val);
     gtk_widget_set_sensitive(self->sync_radio, val);
     gtk_widget_set_sensitive(self->beats_sb, val);
@@ -86,6 +67,7 @@ static void set_sensitive(LfoTab* self, gboolean val)
 
 static void idsel_cb(IDSelector* ids, LfoTab* self)
 {
+    (void)ids;
     update_lfo(self);
 }
 
@@ -103,14 +85,13 @@ static void on_cb2(GtkToggleButton* button, LfoTab* self)
 }
 
 
-static void shape_cb(GtkOptionMenu* opt, LfoTab* self)
+static void shape_cb(GtkWidget* combo, LfoTab* self)
 {
-    int val;
+    (void)combo;
+
     LFOShape shape;
 
-    val = gtk_option_menu_get_history(opt);
-
-    switch(val)
+    switch(basic_combo_get_active(self->shape_combo))
     {
     case TRIANGLE:  shape = LFO_SHAPE_TRIANGLE; break;
     case SAW:       shape = LFO_SHAPE_SAW;      break;
@@ -131,6 +112,7 @@ static void sync_cb(GtkToggleButton* button, LfoTab* self)
 
 static void sync_cb2(GtkToggleButton* button, LfoTab* self)
 {
+    (void)button;
     set_sensitive(self,
             gtk_toggle_button_get_active(
                     GTK_TOGGLE_BUTTON(self->lfo_check)));
@@ -210,7 +192,7 @@ static void connect(LfoTab* self)
                     G_CALLBACK(on_cb), (gpointer)self);
     g_signal_connect(G_OBJECT(self->lfo_check), "toggled",
                     G_CALLBACK(on_cb2), (gpointer)self);
-    g_signal_connect(G_OBJECT(self->shape_opt), "changed",
+    g_signal_connect(G_OBJECT(self->shape_combo), "changed",
                     G_CALLBACK(shape_cb), (gpointer) self);
     g_signal_connect(G_OBJECT(self->freq_fan), "value-changed",
                     G_CALLBACK(freq_cb), (gpointer) self);
@@ -244,7 +226,7 @@ static void connect(LfoTab* self)
 static void block(LfoTab* self)
 {
     g_signal_handlers_block_by_func(self->lfo_check, on_cb, self);
-    g_signal_handlers_block_by_func(self->shape_opt, shape_cb, self);
+    g_signal_handlers_block_by_func(self->shape_combo, shape_cb, self);
     g_signal_handlers_block_by_func(self->freq_fan, freq_cb, self);
     g_signal_handlers_block_by_func(self->sync_radio, sync_cb, self);
     g_signal_handlers_block_by_func(self->pos_check, positive_cb, self);
@@ -257,7 +239,7 @@ static void block(LfoTab* self)
 static void unblock(LfoTab* self)
 {
     g_signal_handlers_unblock_by_func(self->lfo_check, on_cb, self);
-    g_signal_handlers_unblock_by_func(self->shape_opt, shape_cb, self);
+    g_signal_handlers_unblock_by_func(self->shape_combo, shape_cb, self);
     g_signal_handlers_unblock_by_func(self->freq_fan, freq_cb, self);    
     g_signal_handlers_unblock_by_func(self->sync_radio, sync_cb, self);
     g_signal_handlers_unblock_by_func(self->pos_check, positive_cb, self);
@@ -267,42 +249,10 @@ static void unblock(LfoTab* self)
 }
 
 
-inline static GtkWidget* shape_opt_new(LfoTab* self)
-{
-    GtkWidget* menu;
-    GtkWidget* opt;
-    GtkWidget* item;
-
-        
-    /* lfo menu */
-    menu = gtk_menu_new();
-    
-    item = gtk_menu_item_new_with_label("Sine");
-    gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-    gtk_widget_show(item);
-    
-    item = gtk_menu_item_new_with_label("Triangle");
-    gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-    gtk_widget_show(item);
-    
-    item = gtk_menu_item_new_with_label("Saw");
-    gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-    gtk_widget_show(item);
-    
-    item = gtk_menu_item_new_with_label("Square");
-    gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-    gtk_widget_show(item);
-
-    /* lfo option menu */
-    opt = gtk_option_menu_new();
-    gtk_option_menu_set_menu(GTK_OPTION_MENU(opt), menu);
-
-    return opt;
-}    
-
-
 static void lfo_tab_init(LfoTab* self)
 {
+    const char* shapes[] = { "Sine", "Triangle", "Saw", "Square", 0 };
+
     GtkBox* box = GTK_BOX(self);
     GtkWidget* title;
     GtkWidget* table;
@@ -334,7 +284,6 @@ static void lfo_tab_init(LfoTab* self)
     gtk_box_pack_start(box, table, FALSE, FALSE, 0);
     gtk_widget_show(table);
 
-
     /* lfo title */
     title = gui_title_new("Low Frequency Oscillator");
     self->lfo_check = gtk_check_button_new();
@@ -362,14 +311,14 @@ static void lfo_tab_init(LfoTab* self)
 
     /* shape */
     label = gtk_label_new("Shape:");
-    self->shape_opt = shape_opt_new(self);
-
     gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
     gtk_table_attach(t, label, 1, 2, y, y + 1, GTK_FILL, 0, 0, 0);
-    gtk_table_attach(t, self->shape_opt, 3, 5, y, y + 1, GTK_FILL, 0, 0, 0);
-
     gtk_widget_show(label);
-    gtk_widget_show(self->shape_opt);
+
+    self->shape_combo = basic_combo_create(shapes);
+    gtk_table_attach(t, self->shape_combo, 3, 5, y, y + 1, GTK_FILL,
+                                                         0, 0, 0);
+    gtk_widget_show(self->shape_combo);
 
     ++y;
 
@@ -505,10 +454,12 @@ static void lfo_tab_init(LfoTab* self)
 
 static void update_lfo(LfoTab* self)
 {
-    LFOShape shape;
+    LFOShape lfoshape;
+    int shape;
     float freq, beats, delay, attack;
     gboolean sync, positive;
     gboolean on;
+    GtkTreeIter iter;
 
     int   mod1src, mod2src;
     float mod1amt, mod2amt;
@@ -526,7 +477,7 @@ static void update_lfo(LfoTab* self)
     mod_src_combo_set_model(GTK_COMBO_BOX(self->mod2_combo), mod_srcs);
     unblock(self);
 
-    patch_get_lfo_shape(    self->patch_id, self->lfo_id, &shape);
+    patch_get_lfo_shape(    self->patch_id, self->lfo_id, &lfoshape);
     patch_get_lfo_freq(     self->patch_id, self->lfo_id, &freq);
     patch_get_lfo_beats(    self->patch_id, self->lfo_id, &beats);
     patch_get_lfo_delay(    self->patch_id, self->lfo_id, &delay);
@@ -570,24 +521,18 @@ static void update_lfo(LfoTab* self)
     gtk_toggle_button_set_active(
                     GTK_TOGGLE_BUTTON(self->pos_check), positive);
 
-    switch (shape)
+    switch (lfoshape)
     {
-    case LFO_SHAPE_TRIANGLE:
-        gtk_option_menu_set_history(
-                    GTK_OPTION_MENU(self->shape_opt), TRIANGLE);
-        break;
-    case LFO_SHAPE_SAW:
-        gtk_option_menu_set_history(
-                    GTK_OPTION_MENU(self->shape_opt), SAW);
-        break;
-    case LFO_SHAPE_SQUARE:
-        gtk_option_menu_set_history(
-                    GTK_OPTION_MENU(self->shape_opt), SQUARE);
-        break;
-    default:
-        gtk_option_menu_set_history(
-                    GTK_OPTION_MENU(self->shape_opt), SINE);
-        break;
+    case LFO_SHAPE_TRIANGLE:    shape = TRIANGLE;       break;
+    case LFO_SHAPE_SAW:         shape = SAW;            break;
+    case LFO_SHAPE_SQUARE:      shape = SQUARE;         break;
+    default:                    shape = SINE;           break;
+    }
+
+    if (basic_combo_get_iter_at_index(self->shape_combo, shape, &iter))
+    {
+        gtk_combo_box_set_active_iter(GTK_COMBO_BOX(self->shape_combo),
+                                                                &iter); 
     }
 
     gtk_combo_box_set_active_iter(GTK_COMBO_BOX(self->mod1_combo), &m1iter);

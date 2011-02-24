@@ -48,6 +48,7 @@ GType patch_section_get_type(void)
 		sizeof (PatchSection),
 		0,
 		(GInstanceInitFunc) patch_section_init,
+        NULL
 	    };
 
 	type = g_type_register_static(GTK_TYPE_VBOX, "PatchSection", &info, 0);
@@ -55,6 +56,9 @@ GType patch_section_get_type(void)
 
     return type;
 }
+
+
+//G_DEFINE_TYPE(PatchSection, patch_section, GTK_TYPE_VBOX);
 
 
 static void patch_section_class_init(PatchSectionClass* klass)

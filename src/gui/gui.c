@@ -125,17 +125,21 @@ GtkWidget* gui_section_new(const char* name, GtkWidget** box)
     return vbox;
 }
 
+
 /* when the 'x' button is clicked on the titlebar */
-static gboolean cb_delete (GtkWidget* widget, GdkEvent* event,
-			   gpointer data)
+static gboolean
+cb_delete (GtkWidget* widget, GdkEvent* event, gpointer data)
 {
-    /* we return false, causing the "destroy" event to be released on "widget" */
+    (void)widget;(void)event;(void)data;
+    /* we return false, causing the "destroy" event to be
+     * released on "widget" */
     return FALSE;
 }
 
 
 static void cb_quit (GtkWidget* widget, gpointer data)
 {
+    (void)widget;(void)data;
     debug ("Quitting\n");
 
     mod_src_destroy_names();
@@ -145,25 +149,27 @@ static void cb_quit (GtkWidget* widget, gpointer data)
 
 
 /* enables ok button if there is input in entry, disables otherwise */
-static gboolean cb_menu_patch_name_verify (GtkWidget * entry,
-					   GdkEventKey * event,
-					   GtkDialog * dialog)
+static gboolean
+cb_menu_patch_name_verify (GtkWidget * entry, GdkEventKey * event,
+                                              GtkDialog * dialog)
 {
-    int val = strlen ((char *) gtk_entry_get_text (GTK_ENTRY (entry)));
+    (void)event;(void)dialog;
+    int val = strlen((char *)gtk_entry_get_text(GTK_ENTRY (entry)));
 
     if (val)
-	gtk_dialog_set_response_sensitive (dialog, GTK_RESPONSE_ACCEPT,
-					   TRUE);
+      gtk_dialog_set_response_sensitive(dialog, GTK_RESPONSE_ACCEPT, TRUE);
     else
-	gtk_dialog_set_response_sensitive (dialog, GTK_RESPONSE_ACCEPT,
-					   FALSE);
+      gtk_dialog_set_response_sensitive(dialog, GTK_RESPONSE_ACCEPT, FALSE);
 
-    return FALSE;		/* make sure normal event handlers grab signal */
+    return FALSE; /* make sure normal event handlers grab signal */
 }
 
 
-static void cb_menu_patch_add (GtkWidget * menu_item, GtkWidget * main_window)
+static void
+cb_menu_patch_add (GtkWidget * menu_item, GtkWidget * main_window)
 {
+    (void)menu_item;
+
     GtkWidget *dialog;
     GtkWidget *entry;
     int val;
@@ -181,9 +187,10 @@ static void cb_menu_patch_add (GtkWidget * menu_item, GtkWidget * main_window)
 				     GTK_RESPONSE_ACCEPT);
 
     /* create entry box */
-    entry = gtk_entry_new_with_max_length (PATCH_MAX_NAME);
-    gtk_entry_set_text (GTK_ENTRY (entry), "Patch Name");
-    gtk_entry_set_activates_default (GTK_ENTRY (entry), TRUE);
+    entry = gtk_entry_new();
+    gtk_entry_set_max_length(GTK_ENTRY(entry), PATCH_MAX_NAME);
+    gtk_entry_set_text(GTK_ENTRY(entry), "Patch Name");
+    gtk_entry_set_activates_default(GTK_ENTRY(entry), TRUE);
 
     /* I wish I had a "changed" event... */
     g_signal_connect (G_OBJECT (entry), "key-press-event",
@@ -216,33 +223,35 @@ static void cb_menu_patch_add (GtkWidget * menu_item, GtkWidget * main_window)
 }
 
 
-static void cb_menu_patch_duplicate (GtkWidget * menu_item,
-				     GtkWidget * main_window)
+static void
+cb_menu_patch_duplicate(GtkWidget* menu_item, GtkWidget* main_window)
 {
+    (void)menu_item;(void)main_window;
     int val;
     int cp;
 
     if ((cp = patch_list_get_current_patch(PATCH_LIST(patch_list))) < 0)
-    {
-	debug ("Duplicate what, jackass?\n");
-	return;
+    {   /* let's be a little more polite here shall we? */
+        debug ("Pardon, but exactly what am I to duplicate?\n");
+        return;
     }
 
-    val = patch_duplicate (cp);
-    if (val < 0)
+    if ((val = patch_duplicate(cp)) < 0)
     {
-	errmsg ("Failed to create a new patch (%s).\n",
-		patch_strerror (val));
-	return;
+        errmsg ("Failed to create a new patch (%s).\n",
+        patch_strerror (val));
+        return;
     }
 
     patch_list_update (PATCH_LIST(patch_list), val, PATCH_LIST_PATCH);
 }
 
 
-static void cb_menu_patch_rename (GtkWidget * menu_item,
-				  GtkWidget * main_window)
+static void
+cb_menu_patch_rename (GtkWidget * menu_item, GtkWidget * main_window)
 {
+    (void)menu_item;
+
     GtkWidget *dialog;
     GtkWidget *entry;
     int val;
@@ -268,9 +277,10 @@ static void cb_menu_patch_rename (GtkWidget * menu_item,
 				     GTK_RESPONSE_ACCEPT);
 
     /* create entry box */
-    entry = gtk_entry_new_with_max_length (PATCH_MAX_NAME);
-    gtk_entry_set_text (GTK_ENTRY (entry), patch_get_name (cp));
-    gtk_entry_set_activates_default (GTK_ENTRY (entry), TRUE);
+    entry = gtk_entry_new();
+    gtk_entry_set_max_length(GTK_ENTRY(entry), PATCH_MAX_NAME);
+    gtk_entry_set_text(GTK_ENTRY(entry), patch_get_name (cp));
+    gtk_entry_set_activates_default(GTK_ENTRY(entry), TRUE);
 
     /* I wish I had a "changed" event... */
     g_signal_connect (G_OBJECT (entry), "key-press-event",
@@ -308,6 +318,8 @@ static void cb_menu_patch_rename (GtkWidget * menu_item,
 
 static void cb_menu_patch_remove (GtkWidget * menu_item, gpointer data)
 {
+    (void)menu_item;(void)data;
+
     int val;
     int cp;
     int index;
@@ -339,48 +351,51 @@ static void cb_menu_patch_remove (GtkWidget * menu_item, gpointer data)
 
 static void cb_menu_file_new_bank (GtkWidget * widget, gpointer data)
 {
+    (void)widget;(void)data;
     if (bank_ops_new ( ) == 0)
-    {
-	patch_list_update (PATCH_LIST(patch_list), 0, PATCH_LIST_INDEX);
-    }
+        patch_list_update (PATCH_LIST(patch_list), 0, PATCH_LIST_INDEX);
 }
 
 
 static void cb_menu_file_open_bank (GtkWidget * widget, gpointer data)
 {
-    if (bank_ops_open ( ) == 0)
-    {
-	patch_list_update (PATCH_LIST(patch_list), 0, PATCH_LIST_INDEX);
-    }
+    (void)widget;(void)data;
+    if (bank_ops_open(window) == 0)
+        patch_list_update (PATCH_LIST(patch_list), 0, PATCH_LIST_INDEX);
 }
 
 
 static void cb_menu_file_save_bank (GtkWidget * widget, gpointer data)
 {
-    bank_ops_save ( );
+    (void)widget;(void)data;
+    bank_ops_save(window);
 }
 
 
 static void cb_menu_file_save_bank_as (GtkWidget * widget, gpointer data)
 {
-    bank_ops_save_as ( );
+    (void)widget;(void)data;
+    bank_ops_save_as(window);
 }
 
 
 static void cb_menu_settings_audio (GtkWidget * widget, gpointer data)
 {
-    audio_settings_show (window);
+    (void)widget;(void)data;
+    audio_settings_show();
 }
 
 
 static void cb_menu_help_stfu (GtkWidget* widget, gpointer data)
 {
+    (void)widget;(void)data;
     mixer_flush();
 }
 
 
 static void cb_menu_help_about (GtkWidget* widget, gpointer data)
 {
+    (void)widget;
     GdkPixbuf* logo;
     const char* authors[] = { "Pete Bessman (original author)",
                              "See the AUTHORS file for others", 0 };
@@ -403,8 +418,9 @@ static void cb_menu_help_about (GtkWidget* widget, gpointer data)
 
 static void cb_patch_list_changed(PatchList* list, gpointer data)
 {
+    (void)data;
     int patch = patch_list_get_current_patch(list);
-    
+
     patch_section_set_patch(PATCH_SECTION(patch_section), patch);
     midi_section_set_patch(MIDI_SECTION(midi_section), patch);
     channel_section_set_patch(CHANNEL_SECTION(channel_section), patch);
@@ -418,6 +434,8 @@ int gui_init(void)
     GtkWidget* menubar;
     GtkWidget* vbox;
 
+    const char* instance_name = get_instance_name();
+
     debug ("Initializing GUI\n");
 
     mod_src_create_names();
@@ -427,7 +445,7 @@ int gui_init(void)
 
     if (instance_name)
     {
-        size_t len = strlen (instance_name);
+        size_t len = strlen(instance_name);
         char title[12 + len];
 
         strncpy (title, "Petri-Foo - ", 11);
@@ -457,7 +475,7 @@ int gui_init(void)
     menu_file = gtk_menu_new ( );
     menu_file_item = gtk_menu_item_new_with_label ("File");
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (menu_file_item), menu_file);
-    gtk_menu_bar_append (GTK_MENU_BAR (menubar), menu_file_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menubar), menu_file_item);
     gtk_widget_show (menu_file_item);
 
     menu_file_new_bank = gtk_menu_item_new_with_label ("New Bank");
@@ -502,7 +520,7 @@ int gui_init(void)
     menu_patch = gtk_menu_new ( );
     menu_patch_item = gtk_menu_item_new_with_label ("Patch");
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (menu_patch_item), menu_patch);
-    gtk_menu_bar_append (GTK_MENU_BAR (menubar), menu_patch_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menubar), menu_patch_item);
     gtk_widget_show (menu_patch_item);
 
     menu_patch_add = gtk_menu_item_new_with_label ("Add...");
@@ -534,7 +552,7 @@ int gui_init(void)
     menu_settings_item = gtk_menu_item_new_with_label ("Settings");
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (menu_settings_item),
 			       menu_settings);
-    gtk_menu_bar_append (GTK_MENU_BAR (menubar), menu_settings_item);
+    gtk_menu_shell_append (GTK_MENU_SHELL (menubar), menu_settings_item);
     gtk_widget_show (menu_settings_item);
 
     menu_settings_audio = gtk_menu_item_new_with_label ("Audio...");
@@ -549,7 +567,7 @@ int gui_init(void)
     menu_help_item = gtk_menu_item_new_with_label ("Help");
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (menu_help_item),
 			       menu_help);
-    gtk_menu_bar_append (GTK_MENU_BAR (menubar), menu_help_item);
+    gtk_menu_shell_append (GTK_MENU_SHELL(menubar), menu_help_item);
     gtk_widget_show (menu_help_item);
 
     menu_help_stfu = gtk_menu_item_new_with_label ("STFU!");

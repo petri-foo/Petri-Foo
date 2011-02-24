@@ -33,6 +33,7 @@ GType param_tab_get_type(void)
             sizeof (ParamTab),
             0,
             (GInstanceInitFunc) param_tab_init,
+            NULL
         };
         type = g_type_register_static(GTK_TYPE_VBOX, "ParamTab", &info, 0);
     }

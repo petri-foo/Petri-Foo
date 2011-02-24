@@ -1,5 +1,5 @@
-#ifndef __PATCH_UTIL_H__
-#define __PATCH_UTIL_H__
+#ifndef __PATCH_SET_AND_GET_H__
+#define __PATCH_SET_AND_GET_H__
 
 
 #include "patch.h"
@@ -142,4 +142,4 @@ int patch_get_lfo_mod2_amt(int patch_id, int lfo_id, float* amount);
 
 
 
-#endif /* __PATCH_UTIL_H__ */
+#endif /* __PATCH_SET_AND_GET_H__ */

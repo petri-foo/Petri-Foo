@@ -50,6 +50,7 @@ GType patch_list_get_type(void)
 		sizeof (PatchList),
 		0,
 		(GInstanceInitFunc) patch_list_init,
+        NULL
 	    };
 
 	/* replace PARENT_CLASS_TYPE with whatever's appropriate for your widget */

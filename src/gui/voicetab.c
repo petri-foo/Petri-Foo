@@ -28,6 +28,7 @@ GType voice_tab_get_type(void)
 		sizeof (VoiceTab),
 		0,
 		(GInstanceInitFunc) voice_tab_init,
+        NULL
 	    };
 
 	type = g_type_register_static(GTK_TYPE_VBOX, "VoiceTab", &info, 0);

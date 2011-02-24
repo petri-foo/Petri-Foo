@@ -15,7 +15,7 @@ typedef struct _Sample
 }
 Sample;
 
-Sample*     sample_new       ( );
+Sample*     sample_new       (void);
 void        sample_free      (Sample* );
 int         sample_load_file (Sample* sample, const char* name, int rate);
 void        sample_free_file (Sample* sample);

@@ -7,6 +7,7 @@
 #include <glib.h>
 
 #include "instance.h"
+#include "driver.h"
 #include "petri-foo.h"
 #include "mixer.h"
 #include "midi.h"
@@ -48,25 +49,27 @@ static void map_control(unsigned char chan, int param, float value)
 {
     static struct
     {
-	int cc;
-	ControlParamType param;
-	float bias;
-	float scale;
+        int cc;
+        ControlParamType param;
+        float bias;
+        float scale;
     }
+
     map[] = {
-	{ 5, CONTROL_PARAM_PORTAMENTO_TIME, 0, 1},
-	{ 7, CONTROL_PARAM_AMPLITUDE,          0, 1},
-	{10, CONTROL_PARAM_PANNING,        -1, 2},
-	{65, CONTROL_PARAM_PORTAMENTO,      0, 1},
-	{71, CONTROL_PARAM_RESONANCE,       0, 1},
-	{74, CONTROL_PARAM_CUTOFF,          0, 1}
+        { 5, CONTROL_PARAM_PORTAMENTO_TIME, 0, 1},
+        { 7, CONTROL_PARAM_AMPLITUDE,       0, 1},
+        {10, CONTROL_PARAM_PANNING,        -1, 2},
+        {65, CONTROL_PARAM_PORTAMENTO,      0, 1},
+        {71, CONTROL_PARAM_RESONANCE,       0, 1},
+        {74, CONTROL_PARAM_CUTOFF,          0, 1}
     };
     
-    int i;
+    unsigned i;
      
-    for (i=0; i<sizeof(map)/sizeof(map[0]); ++i)
-	if (map[i].cc == param)
-	    mixer_control(chan, map[i].param, value * map[i].scale + map[i].bias);
+    for (i = 0; i < sizeof(map) / sizeof(map[0]); ++i)
+        if (map[i].cc == param)
+            mixer_control(chan, map[i].param,
+                        value * map[i].scale + map[i].bias);
 }
 
 
@@ -88,7 +91,8 @@ static void action (snd_seq_t* handle)
                                     ev->data.note.note);
                else
                     mixer_note_on (ev->data.note.channel,
-                                   ev->data.note.note, ev->data.note.velocity / 127.0);
+                                   ev->data.note.note,
+                                   ev->data.note.velocity / 127.0);
 	       break;
           case SND_SEQ_EVENT_NOTEOFF:
                mixer_note_off (ev->data.note.channel, ev->data.note.note);
@@ -160,7 +164,8 @@ static int open_seq (snd_seq_t** handle)
      }
 
      snd_seq_set_client_name (*handle, get_instance_name ( ));
-     if ((portid = snd_seq_create_simple_port (*handle, "Petri-Foo",
+     if ((portid = snd_seq_create_simple_port (*handle,
+                           driver_get_client_name(),
 					       SND_SEQ_PORT_CAP_WRITE |
 					       SND_SEQ_PORT_CAP_SUBS_WRITE,
 					       SND_SEQ_PORT_TYPE_APPLICATION))

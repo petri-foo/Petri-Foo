@@ -6,12 +6,15 @@
 #include "beef.h"
 #include "gui/gui.h"
 
+
+#include <stdlib.h> /* for calloc */
+
 lash_client_t* lash_client;
 
 
 void lashdriver_init (lash_args_t *lash_args)
 {
-    char* instancename = get_instance_name();
+    const char* instancename = get_instance_name();
 
     lash_client = lash_init(lash_args, instancename, LASH_Config_File, LASH_PROTOCOL(2, 0));
 
@@ -30,7 +33,7 @@ gboolean lashdriver_process (void* absolutely_nothing)
     lash_config_t* config = NULL;
     const char*    str    = NULL;
     char*          path   = NULL;
-    
+
     while ((event = lash_get_event(lash_client)))
     {
         if (lash_event_get_type(event) == LASH_Quit)
@@ -81,7 +84,7 @@ gboolean lashdriver_process (void* absolutely_nothing)
 
 void lashdriver_start ( )
 {
-    gtk_timeout_add(250, lashdriver_process, NULL);
+    g_timeout_add(250, lashdriver_process, NULL);
 }
 
 void lashdriver_set_jack_name (char *name)

@@ -6,50 +6,29 @@
 #include "sample-selector.h"
 #include "sample-editor.h"
 #include "patch_set_and_get.h"
+#include "basic_combos.h"
 
-static GtkVBoxClass* parent_class;
-
-static void sample_tab_class_init(SampleTabClass* klass);
-static void sample_tab_init(SampleTab* self);
-
-/* must match order of items in menu */
 enum
 {
     SINGLESHOT,
     TRIM,
     LOOP,
-    PINGPONG,
+    PINGPONG
 };
 
-GType sample_tab_get_type(void)
-{
-    static GType type = 0;
 
-    if (!type)
-    {
-	static const GTypeInfo info =
-	    {
-		sizeof (SampleTabClass),
-		NULL,
-		NULL,
-		(GClassInitFunc) sample_tab_class_init,
-		NULL,
-		NULL,
-		sizeof (SampleTab),
-		0,
-		(GInstanceInitFunc) sample_tab_init,
-	    };
+static GtkWidget* parent_window = 0;
 
-	type = g_type_register_static(GTK_TYPE_VBOX, "SampleTab", &info, 0);
-    }
 
-    return type;
-}
+static void sample_tab_class_init(SampleTabClass* klass);
+static void sample_tab_init(SampleTab* self);
+
+G_DEFINE_TYPE(SampleTab, sample_tab, GTK_TYPE_VBOX)
 
 
 static void sample_tab_class_init(SampleTabClass* klass)
 {
-    parent_class = g_type_class_peek_parent(klass);
+    sample_tab_parent_class = g_type_class_peek_parent(klass);
 }
 
 
@@ -76,20 +55,21 @@ static void update_file_button(SampleTab* self)
 
 static void update_to_end_check(SampleTab* self)
 {
-    int val;
-    PatchPlayMode mode = 0;
+    PatchPlayMode mode = patch_get_play_mode(self->patch);
+    int index = basic_combo_get_active(self->mode_opt);
 
-    val = gtk_option_menu_get_history(GTK_OPTION_MENU(self->mode_opt));
-
-    switch (val)
+    if (index != -1)
     {
-    case LOOP:
-    case PINGPONG:
-        gtk_widget_set_sensitive(self->to_end_check, TRUE);
-        break;
-    default:
-        gtk_widget_set_sensitive(self->to_end_check, FALSE);
-        break;
+        switch(index)
+        {
+        case LOOP:
+        case PINGPONG:
+            gtk_widget_set_sensitive(self->to_end_check, TRUE);
+            break;
+        default:
+            gtk_widget_set_sensitive(self->to_end_check, FALSE);
+            break;
+        }
     }
 
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(self->to_end_check)))
@@ -101,8 +81,10 @@ static void update_to_end_check(SampleTab* self)
 }
 
 
-static gboolean waveform_cb(GtkWidget* wf, GdkEventButton* event, SampleTab* self)
+static gboolean
+waveform_cb(GtkWidget* wf, GdkEventButton* event, SampleTab* self)
 {
+    (void)wf;
     if (event->button == 1)
     {   /* don't open the sample-editor if there is no sample! */
         if (patch_get_frames (self->patch))
@@ -114,33 +96,24 @@ static gboolean waveform_cb(GtkWidget* wf, GdkEventButton* event, SampleTab* sel
 
 static void set_mode(SampleTab* self)
 {
-    int val;
     PatchPlayMode mode = 0;
 
-    val = gtk_option_menu_get_history(GTK_OPTION_MENU(self->mode_opt));
-
-    switch (val)
+    switch(basic_combo_get_active(self->mode_opt))
     {
-    case TRIM:
-	mode = PATCH_PLAY_TRIM;
-	break;
-    case LOOP:
-	mode = PATCH_PLAY_LOOP;
-	break;
-    case PINGPONG:
-	mode = PATCH_PLAY_PINGPONG | PATCH_PLAY_LOOP;
-	break;
-    default:
-	mode = PATCH_PLAY_SINGLESHOT;
-	break;
+    case TRIM:      mode = PATCH_PLAY_TRIM;                         break;
+    case LOOP:      mode = PATCH_PLAY_LOOP;                         break;
+    case PINGPONG:  mode = PATCH_PLAY_PINGPONG | PATCH_PLAY_LOOP;   break;
+    default:        mode = PATCH_PLAY_SINGLESHOT;                   break;
     }
 
-    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(self->reverse_check)))
-	mode |= PATCH_PLAY_REVERSE;
+    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(
+                                                    self->reverse_check)))
+        mode |= PATCH_PLAY_REVERSE;
     else
-	mode |= PATCH_PLAY_FORWARD;
+        mode |= PATCH_PLAY_FORWARD;
 
-    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(self->to_end_check)))
+    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(
+                                                    self->to_end_check)))
         mode |= PATCH_PLAY_TO_END;
     else
         mode &= ~PATCH_PLAY_TO_END;
@@ -149,28 +122,38 @@ static void set_mode(SampleTab* self)
     patch_set_play_mode(self->patch, mode);
 }
 
-static void to_end_cb(GtkOptionMenu* opt, SampleTab* self)
+
+static void to_end_cb(GtkWidget* opt, SampleTab* self)
 {
+    (void)opt;
     set_mode(self);
 }
 
-static void mode_cb(GtkOptionMenu* opt, SampleTab* self)
+static void mode_cb(GtkWidget* opt, SampleTab* self)
 {
+    (void)opt;
     set_mode(self);
 }
 
 
-static void reverse_cb(GtkCheckButton* button, SampleTab* self)
+static void reverse_cb(GtkWidget* button, SampleTab* self)
 {
+    (void)button;
     set_mode(self);
 }
 
 
 static void file_cb(GtkButton* button, SampleTab* self)
 {
-    sample_selector_show(self->patch);
-    update_file_button(self);
+    GtkWidget* window = gtk_widget_get_toplevel(GTK_WIDGET(button));
 
+    if (!gtk_widget_is_toplevel(window))
+    {
+        debug("failed to discover top-level window\n");
+    }
+
+    sample_selector_show(self->patch, window);
+    update_file_button(self);
     gtk_widget_queue_draw(self->waveform);
 }
 
@@ -235,41 +218,12 @@ inline static GtkWidget* file_button_new(SampleTab* self)
 }
 
 
-inline static GtkWidget* mode_opt_new(SampleTab* self)
-{
-    GtkWidget* menu;
-    GtkWidget* item;
-    GtkWidget* opt;
-    
-    /* playback menu */
-    menu = gtk_menu_new();
-    
-    item = gtk_menu_item_new_with_label("Single Shot");
-    gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-    gtk_widget_show(item);
-    
-    item = gtk_menu_item_new_with_label("Trim");
-    gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-    gtk_widget_show(item);
-    
-    item = gtk_menu_item_new_with_label("Loop");
-    gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-    gtk_widget_show(item);
-    
-    item = gtk_menu_item_new_with_label("Ping Pong");
-    gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-    gtk_widget_show(item);
-
-    /* playback option menu */
-    opt = gtk_option_menu_new();
-    gtk_option_menu_set_menu(GTK_OPTION_MENU(opt), menu);
-
-    return opt;
-}    
-
-
 static void sample_tab_init(SampleTab* self)
 {
+    const char* mode_str[] = {
+        "Single Shot", "Trim", "Loop", "Ping Pong", 0
+    };
+
     GtkBox* box = GTK_BOX(self);
     GtkWidget* section;
     GtkWidget* hbox;
@@ -296,8 +250,6 @@ static void sample_tab_init(SampleTab* self)
 
     /* waveform preview */
     self->waveform = waveform_new();
-
-
     waveform_set_patch(         WAVEFORM(self->waveform), self->patch);
     waveform_set_size(          WAVEFORM(self->waveform), 256, 64);
     waveform_set_interactive(   WAVEFORM(self->waveform), FALSE);
@@ -316,7 +268,7 @@ static void sample_tab_init(SampleTab* self)
     gtk_widget_show(section);
 
     /* mode option menu */
-    self->mode_opt = mode_opt_new(self);
+    self->mode_opt = basic_combo_create(mode_str);
     gtk_box_pack_start(GTK_BOX(hbox), self->mode_opt, TRUE, TRUE, 0);
     gtk_widget_show(self->mode_opt);
 
@@ -347,46 +299,48 @@ GtkWidget* sample_tab_new(void)
 
 void sample_tab_set_patch(SampleTab* self, int patch)
 {
-    PatchPlayMode mode;
-    
+    GtkTreeIter iter;
+
     self->patch = patch;
-
     waveform_set_patch(WAVEFORM(self->waveform), patch);
-
     block(self);
+
     if (patch < 0)
     {
-	gtk_label_set_text(GTK_LABEL(self->file_label), "Load Sample");
+        gtk_label_set_text(GTK_LABEL(self->file_label), "Load Sample");
     }
     else
     {
-	update_file_button(self);
+        int mode;
+        update_file_button(self);
+        mode = patch_get_play_mode(patch);
+        gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(self->reverse_check),
+                                                mode & PATCH_PLAY_REVERSE);
+        gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(self->to_end_check),
+                                                mode & PATCH_PLAY_TO_END);
+        if (mode & PATCH_PLAY_TRIM)
+            mode = TRIM;
+        else if (mode & PATCH_PLAY_PINGPONG)
+            mode = PINGPONG;
+        else if (mode & PATCH_PLAY_LOOP)
+            mode = LOOP;
+        else
+            mode = SINGLESHOT;
 
-	mode = patch_get_play_mode(patch);
-
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(self->reverse_check),
-				     mode & PATCH_PLAY_REVERSE);
-
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(self->to_end_check),
-				     mode & PATCH_PLAY_TO_END);
-
-	if (mode & PATCH_PLAY_TRIM)
-	{
-	    gtk_option_menu_set_history(GTK_OPTION_MENU(self->mode_opt), TRIM);
-	}
-	else if (mode & PATCH_PLAY_PINGPONG)
-	{
-	    gtk_option_menu_set_history(GTK_OPTION_MENU(self->mode_opt), PINGPONG);
-	}
-	else if (mode & PATCH_PLAY_LOOP)
-	{
-	    gtk_option_menu_set_history(GTK_OPTION_MENU(self->mode_opt), LOOP);
-	}
-	else
-	{
-	    gtk_option_menu_set_history(GTK_OPTION_MENU(self->mode_opt), SINGLESHOT);
-	}
+        if (basic_combo_get_iter_at_index(self->mode_opt, mode, &iter))
+        {
+            gtk_combo_box_set_active_iter(GTK_COMBO_BOX(self->mode_opt),
+                                                                    &iter);
+        }
     }
+
     update_to_end_check(self);
     unblock(self);
+}
+
+
+void sample_tab_set_parent_window(SampleTab* self, GtkWidget* window)
+{
+    (void)self;
+    parent_window = window;
 }

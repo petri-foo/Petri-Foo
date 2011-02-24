@@ -67,9 +67,6 @@ enum
 };
 
 
-G_DEFINE_TYPE(Waveform, waveform, GTK_TYPE_DRAWING_AREA)
-
-
 typedef struct _WaveformPrivate WaveformPrivate;
 
 #define WAVEFORM_GET_PRIVATE(obj) \
@@ -89,9 +86,9 @@ struct _WaveformPrivate
 
 
 /* forward declarations */
-static void waveform_class_init (WaveformClass * wf);
 
-static void waveform_init (Waveform * wf);
+G_DEFINE_TYPE(Waveform, waveform, GTK_TYPE_DRAWING_AREA)
+
 static void waveform_destroy (GtkObject * object);
 
 static void waveform_size_request (GtkWidget * widget,
@@ -115,6 +112,7 @@ static void waveform_class_init (WaveformClass * klass)
     GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(klass);
 
     object_class->destroy =         waveform_destroy;
+    waveform_parent_class = g_type_class_peek_parent(klass);
 
     widget_class->expose_event =        waveform_expose;
     widget_class->configure_event =     waveform_configure;
@@ -161,9 +159,14 @@ static void waveform_destroy (GtkObject * object)
 
     if (p->pixmap)
     {
-        gdk_pixmap_unref(p->pixmap);
+        g_object_unref(p->pixmap);
         p->pixmap = NULL;
     }
+
+    GtkObjectClass* klass = GTK_OBJECT_CLASS(waveform_parent_class);
+
+    if (klass->destroy)
+        klass->destroy(object);
 }
 
 
@@ -181,13 +184,15 @@ waveform_size_request (GtkWidget * widget, GtkRequisition * requisition)
 static gboolean
 waveform_configure(GtkWidget * widget, GdkEventConfigure * event)
 {
+    (void)event;
+
     WaveformPrivate* p = WAVEFORM_GET_PRIVATE(widget);
 
     p->width = widget->allocation.width;
     p->height = widget->allocation.height;
 
     if (p->pixmap)
-        gdk_pixmap_unref(p->pixmap);
+        g_object_unref(p->pixmap);
 
     p->pixmap = gdk_pixmap_new(widget->window, p->width, p->height, -1);
 
@@ -464,6 +469,7 @@ done:
 
 static void draw_grid(WaveformPrivate* p, int w, int h, cairo_t* cr)
 {
+    (void)p; /* p may come in useful at some point */
     int x, y;
     int center = h / 2;
     int step = h / GRID_Y;
@@ -827,7 +833,7 @@ static void waveform_draw(Waveform * wf)
 
     cairo_t* cr;
 
-    if (!GTK_WIDGET_REALIZED (widget))
+    if (!gtk_widget_get_realized(widget))
         return;
 
     cr = gdk_cairo_create(p->pixmap);

@@ -26,13 +26,11 @@ void show_usage (void)
 	printf ("  -n, --name <name>  Specify instance name, defaults to \"petri-foo\"\n");
 	printf ("  -h, --help         Display this help message\n\n");
 	printf ("For more information, please see:\n");
-	printf ("http://zhevny.com/petri-foo/\n");
+	printf ("http://petri-foo.sourceforge.net/\n");
 }
 
 int main(int argc, char *argv[])
 {
-	instance_name = NULL;
-
 #ifdef HAVE_LASH
 	/*
 	 * Handle lash arguments here to prevent getopt_long() from
@@ -58,10 +56,10 @@ int main(int argc, char *argv[])
 		switch (opt)
 		{
 			case 'n':
-				instance_name = strdup(optarg);
+				set_instance_name(optarg);
 				break;
 			case 'U':
-				jackdriver_set_uuid( strdup(optarg) );
+				jackdriver_set_uuid(strdup(optarg) );
 				break;
 			case 'h':
 				show_usage();
@@ -93,10 +91,10 @@ int main(int argc, char *argv[])
 
 	/* start */
 	midi_start();
-	driver_start(0);
+	driver_start();
 #ifdef HAVE_LASH
 	lashdriver_start();
-	lashdriver_set_jack_name((char*)driver_get_client_id(0));
+	lashdriver_set_jack_name((char*)driver_get_client_name());
 	lashdriver_set_alsa_id(midi_get_client_id());
 #endif
 	gtk_main();
@@ -108,6 +106,7 @@ int main(int argc, char *argv[])
 	/* destructors */
 	patch_shutdown();
 	mixer_shutdown();
+    free_instance_name();
 
 	debug("Goodbye.\n");
 	return 0;

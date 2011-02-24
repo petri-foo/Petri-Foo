@@ -1,26 +1,38 @@
 noinst_LIBRARIES = libgui.a
 
+libgui_a_SOURCES = 					\
+	audio-settings.c	audio-settings.h	\
+	bank-ops.c		bank-ops.h		\
+	basic_combos.c		basic_combos.h		\
+	channelsection.c	channelsection.h	\
+	envelopetab.c		envelopetab.h		\
+	filtertab.c		filtertab.h		\
+	gui.c			gui.h			\
+	idselector.c		idselector.h		\
+	lfotab.c		lfotab.h		\
+	mastersection.c		mastersection.h		\
+	midisection.c		midisection.h		\
+	mod_section.c		mod_section.h		\
+	mod_src.c		mod_src.h		\
+	paramtab.c		paramtab.h		\
+	patchlist.c		patchlist.h		\
+	patchsection.c		patchsection.h		\
+	sample-editor.c		sample-editor.h		\
+	sample-selector.c	sample-selector.h	\
+	sampletab.c		sampletab.h		\
+	velocitytab.c		velocitytab.h		\
+	voicetab.c		voicetab.h		\
+	waveform.c		waveform.h
 
-
-
-libgui_a_SOURCES = audio-settings.c audio-settings.h sample-editor.c	\
-sample-editor.h gui.c gui.h waveform.c waveform.h bank-ops.c		\
-bank-ops.h sample-selector.c sample-selector.h mastersection.c		\
-mastersection.h patchsection.c patchsection.h sampletab.c sampletab.h	\
-voicetab.c voicetab.h filtertab.c filtertab.h velocitytab.c		\
-velocitytab.h envelopetab.c envelopetab.h lfotab.c lfotab.h		\
-mod_src.c mod_src.h mod_section.c modsection.h paramtab.c paramtab.h 	\
-idselector.c idselector.h patchlist.c patchlist.h midisection.c		\
-midisection.h channelsection.c channelsection.h
-
-INCLUDES = \
-	-l.. \
-	@GTK_CFLAGS@ \
+INCLUDES = 			\
+	-l.. 			\
+	@GTK_CFLAGS@ 		\
 	@LIBGNOMECANVAS_CFLAGS@ \
 	@PHAT_CFLAGS@
 
 if WITH_LASH
-INCLUDES += @LASH_CFLAGS@
+INCLUDES += 			\
+	@LASH_CFLAGS@
 endif
 
 libgui_a_CFLAGS = $(CFLAGS) -I.. -DINSTALLDIR=\"$(datadir)\"

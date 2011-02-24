@@ -29,6 +29,7 @@ GType filter_tab_get_type(void)
 		sizeof (FilterTab),
 		0,
 		(GInstanceInitFunc) filter_tab_init,
+        NULL
 	    };
 
 	type = g_type_register_static(GTK_TYPE_VBOX, "FilterTab", &info, 0);

@@ -22,7 +22,7 @@ struct _LfoTab
     int patch_id;
     int lfo_id;
     GtkWidget* idsel;
-    GtkWidget* shape_opt;
+    GtkWidget* shape_combo;
     GtkWidget* lfo_check;
     GtkWidget* free_radio;
     GtkWidget* sync_radio;

@@ -2,6 +2,8 @@
 #define __ADSR_H__
 
 
+#include <glib.h>
+
 #include "petri-foo.h"
 #include "ticks.h"
 

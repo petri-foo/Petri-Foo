@@ -67,7 +67,7 @@ typedef struct _LFO
 LFO;
 
 /* initialize LFO subsystem */
-void lfo_init ( );
+void lfo_init (void);
 
 /* set operating samplerate of all LFOs (call at least once and
  * whenever samplerate changes) */

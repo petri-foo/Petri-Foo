@@ -10,8 +10,6 @@
 #include "patch_set_and_get.h"
 
 
-static GtkVBoxClass* parent_class;
-
 static void midi_section_class_init(MidiSectionClass* klass);
 static void midi_section_init(MidiSection* self);
 
@@ -43,9 +41,9 @@ GType midi_section_get_type(void)
 		sizeof (MidiSection),
 		0,
 		(GInstanceInitFunc) midi_section_init,
+        NULL
 	    };
 
-	/* replace PARENT_CLASS_TYPE with whatever's appropriate for your widget */
 	type = g_type_register_static(GTK_TYPE_VBOX, "MidiSection", &info, 0);
     }
 
@@ -55,26 +53,27 @@ GType midi_section_get_type(void)
 
 static void pressed_cb(GtkWidget* widget, int key, MidiSection* self)
 {
+    (void)widget;
     /* a ghetto form of set-insensitive */
     if (self->patch < 0)
-	return;
-
+        return;
     mixer_note_on_with_id(self->patch, key, 1.0);
 }
 
 
 static void released_cb(GtkWidget* widget, int key, MidiSection* self)
 {
+    (void)widget;
     /* a ghetto form of set-insensitive */
     if (self->patch < 0)
-	return;
-
+        return;
     mixer_note_off_with_id(self->patch, key);
 }
 
 
 static gboolean range_cb(GnomeCanvasItem* item, GdkEvent* event, MidiSection* self)
 {
+    (void)item;
     int clicked;
     int note;
     int lower;
@@ -170,11 +169,9 @@ static gboolean range_cb(GnomeCanvasItem* item, GdkEvent* event, MidiSection* se
 	break;
     };
 
-    return FALSE;		/* make sure my fellow jiggas pickup up da shizzle */
+    return FALSE;
 }
 
-
-/* what the fuck is wrong with me... did I just say shizzle? */
 
 static void connect(MidiSection* self)
 {
@@ -185,15 +182,12 @@ static void connect(MidiSection* self)
 }
 
 
-/* why am I having a conversation with myself in my program through comments? */
-
 static void block(MidiSection* self)
 {
     g_signal_handlers_block_by_func(self->keyboard, pressed_cb, self);
     g_signal_handlers_block_by_func(self->keyboard, released_cb, self);
 }
 
-/* I need crack. */
 
 static void unblock(MidiSection* self)
 {
@@ -204,13 +198,14 @@ static void unblock(MidiSection* self)
 
 static void set_sensitive(MidiSection* self, gboolean val)
 {
+    (void)self;(void)val;
+    debug("we're here where it does nothing what so ever!\n");
     /* nada */
 }
 
 
 static void midi_section_class_init(MidiSectionClass* klass)
 {
-    parent_class = g_type_class_peek_parent(klass);
 }
 
 

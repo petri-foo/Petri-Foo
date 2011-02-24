@@ -9,7 +9,9 @@
 #include "adsr.h"
 #include "lfo.h"
 
-#include "private/patch_data.h" /* the structs that were here */
+
+#include "patch_private/patch_data.h"
+#include "patch_private/patch_defs.h"
 
 
 static float one = 1.0;

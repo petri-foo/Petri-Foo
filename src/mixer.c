@@ -8,6 +8,10 @@
 #include "ticks.h"
 #include "lfo.h"
 
+
+#include "jackdriver.h"
+
+
 /* magic numbers */
 enum
 {
@@ -75,6 +79,9 @@ static Event* volatile reader = events;
 static Event direct_events[EVENTMAX]; /* events coming from the audio thread */
 static int direct_events_end;
 static int samplerate = DRIVER_DEFAULT_SAMPLERATE;
+
+static jack_client_t* jc;
+
 
 /* advance reader event vector */
 inline static void advance_reader ( )
@@ -144,13 +151,14 @@ void mixer_init ( )
      amplitude = DEFAULT_AMPLITUDE;
      pthread_mutex_init (&preview.mutex, NULL);
      preview.sample = sample_new ( );
+     jc = jackdriver_get_client();
      debug ("done\n");
 }
 
 /* mix current soundscape into buf */
 void mixer_mixdown (float *buf, int frames)
 {
-     Tick curticks = ticks_get_ticks ( ); /* - jack_frames_since_cycle_start() */
+     Tick curticks = jack_last_frame_time(jc);
      Event* event = NULL;
      int wrote = 0;
      int write;
@@ -249,7 +257,7 @@ void mixer_mixdown (float *buf, int frames)
 void mixer_note_off (int chan, int note)
 {
      writer->type = MIXER_NOTEOFF;
-     writer->ticks = ticks_get_ticks ( );
+     writer->ticks = jack_last_frame_time(jc);
      writer->note.chan = chan;
      writer->note.note = note;
      advance_writer ( );
@@ -259,7 +267,7 @@ void mixer_note_off (int chan, int note)
 void mixer_note_off_with_id (int id, int note)
 {
      writer->type = MIXER_NOTEOFF_WITH_ID;
-     writer->ticks = ticks_get_ticks ( );
+     writer->ticks = jack_last_frame_time(jc);
      writer->id_note.id = id;
      writer->id_note.note = note;
      advance_writer ( );
@@ -269,7 +277,7 @@ void mixer_note_off_with_id (int id, int note)
 void mixer_note_on (int chan, int note, float vel)
 {
      writer->type = MIXER_NOTEON;
-     writer->ticks = ticks_get_ticks ( );
+     writer->ticks = jack_last_frame_time(jc);
      writer->note.chan = chan;
      writer->note.note = note;
      writer->note.vel = vel;
@@ -280,7 +288,7 @@ void mixer_note_on (int chan, int note, float vel)
 void mixer_note_on_with_id (int id, int note, float vel)
 {
      writer->type = MIXER_NOTEON_WITH_ID;
-     writer->ticks = ticks_get_ticks ( );
+     writer->ticks = jack_last_frame_time(jc);
      writer->id_note.id = id;
      writer->id_note.note = note;
      writer->id_note.vel = vel;
@@ -291,7 +299,7 @@ void mixer_note_on_with_id (int id, int note, float vel)
 void mixer_control(int chan, ControlParamType param, float value)
 {
      writer->type = MIXER_CONTROL;
-     writer->ticks = ticks_get_ticks ( );
+     writer->ticks = jack_last_frame_time(jc);
      writer->control.chan = chan;
      writer->control.param = param;
      writer->control.value = value;

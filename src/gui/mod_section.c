@@ -31,6 +31,7 @@ GType mod_section_get_type(void)
             sizeof (ModSection),
             0,
             (GInstanceInitFunc) mod_section_init,
+            NULL
         };
 
         type = g_type_register_static(GTK_TYPE_VBOX,    "ModSection",
@@ -207,7 +208,7 @@ unblock_mod_srcs:
 
 static gboolean refresh(gpointer data)
 {
-    float param1, param2;
+/*    float param1, param2;*/
 /* FIXME: we need to look into this refresh stuff I seem to recall */
     ModSection* self = MOD_SECTION(data);
 

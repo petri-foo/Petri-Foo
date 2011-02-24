@@ -36,6 +36,7 @@ GType envelope_tab_get_type(void)
 		sizeof (EnvelopeTab),
 		0,
 		(GInstanceInitFunc) envelope_tab_init,
+        NULL
 	    };
 
 	type = g_type_register_static(GTK_TYPE_VBOX, "EnvelopeTab", &info, 0);
@@ -64,8 +65,9 @@ static void set_sensitive(EnvelopeTab* self, gboolean val)
 
 static void id_selector_cb(IDSelector* ids, EnvelopeTab* self)
 {
-    update_env(self);
+    (void)ids;
 
+    update_env(self);
     set_sensitive(self,
             gtk_toggle_button_get_active(
                     GTK_TOGGLE_BUTTON(self->env_check)));
@@ -296,9 +298,8 @@ static void envelope_tab_init(EnvelopeTab* self)
 
 static void update_env(EnvelopeTab* self)
 {
-    PatchParamType p;
     int i = self->patch;
-    float l, a, h, d, s, r, m;
+    float l, a, h, d, s, r;
     gboolean on;
 
     int id;

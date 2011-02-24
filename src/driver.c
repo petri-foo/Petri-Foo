@@ -5,106 +5,102 @@
 #include "mixer.h"
 #include "ticks.h"
 
+
+#include <strings.h> /* strcasecmp */
+
+
 /* available drivers */
 extern Driver  jack_driver;
-extern Driver  alsa_driver;
-static Driver* drivers[] = { &jack_driver, &alsa_driver, NULL };
-
-/* number of drivers available (we set this var in driver_init ( ) */
+static Driver* drivers[] = { &jack_driver, NULL };
 static int ndrivers = 0;
+static int curdriver = 0;
 
-/* which driver we are currently using */
-static int curdriver = -1;
 
-void driver_init ( )
+void driver_init(void)
 {
-     int i;
+    int i;
 
-     for (i = 0; drivers[i] != NULL; i++)
-	  drivers[i]->init ( );
+    for (i = 0; drivers[i] != NULL; i++)
+        drivers[i]->init();
 
-     if ((ndrivers = i) < 0)
-	  ndrivers = 0;
+    if ((ndrivers = i) < 0)
+        ndrivers = 0;
 }
 
-int driver_start (int id)
+int driver_restart(void)
 {
-     if (id < 0 || id >= ndrivers)
-	  return DRIVER_ERR_ID;
-
-     if (ndrivers <= 0)
-	  return DRIVER_ERR_OTHER;
-
-     if (curdriver >= 0)
-	  drivers[curdriver]->stop ( );
-
-     curdriver = id;
-
-     if(id==0){
-     	return drivers[id]->start ( );
-     }
-     return drivers[id]->start ( );
+    driver_stop();
+    return driver_start();
 }
 
-void driver_stop ( )
+int driver_start(void)
 {
-     if (curdriver < 0)
-	  return;
+    if (ndrivers <= 0)
+        return DRIVER_ERR_OTHER;
 
-     drivers[curdriver]->stop ( );
+    if (curdriver >= 0)
+        drivers[curdriver]->stop();
+
+    curdriver = 0;
+
+    return drivers[curdriver]->start();
 }
 
-int driver_get_count ( )
+void driver_stop(void)
+{
+    if (curdriver < 0)
+        return;
+
+    drivers[curdriver]->stop();
+    curdriver = -1;
+}
+
+int driver_get_count(void)
 {
      return ndrivers;
 }
 
-const char* driver_get_name (int id)
+const char* driver_get_name(void)
 {
-     if (id < 0 || id >= ndrivers)
-	  return NULL;
-
-     return drivers[id]->getname ( );
+     return drivers[curdriver]->getname();
 }
 
-GtkWidget* driver_get_widget (int id)
-{
-     if (id < 0 || id >= ndrivers)
-	  return NULL;
 
-     return drivers[id]->getwidget ( );
+int driver_set_samplerate(int rate)
+{
+    if (rate <= 0)
+    {
+        debug ("can't accept samplerate %d\n", rate);
+        return DRIVER_ERR_OTHER;
+    }
+
+    /* tell everybody our (potentially new) samplerate */
+      lfo_set_samplerate (rate);
+    patch_set_samplerate (rate);
+    mixer_set_samplerate (rate);
+    ticks_set_samplerate (rate);
+
+    return 0;
 }
 
-int driver_set_samplerate (int rate)
+int driver_set_buffersize(int nframes)
 {
-     if (rate <= 0)
-     {
-	  debug ("can't accept samplerate %d\n", rate);
-	  return DRIVER_ERR_OTHER;
-     }
-
-     /* tell everybody our (potentially new) samplerate */
-       lfo_set_samplerate (rate);
-     patch_set_samplerate (rate);
-     mixer_set_samplerate (rate);
-     ticks_set_samplerate (rate);
-     return 0;
-}
-
-int driver_set_buffersize (int nframes)
-{
-     if (nframes <= 0)
-     {
-	  debug ("can't accept buffersize %d\n", nframes);
-	  return DRIVER_ERR_OTHER;
-     }
+    if (nframes <= 0)
+    {
+        debug ("can't accept buffersize %d\n", nframes);
+        return DRIVER_ERR_OTHER;
+    }
 
      /* tell everybody our (potentially new) buffersize */
-     patch_set_buffersize (nframes);
-     return 0;
+    patch_set_buffersize (nframes);
+
+    return 0;
 }
 
-void* driver_get_client_id (int id)
+const char* driver_get_client_name(void)
 {
-	return drivers[id]->getid ( );
+    if (curdriver < 0)
+        return 0;
+    return drivers[curdriver]->getid();
 }
+

@@ -35,7 +35,7 @@ struct _ModSection
 
     /*< private >*/
     int             patch_id;
-    guint           refresh;
+    int             refresh;
     gboolean        mod_only;
 
     PatchParamType  param;

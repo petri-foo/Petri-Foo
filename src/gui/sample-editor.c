@@ -38,23 +38,27 @@ static GtkWidget* spin_xfade;
 
 static void cb_close (GtkWidget * widget, gpointer data)
 {
-     debug ("Hiding sample editor\n");
-     mixer_note_off_with_id (patch, patch_get_note (patch));
-     gtk_widget_hide (window);
+    (void)widget;(void)data;
+    debug ("Hiding sample editor\n");
+    mixer_note_off_with_id (patch, patch_get_note (patch));
+    gtk_widget_hide (window);
 }
 
 static void cb_play (GtkWidget * widget, gpointer data)
 {
+    (void)widget;(void)data;
      mixer_note_on_with_id (patch, patch_get_note (patch), 1.0);
 }
 
 static void cb_stop (GtkWidget * widget, gpointer data)
 {
+    (void)widget;(void)data;
      mixer_note_off_with_id (patch, patch_get_note (patch));
 }
 
 static void cb_reset (GtkWidget * widget, gpointer data)
 {
+    (void)widget;(void)data;
      debug ("Restoring initial values\n");
      patch_set_sample_start (patch, old_play_start);
      patch_set_sample_stop (patch, old_play_stop);
@@ -66,30 +70,27 @@ static void cb_reset (GtkWidget * widget, gpointer data)
     gtk_widget_queue_draw(waveform);
 }
 
-static void cb_clear (GtkWidget * widget, char *op)
+static void cb_clear (GtkWidget * widget, gpointer data)
 {
-     int play_start, play_stop;
-     int frames;
+    (void)widget;
+    char *op = data;
+    int play_start, play_stop;
+    int frames;
 
-     if (strcmp (op, "loop") == 0)
-     {
-
-	  play_start = patch_get_sample_start (patch);
-	  play_stop = patch_get_sample_stop (patch);
-
-	  patch_set_loop_start (patch, play_start);
-	  patch_set_loop_stop (patch, play_stop);
-      sample_editor_update_loop();
-
+    if (strcmp (op, "loop") == 0)
+    {
+        play_start = patch_get_sample_start (patch);
+        play_stop = patch_get_sample_stop (patch);
+        patch_set_loop_start (patch, play_start);
+        patch_set_loop_stop (patch, play_stop);
+        sample_editor_update_loop();
      }
      else if (strcmp (op, "play") == 0)
      {
-
-	  frames = patch_get_frames (patch);
-
-	  patch_set_sample_start (patch, 0);
-	  patch_set_sample_stop (patch, frames - 1);
-      sample_editor_update_play();
+        frames = patch_get_frames (patch);
+        patch_set_sample_start (patch, 0);
+        patch_set_sample_stop (patch, frames - 1);
+        sample_editor_update_play();
      }
 
     gtk_widget_queue_draw(waveform);
@@ -97,6 +98,7 @@ static void cb_clear (GtkWidget * widget, char *op)
 
 static void cb_scroll (GtkWidget * scroll, gpointer data)
 {
+    (void)data;
      float val;
 
      val = gtk_range_get_value (GTK_RANGE (scroll));
@@ -105,6 +107,7 @@ static void cb_scroll (GtkWidget * scroll, gpointer data)
 
 static void cb_loop_changed (GtkWidget * spin, gpointer data)
 {
+    (void)data;
     int start = patch_get_loop_start (patch);
     int end = patch_get_loop_stop (patch);
     int val;
@@ -143,6 +146,8 @@ static void cb_loop_changed (GtkWidget * spin, gpointer data)
 
 static void cb_play_changed (GtkWidget * spin, gpointer data)
 {
+    (void)data;
+
     if (ignore_callback)
         return;
 
@@ -201,6 +206,7 @@ static void cb_play_changed (GtkWidget * spin, gpointer data)
 
 static void cb_xfade_changed (GtkWidget * spin, gpointer data)
 {
+    (void)spin;(void)data;
     if (ignore_callback)
         return;
  
@@ -223,6 +229,7 @@ static void cb_xfade_changed (GtkWidget * spin, gpointer data)
 
 static void cb_fade_in_changed (GtkWidget * spin, gpointer data)
 {
+    (void)spin;(void)data;
     if (ignore_callback)
         return;
  
@@ -246,6 +253,7 @@ static void cb_fade_in_changed (GtkWidget * spin, gpointer data)
 
 static void cb_fade_out_changed (GtkWidget * spin, gpointer data)
 {
+    (void)spin;(void)data;
     if (ignore_callback)
         return;
  
@@ -277,6 +285,7 @@ static void cb_wf_changed ()
 
 static void cb_zoom (GtkAdjustment * adj, GtkWidget * spinbutton)
 {
+    (void)spinbutton;
      float max;
      float page_size;
      float step_inc;

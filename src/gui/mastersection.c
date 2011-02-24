@@ -28,6 +28,7 @@ GType master_section_get_type(void)
 		sizeof (MasterSection),
 		0,
 		(GInstanceInitFunc) master_section_init,
+		NULL
 	    };
 
 	type = g_type_register_static(GTK_TYPE_VBOX, "MasterSection", &info, 0);
@@ -45,8 +46,8 @@ static void master_section_class_init(MasterSectionClass* klass)
 
 static void amplitude_changed_cb(PhatFanSlider* slider, gpointer data)
 {
+    (void)data;
     float val;
-
     val = phat_fan_slider_get_value(slider);
     mixer_set_amplitude(val);
 }
@@ -98,7 +99,9 @@ void master_section_update(MasterSection* self)
 
     amplitude = mixer_get_amplitude();
 
-    g_signal_handlers_block_by_func(self->amplitude_fan, amplitude_changed_cb, NULL);
+    g_signal_handlers_block_by_func(self->amplitude_fan, 
+                                    (gpointer)amplitude_changed_cb, NULL);
+
     phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->amplitude_fan), amplitude);
     g_signal_handlers_unblock_by_func(self->amplitude_fan, amplitude_changed_cb, NULL);
 }

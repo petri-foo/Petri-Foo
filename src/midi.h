@@ -10,8 +10,8 @@ enum
     MIDI_CHANS = 16,	/* number of channels */
 };
 
-int  midi_start         ( );
-int  midi_get_client_id ( );
-void midi_stop          ( );
+int  midi_start         (void);
+int  midi_get_client_id (void);
+void midi_stop          (void);
 
 #endif /* __MIDI_H__ */

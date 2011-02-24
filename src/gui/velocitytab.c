@@ -28,6 +28,7 @@ GType velocity_tab_get_type(void)
 		sizeof (VelocityTab),
 		0,
 		(GInstanceInitFunc) velocity_tab_init,
+        NULL
 	    };
 
 	type = g_type_register_static(GTK_TYPE_VBOX, "VelocityTab", &info, 0);

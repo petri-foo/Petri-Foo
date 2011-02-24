@@ -3,7 +3,11 @@
 
 #include "config.h"
 
-void jackdriver_set_uuid      (char *uuid);
+#include <jack/jack.h>
+
+
+void            jackdriver_set_uuid(char *uuid);
+jack_client_t*  jackdriver_get_client(void);
 
 
 #endif /* __JACKDRIVER_H__ */
