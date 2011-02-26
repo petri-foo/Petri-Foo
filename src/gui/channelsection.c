@@ -10,24 +10,10 @@
 
 G_DEFINE_TYPE(ChannelSection, channel_section, GTK_TYPE_VBOX)
 
-static void channel_section_destroy (GtkObject * object);
-
 
 static void channel_section_class_init(ChannelSectionClass* klass)
 {
-    GtkObjectClass *object_class = GTK_OBJECT_CLASS(klass);
-
-    object_class->destroy = channel_section_destroy;
     channel_section_parent_class = g_type_class_peek_parent(klass);
-}
-
-
-static void channel_section_destroy(GtkObject* object)
-{
-    GtkObjectClass* klass = GTK_OBJECT_CLASS(channel_section_parent_class);
-
-    if (klass->destroy)
-        klass->destroy(object);
 }
 
 

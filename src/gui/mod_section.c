@@ -7,86 +7,75 @@
 
 #include "mod_src.h"
 
-static GtkVBoxClass* parent_class;
 
-static void mod_section_class_init(ModSectionClass* klass);
-static void mod_section_init(ModSection* self);
-static void mod_section_destroy(GtkObject* object);
+typedef struct _ModSectionPrivate ModSectionPrivate;
 
+#define MOD_SECTION_GET_PRIVATE(obj)   \
+    (G_TYPE_INSTANCE_GET_PRIVATE((obj), \
+        MOD_SECTION_TYPE, ModSectionPrivate))
 
-GType mod_section_get_type(void)
+struct _ModSectionPrivate
 {
-    static GType type = 0;
+    int             patch_id;
+    int             refresh;
+    gboolean        mod_only;
+    PatchParamType  param;
+    GtkWidget*      param1;
+    GtkWidget*      param2;
+    GtkWidget*      env_combo;
+    GtkWidget*      vel_sens;
+    GtkWidget*      mod1_combo;
+    GtkWidget*      mod1_amount;
+    GtkWidget*      mod2_combo;
+    GtkWidget*      mod2_amount;
+};
 
-    if (!type)
-    {
-        static const GTypeInfo info =
-        {
-            sizeof (ModSectionClass),
-            NULL,
-            NULL,
-            (GClassInitFunc) mod_section_class_init,
-            NULL,
-            NULL,
-            sizeof (ModSection),
-            0,
-            (GInstanceInitFunc) mod_section_init,
-            NULL
-        };
 
-        type = g_type_register_static(GTK_TYPE_VBOX,    "ModSection",
-                                                        &info, 0);
-    }
-
-    return type;
-}
+G_DEFINE_TYPE(ModSection, mod_section, GTK_TYPE_VBOX);
 
 
 static void mod_section_class_init(ModSectionClass* klass)
 {
-    parent_class = g_type_class_peek_parent(klass);
-    GTK_OBJECT_CLASS(klass)->destroy = mod_section_destroy;
+    GtkObjectClass *object_class = GTK_OBJECT_CLASS(klass);
+    mod_section_parent_class = g_type_class_peek_parent(klass);
+    g_type_class_add_private(object_class, sizeof(ModSectionPrivate));
 }
 
-/* GUI callbacks
-*/
 
-
-static void param1_cb(GtkWidget* w, ModSection* self)
+static void param1_cb(GtkWidget* w, ModSectionPrivate* p)
 {
     float val = phat_fan_slider_get_value(PHAT_FAN_SLIDER(w));
-    patch_param_set_value(self->patch_id, self->param, val);
+    patch_param_set_value(p->patch_id, p->param, val);
 }
 
-static void param2_cb(GtkWidget* w, ModSection* self)
+static void param2_cb(GtkWidget* w, ModSectionPrivate* p)
 {
-    if (self->param == PATCH_PARAM_PITCH)
+    if (p->param == PATCH_PARAM_PITCH)
     {
         float val = phat_slider_button_get_value(PHAT_SLIDER_BUTTON(w));
-//        patch_set_range(self->patch_id, val);
-        patch_set_pitch_steps(self->patch_id, val);
+        patch_set_pitch_steps(p->patch_id, val);
     }
 }
 
-static void vel_sens_cb(GtkWidget* w, ModSection* self)
+static void vel_sens_cb(GtkWidget* w, ModSectionPrivate* p)
 {
-    if (self->param != PATCH_PARAM_PITCH)
+    if (p->param != PATCH_PARAM_PITCH)
     {
         float val  = phat_fan_slider_get_value(PHAT_FAN_SLIDER(w));
-        patch_set_vel_amount(self->patch_id, self->param, val);
+        patch_set_vel_amount(p->patch_id, p->param, val);
     }
 }
 
 
-static void mod_src_cb(GtkComboBox* combo, ModSection* self)
+static void mod_src_cb(GtkComboBox* combo, ModSectionPrivate* p)
 {
     int input_id;
 
-    if (combo == GTK_COMBO_BOX(self->env_combo))
+    if (combo == GTK_COMBO_BOX(p->env_combo))
         input_id = MOD_ENV;
-    else if (combo == GTK_COMBO_BOX(self->mod1_combo))
+    else if (combo == GTK_COMBO_BOX(p->mod1_combo))
         input_id = MOD_IN1;
-    else if (combo == GTK_COMBO_BOX(self->mod2_combo))
+    else if (combo == GTK_COMBO_BOX(p->mod2_combo))
         input_id = MOD_IN2;
     else
     {
@@ -94,23 +83,20 @@ static void mod_src_cb(GtkComboBox* combo, ModSection* self)
         return;
     }
 
-    mod_src_callback_helper(self->patch_id,
-                                input_id,
-                                combo,
-                                self->param );
+    mod_src_callback_helper(p->patch_id, input_id, combo, p->param );
 }
 
-static void mod_amount_cb(GtkWidget* w, ModSection* self)
+static void mod_amount_cb(GtkWidget* w, ModSectionPrivate* p)
 {
-    float val = (self->param == PATCH_PARAM_PITCH
+    float val = (p->param == PATCH_PARAM_PITCH
                     ? phat_slider_button_get_value(PHAT_SLIDER_BUTTON(w))
                         / PATCH_MAX_PITCH_STEPS
                     : phat_fan_slider_get_value(PHAT_FAN_SLIDER(w)));
 
-    if (w == self->mod1_amount)
-        patch_set_mod1_amt(self->patch_id, self->param, val);
-    else if (w == self->mod2_amount)
-        patch_set_mod2_amt(self->patch_id, self->param, val);
+    if (w == p->mod1_amount)
+        patch_set_mod1_amt(p->patch_id, p->param, val);
+    else if (w == p->mod2_amount)
+        patch_set_mod2_amt(p->patch_id, p->param, val);
     else
     {
         debug ("mod_amount_cb called from unrecognised widget\n");
@@ -118,91 +104,85 @@ static void mod_amount_cb(GtkWidget* w, ModSection* self)
 }
 
 
-static void connect(ModSection* self)
+static void connect(ModSectionPrivate* p)
 {
-    if (self->mod_only)
+    if (p->mod_only)
         goto connect_mod_srcs;
 
-    g_signal_connect(G_OBJECT(self->param1),        "value-changed",
-                        G_CALLBACK(param1_cb),      (gpointer) self);
+    g_signal_connect(G_OBJECT(p->param1),        "value-changed",
+                        G_CALLBACK(param1_cb),      (gpointer)p);
 
-    if (self->param == PATCH_PARAM_PITCH)
-        g_signal_connect(G_OBJECT(self->param2),    "value-changed",
-                        G_CALLBACK(param2_cb),      (gpointer) self);
+    if (p->param == PATCH_PARAM_PITCH)
+        g_signal_connect(G_OBJECT(p->param2),    "value-changed",
+                        G_CALLBACK(param2_cb),      (gpointer)p);
     else
-        g_signal_connect(G_OBJECT(self->vel_sens),  "value-changed",
-                        G_CALLBACK(vel_sens_cb),    (gpointer) self);
+        g_signal_connect(G_OBJECT(p->vel_sens),  "value-changed",
+                        G_CALLBACK(vel_sens_cb),    (gpointer)p);
 
-    if (self->param == PATCH_PARAM_AMPLITUDE)
-        g_signal_connect(G_OBJECT(self->env_combo), "changed",
-                        G_CALLBACK(mod_src_cb),     (gpointer) self);
+    if (p->param == PATCH_PARAM_AMPLITUDE)
+        g_signal_connect(G_OBJECT(p->env_combo), "changed",
+                        G_CALLBACK(mod_src_cb),     (gpointer)p);
 
 connect_mod_srcs:
 
-    g_signal_connect(G_OBJECT(self->mod1_combo),    "changed",
-                        G_CALLBACK(mod_src_cb),    (gpointer) self);
+    g_signal_connect(G_OBJECT(p->mod1_combo),    "changed",
+                        G_CALLBACK(mod_src_cb),    (gpointer)p);
 
-    g_signal_connect(G_OBJECT(self->mod1_amount),   "value-changed",
-                        G_CALLBACK(mod_amount_cb), (gpointer) self);
+    g_signal_connect(G_OBJECT(p->mod1_amount),   "value-changed",
+                        G_CALLBACK(mod_amount_cb), (gpointer)p);
 
-    g_signal_connect(G_OBJECT(self->mod2_combo),    "changed",
-                        G_CALLBACK(mod_src_cb),    (gpointer) self);
+    g_signal_connect(G_OBJECT(p->mod2_combo),    "changed",
+                        G_CALLBACK(mod_src_cb),    (gpointer)p);
 
-    g_signal_connect(G_OBJECT(self->mod2_amount),   "value-changed",
-                        G_CALLBACK(mod_amount_cb), (gpointer) self);
+    g_signal_connect(G_OBJECT(p->mod2_amount),   "value-changed",
+                        G_CALLBACK(mod_amount_cb), (gpointer)p);
 }
 
 
-static void block(ModSection* self)
+static void block(ModSectionPrivate* p)
 {
-    if (self->mod_only)
+    if (p->mod_only)
         goto block_mod_srcs;
 
-    g_signal_handlers_block_by_func(self->param1, param1_cb, self);
+    g_signal_handlers_block_by_func(p->param1, param1_cb, p);
 
-    if (self->param == PATCH_PARAM_PITCH)
-        g_signal_handlers_block_by_func(self->param2,   param2_cb,  self);
+    if (p->param == PATCH_PARAM_PITCH)
+        g_signal_handlers_block_by_func(p->param2, param2_cb, p);
     else
-        g_signal_handlers_block_by_func(self->vel_sens, vel_sens_cb,self);
+        g_signal_handlers_block_by_func(p->vel_sens, vel_sens_cb, p);
 
-    if (self->param == PATCH_PARAM_AMPLITUDE)
-        g_signal_handlers_block_by_func(self->env_combo,mod_src_cb, self);
+    if (p->param == PATCH_PARAM_AMPLITUDE)
+        g_signal_handlers_block_by_func(p->env_combo,mod_src_cb, p);
 
 block_mod_srcs:
 
-    g_signal_handlers_block_by_func(self->mod1_combo,   mod_src_cb, self);
-    g_signal_handlers_block_by_func(self->mod1_amount,  mod_amount_cb,
-                                                                    self);
-    g_signal_handlers_block_by_func(self->mod2_combo,   mod_src_cb,self);
-    g_signal_handlers_block_by_func(self->mod2_amount,  mod_amount_cb,
-                                                                    self);
+    g_signal_handlers_block_by_func(p->mod1_combo,   mod_src_cb,    p);
+    g_signal_handlers_block_by_func(p->mod1_amount,  mod_amount_cb, p);
+    g_signal_handlers_block_by_func(p->mod2_combo,   mod_src_cb,    p);
+    g_signal_handlers_block_by_func(p->mod2_amount,  mod_amount_cb, p);
 }
 
 
-static void unblock(ModSection* self)
+static void unblock(ModSectionPrivate* p)
 {
-    if (self->mod_only)
+    if (p->mod_only)
         goto unblock_mod_srcs;
 
-    g_signal_handlers_unblock_by_func(self->param1, param1_cb, self);
+    g_signal_handlers_unblock_by_func(p->param1, param1_cb, p);
 
-    if (self->param == PATCH_PARAM_PITCH)
-        g_signal_handlers_unblock_by_func(self->param2, param2_cb,  self);
+    if (p->param == PATCH_PARAM_PITCH)
+        g_signal_handlers_unblock_by_func(p->param2, param2_cb,  p);
     else
-        g_signal_handlers_unblock_by_func(self->vel_sens, vel_sens_cb,
-                                                                    self);
-    if (self->param == PATCH_PARAM_AMPLITUDE)
-        g_signal_handlers_unblock_by_func(self->env_combo, mod_src_cb,
-                                                                    self);
+        g_signal_handlers_unblock_by_func(p->vel_sens, vel_sens_cb, p);
+    if (p->param == PATCH_PARAM_AMPLITUDE)
+        g_signal_handlers_unblock_by_func(p->env_combo, mod_src_cb, p);
 
 unblock_mod_srcs:
 
-    g_signal_handlers_unblock_by_func(self->mod1_combo, mod_src_cb,self);
-    g_signal_handlers_unblock_by_func(self->mod1_amount,mod_amount_cb,
-                                                                    self);
-    g_signal_handlers_unblock_by_func(self->mod2_combo, mod_src_cb,self);
-    g_signal_handlers_unblock_by_func(self->mod2_amount,mod_amount_cb,
-                                                                    self);
+    g_signal_handlers_unblock_by_func(p->mod1_combo, mod_src_cb,    p);
+    g_signal_handlers_unblock_by_func(p->mod1_amount,mod_amount_cb, p);
+    g_signal_handlers_unblock_by_func(p->mod2_combo, mod_src_cb,    p);
+    g_signal_handlers_unblock_by_func(p->mod2_amount,mod_amount_cb, p);
 }
 
 
@@ -211,16 +191,17 @@ static gboolean refresh(gpointer data)
 /*    float param1, param2;*/
 /* FIXME: we need to look into this refresh stuff I seem to recall */
     ModSection* self = MOD_SECTION(data);
+    ModSectionPrivate* p = MOD_SECTION_GET_PRIVATE(self);
 
-    if (self->patch_id < 0)
+    if (p->patch_id < 0)
         return TRUE;
 /*
-    block(self);
+    block(p);
 
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->amp_fan), amp);
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->pan_fan), pan);
+    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->amp_fan), amp);
+    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->pan_fan), pan);
 
-    unblock(self);
+    unblock(p);
 */
     return TRUE;
 }
@@ -228,21 +209,24 @@ static gboolean refresh(gpointer data)
 
 static void mod_section_init(ModSection* self)
 {
-    self->patch_id = -1;
-    self->mod_only = FALSE;
-    self->param = PATCH_PARAM_INVALID;
-    self->refresh = -1;
+    ModSectionPrivate* p = MOD_SECTION_GET_PRIVATE(self);
+    p->patch_id = -1;
+    p->mod_only = FALSE;
+    p->param = PATCH_PARAM_INVALID;
+    p->refresh = -1;
 }
 
 
 void mod_section_set_mod_only(ModSection* self)
 {
-    self->mod_only = TRUE;
+    ModSectionPrivate* p = MOD_SECTION_GET_PRIVATE(self);
+    p->mod_only = TRUE;
 }
 
 
 void mod_section_set_param(ModSection* self, PatchParamType param)
 {
+    ModSectionPrivate* p = MOD_SECTION_GET_PRIVATE(self);
     GtkBox* box;
     GtkWidget* title;
     GtkWidget* table;
@@ -259,7 +243,7 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
     int y = 0;
 
     box = GTK_BOX(self);
-    self->param = param;
+    p->param = param;
 
     gtk_container_set_border_width(GTK_CONTAINER(self), GUI_BORDERSPACE);
 
@@ -297,7 +281,7 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
 
     ++y;
 
-    if (self->mod_only)
+    if (p->mod_only)
         goto create_mod_srcs;
 
     switch(param)
@@ -321,19 +305,19 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
     if (param == PATCH_PARAM_PANNING || param == PATCH_PARAM_PITCH)
         range_low = -1.0;
 
-    self->param1 = phat_hfan_slider_new_with_range(0.0, range_low,
+    p->param1 = phat_hfan_slider_new_with_range(0.0, range_low,
                                                         range_hi,   0.1);
-    gtk_table_attach(GTK_TABLE(table), self->param1, 3, 4, y, y + 1,
+    gtk_table_attach(GTK_TABLE(table), p->param1, 3, 4, y, y + 1,
                                             GTK_EXPAND | GTK_FILL, 0, 0, 0);
-    gtk_widget_show(self->param1);
+    gtk_widget_show(p->param1);
 
 
     if (param == PATCH_PARAM_PITCH)
     {
-        self->param2 = mod_src_new_pitch_adjustment();
-        gtk_table_attach(GTK_TABLE(table), self->param2, 5, 6, y, y + 1,
+        p->param2 = mod_src_new_pitch_adjustment();
+        gtk_table_attach(GTK_TABLE(table), p->param2, 5, 6, y, y + 1,
                                             GTK_EXPAND | GTK_FILL, 0, 0, 0);
-        gtk_widget_show(self->param2);
+        gtk_widget_show(p->param2);
     }
     else
     {
@@ -343,10 +327,9 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
         gtk_table_attach(t, label, 5, 6, y, y + 1, GTK_FILL, 0, 0, 0);
         gtk_widget_show(label);
 
-        self->vel_sens = phat_hfan_slider_new_with_range(0.0, 0.0,
-                                                            1.0, 0.1);
-        gtk_table_attach_defaults(t, self->vel_sens, 7, 8, y, y + 1);
-        gtk_widget_show(self->vel_sens);
+        p->vel_sens = phat_hfan_slider_new_with_range(0.0, 0.0, 1.0, 0.1);
+        gtk_table_attach_defaults(t, p->vel_sens, 7, 8, y, y + 1);
+        gtk_widget_show(p->vel_sens);
     }
 
     ++y;
@@ -359,9 +342,9 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
         gtk_table_attach(t, label, 1, 2, y, y + 1, GTK_FILL, 0, 0, 0);
         gtk_widget_show(label);
 
-        self->env_combo = mod_src_new_combo_with_cell();
-        gtk_table_attach_defaults(t, self->env_combo, 3, 4, y, y + 1);
-        gtk_widget_show(self->env_combo);
+        p->env_combo = mod_src_new_combo_with_cell();
+        gtk_table_attach_defaults(t, p->env_combo, 3, 4, y, y + 1);
+        gtk_widget_show(p->env_combo);
 
         ++y;
     }
@@ -376,17 +359,17 @@ create_mod_srcs:
     gtk_table_attach(t, label, 1, 2, y, y + 1, GTK_FILL, 0, 0, 0);
     gtk_widget_show(label);
 
-    self->mod1_combo = mod_src_new_combo_with_cell();
-    gtk_table_attach_defaults(t, self->mod1_combo, 3, 4, y, y + 1);
-    gtk_widget_show(self->mod1_combo);
+    p->mod1_combo = mod_src_new_combo_with_cell();
+    gtk_table_attach_defaults(t, p->mod1_combo, 3, 4, y, y + 1);
+    gtk_widget_show(p->mod1_combo);
 
     if (param == PATCH_PARAM_PITCH)
-        self->mod1_amount = mod_src_new_pitch_adjustment();
+        p->mod1_amount = mod_src_new_pitch_adjustment();
     else
-        self->mod1_amount = phat_hfan_slider_new_with_range(0.0, -1.0,
+        p->mod1_amount = phat_hfan_slider_new_with_range(0.0, -1.0,
                                                             1.0, 0.1);
-    gtk_table_attach_defaults(t, self->mod1_amount, 5, 6, y, y + 1);
-    gtk_widget_show(self->mod1_amount);
+    gtk_table_attach_defaults(t, p->mod1_amount, 5, 6, y, y + 1);
+    gtk_widget_show(p->mod1_amount);
 
     ++y;
 
@@ -396,90 +379,70 @@ create_mod_srcs:
     gtk_table_attach(t, label, 1, 2, y, y + 1, GTK_FILL, 0, 0, 0);
     gtk_widget_show(label);
 
-    self->mod2_combo = mod_src_new_combo_with_cell();
-    gtk_table_attach_defaults(t, self->mod2_combo, 3, 4, y, y + 1);
-    gtk_widget_show(self->mod2_combo);
+    p->mod2_combo = mod_src_new_combo_with_cell();
+    gtk_table_attach_defaults(t, p->mod2_combo, 3, 4, y, y + 1);
+    gtk_widget_show(p->mod2_combo);
 
     if (param == PATCH_PARAM_PITCH)
-        self->mod2_amount = mod_src_new_pitch_adjustment();
+        p->mod2_amount = mod_src_new_pitch_adjustment();
     else
-        self->mod2_amount = phat_hfan_slider_new_with_range(0.0, -1.0,
+        p->mod2_amount = phat_hfan_slider_new_with_range(0.0, -1.0,
                                                             1.0, 0.1);
-    gtk_table_attach_defaults(t, self->mod2_amount, 5, 6, y, y + 1);
-    gtk_widget_show(self->mod2_amount);
+    gtk_table_attach_defaults(t, p->mod2_amount, 5, 6, y, y + 1);
+    gtk_widget_show(p->mod2_amount);
 
     /* done */
-    connect(self);
+    connect(p);
 
     switch(param)
     {
     case PATCH_PARAM_AMPLITUDE:
-        self->refresh = g_timeout_add(GUI_REFRESH_TIMEOUT,  refresh,
-                                                        (gpointer) self);
+        p->refresh = g_timeout_add(GUI_REFRESH_TIMEOUT, refresh,
+                                                        (gpointer)self);
         break;
     default:
-        self->refresh = -1;
+        p->refresh = -1;
     }
 }
 
 
 void mod_section_set_list_global(ModSection* self)
 {
-    mod_src_combo_set_model(GTK_COMBO_BOX(self->env_combo),
+    ModSectionPrivate* p = MOD_SECTION_GET_PRIVATE(self);
+    mod_src_combo_set_model(GTK_COMBO_BOX(p->env_combo),
                                     MOD_SRC_INPUTS_GLOBAL);
 
-    mod_src_combo_set_model(GTK_COMBO_BOX(self->mod1_combo),
+    mod_src_combo_set_model(GTK_COMBO_BOX(p->mod1_combo),
                                     MOD_SRC_INPUTS_GLOBAL);
 
-    mod_src_combo_set_model(GTK_COMBO_BOX(self->mod2_combo),
+    mod_src_combo_set_model(GTK_COMBO_BOX(p->mod2_combo),
                                     MOD_SRC_INPUTS_GLOBAL);
 }
 
 
 void mod_section_set_list_all(ModSection* self)
 {
-    mod_src_combo_set_model(GTK_COMBO_BOX(self->env_combo),
+    ModSectionPrivate* p = MOD_SECTION_GET_PRIVATE(self);
+    mod_src_combo_set_model(GTK_COMBO_BOX(p->env_combo),
                                     MOD_SRC_INPUTS_ALL);
 
-    mod_src_combo_set_model(GTK_COMBO_BOX(self->mod1_combo),
+    mod_src_combo_set_model(GTK_COMBO_BOX(p->mod1_combo),
                                     MOD_SRC_INPUTS_ALL);
 
-    mod_src_combo_set_model(GTK_COMBO_BOX(self->mod2_combo),
+    mod_src_combo_set_model(GTK_COMBO_BOX(p->mod2_combo),
                                     MOD_SRC_INPUTS_ALL);
-}
-
-
-static void mod_section_destroy(GtkObject* object)
-{
-    ModSection* self = MOD_SECTION(object);
-    GtkObjectClass* klass = GTK_OBJECT_CLASS(parent_class);
-
-    if (self->refresh != -1)
-    {
-        if (!g_source_remove(self->refresh))
-        {
-            debug("failed to remove refresh function from idle loop: %u\n",
-                                                            self->refresh);
-        }
-        else
-        {
-            debug("refresh function removed\n");
-        }
-    }
-
-    if (klass->destroy)
-        klass->destroy(object);
 }
 
 
 GtkWidget* mod_section_new(void)
 {
-    return (GtkWidget*) g_object_new(MOD_SECTION_TYPE, NULL);
+    return (GtkWidget*)g_object_new(MOD_SECTION_TYPE, NULL);
 }
 
 
 void mod_section_set_patch(ModSection* self, int patch_id)
 {
+    ModSectionPrivate* p = MOD_SECTION_GET_PRIVATE(self);
     float param1 = PATCH_PARAM_INVALID;
     float param2 = PATCH_PARAM_INVALID;
     float vsens;
@@ -490,89 +453,87 @@ void mod_section_set_patch(ModSection* self, int patch_id)
     GtkTreeIter m1iter;
     GtkTreeIter m2iter;
 
-    self->patch_id = patch_id;
+    p->patch_id = patch_id;
 
     if (patch_id < 0)
         return;
 
-    if (self->mod_only)
+    if (p->mod_only)
         goto get_mod_srcs;
 
-    patch_param_get_value(self->patch_id, self->param, &param1);
+    patch_param_get_value(p->patch_id, p->param, &param1);
 
-    if (self->param == PATCH_PARAM_PITCH)
-        param2 = patch_get_pitch_steps(self->patch_id);
+    if (p->param == PATCH_PARAM_PITCH)
+        param2 = patch_get_pitch_steps(p->patch_id);
     else
-        patch_get_vel_amount(patch_id, self->param, &vsens);
+        patch_get_vel_amount(patch_id, p->param, &vsens);
 
 get_mod_srcs:
 
-    if (self->param == PATCH_PARAM_AMPLITUDE)
+    if (p->param == PATCH_PARAM_AMPLITUDE)
     {
         patch_get_amp_env(patch_id, &envsrc);
 
-        if (!mod_src_combo_get_iter_with_id(GTK_COMBO_BOX(self->env_combo),
+        if (!mod_src_combo_get_iter_with_id(GTK_COMBO_BOX(p->env_combo),
                                                 envsrc, &enviter))
         {
             debug("failed to get env source id from combo box\n");
         }
     }
 
-    patch_get_mod1_src(patch_id, self->param, &m1src);
-    patch_get_mod2_src(patch_id, self->param, &m2src);
+    patch_get_mod1_src(patch_id, p->param, &m1src);
+    patch_get_mod2_src(patch_id, p->param, &m2src);
 
-    patch_get_mod1_amt(patch_id, self->param, &m1amt);
-    patch_get_mod2_amt(patch_id, self->param, &m2amt);
+    patch_get_mod1_amt(patch_id, p->param, &m1amt);
+    patch_get_mod2_amt(patch_id, p->param, &m2amt);
 
-    if (!mod_src_combo_get_iter_with_id(GTK_COMBO_BOX(self->mod1_combo),
+    if (!mod_src_combo_get_iter_with_id(GTK_COMBO_BOX(p->mod1_combo),
                                                         m1src, &m1iter))
     {
         debug("failed to get mod1 source id from combo box\n");
     }
 
-    if (!mod_src_combo_get_iter_with_id(GTK_COMBO_BOX(self->mod2_combo),
+    if (!mod_src_combo_get_iter_with_id(GTK_COMBO_BOX(p->mod2_combo),
                                                         m2src, &m2iter))
     {
         debug("failed to get mod2 source id from combo box\n");
     }
 
-    block(self);
+    block(p);
 
-    if (self->mod_only)
+    if (p->mod_only)
         goto set_mod_srcs;
 
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->param1), param1);
+    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->param1), param1);
 
-    if (self->param == PATCH_PARAM_PITCH)
-        phat_slider_button_set_value(PHAT_SLIDER_BUTTON(self->param2),
+    if (p->param == PATCH_PARAM_PITCH)
+        phat_slider_button_set_value(PHAT_SLIDER_BUTTON(p->param2),
                                                                 param2);
     else
-        phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->vel_sens), vsens);
+        phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->vel_sens), vsens);
 
-    if (self->param == PATCH_PARAM_AMPLITUDE)
-        gtk_combo_box_set_active_iter(GTK_COMBO_BOX(self->env_combo),
+    if (p->param == PATCH_PARAM_AMPLITUDE)
+        gtk_combo_box_set_active_iter(GTK_COMBO_BOX(p->env_combo),
                                                                 &enviter);
 
 set_mod_srcs:
 
-    gtk_combo_box_set_active_iter(GTK_COMBO_BOX(self->mod1_combo), &m1iter);
-    gtk_combo_box_set_active_iter(GTK_COMBO_BOX(self->mod2_combo), &m2iter);
+    gtk_combo_box_set_active_iter(GTK_COMBO_BOX(p->mod1_combo), &m1iter);
+    gtk_combo_box_set_active_iter(GTK_COMBO_BOX(p->mod2_combo), &m2iter);
 
 
-    if (self->param == PATCH_PARAM_PITCH)
+    if (p->param == PATCH_PARAM_PITCH)
     {
-        phat_slider_button_set_value(PHAT_SLIDER_BUTTON(self->mod1_amount),
+        phat_slider_button_set_value(PHAT_SLIDER_BUTTON(p->mod1_amount),
                                             m1amt * PATCH_MAX_PITCH_STEPS);
-        phat_slider_button_set_value(PHAT_SLIDER_BUTTON(self->mod2_amount),
+        phat_slider_button_set_value(PHAT_SLIDER_BUTTON(p->mod2_amount),
                                             m2amt * PATCH_MAX_PITCH_STEPS);
     }
     else
     {
-        phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->mod1_amount),
-                                                                    m1amt);
-        phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->mod2_amount),
-                                                                    m2amt);
+        phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->mod1_amount), m1amt);
+        phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->mod2_amount), m2amt);
     }
 
-    unblock(self);
+    unblock(p);
 }

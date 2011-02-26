@@ -1,3 +1,24 @@
+2011-02-26  James Morris <james@jwm-art.net>
+	* gui/voicetab.c - set portamento time slider range
+          from 0.25 seconds to 1.0 seconds to reflect the range
+          allowed for MIDI control changes (see midi.c map_control).
+
+	* gui/*.[ch] changed almost all custom widgets (most of
+	  which don't need to be widgets at all) so their
+	  implementation data is private to the implementation.
+
+	* gui/*.c replaced *_get_type(void) and other *_class_init
+          declarations with G_DEFINE_TYPE.
+
+	* gui/*.c removed ->destroy methods as a) they were misused
+          and b) they were n't doing anything which wasn't done
+	  anyway. see: http://mail.gnome.org/archives/gtk-app-devel-list/2011-February/msg00189.html
+
+	* gui/waveform.c replace waveform_destroy with waveform_dispose
+	  (see above link). This though, means using GObject instead
+	  of GtkObject for the ->dispose method.
+
+
 2011-02-23  James Morris <james@jwm-art.net>
 	! sorry no real right and proper changelog entries
 

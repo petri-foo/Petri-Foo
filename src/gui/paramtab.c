@@ -9,61 +9,42 @@
 #include "mod_section.h"
 
 
-static GtkVBoxClass* parent_class;
+typedef struct _ParamTabPrivate ParamTabPrivate;
 
-static void param_tab_class_init(ParamTabClass* klass);
-static void param_tab_init(ParamTab* self);
-static void param_tab_destroy(GtkObject* object);
+#define PARAM_TAB_GET_PRIVATE(obj)      \
+    (G_TYPE_INSTANCE_GET_PRIVATE((obj), \
+        PARAM_TAB_TYPE, ParamTabPrivate))
 
-
-GType param_tab_get_type(void)
+struct _ParamTabPrivate
 {
-    static GType type = 0;
+    int         patch_id;
+    guint       refresh;
 
-    if (!type)
-    {
-        static const GTypeInfo info =
-        {
-            sizeof (ParamTabClass),
-            NULL,
-            NULL,
-            (GClassInitFunc) param_tab_class_init,
-            NULL,
-            NULL,
-            sizeof (ParamTab),
-            0,
-            (GInstanceInitFunc) param_tab_init,
-            NULL
-        };
-        type = g_type_register_static(GTK_TYPE_VBOX, "ParamTab", &info, 0);
-    }
+    PatchParamType  param;
 
-    return type;
-}
+    GtkWidget*  modsect1; /* 1st param with modulation */
+    GtkWidget*  modsect2; /* optional 2nd param with modulation */
+};
+
+
+G_DEFINE_TYPE(ParamTab, param_tab, GTK_TYPE_VBOX);
 
 
 static void param_tab_class_init(ParamTabClass* klass)
 {
-    parent_class = g_type_class_peek_parent(klass);
-    GTK_OBJECT_CLASS(klass)->destroy = param_tab_destroy;
+    GtkObjectClass *object_class = GTK_OBJECT_CLASS(klass);
+    param_tab_parent_class = g_type_class_peek_parent(klass);
+    g_type_class_add_private(object_class, sizeof(ParamTabPrivate));
 }
 
 
 static void param_tab_init(ParamTab* self)
 {
-    self->patch_id = -1;
-    self->param = PATCH_PARAM_INVALID;
-    self->modsect1 = 0;
-    self->modsect2 = 0;
-}
-
-
-static void param_tab_destroy(GtkObject* object)
-{
-    GtkObjectClass* klass = GTK_OBJECT_CLASS(parent_class);
-
-    if (klass->destroy)
-        klass->destroy(object);
+    ParamTabPrivate* p = PARAM_TAB_GET_PRIVATE(self);
+    p->patch_id = -1;
+    p->param = PATCH_PARAM_INVALID;
+    p->modsect1 = 0;
+    p->modsect2 = 0;
 }
 
 
@@ -74,6 +55,7 @@ GtkWidget* param_tab_new(void)
 
 void param_tab_set_param(ParamTab* self, PatchParamType param)
 {
+    ParamTabPrivate* p = PARAM_TAB_GET_PRIVATE(self);
     GtkBox* box = GTK_BOX(self);
 
     PatchParamType ms1 = PATCH_PARAM_INVALID;
@@ -104,26 +86,27 @@ void param_tab_set_param(ParamTab* self, PatchParamType param)
 
     if (ms1 != PATCH_PARAM_INVALID)
     {
-        self->modsect1 = mod_section_new();
-        mod_section_set_param(MOD_SECTION(self->modsect1), ms1);
-        gtk_box_pack_start(box, self->modsect1, FALSE, FALSE, 0);
-        gtk_widget_show(self->modsect1);
+        p->modsect1 = mod_section_new();
+        mod_section_set_param(MOD_SECTION(p->modsect1), ms1);
+        gtk_box_pack_start(box, p->modsect1, FALSE, FALSE, 0);
+        gtk_widget_show(p->modsect1);
     }
 
     if (ms2 != PATCH_PARAM_INVALID)
     {
-        self->modsect2 = mod_section_new();
-        mod_section_set_param(MOD_SECTION(self->modsect2), ms2);
-        gtk_box_pack_start(box, self->modsect2, FALSE, FALSE, 0);
-        gtk_widget_show(self->modsect2);
+        p->modsect2 = mod_section_new();
+        mod_section_set_param(MOD_SECTION(p->modsect2), ms2);
+        gtk_box_pack_start(box, p->modsect2, FALSE, FALSE, 0);
+        gtk_widget_show(p->modsect2);
     }
 }
 
 void param_tab_set_patch(ParamTab* self, int patch)
 {
-    if (self->modsect1)
-        mod_section_set_patch(MOD_SECTION(self->modsect1), patch);
+    ParamTabPrivate* p = PARAM_TAB_GET_PRIVATE(self);
+    if (p->modsect1)
+        mod_section_set_patch(MOD_SECTION(p->modsect1), patch);
 
-    if (self->modsect2)
-        mod_section_set_patch(MOD_SECTION(self->modsect2), patch);
+    if (p->modsect2)
+        mod_section_set_patch(MOD_SECTION(p->modsect2), patch);
 }

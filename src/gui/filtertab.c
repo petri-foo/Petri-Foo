@@ -5,105 +5,91 @@
 #include "patch_set_and_get.h"
 
 
-static GtkVBoxClass* parent_class;
 
-static void filter_tab_class_init(FilterTabClass* klass);
-static void filter_tab_init(FilterTab* self);
-static void filter_tab_destroy(GtkObject* object);
+typedef struct _FilterTabPrivate FilterTabPrivate;
+
+#define FILTER_TAB_GET_PRIVATE(obj)     \
+    (G_TYPE_INSTANCE_GET_PRIVATE((obj), \
+        FILTER_TAB_TYPE, FilterTabPrivate))
 
 
-GType filter_tab_get_type(void)
+struct _FilterTabPrivate
 {
-    static GType type = 0;
+    int         patch;
+    guint       refresh;
+    GtkWidget*  freq_fan;
+    GtkWidget*  reso_fan;
+};
 
-    if (!type)
-    {
-	static const GTypeInfo info =
-	    {
-		sizeof (FilterTabClass),
-		NULL,
-		NULL,
-		(GClassInitFunc) filter_tab_class_init,
-		NULL,
-		NULL,
-		sizeof (FilterTab),
-		0,
-		(GInstanceInitFunc) filter_tab_init,
-        NULL
-	    };
-
-	type = g_type_register_static(GTK_TYPE_VBOX, "FilterTab", &info, 0);
-    }
-
-    return type;
-}
+G_DEFINE_TYPE(FilterTab, filter_tab, GTK_TYPE_VBOX)
 
 
 static void filter_tab_class_init(FilterTabClass* klass)
 {
-    parent_class = g_type_class_peek_parent(klass);
-    GTK_OBJECT_CLASS(klass)->destroy = filter_tab_destroy;
+    GtkObjectClass *object_class = GTK_OBJECT_CLASS(klass);
+    filter_tab_parent_class = g_type_class_peek_parent(klass);
+    g_type_class_add_private(object_class, sizeof(FilterTabPrivate));
 }
 
 
-static void freq_cb(PhatFanSlider* fan, FilterTab* self)
+static void freq_cb(PhatFanSlider* fan, FilterTabPrivate* p)
 {
     float val;
 
     val = phat_fan_slider_get_value(fan);
-    patch_set_cutoff(self->patch, val);
+    patch_set_cutoff(p->patch, val);
 }
 
 
-static void reso_cb(PhatFanSlider* fan, FilterTab* self)
+static void reso_cb(PhatFanSlider* fan, FilterTabPrivate* p)
 {
     float val;
 
     val = phat_fan_slider_get_value(fan);
-    patch_set_resonance(self->patch, val);
+    patch_set_resonance(p->patch, val);
 }
 
 
-static void connect(FilterTab* self)
+static void connect(FilterTabPrivate* p)
 {
-    g_signal_connect(G_OBJECT(self->freq_fan), "value-changed",
-		     G_CALLBACK(freq_cb), (gpointer) self);
-    g_signal_connect(G_OBJECT(self->reso_fan), "value-changed",
-		     G_CALLBACK(reso_cb), (gpointer) self);
+    g_signal_connect(G_OBJECT(p->freq_fan), "value-changed",
+                        G_CALLBACK(freq_cb), (gpointer)p);
+    g_signal_connect(G_OBJECT(p->reso_fan), "value-changed",
+                        G_CALLBACK(reso_cb), (gpointer)p);
 }
 
 
-static void block(FilterTab* self)
+static void block(FilterTabPrivate* p)
 {
-    g_signal_handlers_block_by_func(self->freq_fan, freq_cb, self);
-    g_signal_handlers_block_by_func(self->reso_fan, reso_cb, self);
+    g_signal_handlers_block_by_func(p->freq_fan, freq_cb, p);
+    g_signal_handlers_block_by_func(p->reso_fan, reso_cb, p);
 }
 
 
-static void unblock(FilterTab* self)
+static void unblock(FilterTabPrivate* p)
 {
-    g_signal_handlers_unblock_by_func(self->freq_fan, freq_cb, self);
-    g_signal_handlers_unblock_by_func(self->reso_fan, reso_cb, self);
+    g_signal_handlers_unblock_by_func(p->freq_fan, freq_cb, p);
+    g_signal_handlers_unblock_by_func(p->reso_fan, reso_cb, p);
 }
 
 
 static gboolean refresh(gpointer data)
 {
-    FilterTab* self = FILTER_TAB(data);
+    FilterTabPrivate* p = FILTER_TAB_GET_PRIVATE(data);
     float cut, res;
 
-    if (self->patch < 0)
-	return TRUE;
-    
-    cut = patch_get_cutoff(self->patch);
-    res = patch_get_resonance(self->patch);
+    if (p->patch < 0)
+        return TRUE;
 
-    block(self);
-    
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->freq_fan), cut);
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->reso_fan), res);
-    
-    unblock(self);
+    cut = patch_get_cutoff(p->patch);
+    res = patch_get_resonance(p->patch);
+
+    block(p);
+
+    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->freq_fan), cut);
+    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->reso_fan), res);
+
+    unblock(p);
 
     return TRUE;
 }
@@ -111,14 +97,15 @@ static gboolean refresh(gpointer data)
 
 static void filter_tab_init(FilterTab* self)
 {
+    FilterTabPrivate* p = FILTER_TAB_GET_PRIVATE(self);
     GtkBox* box = GTK_BOX(self);
     GtkWidget* title;
     GtkWidget* table;
     GtkTable* t;
     GtkWidget* pad;
     GtkWidget* label;
-    
-    self->patch = -1;
+
+    p->patch = -1;
     gtk_container_set_border_width(GTK_CONTAINER(self), GUI_BORDERSPACE);
 
     /* table */
@@ -149,45 +136,26 @@ static void filter_tab_init(FilterTab* self)
 
     /* freq fan */
     label = gtk_label_new("Cutoff:");
-    self->freq_fan = phat_hfan_slider_new_with_range(1.0, 0.0, 1.0, 0.01);
+    p->freq_fan = phat_hfan_slider_new_with_range(1.0, 0.0, 1.0, 0.01);
     gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
     gtk_table_attach(t, label, 1, 2, 2, 3, GTK_FILL, 0, 0, 0);
-    gtk_table_attach_defaults(t, self->freq_fan, 3, 4, 2, 3);
+    gtk_table_attach_defaults(t, p->freq_fan, 3, 4, 2, 3);
     gtk_widget_show(label);
-    gtk_widget_show(self->freq_fan);
+    gtk_widget_show(p->freq_fan);
 
     /* reso fan */
     label = gtk_label_new("Resonance:");
-    self->reso_fan = phat_hfan_slider_new_with_range(0.0, 0.0, 1.0, 0.01);
+    p->reso_fan = phat_hfan_slider_new_with_range(0.0, 0.0, 1.0, 0.01);
     gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
     gtk_table_attach(t, label, 1, 2, 3, 4, GTK_FILL, 0, 0, 0);
-    gtk_table_attach_defaults(t, self->reso_fan, 3, 4, 3, 4);
+    gtk_table_attach_defaults(t, p->reso_fan, 3, 4, 3, 4);
     gtk_widget_show(label);
-    gtk_widget_show(self->reso_fan);
+    gtk_widget_show(p->reso_fan);
 
     /* done */
-    connect(self);
-    self->refresh = g_timeout_add(GUI_REFRESH_TIMEOUT, refresh, (gpointer) self);
-}
-
-
-static void filter_tab_destroy(GtkObject* object)
-{
-    FilterTab* self = FILTER_TAB(object);
-    GtkObjectClass* klass = GTK_OBJECT_CLASS(parent_class);
-
-    if (!g_source_remove(self->refresh))
-    {
-	debug("failed to remove refresh function from idle loop: %u\n", self->refresh);
-    }
-    else
-    {
-	debug("refresh function removed\n");
-    }
-    
-    
-    if (klass->destroy)
-	klass->destroy(object);
+    connect(p);
+    p->refresh = g_timeout_add(GUI_REFRESH_TIMEOUT, refresh,
+        /* we do want to use self this time: */     (gpointer) self);
 }
 
 
@@ -199,20 +167,21 @@ GtkWidget* filter_tab_new(void)
 
 void filter_tab_set_patch(FilterTab* self, int patch)
 {
+    FilterTabPrivate* p = FILTER_TAB_GET_PRIVATE(self);
     float freq, reso;
 
-    self->patch = patch;
+    p->patch = patch;
 
     if (patch < 0)
-	return;
+        return;
 
     freq = patch_get_cutoff(patch);
     reso = patch_get_resonance(patch);
 
-    block(self);
-    
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->freq_fan), freq);
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->reso_fan), reso);
+    block(p);
 
-    unblock(self);
+    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->freq_fan), freq);
+    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->reso_fan), reso);
+
+    unblock(p);
 }

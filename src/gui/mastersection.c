@@ -5,42 +5,15 @@
 #include "gui.h"
 #include "mixer.h"
 
-static GtkVBoxClass* parent_class;
-
-static void master_section_class_init(MasterSectionClass* klass);
-static void master_section_init(MasterSection* self);
 
 
-GType master_section_get_type(void)
-{
-    static GType type = 0;
+G_DEFINE_TYPE(MasterSection, master_section, GTK_TYPE_VBOX);
 
-    if (!type)
-    {
-	static const GTypeInfo info =
-	    {
-		sizeof (MasterSectionClass),
-		NULL,
-		NULL,
-		(GClassInitFunc) master_section_class_init,
-		NULL,
-		NULL,
-		sizeof (MasterSection),
-		0,
-		(GInstanceInitFunc) master_section_init,
-		NULL
-	    };
-
-	type = g_type_register_static(GTK_TYPE_VBOX, "MasterSection", &info, 0);
-    }
-
-    return type;
-}
 
 
 static void master_section_class_init(MasterSectionClass* klass)
 {
-    parent_class = g_type_class_peek_parent(klass);
+    master_section_parent_class = g_type_class_peek_parent(klass);
 }
 
 
@@ -64,7 +37,8 @@ static void master_section_init(MasterSection* self)
     
     /* amplitude */
     label = gtk_label_new(NULL);
-    self->amplitude_fan = phat_hfan_slider_new_with_range(DEFAULT_AMPLITUDE, 0.0, 1.0, 0.1);
+    self->amplitude_fan =
+        phat_hfan_slider_new_with_range(DEFAULT_AMPLITUDE, 0.0, 1.0, 0.1);
     hbox = gtk_hbox_new(FALSE, GUI_TEXTSPACE);
 
     gtk_label_set_markup(GTK_LABEL(label), "<b>Master</b>");

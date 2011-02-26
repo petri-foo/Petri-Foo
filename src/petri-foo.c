@@ -90,8 +90,8 @@ int main(int argc, char *argv[])
 	}
 
 	/* start */
-	midi_start();
 	driver_start();
+	midi_start();
 #ifdef HAVE_LASH
 	lashdriver_start();
 	lashdriver_set_jack_name((char*)driver_get_client_name());

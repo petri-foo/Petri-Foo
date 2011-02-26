@@ -10,10 +10,6 @@
 #include "patch_set_and_get.h"
 
 
-static void midi_section_class_init(MidiSectionClass* klass);
-static void midi_section_init(MidiSection* self);
-
-
 /* magic numbers */
 enum
 {
@@ -24,54 +20,57 @@ enum
 };
 
 
-GType midi_section_get_type(void)
+typedef struct _MidiSectionPrivate MidiSectionPrivate;
+
+#define MIDI_SECTION_GET_PRIVATE(obj)   \
+    (G_TYPE_INSTANCE_GET_PRIVATE((obj), \
+        MIDI_SECTION_TYPE, MidiSectionPrivate))
+
+struct _MidiSectionPrivate
 {
-    static GType type = 0;
+    int                 patch;
+    GtkAdjustment*      adj;
+    GtkWidget*          keyboard;
+    GnomeCanvasItem*    range;
+    GnomeCanvasItem*    note;
+    GnomeCanvas*        canvas;
+    gboolean            ignore;
+};
 
-    if (!type)
-    {
-	static const GTypeInfo info =
-	    {
-		sizeof (MidiSectionClass),
-		NULL,
-		NULL,
-		(GClassInitFunc) midi_section_class_init,
-		NULL,
-		NULL,
-		sizeof (MidiSection),
-		0,
-		(GInstanceInitFunc) midi_section_init,
-        NULL
-	    };
 
-	type = g_type_register_static(GTK_TYPE_VBOX, "MidiSection", &info, 0);
-    }
+G_DEFINE_TYPE(MidiSection, midi_section, GTK_TYPE_VBOX);
 
-    return type;
+
+static void midi_section_class_init(MidiSectionClass* klass)
+{
+    GtkObjectClass *object_class = GTK_OBJECT_CLASS(klass);
+    midi_section_parent_class = g_type_class_peek_parent(klass);
+    g_type_class_add_private(object_class, sizeof(MidiSectionPrivate));
 }
 
 
-static void pressed_cb(GtkWidget* widget, int key, MidiSection* self)
-{
-    (void)widget;
-    /* a ghetto form of set-insensitive */
-    if (self->patch < 0)
-        return;
-    mixer_note_on_with_id(self->patch, key, 1.0);
-}
-
-
-static void released_cb(GtkWidget* widget, int key, MidiSection* self)
+static void pressed_cb(GtkWidget* widget, int key, MidiSectionPrivate* p)
 {
     (void)widget;
     /* a ghetto form of set-insensitive */
-    if (self->patch < 0)
+    if (p->patch < 0)
         return;
-    mixer_note_off_with_id(self->patch, key);
+    mixer_note_on_with_id(p->patch, key, 1.0);
 }
 
 
-static gboolean range_cb(GnomeCanvasItem* item, GdkEvent* event, MidiSection* self)
+static void released_cb(GtkWidget* widget, int key, MidiSectionPrivate* p)
+{
+    (void)widget;
+    /* a ghetto form of set-insensitive */
+    if (p->patch < 0)
+        return;
+    mixer_note_off_with_id(p->patch, key);
+}
+
+
+static gboolean range_cb(GnomeCanvasItem* item, GdkEvent* event,
+                                                MidiSectionPrivate* p)
 {
     (void)item;
     int clicked;
@@ -80,137 +79,126 @@ static gboolean range_cb(GnomeCanvasItem* item, GdkEvent* event, MidiSection* se
     int upper;
     int range;
     int change_range = 0;
-    PatchList* list = gui_get_patch_list();
+    PatchList* list;
 
     /* a ghetto form of set-insensitive */
-    if (self->patch < 0)
-	return FALSE;
-    
-    switch (event->type)
+    if (p->patch < 0)
+        return FALSE;
+
+    if (event->type != GDK_BUTTON_PRESS)
+        return FALSE;
+
+    list = gui_get_patch_list();
+
+    clicked = event->button.x / PHAT_KEYBOARD_KEY_WIDTH;
+    note = patch_get_note(p->patch);
+    lower = patch_get_lower_note(p->patch);
+    upper = patch_get_upper_note(p->patch);
+    range = patch_get_range(p->patch);
+
+    /* process the click */
+    if (event->button.button == 1)
     {
-    case GDK_BUTTON_PRESS:
-	clicked = event->button.x / PHAT_KEYBOARD_KEY_WIDTH;
-	note = patch_get_note(self->patch);
-	lower = patch_get_lower_note(self->patch);
-	upper = patch_get_upper_note(self->patch);
-	range = patch_get_range(self->patch);
+        lower = clicked;
+        change_range = 1;
+    }
+    else if (event->button.button == 2)
+    {
+        note = clicked;
+    }
+    else if (event->button.button == 3)
+    {
+        upper = clicked;
+        change_range = 1;
+    }
 
-	/* process the click */
-	if (event->button.button == 1)
-	{
-	    lower = clicked;
-	    change_range = 1;
-	}
-	else if (event->button.button == 2)
-	{
-	    note = clicked;
-	}
-	else if (event->button.button == 3)
-	{
-	    upper = clicked;
-	    change_range = 1;
-	}
+    /* clamp the parameters */
+    if (note < lower)
+        lower = note;
 
-	/* clamp the parameters */
-	if (note < lower)
-	{
-	    lower = note;
-	}
-	if (note > upper)
-	{
-	    upper = note;
-	}
+    if (note > upper)
+        upper = note;
 
-	/* if the range is off, and a range adjusting button wasn't
-	 * pressed, then clamp the range down to nothing (which will
-	 * result in it remaining disabled) */
-	if (!range && !change_range)
-	{
-	    lower = upper = note;
-	}
-	    
-	/* reposition note */
-	gnome_canvas_item_set(self->note, "x1",
-			      (gdouble) (note * PHAT_KEYBOARD_KEY_WIDTH - 1),
-			      NULL);
-	gnome_canvas_item_set(self->note, "x2",
-			      (gdouble) (note * PHAT_KEYBOARD_KEY_WIDTH + PHAT_KEYBOARD_KEY_WIDTH - 1),
-			      NULL);
+    /* if the range is off, and a range adjusting button wasn't
+     * pressed, then clamp the range down to nothing (which will
+     * result in it remaining disabled) */
+    if (!range && !change_range)
+        lower = upper = note;
 
-	/* reposition range */
-	gnome_canvas_item_set(self->range, "x1",
-			      (gdouble) (lower * PHAT_KEYBOARD_KEY_WIDTH - 1),
-			      NULL);
-	gnome_canvas_item_set(self->range, "x2",
-			      (gdouble) (upper * PHAT_KEYBOARD_KEY_WIDTH + PHAT_KEYBOARD_KEY_WIDTH - 1),
-			      NULL);
+    /* reposition note */
+    gnome_canvas_item_set(p->note, "x1",
+                    (gdouble)(note * PHAT_KEYBOARD_KEY_WIDTH - 1),  NULL);
+    gnome_canvas_item_set(p->note, "x2",
+                    (gdouble) (note * PHAT_KEYBOARD_KEY_WIDTH
+                                    + PHAT_KEYBOARD_KEY_WIDTH - 1), NULL);
 
-	/* apply changes */
-	patch_set_note(self->patch, note);
-	patch_set_lower_note(self->patch, lower);
-	patch_set_upper_note(self->patch, upper);
-	if (lower == upper)
-	{
-	    patch_set_range(self->patch, FALSE);
-	    gnome_canvas_item_hide(self->range);
-	}
-	else
-	{
-	    patch_set_range(self->patch, TRUE);
-	    gnome_canvas_item_show(self->range);
-	}
+    /* reposition range */
+    gnome_canvas_item_set(p->range, "x1",
+                    (gdouble)(lower * PHAT_KEYBOARD_KEY_WIDTH - 1), NULL);
+    gnome_canvas_item_set(p->range, "x2",
+                    (gdouble)(upper * PHAT_KEYBOARD_KEY_WIDTH
+                                    + PHAT_KEYBOARD_KEY_WIDTH - 1), NULL);
 
-	/* we might have moved this patch around relative to the list;
-	 * update the list and try to keep this patch selected */
-	self->ignore = TRUE;
-	patch_list_update(list, patch_list_get_current_patch(list), PATCH_LIST_PATCH);
-        break;
-    default:
-	break;
-    };
+    /* apply changes */
+    patch_set_note(p->patch, note);
+    patch_set_lower_note(p->patch, lower);
+    patch_set_upper_note(p->patch, upper);
+
+    if (lower == upper)
+    {
+        patch_set_range(p->patch, FALSE);
+        gnome_canvas_item_hide(p->range);
+    }
+    else
+    {
+        patch_set_range(p->patch, TRUE);
+        gnome_canvas_item_show(p->range);
+    }
+
+    /* we might have moved this patch around relative to the list;
+     * update the list and try to keep this patch selected */
+    p->ignore = TRUE;
+    patch_list_update(list, patch_list_get_current_patch(list),
+                                                        PATCH_LIST_PATCH);
 
     return FALSE;
 }
 
 
-static void connect(MidiSection* self)
+static void connect(MidiSectionPrivate* p)
 {
-    g_signal_connect(G_OBJECT(self->keyboard), "key-pressed",
-		     G_CALLBACK(pressed_cb), (gpointer) self);
-    g_signal_connect(G_OBJECT(self->keyboard), "key-released",
-		     G_CALLBACK(released_cb), (gpointer) self);
+    g_signal_connect(G_OBJECT(p->keyboard), "key-pressed",
+		     G_CALLBACK(pressed_cb), (gpointer)p);
+    g_signal_connect(G_OBJECT(p->keyboard), "key-released",
+		     G_CALLBACK(released_cb), (gpointer)p);
 }
 
 
-static void block(MidiSection* self)
+static void block(MidiSectionPrivate* p)
 {
-    g_signal_handlers_block_by_func(self->keyboard, pressed_cb, self);
-    g_signal_handlers_block_by_func(self->keyboard, released_cb, self);
+    g_signal_handlers_block_by_func(p->keyboard, pressed_cb, p);
+    g_signal_handlers_block_by_func(p->keyboard, released_cb, p);
 }
 
 
-static void unblock(MidiSection* self)
+static void unblock(MidiSectionPrivate* p)
 {
-    g_signal_handlers_unblock_by_func(self->keyboard, pressed_cb, self);
-    g_signal_handlers_unblock_by_func(self->keyboard, released_cb, self);
+    g_signal_handlers_unblock_by_func(p->keyboard, pressed_cb, p);
+    g_signal_handlers_unblock_by_func(p->keyboard, released_cb, p);
 }
 
 
-static void set_sensitive(MidiSection* self, gboolean val)
+static void set_sensitive(MidiSectionPrivate* p, gboolean val)
 {
-    (void)self;(void)val;
+    (void)p;(void)val;
     debug("we're here where it does nothing what so ever!\n");
     /* nada */
 }
 
 
-static void midi_section_class_init(MidiSectionClass* klass)
-{
-}
-
-
 static void midi_section_init(MidiSection* self)
 {
+    MidiSectionPrivate* p = MIDI_SECTION_GET_PRIVATE(self);
     GtkBox* box = GTK_BOX(self);
     GtkWidget* pad;
     GtkWidget* view;
@@ -219,18 +207,18 @@ static void midi_section_init(MidiSection* self)
     GnomeCanvasPoints* points;
     int x1, x2, y1, y2;
 
-    self->patch = -1;
-    self->ignore = FALSE;
+    p->patch = -1;
+    p->ignore = FALSE;
     x1 = 0;
     y1 = 0;
     x2 = (PHAT_KEYBOARD_KEY_WIDTH * MIDI_NOTES);
     y2 = HEIGHT;
 
     /* adjustment */
-    self->adj = (GtkAdjustment*) gtk_adjustment_new(0, 0, 0, 0, 0, 0);
+    p->adj = (GtkAdjustment*) gtk_adjustment_new(0, 0, 0, 0, 0, 0);
 
     /* viewport */
-    view = gtk_viewport_new(self->adj, NULL);
+    view = gtk_viewport_new(p->adj, NULL);
     gtk_box_pack_start(box, view, FALSE, FALSE, 0);
     gtk_viewport_set_shadow_type(GTK_VIEWPORT(view), GTK_SHADOW_NONE);
     gtk_widget_set_size_request(view, 0, y2);
@@ -242,7 +230,7 @@ static void midi_section_init(MidiSection* self)
     gnome_canvas_set_scroll_region(canvas, 0, 0, x2 - 1, y2 -1);
     gtk_container_add(GTK_CONTAINER(view), GTK_WIDGET(canvas));
     g_signal_connect(G_OBJECT(canvas), "event",
-		     G_CALLBACK(range_cb), (gpointer)self);
+		     G_CALLBACK(range_cb), (gpointer)p);
     gtk_widget_show(GTK_WIDGET(canvas));
 
     /* range display backdrop */
@@ -255,7 +243,7 @@ static void midi_section_init(MidiSection* self)
 			  "fill-color-rgba", BG_COLOR,
 			  NULL);
     /* range */
-    self->range = gnome_canvas_item_new(gnome_canvas_root(canvas),
+    p->range = gnome_canvas_item_new(gnome_canvas_root(canvas),
 					gnome_canvas_rect_get_type(),
 					"x1", (gdouble)x1,
 					"y1", (gdouble)y1,
@@ -264,10 +252,10 @@ static void midi_section_init(MidiSection* self)
 					"fill-color-rgba", RANGE_COLOR,
 					"outline-color", "black",
 					NULL);
-    gnome_canvas_item_hide(self->range);
+    gnome_canvas_item_hide(p->range);
     
     /* range root note */
-    self->note = gnome_canvas_item_new(gnome_canvas_root(canvas),
+    p->note = gnome_canvas_item_new(gnome_canvas_root(canvas),
 				       gnome_canvas_rect_get_type(),
 				       "x1", (gdouble)x1,
 				       "y1", (gdouble)y1,
@@ -276,9 +264,9 @@ static void midi_section_init(MidiSection* self)
 				       "fill-color-rgba", NOTE_COLOR,
 				       "outline-color", "black",
 				       NULL);
-    gnome_canvas_item_hide(self->note);
+    gnome_canvas_item_hide(p->note);
 
-    self->canvas = canvas;
+    p->canvas = canvas;
 
     /* range display border */
     points = gnome_canvas_points_new(4);
@@ -302,9 +290,9 @@ static void midi_section_init(MidiSection* self)
 
 
     /* keyboard */
-    self->keyboard = phat_hkeyboard_new(self->adj, MIDI_NOTES, TRUE);
-    gtk_box_pack_start(box, self->keyboard, FALSE, FALSE, 0);
-    gtk_widget_show(self->keyboard);
+    p->keyboard = phat_hkeyboard_new(p->adj, MIDI_NOTES, TRUE);
+    gtk_box_pack_start(box, p->keyboard, FALSE, FALSE, 0);
+    gtk_widget_show(p->keyboard);
 
     /* vpad */
     pad = gui_vpad_new(GUI_SCROLLSPACE);
@@ -312,12 +300,12 @@ static void midi_section_init(MidiSection* self)
     gtk_widget_show(pad);
 
     /* scrollbar */
-    scroll = gtk_hscrollbar_new(self->adj);
+    scroll = gtk_hscrollbar_new(p->adj);
     gtk_box_pack_start(box, scroll, FALSE, FALSE, 0);
     gtk_widget_show(scroll);
 
     /* done */
-    connect(self);
+    connect(p);
 }
 
 
@@ -329,69 +317,62 @@ GtkWidget* midi_section_new(void)
 
 void midi_section_set_patch(MidiSection* self, int patch)
 {
+    MidiSectionPrivate* p = MIDI_SECTION_GET_PRIVATE(self);
     int note;
     int lower;
     int upper;
     int range;
 
-    self->patch = patch;
+    p->patch = patch;
 
     if (patch < 0)
     {
-	set_sensitive(self, FALSE);
-	gnome_canvas_item_hide(self->note);
-	gnome_canvas_item_hide(self->range);
+        set_sensitive(p, FALSE);
+        gnome_canvas_item_hide(p->note);
+        gnome_canvas_item_hide(p->range);
 
-	if (self->ignore)
-	    self->ignore = FALSE;
-	else
-	    gtk_adjustment_set_value(self->adj,
-				     (0.5 * self->adj->upper)
-				     - (self->adj->page_size / 2));
+        if (p->ignore)
+            p->ignore = FALSE;
+        else
+            gtk_adjustment_set_value(p->adj, (0.5 * p->adj->upper)
+                                            - (p->adj->page_size / 2));
     }
     else
     {
-	set_sensitive(self, TRUE);
+        set_sensitive(p, TRUE);
 
-	note = patch_get_note(patch);
-	lower = patch_get_lower_note(patch);
-	upper = patch_get_upper_note(patch);
-	range = patch_get_range(patch);
+        note = patch_get_note(patch);
+        lower = patch_get_lower_note(patch);
+        upper = patch_get_upper_note(patch);
+        range = patch_get_range(patch);
 
-	block(self);
+        block(p);
 
-	/* so let me get this straight... if I set more than one
-	 * property at once, shit gets fux0red? Fags. */
-	gnome_canvas_item_set(self->note, "x1",
-			      (gdouble) (note * PHAT_KEYBOARD_KEY_WIDTH - 1),
-			      NULL);
-	gnome_canvas_item_set(self->note, "x2",
-			      (gdouble) (note * PHAT_KEYBOARD_KEY_WIDTH + PHAT_KEYBOARD_KEY_WIDTH - 1),
-			      NULL);
-	gnome_canvas_item_show(self->note);
+        gnome_canvas_item_set(p->note, "x1",
+                (gdouble)(note * PHAT_KEYBOARD_KEY_WIDTH - 1), NULL);
+        gnome_canvas_item_set(p->note, "x2",
+                (gdouble)(note * PHAT_KEYBOARD_KEY_WIDTH
+                               + PHAT_KEYBOARD_KEY_WIDTH - 1), NULL);
+        gnome_canvas_item_show(p->note);
 
-	/* do the same dumbshit for the range */
-	gnome_canvas_item_set(self->range, "x1",
-			      (gdouble) (lower * PHAT_KEYBOARD_KEY_WIDTH - 1),
-			      NULL);
-	gnome_canvas_item_set(self->range, "x2",
-			      (gdouble) (upper * PHAT_KEYBOARD_KEY_WIDTH + PHAT_KEYBOARD_KEY_WIDTH - 1),
-			      NULL);
-	if (range)
-	    gnome_canvas_item_show(self->range);
-	else
-	    gnome_canvas_item_hide(self->range);
+        gnome_canvas_item_set(p->range, "x1",
+                (gdouble) (lower * PHAT_KEYBOARD_KEY_WIDTH - 1), NULL);
+        gnome_canvas_item_set(p->range, "x2",
+                (gdouble) (upper * PHAT_KEYBOARD_KEY_WIDTH
+                                 + PHAT_KEYBOARD_KEY_WIDTH - 1), NULL);
+        if (range)
+            gnome_canvas_item_show(p->range);
+        else
+            gnome_canvas_item_hide(p->range);
 
-	/* scroll the keyboard to show the root note */
-	if (self->ignore)
-	    self->ignore = FALSE;
-	else
-	    gtk_adjustment_set_value(self->adj,
-				     ((note+1.0) / MIDI_NOTES)
-				     * self->adj->upper
-				     - (self->adj->page_size / 2));
-	
-	unblock(self);
+        /* scroll the keyboard to show the root note */
+        if (p->ignore)
+            p->ignore = FALSE;
+        else
+            gtk_adjustment_set_value(p->adj,
+                    ((note+1.0) / MIDI_NOTES) * p->adj->upper
+                                        - (p->adj->page_size / 2));
+        unblock(p);
     }
 }
 

@@ -1,14 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <gtk/gtk.h>
+
+#include "gui.h"
 #include "petri-foo.h"
 #include "driver.h"
-#include "gui.h"
-#include "lfo.h"
-#include "patch.h"
-#include "mixer.h"
 #include "sync.h"
+
 
 static GtkWidget* window;
 

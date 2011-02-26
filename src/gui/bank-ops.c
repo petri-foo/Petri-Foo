@@ -1,11 +1,11 @@
-#include <stdio.h>
+#include "bank-ops.h"
+
 #include <stdlib.h>
 #include <string.h>
-#include <gtk/gtk.h>
-#include "petri-foo.h"
-#include "patch.h"
-#include "beef.h"
 
+#include "beef.h"
+#include "patch.h"
+#include "petri-foo.h"
 
 static char *last_bank = 0;
 

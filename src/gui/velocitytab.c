@@ -5,136 +5,117 @@
 #include "patch_set_and_get.h"
 
 
-static GtkVBoxClass* parent_class;
+typedef struct _VelocityTabPrivate VelocityTabPrivate;
 
-static void velocity_tab_class_init(VelocityTabClass* klass);
-static void velocity_tab_init(VelocityTab* self);
+#define VELOCITY_TAB_GET_PRIVATE(obj)   \
+    (G_TYPE_INSTANCE_GET_PRIVATE((obj), \
+        VELOCITY_TAB_TYPE, VelocityTabPrivate))
 
-
-GType velocity_tab_get_type(void)
+struct _VelocityTabPrivate
 {
-    static GType type = 0;
+    int patch;
+    GtkWidget* vol_fan;
+    GtkWidget* pan_fan;
+    GtkWidget* freq_fan;
+    GtkWidget* reso_fan;
+    GtkWidget* pitch_fan;
+};
 
-    if (!type)
-    {
-	static const GTypeInfo info =
-	    {
-		sizeof (VelocityTabClass),
-		NULL,
-		NULL,
-		(GClassInitFunc) velocity_tab_class_init,
-		NULL,
-		NULL,
-		sizeof (VelocityTab),
-		0,
-		(GInstanceInitFunc) velocity_tab_init,
-        NULL
-	    };
 
-	type = g_type_register_static(GTK_TYPE_VBOX, "VelocityTab", &info, 0);
-    }
-
-    return type;
-}
+G_DEFINE_TYPE(VelocityTab, velocity_tab, GTK_TYPE_VBOX);
 
 
 static void velocity_tab_class_init(VelocityTabClass* klass)
 {
-    parent_class = g_type_class_peek_parent(klass);
+    GtkObjectClass *object_class = GTK_OBJECT_CLASS(klass);
+    velocity_tab_parent_class = g_type_class_peek_parent(klass);
+    g_type_class_add_private(object_class, sizeof(VelocityTabPrivate));
 }
 
 
-static void vol_cb(PhatFanSlider* fan, VelocityTab* self)
+static void vol_cb(PhatFanSlider* fan, VelocityTabPrivate* p)
 {
-    float val;
-
-    val = phat_fan_slider_get_value(fan);
-    patch_set_vel_amount(self->patch, PATCH_PARAM_AMPLITUDE, val);
+    float val = phat_fan_slider_get_value(fan);
+    patch_set_vel_amount(p->patch, PATCH_PARAM_AMPLITUDE, val);
 }
 
 
-static void pan_cb(PhatFanSlider* fan, VelocityTab* self)
+static void pan_cb(PhatFanSlider* fan, VelocityTabPrivate* p)
 {
-    float val;
-
-    val = phat_fan_slider_get_value(fan);
-    patch_set_vel_amount(self->patch, PATCH_PARAM_PANNING, val);
+    float val = phat_fan_slider_get_value(fan);
+    patch_set_vel_amount(p->patch, PATCH_PARAM_PANNING, val);
 }
 
 
-static void freq_cb(PhatFanSlider* fan, VelocityTab* self)
+static void freq_cb(PhatFanSlider* fan, VelocityTabPrivate* p)
 {
-    float val;
-
-    val = phat_fan_slider_get_value(fan);
-    patch_set_vel_amount(self->patch, PATCH_PARAM_CUTOFF, val);
+    float val = phat_fan_slider_get_value(fan);
+    patch_set_vel_amount(p->patch, PATCH_PARAM_CUTOFF, val);
 }
 
 
-static void reso_cb(PhatFanSlider* fan, VelocityTab* self)
+static void reso_cb(PhatFanSlider* fan, VelocityTabPrivate* p)
 {
-    float val;
-
-    val = phat_fan_slider_get_value(fan);
-    patch_set_vel_amount(self->patch, PATCH_PARAM_RESONANCE, val);
+    float val = phat_fan_slider_get_value(fan);
+    patch_set_vel_amount(p->patch, PATCH_PARAM_RESONANCE, val);
 }
 
 
-static void pitch_cb(PhatFanSlider* fan, VelocityTab* self)
+static void pitch_cb(PhatFanSlider* fan, VelocityTabPrivate* p)
 {
-    float val;
-
-    val = phat_fan_slider_get_value(fan);
-    patch_set_vel_amount(self->patch, PATCH_PARAM_PITCH, val);
+    float val = phat_fan_slider_get_value(fan);
+    patch_set_vel_amount(p->patch, PATCH_PARAM_PITCH, val);
 }
 
 
-static void connect(VelocityTab* self)
+static void connect(VelocityTabPrivate* p)
 {
-    g_signal_connect(G_OBJECT(self->vol_fan), "value-changed",
-		     G_CALLBACK(vol_cb), (gpointer) self);
-    g_signal_connect(G_OBJECT(self->pan_fan), "value-changed",
-		     G_CALLBACK(pan_cb), (gpointer) self);
-    g_signal_connect(G_OBJECT(self->freq_fan), "value-changed",
-		     G_CALLBACK(freq_cb), (gpointer) self);
-    g_signal_connect(G_OBJECT(self->reso_fan), "value-changed",
-		     G_CALLBACK(reso_cb), (gpointer) self);
-    g_signal_connect(G_OBJECT(self->pitch_fan), "value-changed",
-		     G_CALLBACK(pitch_cb), (gpointer) self);
+    g_signal_connect(G_OBJECT(p->vol_fan), "value-changed",
+                        G_CALLBACK(vol_cb), (gpointer)p);
+    g_signal_connect(G_OBJECT(p->pan_fan), "value-changed",
+                        G_CALLBACK(pan_cb), (gpointer)p);
+    g_signal_connect(G_OBJECT(p->freq_fan), "value-changed",
+                        G_CALLBACK(freq_cb), (gpointer)p);
+    g_signal_connect(G_OBJECT(p->reso_fan), "value-changed",
+                        G_CALLBACK(reso_cb), (gpointer)p);
+    g_signal_connect(G_OBJECT(p->pitch_fan), "value-changed",
+                        G_CALLBACK(pitch_cb), (gpointer)p);
 }
 
 
-static void block(VelocityTab* self)
+static void block(VelocityTabPrivate* p)
 {
-    g_signal_handlers_block_by_func(self->vol_fan, vol_cb, self);
-    g_signal_handlers_block_by_func(self->pan_fan, pan_cb, self);
-    g_signal_handlers_block_by_func(self->freq_fan, freq_cb, self);
-    g_signal_handlers_block_by_func(self->reso_fan, reso_cb, self);
-    g_signal_handlers_block_by_func(self->pitch_fan, pitch_cb, self);
+    g_signal_handlers_block_by_func(p->vol_fan, vol_cb, p);
+    g_signal_handlers_block_by_func(p->pan_fan, pan_cb, p);
+    g_signal_handlers_block_by_func(p->freq_fan, freq_cb, p);
+    g_signal_handlers_block_by_func(p->reso_fan, reso_cb, p);
+    g_signal_handlers_block_by_func(p->pitch_fan, pitch_cb, p);
 }
 
 
-static void unblock(VelocityTab* self)
+static void unblock(VelocityTabPrivate* p)
 {
-    g_signal_handlers_unblock_by_func(self->vol_fan, vol_cb, self);
-    g_signal_handlers_unblock_by_func(self->pan_fan, pan_cb, self);
-    g_signal_handlers_unblock_by_func(self->freq_fan, freq_cb, self);
-    g_signal_handlers_unblock_by_func(self->reso_fan, reso_cb, self);
-    g_signal_handlers_unblock_by_func(self->pitch_fan, pitch_cb, self);
+    g_signal_handlers_unblock_by_func(p->vol_fan, vol_cb, p);
+    g_signal_handlers_unblock_by_func(p->pan_fan, pan_cb, p);
+    g_signal_handlers_unblock_by_func(p->freq_fan, freq_cb, p);
+    g_signal_handlers_unblock_by_func(p->reso_fan, reso_cb, p);
+    g_signal_handlers_unblock_by_func(p->pitch_fan, pitch_cb, p);
 }
 
 
 static void velocity_tab_init(VelocityTab* self)
 {
+    VelocityTabPrivate* p = VELOCITY_TAB_GET_PRIVATE(self);
     GtkBox* box = GTK_BOX(self);
     GtkWidget* title;
     GtkWidget* table;
     GtkTable* t;
     GtkWidget* pad;
     GtkWidget* label;
-    
-    self->patch = -1;
+
     gtk_container_set_border_width(GTK_CONTAINER(self), GUI_BORDERSPACE);
+
+    p->patch = -1;
 
     /* table */
     table = gtk_table_new(7, 4, FALSE);
@@ -164,50 +145,50 @@ static void velocity_tab_init(VelocityTab* self)
 
     /* vol fan */
     label = gtk_label_new("Amplitude:");
-    self->vol_fan = phat_hfan_slider_new_with_range(1.0, 0.0, 1.0, 0.01);
+    p->vol_fan = phat_hfan_slider_new_with_range(1.0, 0.0, 1.0, 0.01);
     gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
     gtk_table_attach(t, label, 1, 2, 2, 3, GTK_FILL, 0, 0, 0);
-    gtk_table_attach_defaults(t, self->vol_fan, 3, 4, 2, 3);
+    gtk_table_attach_defaults(t, p->vol_fan, 3, 4, 2, 3);
     gtk_widget_show(label);
-    gtk_widget_show(self->vol_fan);
+    gtk_widget_show(p->vol_fan);
 
     /* pan fan */
     label = gtk_label_new("Panning:"); 
-    self->pan_fan = phat_hfan_slider_new_with_range(0.0, 0.0, 1.0, 0.01);
+    p->pan_fan = phat_hfan_slider_new_with_range(0.0, 0.0, 1.0, 0.01);
     gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
     gtk_table_attach(t, label, 1, 2, 3, 4, GTK_FILL, 0, 0, 0);
-    gtk_table_attach_defaults(t, self->pan_fan, 3, 4, 3, 4);
+    gtk_table_attach_defaults(t, p->pan_fan, 3, 4, 3, 4);
     gtk_widget_show(label);
-    gtk_widget_show(self->pan_fan);
+    gtk_widget_show(p->pan_fan);
 
     /* freq fan */
     label = gtk_label_new("Cutoff:");
-    self->freq_fan = phat_hfan_slider_new_with_range(0.0, 0.0, 1.0, 0.01);
+    p->freq_fan = phat_hfan_slider_new_with_range(0.0, 0.0, 1.0, 0.01);
     gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
     gtk_table_attach(t, label, 1, 2, 4, 5, GTK_FILL, 0, 0, 0);
-    gtk_table_attach_defaults(t, self->freq_fan, 3, 4, 4, 5);
+    gtk_table_attach_defaults(t, p->freq_fan, 3, 4, 4, 5);
     gtk_widget_show(label);
-    gtk_widget_show(self->freq_fan);
+    gtk_widget_show(p->freq_fan);
 
     /* reso fan */
     label = gtk_label_new("Resonance:");
-    self->reso_fan = phat_hfan_slider_new_with_range(0.0, 0.0, 1.0, 0.01);
+    p->reso_fan = phat_hfan_slider_new_with_range(0.0, 0.0, 1.0, 0.01);
     gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
     gtk_table_attach(t, label, 1, 2, 5, 6, GTK_FILL, 0, 0, 0);
-    gtk_table_attach_defaults(t, self->reso_fan, 3, 4, 5, 6);
+    gtk_table_attach_defaults(t, p->reso_fan, 3, 4, 5, 6);
     gtk_widget_show(label);
-    gtk_widget_show(self->reso_fan);
+    gtk_widget_show(p->reso_fan);
 
     /* pitch fan */
     label = gtk_label_new("Pitch:");
-    self->pitch_fan = phat_hfan_slider_new_with_range(0.0, 0.0, 1.0, 0.01);
+    p->pitch_fan = phat_hfan_slider_new_with_range(0.0, 0.0, 1.0, 0.01);
     gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
     gtk_table_attach(t, label, 1, 2, 6, 7, GTK_FILL, 0, 0, 0);
-    gtk_table_attach_defaults(t, self->pitch_fan, 3, 4, 6, 7);
+    gtk_table_attach_defaults(t, p->pitch_fan, 3, 4, 6, 7);
     gtk_widget_show(label);
-    gtk_widget_show(self->pitch_fan);
+    gtk_widget_show(p->pitch_fan);
 
-    connect(self);
+    connect(p);
 }
 
 
@@ -219,26 +200,27 @@ GtkWidget* velocity_tab_new(void)
 
 void velocity_tab_set_patch(VelocityTab* self, int patch)
 {
+    VelocityTabPrivate* p = VELOCITY_TAB_GET_PRIVATE(self);
     float vol, pan, freq, reso, pitch;
 
-    self->patch = patch;
+    p->patch = patch;
 
     if (patch < 0)
 	return;
 
-    patch_get_vel_amount(patch, PATCH_PARAM_AMPLITUDE, &vol);
-    patch_get_vel_amount(patch, PATCH_PARAM_PANNING, &pan);
-    patch_get_vel_amount(patch, PATCH_PARAM_CUTOFF, &freq);
-    patch_get_vel_amount(patch, PATCH_PARAM_RESONANCE, &reso);
-    patch_get_vel_amount(patch, PATCH_PARAM_PITCH, &pitch);
+    patch_get_vel_amount(patch, PATCH_PARAM_AMPLITUDE,  &vol);
+    patch_get_vel_amount(patch, PATCH_PARAM_PANNING,    &pan);
+    patch_get_vel_amount(patch, PATCH_PARAM_CUTOFF,     &freq);
+    patch_get_vel_amount(patch, PATCH_PARAM_RESONANCE,  &reso);
+    patch_get_vel_amount(patch, PATCH_PARAM_PITCH,      &pitch);
 
-    block(self);
+    block(p);
     
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->vol_fan), vol);
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->pan_fan), pan);
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->freq_fan), freq);
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->reso_fan), reso);
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->pitch_fan), pitch);
+    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->vol_fan), vol);
+    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->pan_fan), pan);
+    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->freq_fan), freq);
+    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->reso_fan), reso);
+    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->pitch_fan), pitch);
 
-    unblock(self);
+    unblock(p);
 }

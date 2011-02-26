@@ -89,7 +89,7 @@ struct _WaveformPrivate
 
 G_DEFINE_TYPE(Waveform, waveform, GTK_TYPE_DRAWING_AREA)
 
-static void waveform_destroy (GtkObject * object);
+static void waveform_dispose(GObject * object);
 
 static void waveform_size_request (GtkWidget * widget,
                                     GtkRequisition * requisition);
@@ -108,12 +108,12 @@ static void waveform_draw(Waveform * wf);
 
 static void waveform_class_init (WaveformClass * klass)
 {
-    GtkObjectClass *object_class = GTK_OBJECT_CLASS(klass);
+    GObjectClass *object_class = G_OBJECT_CLASS(klass);
     GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(klass);
 
-    object_class->destroy =         waveform_destroy;
     waveform_parent_class = g_type_class_peek_parent(klass);
 
+    object_class->dispose =             waveform_dispose;
     widget_class->expose_event =        waveform_expose;
     widget_class->configure_event =     waveform_configure;
     widget_class->size_request =        waveform_size_request;
@@ -148,7 +148,7 @@ static void waveform_init (Waveform * wf)
 }
 
 
-static void waveform_destroy (GtkObject * object)
+static void waveform_dispose(GObject * object)
 {
     WaveformPrivate* p;
 
@@ -163,12 +163,8 @@ static void waveform_destroy (GtkObject * object)
         p->pixmap = NULL;
     }
 
-    GtkObjectClass* klass = GTK_OBJECT_CLASS(waveform_parent_class);
-
-    if (klass->destroy)
-        klass->destroy(object);
+    G_OBJECT_CLASS(waveform_parent_class)->dispose(object);
 }
-
 
 
 static void

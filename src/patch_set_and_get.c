@@ -1001,7 +1001,7 @@ int patch_set_play_mode (int id, PatchPlayMode mode)
 int patch_set_portamento (int id, gboolean val)
 {
     if (!isok (id))
-	return PATCH_ID_INVALID;
+        return PATCH_ID_INVALID;
 
     patches[id].porta = val;
     return 0;

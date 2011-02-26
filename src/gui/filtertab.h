@@ -5,37 +5,43 @@
 
 G_BEGIN_DECLS
 
-#define FILTER_TAB_TYPE (filter_tab_get_type())
-#define FILTER_TAB(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), FILTER_TAB_TYPE, FilterTab))
-#define FILTER_TAB_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST ((klass), FILTER_TAB_TYPE, FilterTabClass))
-#define IS_FILTER_TAB(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), FILTER_TAB_TYPE))
-#define IS_FILTER_TAB_CLASS(klass) (G_TYPE_CHECK_INSTANCE_TYPE ((klass), FILTER_TAB_TYPE))
+#define FILTER_TAB_TYPE             (filter_tab_get_type())
+#define FILTER_TAB(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), \
+                                    FILTER_TAB_TYPE, FilterTab))
+
+#define IS_FILTER_TAB(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), \
+                                    FILTER_TAB_TYPE))
+
+#define FILTER_TAB_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass),  \
+                                    FILTER_TAB_TYPE, FilterTabClass))
+
+#define IS_FILTER_TAB_CLASS(klass)  (G_TYPE_CHECK_INSTANCE_TYPE ((klass),\
+                                    FILTER_TAB_TYPE))
+
 
 typedef struct _FilterTabClass FilterTabClass;
 typedef struct _FilterTab FilterTab;
 
+
 struct _FilterTab
 {
-    GtkVBox parent;
-
-    /*< private >*/
-    int patch;
-    guint refresh;
-    GtkWidget* freq_fan;
-    GtkWidget* reso_fan;
+    GtkVBox parent_instance;
 };
+
 
 struct _FilterTabClass
 {
     GtkVBoxClass parent_class;
-
-    /*< private >*/
 };
 
-GType filter_tab_get_type(void);
-GtkWidget* filter_tab_new(void);
-void filter_tab_set_patch(FilterTab* self, int patch);
+
+GType       filter_tab_get_type(void);
+GtkWidget*  filter_tab_new(void);
+
+void        filter_tab_set_patch(FilterTab* self, int patch);
+
 
 G_END_DECLS
+
 
 #endif /* __FILTER_TAB__ */

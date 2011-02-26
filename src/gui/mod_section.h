@@ -9,56 +9,33 @@
 
 G_BEGIN_DECLS
 
-#define MOD_SECTION_TYPE \
-    (mod_section_get_type())
+#define MOD_SECTION_TYPE        (mod_section_get_type())
+#define MOD_SECTION(obj)        (G_TYPE_CHECK_INSTANCE_CAST ((obj), \
+                                MOD_SECTION_TYPE, ModSection))
 
-#define MOD_SECTION(obj) \
-    (G_TYPE_CHECK_INSTANCE_CAST ((obj), MOD_SECTION_TYPE, ModSection))
+#define IS_MOD_SECTION(obj)     (G_TYPE_CHECK_INSTANCE_TYPE ((obj), \
+                                MOD_SECTION_TYPE))
 
-#define MOD_SECTION_CLASS(klass) \
-    (G_TYPE_CHECK_CLASS_CAST ((klass), MOD_SECTION_TYPE, ModSectionClass))
-
-#define IS_MOD_SECTION(obj) \
-    (G_TYPE_CHECK_INSTANCE_TYPE ((obj), MOD_SECTION_TYPE))
+#define MOD_SECTION_CLASS(klass)(G_TYPE_CHECK_CLASS_CAST ((klass),  \
+                                MOD_SECTION_TYPE, ModSectionClass))
 
 #define IS_MOD_SECTION_CLASS(klass) \
     (G_TYPE_CHECK_INSTANCE_TYPE ((klass), MOD_SECTION_TYPE))
 
 
 typedef struct _ModSectionClass ModSectionClass;
-typedef struct _ModSection ModSection;
+typedef struct _ModSection      ModSection;
 
 
 struct _ModSection
 {
-    GtkVBox         parent;
-
-    /*< private >*/
-    int             patch_id;
-    int             refresh;
-    gboolean        mod_only;
-
-    PatchParamType  param;
-
-    GtkWidget*      param1;
-    GtkWidget*      param2;
-
-    GtkWidget*      env_combo;
-    GtkWidget*      vel_sens;
-
-    GtkWidget*      mod1_combo;
-    GtkWidget*      mod1_amount;
-
-    GtkWidget*      mod2_combo;
-    GtkWidget*      mod2_amount;
+    GtkVBox parent;
 };
 
 
 struct _ModSectionClass
 {
     GtkVBoxClass parent_class;
-
-    /*< private >*/
 };
 
 
