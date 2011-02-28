@@ -32,7 +32,7 @@ struct _LfoTab
 
 struct _LfoTabClass
 {
-    GtkVBoxClass parent_class;
+    GtkHBoxClass parent_class;
 };
 
 

@@ -11,7 +11,9 @@
 /* signals */
 enum
 {
-    CHANGED,
+    PLAY_CHANGED,
+    LOOP_CHANGED,
+    MARK_CHANGED,
     LAST_SIGNAL,
 };
 
@@ -67,6 +69,16 @@ enum
 };
 
 
+static const char* mark_names[] = {
+    "Sample start",
+    "Play start",
+    "Loop start",
+    "Loop end",
+    "Play end",
+    "Sample end"
+};
+
+
 typedef struct _WaveformPrivate WaveformPrivate;
 
 #define WAVEFORM_GET_PRIVATE(obj) \
@@ -82,8 +94,15 @@ struct _WaveformPrivate
     float      range_start;
     float      range_stop;
     int patch;
+
+    int mark;
 };
 
+
+const char** waveform_get_mark_names(void)
+{
+    return mark_names;
+}
 
 /* forward declarations */
 
@@ -119,13 +138,32 @@ static void waveform_class_init (WaveformClass * klass)
     widget_class->size_request =        waveform_size_request;
     widget_class->button_press_event =  waveform_button_press;
 
-    signals[CHANGED] =
-        g_signal_new ("changed",
-                        G_TYPE_FROM_CLASS (klass),
+    signals[PLAY_CHANGED] =
+        g_signal_new   ("play-changed",
+                        G_TYPE_FROM_CLASS(klass),
                         G_SIGNAL_RUN_FIRST | G_SIGNAL_ACTION,
-                        G_STRUCT_OFFSET (WaveformClass, changed),
+                        G_STRUCT_OFFSET(WaveformClass, play_changed),
                         NULL, NULL,
-                        g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
+                        g_cclosure_marshal_VOID__VOID, G_TYPE_NONE,
+                        0, NULL);
+
+    signals[LOOP_CHANGED] =
+        g_signal_new   ("loop-changed",
+                        G_TYPE_FROM_CLASS(klass),
+                        G_SIGNAL_RUN_FIRST | G_SIGNAL_ACTION,
+                        G_STRUCT_OFFSET(WaveformClass, loop_changed),
+                        NULL, NULL,
+                        g_cclosure_marshal_VOID__VOID, G_TYPE_NONE,
+                        0, NULL);
+
+    signals[MARK_CHANGED] =
+        g_signal_new   ("mark-changed",
+                        G_TYPE_FROM_CLASS(klass),
+                        G_SIGNAL_RUN_FIRST | G_SIGNAL_ACTION,
+                        G_STRUCT_OFFSET(WaveformClass, mark_changed),
+                        NULL, NULL,
+                        g_cclosure_marshal_VOID__VOID, G_TYPE_NONE,
+                        0, NULL);
 
     g_type_class_add_private(object_class, sizeof(WaveformPrivate));
 }
@@ -145,6 +183,7 @@ static void waveform_init (Waveform * wf)
     p->patch = -1;
     p->range_start = 0.0;
     p->range_stop = 1.0;
+    p->mark = WF_MARK_PLAY_START;
 }
 
 
@@ -240,6 +279,10 @@ waveform_button_press (GtkWidget * widget, GdkEventButton * event)
     float fpp;			// frames per pixel 
     int sel, control, chaos;
 
+    gboolean loop_changed = FALSE;
+    gboolean play_changed = FALSE;
+    gboolean mark_changed = FALSE;
+
     g_return_val_if_fail (widget != NULL, FALSE);
     g_return_val_if_fail (IS_WAVEFORM (widget), FALSE);
     g_return_val_if_fail (event != NULL, FALSE);
@@ -271,17 +314,25 @@ waveform_button_press (GtkWidget * widget, GdkEventButton * event)
          * anything else: stop point */
 
         if (event->state & GDK_CONTROL_MASK)
-        {   /* we set play points for control clicks */
+        {   /* we set play points for CTRL+button-click */
             if (event->button == 1)
             {
                 control = patch_get_sample_stop (p->patch);
                 if (sel < control)
                 {
                     patch_set_sample_start (p->patch, sel);
+                    play_changed = TRUE;
+                    if (p->mark == WF_MARK_PLAY_START)
+                        mark_changed = TRUE;
                     /* adjust starting loop point if we need to */
                     chaos = patch_get_loop_start (p->patch);
                     if (sel > chaos)
+                    {
                         patch_set_loop_start (p->patch, sel);
+                        loop_changed = TRUE;
+                        if (p->mark == WF_MARK_LOOP_START)
+                            mark_changed = TRUE;
+                    }
                 }
             }
             else
@@ -290,10 +341,18 @@ waveform_button_press (GtkWidget * widget, GdkEventButton * event)
                 if (sel > control)
                 {
                     patch_set_sample_stop (p->patch, sel);
+                    play_changed = TRUE;
+                    if (p->mark == WF_MARK_PLAY_STOP)
+                        mark_changed = TRUE;
                     /* adjust stopping loop point if we need to */
                     chaos = patch_get_loop_stop (p->patch);
                     if (sel < chaos)
+                    {
                         patch_set_loop_stop (p->patch, sel);
+                        loop_changed = TRUE;
+                        if (p->mark == WF_MARK_LOOP_STOP)
+                            mark_changed = TRUE;
+                    }
                 }
             }
         }
@@ -304,19 +363,37 @@ waveform_button_press (GtkWidget * widget, GdkEventButton * event)
                 control = patch_get_sample_start (p->patch);
                 chaos = patch_get_loop_stop (p->patch);
                 if (sel > control && sel < chaos)
+                {
                     patch_set_loop_start (p->patch, sel);
+                    loop_changed = TRUE;
+                    if (p->mark == WF_MARK_LOOP_START)
+                        mark_changed = TRUE;
+                }
             }
             else
             {
                 control = patch_get_sample_stop (p->patch);
                 chaos = patch_get_loop_start (p->patch);
                 if (sel < control && sel > chaos)
+                {
                     patch_set_loop_stop (p->patch, sel);
+                    loop_changed = TRUE;
+                    if (p->mark == WF_MARK_LOOP_STOP)
+                        mark_changed = TRUE;
+                }
             }
         }
     }
 
-    g_signal_emit_by_name(G_OBJECT(wf), "changed");
+    if (play_changed)
+        g_signal_emit_by_name(G_OBJECT(wf), "play-changed");
+
+    if (loop_changed)
+        g_signal_emit_by_name(G_OBJECT(wf), "loop-changed");
+
+    if (mark_changed)
+        g_signal_emit_by_name(G_OBJECT(wf), "mark-changed");
+
     waveform_draw(WAVEFORM(wf));
     gtk_widget_queue_draw (widget);
 
@@ -349,6 +426,7 @@ static void draw_back(WaveformPrivate* p, int w, int h, cairo_t* cr)
     {
         start = frames * p->range_start;
         stop = frames * p->range_stop;
+
         play_start = patch_get_sample_start(p->patch);
         play_stop = patch_get_sample_stop(p->patch);
         loop_start = patch_get_loop_start (p->patch);
@@ -938,4 +1016,148 @@ void waveform_get_range (Waveform * wf, float *start, float *stop)
     WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
     *start = p->range_start;
     *stop = p->range_stop;
+}
+
+static gboolean
+valid_mark_and_frame_to_set(WaveformPrivate* p, int mark_id, int frame)
+{
+    int pstart = patch_get_sample_start(p->patch);
+    int pstop = patch_get_sample_stop(p->patch);
+    int lstart = patch_get_loop_start(p->patch);
+    int lstop = patch_get_loop_stop(p->patch);
+
+    if (mark_id < WF_MARK_PLAY_START
+     || mark_id > WF_MARK_PLAY_STOP)
+    {   /* cannot change sample start or stop marks */
+        return FALSE;
+    }
+
+    switch(mark_id)
+    {
+    case WF_MARK_PLAY_START:
+        if (frame >= pstop)
+            return FALSE;
+        if (frame < 0 || frame > lstart)
+            return FALSE;
+        break;
+    case WF_MARK_LOOP_START:
+        if (frame < pstart || frame >= lstop)
+            return FALSE;
+        break;
+    case WF_MARK_LOOP_STOP:
+        if (frame <= lstart || frame > pstop)
+            return FALSE;
+        break;
+    case WF_MARK_PLAY_STOP:
+        if (frame <= pstart || frame <= lstop)
+            return FALSE;
+        break;
+    default: /* never valid whatever the case */
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+void waveform_goto_mark_prev (Waveform* wf)
+{
+    WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
+}
+
+void waveform_goto_mark_next (Waveform* wf)
+{
+    WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
+}
+
+void waveform_set_mark(Waveform* wf, int mark_id)
+{
+    WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
+
+    if (mark_id < WF_MARK_START || mark_id > WF_MARK_STOP)
+        return;
+
+    p->mark = mark_id;
+}
+
+int waveform_get_mark(Waveform* wf)
+{
+    WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
+    return p->mark;
+}
+
+int waveform_get_mark_spin_range(Waveform* wf, int* min, int* max)
+{
+    WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
+
+    switch(p->mark)
+    {
+    case WF_MARK_START:
+        break;
+    case WF_MARK_STOP:
+        *min = *max = patch_get_frames(p->patch) - 1;
+        return -1;
+    case WF_MARK_PLAY_START:
+        *min = 0;
+        *max = patch_get_loop_start(p->patch);
+        return patch_get_sample_start(p->patch);
+    case WF_MARK_PLAY_STOP:
+        *min = patch_get_loop_stop(p->patch);
+        *max = patch_get_frames(p->patch) - 1;
+        return patch_get_sample_stop(p->patch);
+    case WF_MARK_LOOP_START:
+        *min = patch_get_sample_start(p->patch);
+        *max = patch_get_loop_stop(p->patch) - 1;
+        return patch_get_loop_start(p->patch);
+    case WF_MARK_LOOP_STOP:
+        *min = patch_get_loop_start(p->patch) + 1;
+        *max = patch_get_sample_stop(p->patch);
+        return patch_get_loop_stop(p->patch);
+    default:
+        break;
+    }
+
+    *min = *max = 0;
+    return -1;
+}
+
+void waveform_set_mark_frame(Waveform* wf, int frame)
+{
+    WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
+
+    if (!valid_mark_and_frame_to_set(p, p->mark, frame))
+        return;
+
+    switch(p->mark)
+    {
+    case WF_MARK_PLAY_START:
+        patch_set_sample_start(p->patch, frame);
+        break;
+    case WF_MARK_LOOP_START:
+        patch_set_loop_start(p->patch, frame);
+        break;
+    case WF_MARK_LOOP_STOP:
+        patch_set_loop_stop(p->patch, frame);
+        break;
+    case WF_MARK_PLAY_STOP:
+        patch_set_sample_stop(p->patch, frame);
+        break;
+    default:
+        break;
+    }
+}
+
+int waveform_get_mark_frame(Waveform* wf)
+{
+    WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
+    switch(p->mark)
+    {
+    case WF_MARK_START:         return 0;
+    case WF_MARK_STOP:          return patch_get_frames(p->patch) - 1;
+    case WF_MARK_PLAY_START:    return patch_get_sample_start(p->patch);
+    case WF_MARK_PLAY_STOP:     return patch_get_sample_stop(p->patch);
+    case WF_MARK_LOOP_START:    return patch_get_loop_start(p->patch);
+    case WF_MARK_LOOP_STOP:     return patch_get_loop_stop(p->patch);
+    default:
+        return -1;
+    }
 }

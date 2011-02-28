@@ -40,6 +40,12 @@ int sample_load_file (Sample* sample, const char* name, int rate)
 	  return -1;
      }
 
+    if ((sf_count_t)(int)sfinfo.frames != sfinfo.frames)
+    {
+        errmsg("sample is too long\n");
+        return -1;
+    }
+
      if (sfinfo.channels > 2)
      {
 	  errmsg ("Data can't have more than 2 channels\n");

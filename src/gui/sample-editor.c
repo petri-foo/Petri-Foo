@@ -8,6 +8,8 @@
 #include "mixer.h"
 #include "sample-editor.h"
 
+#include "basic_combos.h"
+
 static GtkWidget *window;
 static GtkWidget *waveform;
 static GtkWidget *hscroll;
@@ -21,20 +23,30 @@ enum
      ZOOM_MAX = 100
 };
 
+
+
+
 static int ignore_callback = 0;
 static int zoom = ZOOM_MIN;
 static float range = 1.0;
+
 static int old_play_start, old_play_stop;
 static int old_loop_start, old_loop_stop;
 static int patch;
+
+static GtkWidget*   mark_combo;
+static GtkWidget*   mark_spin;
+
+/*
 static int old_xfade, old_fade_in, old_fade_out;
-
-static GtkWidget *spin_loop_start, *spin_loop_end;
-static GtkWidget *spin_play_start, *spin_play_end;
-
 static GtkWidget* spin_fade_in;
 static GtkWidget* spin_fade_out;
 static GtkWidget* spin_xfade;
+*/
+
+
+
+static void cb_mark_combo_changed(GtkWidget* combo, gpointer data);
 
 static void cb_close (GtkWidget * widget, gpointer data)
 {
@@ -60,14 +72,12 @@ static void cb_reset (GtkWidget * widget, gpointer data)
 {
     (void)widget;(void)data;
      debug ("Restoring initial values\n");
-     patch_set_sample_start (patch, old_play_start);
-     patch_set_sample_stop (patch, old_play_stop);
-     patch_set_loop_start (patch, old_loop_start);
-     patch_set_loop_stop (patch, old_loop_stop);
-     sample_editor_update_loop();
-     sample_editor_update_play();
-
-    gtk_widget_queue_draw(waveform);
+     patch_set_sample_start(patch, old_play_start);
+     patch_set_sample_stop(patch, old_play_stop);
+     patch_set_loop_start(patch, old_loop_start);
+     patch_set_loop_stop(patch, old_loop_stop);
+    cb_mark_combo_changed(mark_combo, 0);
+     gtk_widget_queue_draw(waveform);
 }
 
 static void cb_clear (GtkWidget * widget, gpointer data)
@@ -83,16 +93,15 @@ static void cb_clear (GtkWidget * widget, gpointer data)
         play_stop = patch_get_sample_stop (patch);
         patch_set_loop_start (patch, play_start);
         patch_set_loop_stop (patch, play_stop);
-        sample_editor_update_loop();
      }
      else if (strcmp (op, "play") == 0)
      {
         frames = patch_get_frames (patch);
         patch_set_sample_start (patch, 0);
         patch_set_sample_stop (patch, frames - 1);
-        sample_editor_update_play();
      }
 
+    cb_mark_combo_changed(mark_combo, 0);
     gtk_widget_queue_draw(waveform);
 }
 
@@ -105,105 +114,42 @@ static void cb_scroll (GtkWidget * scroll, gpointer data)
      waveform_set_range (WAVEFORM (waveform), val, val + range);
 }
 
-static void cb_loop_changed (GtkWidget * spin, gpointer data)
+
+static void cb_mark_spin_changed(GtkWidget * spin, gpointer data)
 {
-    (void)data;
-    int start = patch_get_loop_start (patch);
-    int end = patch_get_loop_stop (patch);
-    int val;
-
-    if (ignore_callback)
-        return;
-
-    ignore_callback = 1;
-
-    if (spin == spin_loop_start)
-    {
-        val = gtk_spin_button_get_value_as_int(
-                                GTK_SPIN_BUTTON (spin_loop_start));
-        if (val != start)
-        {
-            patch_set_loop_start(patch, val);
-            start = val;
-        }
-    }
-
-    if (spin == spin_loop_end)
-    {
-        val = gtk_spin_button_get_value_as_int(
-                                GTK_SPIN_BUTTON(spin_loop_end));
-        if (val != end)
-        {
-            patch_set_loop_stop (patch, val);
-            end = val;
-        }
-    }
-
-    ignore_callback = 0;
-
-    gtk_widget_queue_draw(waveform);
-}
-
-static void cb_play_changed (GtkWidget * spin, gpointer data)
-{
-    (void)data;
-
-    if (ignore_callback)
-        return;
-
-    int start = patch_get_sample_start(patch);
-    int end = patch_get_sample_stop(patch);
-    int nframes = patch_get_frames (patch);
-    int val;
-
-    ignore_callback = 1;
-
-    gboolean changed = FALSE;
-
-    if (spin == spin_play_start)
-    {
-        val = gtk_spin_button_get_value_as_int(
-                                GTK_SPIN_BUTTON(spin_play_start));
-        if (val != start)
-        {
-            patch_set_sample_start (patch, val);
-            start = val;
-            gtk_spin_button_set_range(
-                                GTK_SPIN_BUTTON (spin_play_end),
-                                            start + 1, nframes - 1);
-            changed = TRUE;
-        }
-    }
-
-    if (spin == spin_play_end)
-    {
-        val = gtk_spin_button_get_value_as_int(
-                            GTK_SPIN_BUTTON(spin_play_end));
-        if (val != end)
-        {
-            patch_set_sample_stop (patch, val);
-            end = val;
-            gtk_spin_button_set_range(
-                        GTK_SPIN_BUTTON(spin_play_start), 0, end - 1);
-
-            changed = TRUE;
-        }
-    }
-
-    if (changed)
-    {
-        gtk_spin_button_set_range(
-                        GTK_SPIN_BUTTON(spin_loop_start), start, end);
-        gtk_spin_button_set_range(
-                        GTK_SPIN_BUTTON(spin_loop_end), start, end);
-    }
-
-    ignore_callback = 0;
-
+    waveform_set_mark_frame(WAVEFORM(waveform),
+            gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(mark_spin)));
     gtk_widget_queue_draw(waveform);
 }
 
 
+static void cb_mark_combo_changed(GtkWidget* combo, gpointer data)
+{
+    int val;
+    int min;
+    int max;
+
+    waveform_set_mark(WAVEFORM(waveform),
+                    gtk_combo_box_get_active(GTK_COMBO_BOX(mark_combo)));
+
+    val = waveform_get_mark_spin_range(WAVEFORM(waveform), &min, &max);
+
+    if (val < 0)
+    {
+        val = waveform_get_mark_frame(WAVEFORM(waveform));
+        gtk_widget_set_sensitive(mark_spin, FALSE);
+    }
+    else
+        gtk_widget_set_sensitive(mark_spin, TRUE);
+
+    g_signal_handlers_block_by_func(mark_spin, cb_mark_spin_changed, 0);
+    gtk_spin_button_set_range(GTK_SPIN_BUTTON(mark_spin), min, max);
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(mark_spin), val);
+    g_signal_handlers_unblock_by_func(mark_spin, cb_mark_spin_changed, 0);
+}
+
+
+/*
 static void cb_xfade_changed (GtkWidget * spin, gpointer data)
 {
     (void)spin;(void)data;
@@ -273,14 +219,28 @@ static void cb_fade_out_changed (GtkWidget * spin, gpointer data)
 
     gtk_widget_queue_draw(waveform);
 }
+*/
 
 
-static void cb_wf_changed ()
+static void cb_wf_play_changed ()
 {
-    sample_editor_update_play();
-    sample_editor_update_loop();
-    gtk_widget_queue_draw(wf_thumb);
-//    waveform_draw(WAVEFORM(wf_thumb));
+    /* there's a good chance this effects the mark_spin selected
+       by the mark_combo, (either the value or range). but it
+       there's also a chance it might not
+     */
+    cb_mark_combo_changed(mark_combo, 0);
+}
+
+static void cb_wf_loop_changed ()
+{
+    /* ditto cb_wf_play_changed */
+    cb_mark_combo_changed(mark_combo, 0);
+}
+
+static void cb_wf_mark_changed()
+{
+    /* ditto cb_wf_play_changed */
+    cb_mark_combo_changed(mark_combo, 0);
 }
 
 static void cb_zoom (GtkAdjustment * adj, GtkWidget * spinbutton)
@@ -325,45 +285,23 @@ static void cb_zoom (GtkAdjustment * adj, GtkWidget * spinbutton)
     g_signal_emit_by_name (G_OBJECT (hscroll), "value-changed");
 }
 
+
+
 void sample_editor_show (int id)
 {
-     waveform_set_patch (WAVEFORM (waveform), id);
-    /* ugh 
-     waveform_draw(WAVEFORM(waveform));*/
-     patch = id;
+    waveform_set_patch (WAVEFORM (waveform), id);
 
-     old_play_start = patch_get_sample_start (id);
-     old_play_stop = patch_get_sample_stop (id);
+    patch = id;
 
-     old_loop_start = patch_get_loop_start (id);
-     old_loop_stop = patch_get_loop_stop (id);
+    old_play_start = patch_get_sample_start (id);
+    old_play_stop = patch_get_sample_stop (id);
 
-     sample_editor_update_play();
-     sample_editor_update_loop();
+    old_loop_start = patch_get_loop_start (id);
+    old_loop_stop = patch_get_loop_stop (id);
 
-     gtk_widget_show (window);
-}
+    gtk_combo_box_set_active(GTK_COMBO_BOX(mark_combo), WF_MARK_PLAY_START);
 
-void sample_editor_update_loop()
-{
-    ignore_callback = 1;
-    gtk_spin_button_set_range (GTK_SPIN_BUTTON (spin_loop_start), patch_get_sample_start (patch), patch_get_loop_stop (patch) - 1);
-    gtk_spin_button_set_range (GTK_SPIN_BUTTON (spin_loop_end), patch_get_loop_start (patch) + 1, patch_get_sample_stop (patch));
-
-    gtk_spin_button_set_value (GTK_SPIN_BUTTON (spin_loop_start), patch_get_loop_start (patch));
-    gtk_spin_button_set_value (GTK_SPIN_BUTTON (spin_loop_end), patch_get_loop_stop (patch));
-    ignore_callback = 0;
-}
-
-void sample_editor_update_play()
-{
-    ignore_callback = 1;
-    gtk_spin_button_set_range (GTK_SPIN_BUTTON (spin_play_start), 0, patch_get_sample_stop (patch) - 1);
-    gtk_spin_button_set_range (GTK_SPIN_BUTTON (spin_play_end), patch_get_sample_start (patch) + 1, patch_get_frames (patch) - 1);
-
-    gtk_spin_button_set_value (GTK_SPIN_BUTTON (spin_play_start), patch_get_sample_start (patch));
-    gtk_spin_button_set_value (GTK_SPIN_BUTTON (spin_play_end), patch_get_sample_stop (patch));
-    ignore_callback = 0;
+    gtk_widget_show (window);
 }
 
 
@@ -393,8 +331,8 @@ void sample_editor_init (GtkWidget * parent)
      gtk_window_set_resizable (w, TRUE);
      gtk_window_set_transient_for (w, GTK_WINDOW (parent));
      gtk_window_set_modal (w, TRUE);
-     g_signal_connect (G_OBJECT (w), "delete-event", G_CALLBACK (cb_close),
-		       NULL);
+     g_signal_connect (G_OBJECT(w), "delete-event", G_CALLBACK(cb_close),
+                                                                    NULL);
 
      /* master vbox */
      master_vbox = gtk_vbox_new (FALSE, GUI_SPACING);
@@ -408,67 +346,40 @@ void sample_editor_init (GtkWidget * parent)
      gtk_box_pack_start (GTK_BOX (master_vbox), hbox, FALSE, FALSE, 0);
      gtk_widget_show (hbox);
 
-     /* play button */
-     image = gtk_image_new_from_file (PIXMAPSDIR "play.png");
-     button = gtk_button_new ( );
-     gtk_container_add (GTK_CONTAINER (button), image);
-     gtk_box_pack_start (GTK_BOX (hbox), button, FALSE, FALSE, 0);
-     g_signal_connect_swapped (G_OBJECT (button), "clicked",
-			       G_CALLBACK (cb_play), NULL);
-     gtk_widget_show (image);
-     gtk_widget_show (button);
+    /* play button */
+    image = gtk_image_new_from_stock(GTK_STOCK_MEDIA_PLAY,
+                                     GTK_ICON_SIZE_SMALL_TOOLBAR);
+    button = gtk_button_new();
+    gtk_container_add(GTK_CONTAINER(button), image);
+    gtk_box_pack_start(GTK_BOX (hbox), button, FALSE, FALSE, 0);
+    g_signal_connect_swapped(G_OBJECT (button), "clicked",
+                                    G_CALLBACK(cb_play), NULL);
+    gtk_widget_show(image);
+    gtk_widget_show(button);
 
-     /* stop button */
-     image = gtk_image_new_from_file (PIXMAPSDIR "stop.png");
-     button = gtk_button_new ( );
-     gtk_container_add (GTK_CONTAINER (button), image);
-     gtk_box_pack_start (GTK_BOX (hbox), button, FALSE, FALSE, 0);
-     g_signal_connect_swapped (G_OBJECT (button), "clicked",
-			       G_CALLBACK (cb_stop), NULL);
-     gtk_widget_show (image);
-     gtk_widget_show (button);
+    /* stop button */
+    image = gtk_image_new_from_stock(GTK_STOCK_MEDIA_STOP,
+                                     GTK_ICON_SIZE_SMALL_TOOLBAR);
+    button = gtk_button_new ( );
+    gtk_container_add (GTK_CONTAINER (button), image);
+    gtk_box_pack_start (GTK_BOX (hbox), button, FALSE, FALSE, 0);
+    g_signal_connect_swapped (G_OBJECT (button), "clicked",
+                                    G_CALLBACK (cb_stop), NULL);
+    gtk_widget_show(image);
+    gtk_widget_show(button);
 
-     /* numeric play setting */
-     label = gtk_label_new ("Play:");
-     gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, FALSE, 0);
-     gtk_widget_show (label);
+    mark_combo = basic_combo_create(waveform_get_mark_names());
+    gtk_box_pack_start(GTK_BOX (hbox), mark_combo, FALSE, FALSE, 0);
+    gtk_widget_show(mark_combo);
+    g_signal_connect(G_OBJECT(mark_combo), "changed",
+                            G_CALLBACK(cb_mark_combo_changed), NULL);
 
-     spin_play_start = gtk_spin_button_new_with_range(0, 1, 1);
-     gtk_box_pack_start (GTK_BOX (hbox), spin_play_start, FALSE, FALSE, 0);
-     gtk_widget_show (spin_play_start);
-     g_signal_connect (G_OBJECT (spin_play_start), "value-changed",
-		       G_CALLBACK (cb_play_changed), NULL);
+    mark_spin = gtk_spin_button_new_with_range(0, 1, 1);
+    gtk_box_pack_start(GTK_BOX (hbox), mark_spin, FALSE, FALSE, 0);
+    gtk_widget_show(mark_spin);
+    g_signal_connect(G_OBJECT(mark_spin), "value-changed",
+                            G_CALLBACK(cb_mark_spin_changed), NULL);
 
-     label = gtk_label_new ("to:");
-     gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, FALSE, 0);
-     gtk_widget_show (label);
-
-     spin_play_end = gtk_spin_button_new_with_range(0, 1, 1);
-     gtk_box_pack_start (GTK_BOX (hbox), spin_play_end, FALSE, FALSE, 0);
-     gtk_widget_show (spin_play_end);
-     g_signal_connect (G_OBJECT (spin_play_end), "value-changed",
-		       G_CALLBACK (cb_play_changed), NULL);
-
-     /* numeric loop setting */
-     label = gtk_label_new ("Loop:");
-     gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, FALSE, 0);
-     gtk_widget_show (label);
-
-     spin_loop_start = gtk_spin_button_new_with_range(0, 1, 1);
-     gtk_box_pack_start (GTK_BOX (hbox), spin_loop_start, FALSE, FALSE, 0);
-     gtk_widget_show (spin_loop_start);
-     g_signal_connect (G_OBJECT (spin_loop_start), "value-changed",
-		       G_CALLBACK (cb_loop_changed), NULL);
-
-     label = gtk_label_new ("to:");
-     gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, FALSE, 0);
-     gtk_widget_show (label);
-
-     spin_loop_end = gtk_spin_button_new_with_range(0, 1, 1);
-     gtk_box_pack_start (GTK_BOX (hbox), spin_loop_end, FALSE, FALSE, 0);
-     gtk_widget_show (spin_loop_end);
-     g_signal_connect (G_OBJECT (spin_loop_end), "value-changed",
-		       G_CALLBACK (cb_loop_changed), NULL);
 
      /* loop points clear button */
      button = gtk_button_new_with_label ("Loop");
@@ -497,8 +408,12 @@ void sample_editor_init (GtkWidget * parent)
      waveform_set_interactive(  WAVEFORM(waveform), TRUE);
      gtk_box_pack_start (GTK_BOX (master_vbox), waveform, TRUE, TRUE, 0);
      gtk_widget_show (waveform);
-     g_signal_connect (G_OBJECT (waveform), "changed",
-                G_CALLBACK(cb_wf_changed), NULL);
+     g_signal_connect(G_OBJECT (waveform), "play-changed",
+                            G_CALLBACK(cb_wf_play_changed), NULL);
+     g_signal_connect(G_OBJECT (waveform), "loop-changed",
+                            G_CALLBACK(cb_wf_loop_changed), NULL);
+     g_signal_connect(G_OBJECT (waveform), "mark-changed",
+                            G_CALLBACK(cb_wf_mark_changed), NULL);
 
      /* waveform scrollbar */
      hscrolladj =

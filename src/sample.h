@@ -3,22 +3,29 @@
 
 #include <glib.h>
 
-typedef struct _Sample
+
+typedef struct _Sample Sample;
+
+
+struct _Sample
 {
      /* Public */
-     float* sp;			/* samples pointer */
-     int    frames;		/* number of frames (not samples)
-				 * pointed to by sp */
+     float* sp;         /* samples pointer */
+     int frames;        /* number of frames (not samples) 
+                         * sorry, samples whose length exceeds int on
+                         * the system they're to run on are disallowed.
+                         */
 
      /* Private */
-     GString* file;		/* name of current file */
-}
-Sample;
+     GString* file;     /* name of current file */
+};
+
 
 Sample*     sample_new       (void);
-void        sample_free      (Sample* );
+void        sample_free      (Sample*);
 int         sample_load_file (Sample* sample, const char* name, int rate);
 void        sample_free_file (Sample* sample);
 const char* sample_get_file  (Sample* sample);
+
 
 #endif /* __SAMPLE_H__ */
