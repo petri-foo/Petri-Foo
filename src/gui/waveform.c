@@ -337,6 +337,8 @@ waveform_button_press (GtkWidget * widget, GdkEventButton * event)
     if (!p->interactive)
         return FALSE;
 
+    mark = p->mark;
+
     frames = patch_get_frames (p->patch);
     start = p->range_start * frames;
     stop =  p->range_stop * frames;
@@ -421,11 +423,11 @@ waveform_button_press (GtkWidget * widget, GdkEventButton * event)
         }
     }
 
-    if (play_changed){debug("play-changed emitted\n")
-        g_signal_emit_by_name(G_OBJECT(wf), "play-changed");}
+    if (play_changed)
+        g_signal_emit_by_name(G_OBJECT(wf), "play-changed");
 
-    if (loop_changed){debug("loop-changed emitted\n")
-        g_signal_emit_by_name(G_OBJECT(wf), "loop-changed");}
+    if (loop_changed)
+        g_signal_emit_by_name(G_OBJECT(wf), "loop-changed");
 
     if (mark != p->mark)
     {
@@ -434,8 +436,11 @@ waveform_button_press (GtkWidget * widget, GdkEventButton * event)
         g_signal_emit_by_name(G_OBJECT(wf), "mark-changed");
     }
 
-    waveform_draw(WAVEFORM(wf));
-    gtk_widget_queue_draw (widget);
+    if (play_changed || loop_changed)
+    {
+        waveform_draw(WAVEFORM(wf));
+        gtk_widget_queue_draw (widget);
+    }
 
     return FALSE;
 }
