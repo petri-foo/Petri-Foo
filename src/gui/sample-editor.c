@@ -10,10 +10,11 @@
 
 #include "basic_combos.h"
 
-static GtkWidget *window;
-static GtkWidget *waveform;
-static GtkWidget *hscroll;
-static GtkAdjustment *hscrolladj;
+static GtkWidget* window;
+static GtkWidget* waveform;
+static GtkWidget* hscroll;
+
+static GtkObject* hscrolladj;
 
 static GtkWidget* wf_thumb = 0;
 
@@ -24,9 +25,10 @@ enum
 };
 
 
-
-
 static int ignore_callback = 0;
+
+static gboolean ignore_mark_change = FALSE; /* once upon a time*/
+
 static int zoom = ZOOM_MIN;
 static float range = 1.0;
 
@@ -36,14 +38,6 @@ static int patch;
 
 static GtkWidget*   mark_combo;
 static GtkWidget*   mark_spin;
-
-/*
-static int old_xfade, old_fade_in, old_fade_out;
-static GtkWidget* spin_fade_in;
-static GtkWidget* spin_fade_out;
-static GtkWidget* spin_xfade;
-*/
-
 
 
 static void cb_mark_combo_changed(GtkWidget* combo, gpointer data);
@@ -108,31 +102,29 @@ static void cb_clear (GtkWidget * widget, gpointer data)
 static void cb_scroll (GtkWidget * scroll, gpointer data)
 {
     (void)data;
-     float val;
-
-     val = gtk_range_get_value (GTK_RANGE (scroll));
-     waveform_set_range (WAVEFORM (waveform), val, val + range);
+     float val = gtk_range_get_value(GTK_RANGE(scroll));
+     debug("scroll changing:%f\n",(float)val);
+     waveform_set_range(WAVEFORM(waveform), val, val + range);
 }
 
 
 static void cb_mark_spin_changed(GtkWidget * spin, gpointer data)
 {
+    debug("spin changing\n");
     waveform_set_mark_frame(WAVEFORM(waveform),
             gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(mark_spin)));
     gtk_widget_queue_draw(waveform);
 }
 
 
-static void cb_mark_combo_changed(GtkWidget* combo, gpointer data)
+static void update_mark_spin(void)
 {
     int val;
     int min;
     int max;
-
-    waveform_set_mark(WAVEFORM(waveform),
-                    gtk_combo_box_get_active(GTK_COMBO_BOX(mark_combo)));
-
     val = waveform_get_mark_spin_range(WAVEFORM(waveform), &min, &max);
+
+    debug("updating mark spin\n");
 
     if (val < 0)
     {
@@ -149,140 +141,114 @@ static void cb_mark_combo_changed(GtkWidget* combo, gpointer data)
 }
 
 
-/*
-static void cb_xfade_changed (GtkWidget * spin, gpointer data)
+static void cb_mark_combo_changed(GtkWidget* combo, gpointer data)
 {
-    (void)spin;(void)data;
-    if (ignore_callback)
-        return;
- 
-    int xfade = patch_get_sample_xfade(patch);
-    int val;
-
-    val = gtk_spin_button_get_value_as_int(
-                            GTK_SPIN_BUTTON (spin_xfade));
-    if (val != xfade)
-    {
-        patch_set_sample_xfade(patch, val);
-        xfade = val;
-        gtk_spin_button_set_range(
-                    GTK_SPIN_BUTTON(spin_xfade), xfade - 1, xfade + 1);
-    }
-
-    gtk_widget_queue_draw(waveform);
+    debug("combo changing...\n");
+    ignore_mark_change = TRUE;
+    waveform_set_mark(WAVEFORM(waveform),
+                    gtk_combo_box_get_active(GTK_COMBO_BOX(mark_combo)));
+    update_mark_spin();
 }
-
-
-static void cb_fade_in_changed (GtkWidget * spin, gpointer data)
-{
-    (void)spin;(void)data;
-    if (ignore_callback)
-        return;
- 
-    int fade_in = patch_get_sample_fade_in(patch);
-    int val;
-
-    val = gtk_spin_button_get_value_as_int(
-                            GTK_SPIN_BUTTON(spin_fade_in));
-    if (val != fade_in)
-    {
-        patch_set_sample_fade_in(patch, val);
-        fade_in = val;
-        gtk_spin_button_set_range(
-                        GTK_SPIN_BUTTON(spin_fade_in),
-                                            fade_in - 1, fade_in + 1);
-    }
-
-    gtk_widget_queue_draw(waveform);
-}
-
-
-static void cb_fade_out_changed (GtkWidget * spin, gpointer data)
-{
-    (void)spin;(void)data;
-    if (ignore_callback)
-        return;
- 
-    int fade_out = patch_get_sample_fade_out(patch);
-    int val;
-
-    val = gtk_spin_button_get_value_as_int(
-                            GTK_SPIN_BUTTON(spin_fade_out));
-    if (val != fade_out)
-    {
-        patch_set_sample_fade_out(patch, val);
-        fade_out = val;
-        gtk_spin_button_set_range(
-                        GTK_SPIN_BUTTON(spin_fade_out),
-                                            fade_out - 1, fade_out + 1);
-    }
-
-    gtk_widget_queue_draw(waveform);
-}
-*/
-
 
 static void cb_wf_play_changed ()
 {
-    /* there's a good chance this effects the mark_spin selected
-       by the mark_combo, (either the value or range). but it
-       there's also a chance it might not
-     */
-    cb_mark_combo_changed(mark_combo, 0);
+    /*  there's some chance the play point that was changed is
+        selected and shown in the mark spin. */
+    debug("play changing...\n");
+    update_mark_spin();
 }
 
 static void cb_wf_loop_changed ()
 {
-    /* ditto cb_wf_play_changed */
-    cb_mark_combo_changed(mark_combo, 0);
+    /*  there's some chance the play point that was changed is
+        selected and shown in the mark spin. */
+    debug("loop changing...\n");
+    update_mark_spin();
 }
 
 static void cb_wf_mark_changed()
 {
     /* ditto cb_wf_play_changed */
-    cb_mark_combo_changed(mark_combo, 0);
+    if (ignore_mark_change)
+    {
+        debug("ignoring mark change this time\n");
+        ignore_mark_change = FALSE;
+        return;
+    }
+    debug("mark changing...\n");
+    gtk_combo_box_set_active(GTK_COMBO_BOX(mark_combo),
+                                waveform_get_mark(WAVEFORM(waveform)));
+/*    cb_mark_combo_changed(mark_combo, 0);*/
 }
 
-static void cb_zoom (GtkAdjustment * adj, GtkWidget * spinbutton)
+static void cb_wf_view_changed()
+{
+    float start, stop;
+    waveform_get_range(WAVEFORM(waveform), &start, &stop);
+    debug("view changing...\n");
+    g_signal_handlers_block_by_func(hscroll, cb_scroll, 0);
+    gtk_adjustment_set_value(GTK_ADJUSTMENT(hscrolladj), start);
+    g_signal_handlers_unblock_by_func(hscroll, cb_scroll, 0);
+}
+
+static void cb_zoom(GtkAdjustment* adj, GtkWidget* spinbutton)
 {
     (void)spinbutton;
-     float max;
-     float page_size;
-     float step_inc;
-     float page_inc;
-     float val;
+    float max;
+    float page_size;
+    float step_inc;
+    float page_inc;
+    float val;
 
-     /* validate new zoom value, isn't a step anymore because of using spinbutton */
-     zoom = gtk_adjustment_get_value (adj);
-     if (zoom < ZOOM_MIN)
-	  zoom = ZOOM_MIN;
-     else if (zoom > ZOOM_MAX)
-	  zoom = ZOOM_MAX;
+    float start;
+    float stop;
+    int frames = patch_get_frames(patch);
 
-     /* setup new adjustment values */
-     max = 1.0 - (1.0 / zoom);	/* the maximum value we'll be able to obtain */
-     page_size = 1.0 / zoom;
-     page_inc = max / 1000;
-     step_inc = max / 10;
+    waveform_get_range(WAVEFORM(waveform), &start, &stop);
 
-     /* create new adjustment */
-     val = gtk_range_get_value (GTK_RANGE (hscroll));
-     if (val > max)
-	  val = max;
-     hscrolladj =
-	  (GtkAdjustment *) gtk_adjustment_new (val, 0.0, 1.0, step_inc,
-						page_inc, page_size);
-     gtk_range_set_adjustment (GTK_RANGE (hscroll), hscrolladj);
+    debug("zoom changing...\n");
 
-     /* range needs to be updated so that we can tell the waveform
-      * object how much of itself it needs to draw when the scrollbar
-      * thumb (who the fuck named _that_?) moves */
-     range = 1.0 - max;
+    zoom = gtk_adjustment_get_value(adj);
 
-     /* we emit this signal so that the waveform will get redrawn with
-      * the new dimensions 
-      */
-    g_signal_emit_by_name (G_OBJECT (hscroll), "value-changed");
+    if (zoom < ZOOM_MIN)
+        zoom = ZOOM_MIN;
+    else if (zoom > ZOOM_MAX)
+        zoom = ZOOM_MAX;
+
+    max = 1.0 - (1.0 / zoom);
+    page_size = 1.0 / zoom;
+    page_inc = max / 1000;
+    step_inc = max / 10;
+
+    /* create new adjustment */
+
+    val = start + (stop - start) / 2 - page_size / 2;
+
+    /* range needs to be updated so that we can tell the waveform
+     * object how much of itself it needs to draw when the scrollbar
+     * changes */
+
+    range = 1.0 - max;
+
+    if (val + range > 1.0)
+        val = 1.0 - range;
+
+
+debug("start:%f stop:%f hscroll range value:%f\n", start,stop,val);
+
+    gtk_range_set_range(GTK_RANGE(hscroll), start, stop);
+
+    hscrolladj = gtk_adjustment_new(val, 0.0, 1.0,  step_inc,
+                                                    page_inc,
+                                                    page_size);
+    gtk_range_set_adjustment(GTK_RANGE(hscroll),
+                                            GTK_ADJUSTMENT(hscrolladj));
+
+
+     /* emit value-changed signal so waveform is redrawn with
+      * the new dimensions */
+//    g_signal_emit_by_name(G_OBJECT(hscroll), "value-changed");
+    g_signal_emit_by_name(G_OBJECT(hscroll), "value-changed");
 }
 
 
@@ -414,10 +380,11 @@ void sample_editor_init (GtkWidget * parent)
                             G_CALLBACK(cb_wf_loop_changed), NULL);
      g_signal_connect(G_OBJECT (waveform), "mark-changed",
                             G_CALLBACK(cb_wf_mark_changed), NULL);
+     g_signal_connect(G_OBJECT (waveform), "view-changed",
+                            G_CALLBACK(cb_wf_view_changed), NULL);
 
      /* waveform scrollbar */
-     hscrolladj =
-	  (GtkAdjustment *) gtk_adjustment_new (0.0, 0.0, 1.0, 0.0, 0.0,
+     hscrolladj = gtk_adjustment_new (0.0, 0.0, 1.0, 0.0, 0.0,
 						1.0);
      hscroll = gtk_hscrollbar_new (GTK_ADJUSTMENT (hscrolladj));
      gtk_box_pack_start (GTK_BOX (master_vbox), hscroll, FALSE, FALSE, 0);
@@ -445,44 +412,6 @@ void sample_editor_init (GtkWidget * parent)
      g_signal_connect (G_OBJECT (zoom_adj), "value_changed",
 		       G_CALLBACK (cb_zoom), (gpointer) spinbutton);
      gtk_widget_show (spinbutton);
-
-
-    /* fade in */
-/*
-     label = gtk_label_new ("Fade In:");
-     gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, FALSE, 0);
-     gtk_widget_show (label);
-
-     spin_fade_in = gtk_spin_button_new_with_range(0, 1, 1);
-     gtk_box_pack_start (GTK_BOX (hbox), spin_fade_in, FALSE, FALSE, 0);
-     gtk_widget_show (spin_fade_in);
-     g_signal_connect (G_OBJECT (spin_fade_in), "value-changed",
-		       G_CALLBACK (cb_fade_in_changed), NULL);
-*/
-    /* fade out */
-/*
-     label = gtk_label_new ("Fade Out:");
-     gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, FALSE, 0);
-     gtk_widget_show (label);
-
-     spin_fade_out = gtk_spin_button_new_with_range(0, 1, 1);
-     gtk_box_pack_start (GTK_BOX (hbox), spin_fade_out, FALSE, FALSE, 0);
-     gtk_widget_show (spin_fade_out);
-     g_signal_connect (G_OBJECT (spin_fade_out), "value-changed",
-		       G_CALLBACK (cb_fade_out_changed), NULL);
-*/
-    /* xfade*/
-/*
-     label = gtk_label_new ("X-Fade:");
-     gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, FALSE, 0);
-     gtk_widget_show (label);
-
-     spin_xfade = gtk_spin_button_new_with_range(0, 1, 1);
-     gtk_box_pack_start (GTK_BOX (hbox), spin_xfade, FALSE, FALSE, 0);
-     gtk_widget_show (spin_xfade);
-     g_signal_connect (G_OBJECT (spin_xfade), "value-changed",
-		       G_CALLBACK (cb_xfade_changed), NULL);
-*/
 
      /* close button */
      button = gtk_button_new_from_stock (GTK_STOCK_CLOSE);

@@ -84,4 +84,8 @@ int         waveform_get_mark_frame(Waveform* wf);
 
 gboolean    waveform_get_interactive (Waveform* wf);
 
+int         waveform_detect_mark(Waveform*);
+
+int         waveform_detect_nearest_mark(Waveform*);
+
 #endif /* __WAVEFORM_H__ */
