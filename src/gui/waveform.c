@@ -1088,6 +1088,13 @@ void waveform_set_range (Waveform * wf, float start, float stop)
 
     mark = waveform_detect_single_mark(wf);
 
+    if (mark == -1)
+    {
+        int frames = patch_get_frames(p->patch);
+        int frame = (start + (stop - start) / 2) * frames;
+        mark = waveform_detect_nearest_mark(wf, frame);
+    }
+
     if (mark > -1)
     {
         p->view_mark = FALSE;
