@@ -38,6 +38,7 @@ static int patch;
 
 static GtkWidget*   mark_combo;
 static GtkWidget*   mark_spin;
+static GtkWidget*   mark_val;
 
 
 static void cb_mark_combo_changed(GtkWidget* combo, gpointer data);
@@ -99,6 +100,16 @@ static void cb_clear (GtkWidget * widget, gpointer data)
     gtk_widget_queue_draw(waveform);
 }
 
+
+static void update_mark_val(int val)
+{
+    const float* wav = patch_get_sample(patch);
+    char buf[40];
+    snprintf(buf, 40, "%2.6f", wav[val * 2]);
+    gtk_label_set_label(GTK_LABEL(mark_val), buf);
+}
+
+
 static void cb_scroll (GtkWidget * scroll, gpointer data)
 {
     (void)data;
@@ -111,8 +122,9 @@ static void cb_scroll (GtkWidget * scroll, gpointer data)
 static void cb_mark_spin_changed(GtkWidget * spin, gpointer data)
 {
     debug("spin changing\n");
-    waveform_set_mark_frame(WAVEFORM(waveform),
-            gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(mark_spin)));
+    int val = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(mark_spin));
+    waveform_set_mark_frame(WAVEFORM(waveform), val);
+    update_mark_val(val);
     gtk_widget_queue_draw(waveform);
 }
 
@@ -122,6 +134,7 @@ static void update_mark_spin(void)
     int val;
     int min;
     int max;
+
     val = waveform_get_mark_spin_range(WAVEFORM(waveform), &min, &max);
 
     debug("updating mark spin\n");
@@ -138,6 +151,8 @@ static void update_mark_spin(void)
     gtk_spin_button_set_range(GTK_SPIN_BUTTON(mark_spin), min, max);
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(mark_spin), val);
     g_signal_handlers_unblock_by_func(mark_spin, cb_mark_spin_changed, 0);
+
+    update_mark_val(val);
 }
 
 
@@ -345,6 +360,10 @@ void sample_editor_init (GtkWidget * parent)
     gtk_widget_show(mark_spin);
     g_signal_connect(G_OBJECT(mark_spin), "value-changed",
                             G_CALLBACK(cb_mark_spin_changed), NULL);
+
+    mark_val = gtk_label_new("");
+    gtk_box_pack_start(GTK_BOX (hbox), mark_val, FALSE, FALSE, 0);
+    gtk_widget_show(mark_val);
 
 
      /* loop points clear button */

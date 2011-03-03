@@ -9,8 +9,8 @@
 #include "patch_defs.h"
 
 
-const float  PATCH_MIN_RELEASE = 0.05;
-const float  PATCH_LEGATO_LAG = 0.05;
+const float  PATCH_MIN_RELEASE = 0.005;
+const float  PATCH_LEGATO_LAG = 0.005;
 const float  ALMOST_ZERO = 1e-6;
 
 

@@ -152,11 +152,11 @@ int patch_create (const char *name)
     /* default adsr params */
     defadsr.env_on  = FALSE;
     defadsr.delay   = 0.0;
-    defadsr.attack  = PATCH_MIN_RELEASE;
+    defadsr.attack  = 0.005;
     defadsr.hold    = 0.0;
     defadsr.decay   = 0.0;
     defadsr.sustain = 1.0;
-    defadsr.release = PATCH_MIN_RELEASE;
+    defadsr.release = 0.150;
 
     /* default lfo params */
     deflfo.lfo_on = FALSE;
@@ -184,7 +184,7 @@ int patch_create (const char *name)
     patches[id].vol.mod2_id = MOD_SRC_NONE;
     patches[id].vol.mod1_amt = 0;
     patches[id].vol.mod2_amt = 0;
-    patches[id].vol.direct_mod_id = MOD_SRC_NONE;
+    patches[id].vol.direct_mod_id = MOD_SRC_FIRST_EG;
     patches[id].vol.vel_amt = 1.0;
 
     /* panning */
@@ -247,6 +247,10 @@ int patch_create (const char *name)
     for (i = 0; i < VOICE_MAX_ENVS; i++)
     {
         patches[id].env_params[i] = defadsr;
+        if (i == 0)
+        {
+            patches[id].env_params[i].env_on = TRUE;
+        }
         adsr_init(&defvoice.env[i]);
     }
 

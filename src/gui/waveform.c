@@ -100,16 +100,8 @@ struct _WaveformPrivate
     int mark;
 };
 
-static int patch_get_frame_first(int id)
-{
-    return 0;
-}
 
-static int patch_get_frame_last(int id)
-{
-    return patch_get_frames(id);
-}
-
+static int patch_get_frame_first(int id) { (void)id; return 0; }
 
 static int (*mark_get[WF_MARK_STOP + 1])(int) = {
     patch_get_frame_first,
@@ -117,7 +109,7 @@ static int (*mark_get[WF_MARK_STOP + 1])(int) = {
     patch_get_loop_start,
     patch_get_loop_stop,
     patch_get_sample_stop,
-    patch_get_frame_last
+    patch_get_frames
 };
 
 static int (*mark_set[WF_MARK_STOP + 1])(int, int) = {
@@ -129,6 +121,47 @@ static int (*mark_set[WF_MARK_STOP + 1])(int, int) = {
     0
 };
 
+
+static int get_mark_spin_range(WaveformPrivate* p, int* min, int* max)
+{
+    if (p->mark == WF_MARK_START
+     || p->mark == WF_MARK_STOP)
+    {
+        *min = *max = mark_get[p->mark](p->patch);
+        /* this mark cannot be edited: */
+        return -1;
+    }
+
+    /* get the marks potential range: */
+    *min = mark_get[p->mark - 1](p->patch);
+    *max = mark_get[p->mark + 1](p->patch);
+
+    switch(p->mark)
+    {
+    case WF_MARK_PLAY_START:
+        {
+            int tmp = mark_get[WF_MARK_PLAY_STOP](p->patch);
+            if (*max == tmp)
+                --(*max); /* play start max == play stop - 1 */
+        }
+        break;
+    case WF_MARK_LOOP_START:
+        --(*max); /* loop start max == loop end - 1 */
+        break;
+    case WF_MARK_LOOP_STOP:
+        ++(*min); /* loop stop min == loop start + 1 */
+        break;
+    case WF_MARK_PLAY_STOP:
+        {
+            int tmp = mark_get[WF_MARK_PLAY_START](p->patch);
+            if (*min == tmp)
+                ++(*min); /* play stop min == play_start + 1 */
+        }
+        break;
+    }
+
+    return mark_get[p->mark](p->patch);
+}
 
 
 const char** waveform_get_mark_names(void)
@@ -434,6 +467,7 @@ waveform_button_press (GtkWidget * widget, GdkEventButton * event)
         p->mark = mark;
         p->view_mark = FALSE;
         g_signal_emit_by_name(G_OBJECT(wf), "mark-changed");
+        p->view_mark = TRUE;
     }
 
     if (play_changed || loop_changed)
@@ -767,21 +801,17 @@ static void draw_wave(WaveformPrivate* p, int w, int h, cairo_t* cr)
             {
                 cairo_move_to (cr, lx, (lminy+1)/2 * h);
                 cairo_line_to (cr, x, draw_maxy);
-            cairo_stroke(cr);
             }
             else if (miny > lmaxy)
             {
                 cairo_move_to (cr, lx, (lmaxy+1)/2 * h);
                 cairo_line_to (cr, x, draw_miny);
-            cairo_stroke(cr);
             }
 
             /* connect min val to max val */
             cairo_move_to (cr, x, draw_miny);
             cairo_line_to (cr, x, draw_maxy);
-
             cairo_stroke(cr);
-
 
             /* reset all vars */
             lx = x++;
@@ -877,7 +907,8 @@ void draw_mark(WaveformPrivate* p, int w, int h, cairo_t* cr)
         if (p->interactive)
         {
             cairo_text_extents (cr, pstart, &extents);
-            cairo_move_to(cr, 0.5 + play_start + 1,
+            cairo_move_to(cr, 0.5 + play_start
+                        - 1 - extents.width - extents.x_bearing,
                                     extents.height - extents.y_bearing);
             cairo_show_text (cr, pstart);
         }
@@ -892,8 +923,7 @@ void draw_mark(WaveformPrivate* p, int w, int h, cairo_t* cr)
         if (p->interactive)
         {
             cairo_text_extents (cr, pstop, &extents);
-            cairo_move_to(cr, 0.5 + play_stop - extents.x_advance
-                          - extents.x_bearing - 1, h + extents.y_bearing);
+            cairo_move_to(cr, 0.5 + play_stop + 1, h + extents.y_bearing);
             cairo_show_text (cr, pstop);
         }
     }
@@ -911,7 +941,9 @@ void draw_mark(WaveformPrivate* p, int w, int h, cairo_t* cr)
         if (p->interactive)
         {
             cairo_text_extents (cr, lstart, &extents);
-            cairo_move_to(cr, 0.5 + loop_start + 1, h + extents.y_bearing);
+            cairo_move_to(cr, 0.5 + loop_start
+                        - 1 - extents.width - extents.x_bearing,
+                                                h + extents.y_bearing);
             cairo_show_text (cr, lstart);
         }
     }
@@ -925,9 +957,7 @@ void draw_mark(WaveformPrivate* p, int w, int h, cairo_t* cr)
         if (p->interactive)
         {
             cairo_text_extents (cr, lstop, &extents);
-            cairo_move_to(cr, 0.5 + loop_stop
-                                - extents.x_advance
-                                - extents.x_bearing - 1,
+            cairo_move_to(cr, 0.5 + loop_stop + 1,
                             extents.height - extents.y_bearing);
             cairo_show_text (cr, lstop);
         }
@@ -1010,56 +1040,39 @@ void waveform_set_interactive (Waveform * wf, gboolean interactive)
     gtk_widget_queue_draw (GTK_WIDGET (wf));
 }
 
-int waveform_detect_single_mark(Waveform* wf)
+
+int waveform_detect_mark(Waveform* wf)
 {
     WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
-    float start = p->range_start;
-    float stop = p->range_stop;
 
     int frames = patch_get_frames(p->patch);
-    int frame = (start + (stop - start) / 2) * frames;
 
-    int x0 = start * frames;
-    int x1 = stop * frames;
-
-    int prev = mark_get[WF_MARK_START](p->patch);
-    int cur =  mark_get[WF_MARK_PLAY_START](p->patch);
-    int next;
+    int x0 = p->range_start * frames;
+    int x1 = p->range_stop * frames;
 
     int m;
-    gboolean set = FALSE;
-
-    debug("frames:%d x0:%d x1:%d\n",x0,x1);
-
-    for (m = WF_MARK_PLAY_START; m < WF_MARK_STOP; ++m)
-    {
-        if (prev < x0 && (next = mark_get[m + 1](p->patch)) > x1
-         && cur >= x0 && cur <= x1)
-        {
-            debug("\t\t\tmark:%s is in view\n",mark_names[m]);
-            set = TRUE;
-            break;
-        }
-        prev = cur;
-        cur = next;
-    }
-
-    if (set)
-        return m;
-
-    return -1;
-}
-
-int waveform_detect_nearest_mark(Waveform* wf, int frame)
-{
-    WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
-    int m;
-    int small_diff = patch_get_frames(p->patch);
+    int mark = -1;
+    int marks = 0;
+    int small_diff = frames;
     int small_mark = -1;
 
-    for (m = WF_MARK_PLAY_START; m < WF_MARK_STOP; ++m)
+    int frame = (p->range_start + (p->range_stop - p->range_start) / 2)
+                                                                * frames;
+    /* the loop combines a check looking for a single mark
+     * with a check looking for the nearest mark.
+     */
+
+    for (m = WF_MARK_START; m <= WF_MARK_STOP; ++m)
     {
-        int diff = abs(frame - mark_get[m](p->patch));
+        int mf = mark_get[m](p->patch);
+        int diff = abs(frame - mf);
+
+        if (mf >= x0 && mf <= x1)
+        {
+            mark = m;
+            ++marks;
+        }
+
         if (diff < small_diff)
         {
             small_diff = diff;
@@ -1067,15 +1080,20 @@ int waveform_detect_nearest_mark(Waveform* wf, int frame)
         }
     }
 
+    /* if one or zero marks found, we can exit right now */
+    if (marks < 2)
+        return mark;
+
+    /* as more than one mark is visible, we'll return the mark
+     * which is closest to center of view
+     */
     return small_mark;
 }
 
 
+
 void waveform_set_range (Waveform * wf, float start, float stop)
 {
-    g_return_if_fail (wf != NULL);
-    g_return_if_fail (IS_WAVEFORM (wf));
-
     WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
     int mark;
 
@@ -1087,21 +1105,11 @@ void waveform_set_range (Waveform * wf, float start, float stop)
                             ? 1.0
                             : stop;
 
-    debug("start:%f stop:%f\n",start,stop);
-    debug("p->range_start:%f p->range_stop:%f\n",
-           p->range_start,   p->range_stop);
-
-    mark = waveform_detect_single_mark(wf);
-
-    if (mark == -1)
-    {
-        int frames = patch_get_frames(p->patch);
-        int frame = (start + (stop - start) / 2) * frames;
-        mark = waveform_detect_nearest_mark(wf, frame);
-    }
+    mark = waveform_detect_mark(wf);
 
     if (mark > -1)
     {
+        /* avoid triggering center-on-mark when we set it */
         p->view_mark = FALSE;
         waveform_set_mark(wf, mark);
         p->view_mark = TRUE;
@@ -1114,7 +1122,7 @@ void waveform_set_range (Waveform * wf, float start, float stop)
 void waveform_view_mark(Waveform* wf)
 {
     WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
-    int f = waveform_get_mark_frame(wf);
+    int f = mark_get[p->mark](p->patch);
     int frames = patch_get_frames(p->patch);
     int x0 = frames * p->range_start;
     int x1 = frames * p->range_stop;
@@ -1135,8 +1143,6 @@ void waveform_view_mark(Waveform* wf)
         x0 = x1 - w;
     }
 
-debug("x0:%d x1:%d\n", x0, x1);
-
     p->range_start = x0 / (float)frames;
     p->range_stop = x1 / (float)frames;
 
@@ -1148,16 +1154,12 @@ debug("x0:%d x1:%d\n", x0, x1);
 
 int waveform_get_patch (Waveform * wf)
 {
-    g_return_val_if_fail (wf != NULL, -1);
-    g_return_val_if_fail (IS_WAVEFORM (wf), -1);
     return WAVEFORM_GET_PRIVATE(wf)->patch;
 }
 
 
 void waveform_get_size (Waveform * wf, int *w, int *h)
 {
-    g_return_if_fail (wf != NULL);
-    g_return_if_fail (IS_WAVEFORM (wf));
     WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
     *w = p->width;
     *h = p->height;
@@ -1167,71 +1169,17 @@ void waveform_get_size (Waveform * wf, int *w, int *h)
 
 gboolean waveform_get_interactive (Waveform * wf)
 {
-     g_return_val_if_fail (wf != NULL, FALSE);
-     g_return_val_if_fail (IS_WAVEFORM (wf), FALSE);
      return WAVEFORM_GET_PRIVATE(wf)->interactive;
 }
 
 
 void waveform_get_range (Waveform * wf, float *start, float *stop)
 {
-    g_return_if_fail (wf != NULL);
-    g_return_if_fail (IS_WAVEFORM (wf));
     WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
     *start = p->range_start;
     *stop = p->range_stop;
 }
 
-static gboolean
-valid_mark_and_frame_to_set(WaveformPrivate* p, int mark_id, int frame)
-{
-    int pstart = patch_get_sample_start(p->patch);
-    int pstop = patch_get_sample_stop(p->patch);
-    int lstart = patch_get_loop_start(p->patch);
-    int lstop = patch_get_loop_stop(p->patch);
-
-    if (mark_id < WF_MARK_PLAY_START
-     || mark_id > WF_MARK_PLAY_STOP)
-    {   /* cannot change sample start or stop marks */
-        return FALSE;
-    }
-
-    switch(mark_id)
-    {
-    case WF_MARK_PLAY_START:
-        if (frame >= pstop)
-            return FALSE;
-        if (frame < 0 || frame > lstart)
-            return FALSE;
-        break;
-    case WF_MARK_LOOP_START:
-        if (frame < pstart || frame >= lstop)
-            return FALSE;
-        break;
-    case WF_MARK_LOOP_STOP:
-        if (frame <= lstart || frame > pstop)
-            return FALSE;
-        break;
-    case WF_MARK_PLAY_STOP:
-        if (frame <= pstart || frame <= lstop)
-            return FALSE;
-        break;
-    default: /* never valid whatever the case */
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
-void waveform_goto_mark_prev (Waveform* wf)
-{
-    WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
-}
-
-void waveform_goto_mark_next (Waveform* wf)
-{
-    WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
-}
 
 void waveform_set_mark(Waveform* wf, int mark_id)
 {
@@ -1240,82 +1188,45 @@ void waveform_set_mark(Waveform* wf, int mark_id)
     if (mark_id < WF_MARK_START || mark_id > WF_MARK_STOP)
         return;
 
-    debug("setting mark to %d\n",mark_id);
+    p->mark = mark_id;
 
     g_signal_emit_by_name(G_OBJECT(wf), "mark-changed");
 
-    p->mark = mark_id;
-
     if (p->view_mark)
         waveform_view_mark(wf);
+
 }
+
 
 int waveform_get_mark(Waveform* wf)
 {
-    WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
-    return p->mark;
+    return WAVEFORM_GET_PRIVATE(wf)->mark;
 }
+
 
 int waveform_get_mark_spin_range(Waveform* wf, int* min, int* max)
 {
     WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
-
-    switch(p->mark)
-    {
-    case WF_MARK_START:
-        break;
-    case WF_MARK_STOP:
-        *min = *max = patch_get_frames(p->patch) - 1;
-        return -1;
-    case WF_MARK_PLAY_START:
-        *min = 0;
-        *max = patch_get_loop_start(p->patch);
-        return patch_get_sample_start(p->patch);
-    case WF_MARK_PLAY_STOP:
-        *min = patch_get_loop_stop(p->patch);
-        *max = patch_get_frames(p->patch) - 1;
-        return patch_get_sample_stop(p->patch);
-    case WF_MARK_LOOP_START:
-        *min = patch_get_sample_start(p->patch);
-        *max = patch_get_loop_stop(p->patch) - 1;
-        return patch_get_loop_start(p->patch);
-    case WF_MARK_LOOP_STOP:
-        *min = patch_get_loop_start(p->patch) + 1;
-        *max = patch_get_sample_stop(p->patch);
-        return patch_get_loop_stop(p->patch);
-    default:
-        break;
-    }
-
-    *min = *max = 0;
-    return -1;
+    return get_mark_spin_range(p, min, max);
 }
+
 
 void waveform_set_mark_frame(Waveform* wf, int frame)
 {
     WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
 
-    if (!valid_mark_and_frame_to_set(p, p->mark, frame))
+    int min;
+    int max;
+
+    if (get_mark_spin_range(p, &min, &max) == -1)
         return;
 
-    switch(p->mark)
-    {
-    case WF_MARK_PLAY_START:
-        patch_set_sample_start(p->patch, frame);
-        break;
-    case WF_MARK_LOOP_START:
-        patch_set_loop_start(p->patch, frame);
-        break;
-    case WF_MARK_LOOP_STOP:
-        patch_set_loop_stop(p->patch, frame);
-        break;
-    case WF_MARK_PLAY_STOP:
-        patch_set_sample_stop(p->patch, frame);
-        break;
-    default:
-        break;
-    }
+    if (frame < min || frame > max)
+        return;
+
+    mark_set[p->mark](p->patch, frame);
 }
+
 
 int waveform_get_mark_frame(Waveform* wf)
 {
