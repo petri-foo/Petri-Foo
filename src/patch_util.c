@@ -22,6 +22,7 @@
 #include "patch_private/patch_data.h"
 #include "patch_private/patch_defs.h"
 
+static int start_frame = 0;
 
 /**************************************************************************/
 /********************** PRIVATE GENERAL HELPER FUNCTIONS*******************/
@@ -129,8 +130,8 @@ int patch_create (const char *name)
     patches[id].play_mode = PATCH_PLAY_FORWARD | PATCH_PLAY_SINGLESHOT;
     patches[id].cut = 0;
     patches[id].cut_by = 0;
-    patches[id].sample_start = 0;
-    patches[id].sample_stop = 0;
+    patches[id].play_start = 0;
+    patches[id].play_stop = 0;
 
     patches[id].sample_xfade = 0;
     patches[id].sample_fade_in = 0;
@@ -138,6 +139,14 @@ int patch_create (const char *name)
 
     patches[id].loop_start = 0;
     patches[id].loop_stop = 0;
+
+    patches[id].marks[WF_MARK_START] = &start_frame;
+    patches[id].marks[WF_MARK_PLAY_START] = &patches[id].play_start;
+    patches[id].marks[WF_MARK_PLAY_STOP] =  &patches[id].play_stop;
+    patches[id].marks[WF_MARK_LOOP_START] = &patches[id].loop_start;
+    patches[id].marks[WF_MARK_LOOP_STOP] =  &patches[id].loop_stop;
+/*  can't set WF_MARK_STOP until the sample is loaded */
+
     patches[id].porta = FALSE;
     patches[id].mono = FALSE;
     patches[id].legato = FALSE;
@@ -597,10 +606,12 @@ int patch_sample_load (int id, const char *name)
     patches[id].sample_fade_in = 0;
     patches[id].sample_fade_out = 0;
 
-    patches[id].sample_start = 0;
-    patches[id].sample_stop = patches[id].sample->frames - 1;
+    patches[id].play_start = 0;
+    patches[id].play_stop = patches[id].sample->frames - 1;
     patches[id].loop_start = 0;
     patches[id].loop_stop = patches[id].sample->frames - 1;
+
+    patches[id].marks[WF_MARK_STOP] = &patches[id].sample->frames;
 
     patch_unlock (id);
     return val;
@@ -617,8 +628,8 @@ void patch_sample_unload (int id)
 
     sample_free_file (patches[id].sample);
 
-    patches[id].sample_start = 0;
-    patches[id].sample_stop = 0;
+    patches[id].play_start = 0;
+    patches[id].play_stop = 0;
     patches[id].loop_start = 0;
     patches[id].loop_stop = 0;
     patches[id].sample_xfade = 0;

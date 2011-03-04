@@ -174,6 +174,7 @@ static void connect(SampleTabPrivate* p)
 {
     g_signal_connect(G_OBJECT(p->waveform), "button-press-event",
                             G_CALLBACK(waveform_cb), (gpointer)p);
+
     g_signal_connect(G_OBJECT(p->mode_opt), "changed",
                             G_CALLBACK(mode_cb), (gpointer)p);
     g_signal_connect(G_OBJECT(p->reverse_check), "toggled",
@@ -182,6 +183,7 @@ static void connect(SampleTabPrivate* p)
                             G_CALLBACK(file_cb), (gpointer)p);
     g_signal_connect(G_OBJECT(p->to_end_check), "toggled",
                             G_CALLBACK(to_end_cb), (gpointer)p);
+
 }
 
 

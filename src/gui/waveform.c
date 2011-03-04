@@ -101,6 +101,7 @@ struct _WaveformPrivate
 };
 
 
+/*
 static int patch_get_frame_first(int id) { (void)id; return 0; }
 
 static int (*mark_get[WF_MARK_STOP + 1])(int) = {
@@ -120,27 +121,27 @@ static int (*mark_set[WF_MARK_STOP + 1])(int, int) = {
     patch_set_sample_stop,
     0
 };
-
+*/
 
 static int get_mark_spin_range(WaveformPrivate* p, int* min, int* max)
 {
     if (p->mark == WF_MARK_START
      || p->mark == WF_MARK_STOP)
     {
-        *min = *max = mark_get[p->mark](p->patch);
+        *min = *max = patch_get_mark(p->patch, p->mark);
         /* this mark cannot be edited: */
         return -1;
     }
 
     /* get the marks potential range: */
-    *min = mark_get[p->mark - 1](p->patch);
-    *max = mark_get[p->mark + 1](p->patch);
+    *min = patch_get_mark(p->patch, p->mark - 1);
+    *max = patch_get_mark(p->patch, p->mark + 1);
 
     switch(p->mark)
     {
     case WF_MARK_PLAY_START:
         {
-            int tmp = mark_get[WF_MARK_PLAY_STOP](p->patch);
+            int tmp = patch_get_mark(p->patch, WF_MARK_PLAY_STOP);
             if (*max == tmp)
                 --(*max); /* play start max == play stop - 1 */
         }
@@ -153,14 +154,14 @@ static int get_mark_spin_range(WaveformPrivate* p, int* min, int* max)
         break;
     case WF_MARK_PLAY_STOP:
         {
-            int tmp = mark_get[WF_MARK_PLAY_START](p->patch);
+            int tmp = patch_get_mark(p->patch, WF_MARK_PLAY_START);
             if (*min == tmp)
                 ++(*min); /* play stop min == play_start + 1 */
         }
         break;
     }
 
-    return mark_get[p->mark](p->patch);
+    return patch_get_mark(p->patch, p->mark);
 }
 
 
@@ -396,34 +397,36 @@ waveform_button_press (GtkWidget * widget, GdkEventButton * event)
         {   /* we set play points for CTRL+button-click */
             if (event->button == 1)
             {
-                control = patch_get_sample_stop (p->patch);
+                control = patch_get_mark(p->patch, WF_MARK_PLAY_STOP);
+
                 if (sel < control)
                 {
-                    patch_set_sample_start (p->patch, sel);
                     mark = WF_MARK_PLAY_START;
+                    patch_set_mark(p->patch, mark, sel);
                     play_changed = TRUE;
-                    /* adjust starting loop point if we need to */
-                    chaos = patch_get_loop_start (p->patch);
+                    chaos = patch_get_mark(p->patch, WF_MARK_LOOP_START);
+
                     if (sel > chaos)
                     {
-                        patch_set_loop_start (p->patch, sel);
+                        patch_set_mark(p->patch, WF_MARK_LOOP_START, sel);
                         loop_changed = TRUE;
                     }
                 }
             }
             else
             {
-                control = patch_get_sample_start (p->patch);
+                control = patch_get_mark(p->patch, WF_MARK_PLAY_START);
+
                 if (sel > control)
                 {
-                    patch_set_sample_stop (p->patch, sel);
                     mark = WF_MARK_PLAY_STOP;
+                    patch_set_mark(p->patch, mark, sel);
                     play_changed = TRUE;
-                    /* adjust stopping loop point if we need to */
-                    chaos = patch_get_loop_stop (p->patch);
+                    chaos = patch_get_mark(p->patch, WF_MARK_LOOP_STOP);
+
                     if (sel < chaos)
                     {
-                        patch_set_loop_stop (p->patch, sel);
+                        patch_set_mark(p->patch, WF_MARK_LOOP_STOP, sel);
                         loop_changed = TRUE;
                     }
                 }
@@ -433,23 +436,25 @@ waveform_button_press (GtkWidget * widget, GdkEventButton * event)
         {   /* otherwise, we set loop points */
             if (event->button == 1)
             {
-                control = patch_get_sample_start (p->patch);
-                chaos = patch_get_loop_stop (p->patch);
+                control = patch_get_mark(p->patch, WF_MARK_PLAY_START);
+                chaos = patch_get_mark(p->patch, WF_MARK_LOOP_STOP);
+
                 if (sel > control && sel < chaos)
                 {
-                    patch_set_loop_start (p->patch, sel);
                     mark = WF_MARK_LOOP_START;
+                    patch_set_mark(p->patch, mark, sel);
                     loop_changed = TRUE;
                 }
             }
             else
             {
-                control = patch_get_sample_stop (p->patch);
-                chaos = patch_get_loop_start (p->patch);
+                control = patch_get_mark(p->patch, WF_MARK_PLAY_STOP);
+                chaos = patch_get_mark(p->patch, WF_MARK_LOOP_START);
+
                 if (sel < control && sel > chaos)
                 {
-                    patch_set_loop_stop (p->patch, sel);
                     mark = WF_MARK_LOOP_STOP;
+                    patch_set_mark(p->patch, mark, sel);
                     loop_changed = TRUE;
                 }
             }
@@ -506,10 +511,10 @@ static void draw_back(WaveformPrivate* p, int w, int h, cairo_t* cr)
         start = frames * p->range_start;
         stop = frames * p->range_stop;
 
-        play_start = patch_get_sample_start(p->patch);
-        play_stop = patch_get_sample_stop(p->patch);
-        loop_start = patch_get_loop_start (p->patch);
-        loop_stop = patch_get_loop_stop (p->patch);
+        play_start = patch_get_mark(p->patch, WF_MARK_PLAY_START);
+        play_stop =  patch_get_mark(p->patch, WF_MARK_PLAY_STOP);
+        loop_start = patch_get_mark(p->patch, WF_MARK_LOOP_START);
+        loop_stop =  patch_get_mark(p->patch, WF_MARK_LOOP_STOP);
 
         ppf = w / (stop - start * 1.0);
 
@@ -683,10 +688,10 @@ static void draw_wave(WaveformPrivate* p, int w, int h, cairo_t* cr)
     frames = patch_get_frames (p->patch);
     start = frames * p->range_start;
     stop = frames * p->range_stop;
-    play_start = patch_get_sample_start (p->patch);
-    play_stop = patch_get_sample_stop (p->patch);
-    loop_start = patch_get_loop_start (p->patch);
-    loop_stop = patch_get_loop_stop (p->patch);
+    play_start = patch_get_mark(p->patch, WF_MARK_PLAY_START);
+    play_stop =  patch_get_mark(p->patch, WF_MARK_PLAY_STOP);
+    loop_start = patch_get_mark(p->patch, WF_MARK_LOOP_START);
+    loop_stop =  patch_get_mark(p->patch, WF_MARK_LOOP_STOP);
 
     /* draw waveform when pixels >= frames */
     if (w >= (stop - start))
@@ -870,10 +875,10 @@ void draw_mark(WaveformPrivate* p, int w, int h, cairo_t* cr)
 
     start = frames * p->range_start;
     stop = frames * p->range_stop;
-    play_start = patch_get_sample_start (p->patch);
-    play_stop = patch_get_sample_stop (p->patch);
-    loop_start = patch_get_loop_start (p->patch);
-    loop_stop = patch_get_loop_stop (p->patch);
+    play_start = patch_get_mark(p->patch, WF_MARK_PLAY_START);
+    play_stop =  patch_get_mark(p->patch, WF_MARK_PLAY_STOP);
+    loop_start = patch_get_mark(p->patch, WF_MARK_LOOP_START);
+    loop_stop =  patch_get_mark(p->patch, WF_MARK_LOOP_STOP);
 
     ppf = w / (stop - start * 1.0);
 
@@ -1064,7 +1069,7 @@ int waveform_detect_mark(Waveform* wf)
 
     for (m = WF_MARK_START; m <= WF_MARK_STOP; ++m)
     {
-        int mf = mark_get[m](p->patch);
+        int mf = patch_get_mark(p->patch, m);
         int diff = abs(frame - mf);
 
         if (mf >= x0 && mf <= x1)
@@ -1122,7 +1127,7 @@ void waveform_set_range (Waveform * wf, float start, float stop)
 void waveform_view_mark(Waveform* wf)
 {
     WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
-    int f = mark_get[p->mark](p->patch);
+    int f = patch_get_mark(p->patch, p->mark);
     int frames = patch_get_frames(p->patch);
     int x0 = frames * p->range_start;
     int x1 = frames * p->range_stop;
@@ -1224,12 +1229,12 @@ void waveform_set_mark_frame(Waveform* wf, int frame)
     if (frame < min || frame > max)
         return;
 
-    mark_set[p->mark](p->patch, frame);
+    patch_set_mark(p->patch, p->mark, frame);
 }
 
 
 int waveform_get_mark_frame(Waveform* wf)
 {
     WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
-    return mark_get[p->mark](p->patch);
+    return patch_get_mark(p->patch, p->mark);
 }

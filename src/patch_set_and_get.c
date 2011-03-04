@@ -668,7 +668,7 @@ int patch_set_legato(int id, gboolean val)
 }
     
 
-/* set the point within the sample to begin playing */
+/* set the point within the sample to begin playing
 int patch_set_sample_start (int id, int start)
 {
     if (!isok (id))
@@ -698,8 +698,9 @@ int patch_set_sample_start (int id, int start)
     patches[id].sample_start = start;
     return 0;
 }
+*/
 
-/* set the point within the sample to stop playing */
+/* set the point within the sample to stop playing
 int patch_set_sample_stop (int id, int stop)
 {
     if (!isok (id))
@@ -729,8 +730,9 @@ int patch_set_sample_stop (int id, int stop)
     patches[id].sample_stop = stop;
     return 0;
 }
+*/
 
-/* sets the start loop point */
+/* sets the start loop point
 int patch_set_loop_start (int id, int start)
 {
     if (!isok (id))
@@ -750,8 +752,10 @@ int patch_set_loop_start (int id, int start)
 
     return 0;
 }
+*/
 
-/* sets the stopping loop point */
+
+/* sets the stopping loop point
 int patch_set_loop_stop (int id, int stop)
 {
     if (!isok (id))
@@ -771,7 +775,8 @@ int patch_set_loop_stop (int id, int stop)
 
     return 0;
 }
-
+*/
+/*
 int patch_set_sample_xfade (int id, int samples)
 {
     if (!isok (id))
@@ -801,7 +806,8 @@ int patch_set_sample_xfade (int id, int samples)
     patches[id].sample_xfade = samples;
     return 0;
 }
-
+*/
+/*
 int patch_set_sample_fade_in (int id, int samples)
 {
     if (!isok (id))
@@ -825,8 +831,9 @@ int patch_set_sample_fade_in (int id, int samples)
     patches[id].sample_fade_in = samples;
     return 0;
 }
+*/
 
-
+/*
 int patch_set_sample_fade_out (int id, int samples)
 {
     if (!isok (id))
@@ -850,7 +857,7 @@ int patch_set_sample_fade_out (int id, int samples)
     patches[id].sample_fade_out = samples;
     return 0;
 }
-
+*/
 
 /* sets the lower note of a patch's range */
 int patch_set_lower_note (int id, int note)
@@ -864,6 +871,26 @@ int patch_set_lower_note (int id, int note)
     patches[id].lower_note = note;
     return 0;
 }
+
+
+int patch_set_mark(int id, int mark, int frame)
+{
+    if (!isok(id))
+        return PATCH_ID_INVALID;
+
+    if (patches[id].sample->sp == NULL)
+        return 0;
+
+    if (mark < WF_MARK_START || mark > WF_MARK_STOP)
+        return PATCH_PARAM_INVALID;
+
+    if (frame < 0 || frame > patches[id].sample->frames)
+        return PATCH_PARAM_INVALID;
+
+    *(patches[id].marks[mark]) = frame;
+    return 0;
+}
+
 
 /* set whether the patch is monophonic or not */
 int patch_set_monophonic(int id, gboolean val)
@@ -1135,39 +1162,43 @@ gboolean patch_get_legato(int id)
     return patches[id].legato;
 }   
 
-/* get the starting playback point */
+/* get the starting playback point
 int patch_get_sample_start (int id)
 {
     if (!isok (id))
 	return PATCH_ID_INVALID;
     return patches[id].sample_start;
 }
+*/
 
-/* get the stopping playback point */
+/* get the stopping playback point
 int patch_get_sample_stop (int id)
 {
     if (!isok (id))
 	return PATCH_ID_INVALID;
     return patches[id].sample_stop;
 }
+*/
 
-/* get the starting loop point */
+/* get the starting loop point
 int patch_get_loop_start (int id)
 {
     if (!isok (id))
 	return PATCH_ID_INVALID;
     return patches[id].loop_start;
 }
+*/
 
-/* get the stopping loop point */
+/* get the stopping loop point
 int patch_get_loop_stop (int id)
 {
     if (!isok (id))
 	return PATCH_ID_INVALID;
     return patches[id].loop_stop;
 }
+*/
 
-/* get the starting playback point */
+/*
 int patch_get_sample_xfade (int id)
 {
     if (!isok (id))
@@ -1188,6 +1219,7 @@ int patch_get_sample_fade_out (int id)
 	return PATCH_ID_INVALID;
     return patches[id].sample_fade_out;
 }
+*/
 
 /* get the lower note */
 int patch_get_lower_note (int id)
@@ -1196,6 +1228,24 @@ int patch_get_lower_note (int id)
 	return PATCH_ID_INVALID;
     return patches[id].lower_note;
 }
+
+
+int patch_get_mark(int id, int mark)
+{
+    if (!isok(id))
+        return PATCH_ID_INVALID;
+
+    if (patches[id].sample->sp == NULL)
+        return 0;
+
+    if (mark < WF_MARK_START || mark > WF_MARK_STOP)
+        return PATCH_PARAM_INVALID;
+
+    return *(patches[id].marks[mark]);
+}
+
+
+
 
 /* get whether this patch is monophonic or not */
 gboolean patch_get_monophonic(int id)

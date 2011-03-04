@@ -292,13 +292,13 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
     {
         if (p->play_mode & PATCH_PLAY_REVERSE)
         {
-            v->posi = p->sample_stop;
+            v->posi = p->play_stop;
             v->posf = 0;
             v->dir = -1;
         }
         else
         {
-            v->posi = p->sample_start;
+            v->posi = p->play_start;
             v->posf = 0;
             v->dir = 1;
         }
@@ -660,8 +660,8 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
     }
     else
     {
-        if (((v->dir > 0) && (v->posi > p->sample_stop))
-            || ((v->dir < 0) && (v->posi < p->sample_start)))
+        if (((v->dir > 0) && (v->posi > p->play_stop))
+            || ((v->dir < 0) && (v->posi < p->play_start)))
         {
             /* we need to let our caller know that they are out of
              * samples */

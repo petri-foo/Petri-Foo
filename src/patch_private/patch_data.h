@@ -113,32 +113,35 @@ typedef struct _Patch
     int      channel;       /* midi channel to listen on */
     int      note;          /* midi note to listen on */
     int      range;         /* whether to listen to range of notes or not */
-    int      lower_note;	/* lowest note in range */
-    int      upper_note;	/* highest note in range */
-    int      cut;		/* cut signal this patch emits */
-    int      cut_by;		/* what cut signals stop this patch */
-    int      sample_start;	/* the first frame to play */
-    int      sample_stop;	/* the last frame to play */
-    int      loop_start;	/* the first frame to loop at */
-    int      loop_stop;		/* the last frame to loop at */
+    int      lower_note;    /* lowest note in range */
+    int      upper_note;    /* highest note in range */
+    int      cut;           /* cut signal this patch emits */
+    int      cut_by;        /* what cut signals stop this patch */
+    int      play_start;    /* the first frame to play */
+    int      play_stop;     /* the last frame to play */
+    int      loop_start;    /* the first frame to loop at */
+    int      loop_stop;     /* the last frame to loop at */
+
+    int*    marks[WF_MARK_STOP + 1];
+
 
     int     sample_xfade;
     int     sample_fade_in;
     int     sample_fade_out;
 
-    gboolean porta;		/* whether portamento is being used or not */
-    float    porta_secs;	/* length of portamento slides in seconds */
-    int      pitch_steps;	/* range of pitch.val in halfsteps */
-    float    pitch_bend;	/* pitch bending factor */
-    gboolean mono;		/* whether patch is monophonic or not */
-    gboolean legato;		/* whether patch is played legato or not */
+    gboolean porta;         /* whether portamento is being used or not */
+    float    porta_secs;    /* length of portamento slides in seconds */
+    int      pitch_steps;   /* range of pitch.val in halfsteps */
+    float    pitch_bend;    /* pitch bending factor */
+    gboolean mono;          /* whether patch is monophonic or not */
+    gboolean legato;        /* whether patch is played legato or not */
 
-    PatchPlayMode play_mode;	/* how this patch is to be played */
-    PatchParam    vol;		/* volume:                  [0.0, 1.0] */
-    PatchParam    pan;		/* panning:                [-1.0, 1.0] */
-    PatchParam    ffreq;	/* filter cutoff frequency: [0.0, 1.0] */
-    PatchParam    freso;	/* filter resonance:        [0.0, 1.0] */
-    PatchParam    pitch;	/* pitch scaling:           [0.0, 1.0] */
+    PatchPlayMode play_mode;/* how this patch is to be played */
+    PatchParam    vol;      /* volume:                  [0.0, 1.0] */
+    PatchParam    pan;      /* panning:                [-1.0, 1.0] */
+    PatchParam    ffreq;    /* filter cutoff frequency: [0.0, 1.0] */
+    PatchParam    freso;    /* filter resonance:        [0.0, 1.0] */
+    PatchParam    pitch;    /* pitch scaling:           [0.0, 1.0] */
 
     double mod1_pitch_max;
     double mod1_pitch_min;

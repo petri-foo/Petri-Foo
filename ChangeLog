@@ -1,3 +1,12 @@
+2011-03-04  James Morris <james@jwm-art.net>
+	* another hopelessy out-of-date Changelog entry
+	* removed specific patch_set/patch_get methods for
+          play/loop start/stop points.
+	* replaced above with patch_set_mark and patch_get_mark
+	* replaced naming of sample_start sample_stop with
+	  play_start and play_stop to reflect naming conventions
+	  i'd already started.
+
 2011-02-26  James Morris <james@jwm-art.net>
 	* gui/voicetab.c - set portamento time slider range
           from 0.25 seconds to 1.0 seconds to reflect the range

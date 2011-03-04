@@ -21,15 +21,6 @@
                                     WAVEFORM_TYPE,  WaveformClass))
 
 
-enum
-{
-    WF_MARK_START,
-    WF_MARK_PLAY_START,
-    WF_MARK_LOOP_START,
-    WF_MARK_LOOP_STOP,
-    WF_MARK_PLAY_STOP,
-    WF_MARK_STOP
-};
 
 
 

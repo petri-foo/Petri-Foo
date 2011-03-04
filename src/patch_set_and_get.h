@@ -52,9 +52,14 @@ int patch_set_cut          (int id, int cut);
 int patch_set_cut_by       (int id, int cut_by);
 int patch_set_cutoff       (int id, float freq);
 int patch_set_legato       (int id, gboolean val);
+/*
 int patch_set_loop_start   (int id, int start);
 int patch_set_loop_stop    (int id, int stop);
+*/
 int patch_set_lower_note   (int id, int note);
+
+int patch_set_mark         (int patch_id, int mark_id, int frame);
+
 int patch_set_monophonic   (int id, gboolean val);
 int patch_set_name         (int id, const char* name);
 int patch_set_note         (int id, int note);
@@ -66,8 +71,10 @@ int patch_set_portamento   (int id, gboolean val);
 int patch_set_portamento_time(int id, float secs);
 int patch_set_range        (int id, int range);
 int patch_set_resonance     (int id, float reso);
+/*
 int patch_set_sample_start (int id, int start);
 int patch_set_sample_stop  (int id, int stop);
+*/
 int patch_set_upper_note   (int id, int note);
 int patch_set_amplitude    (int id, float vol);
 int patch_set_sample_xfade (int id, int samples);
@@ -82,9 +89,14 @@ float         patch_get_cutoff        (int id);
 int           patch_get_display_index (int id);
 int           patch_get_frames        (int id);
 gboolean      patch_get_legato        (int id);
+/*
 int           patch_get_loop_start    (int id);
 int           patch_get_loop_stop     (int id);
+*/
 int           patch_get_lower_note    (int id);
+
+int           patch_get_mark          (int patch_id, int mark_id);
+
 gboolean      patch_get_monophonic    (int id);
 char*         patch_get_name          (int id);
 int           patch_get_note          (int id);
@@ -98,8 +110,10 @@ int           patch_get_range         (int id);
 float         patch_get_resonance     (int id);
 const float*  patch_get_sample        (int id);
 char*         patch_get_sample_name   (int id);
+/*
 int           patch_get_sample_start  (int id);
 int           patch_get_sample_stop   (int id);
+*/
 int           patch_get_upper_note    (int id);
 float         patch_get_amplitude     (int id);
 int           patch_get_sample_xfade  (int id);

@@ -66,38 +66,39 @@ static void cb_stop (GtkWidget * widget, gpointer data)
 static void cb_reset (GtkWidget * widget, gpointer data)
 {
     (void)widget;(void)data;
-     debug ("Restoring initial values\n");
-     patch_set_sample_start(patch, old_play_start);
-     patch_set_sample_stop(patch, old_play_stop);
-     patch_set_loop_start(patch, old_loop_start);
-     patch_set_loop_stop(patch, old_loop_stop);
+    debug ("Restoring initial values\n");
+
+    patch_set_mark(patch, WF_MARK_PLAY_START, old_play_start);
+    patch_set_mark(patch, WF_MARK_PLAY_STOP,  old_play_stop);
+    patch_set_mark(patch, WF_MARK_LOOP_START, old_loop_start);
+    patch_set_mark(patch, WF_MARK_LOOP_STOP,  old_loop_stop);
     cb_mark_combo_changed(mark_combo, 0);
-     gtk_widget_queue_draw(waveform);
+    gtk_widget_queue_draw(waveform);
+    gtk_widget_queue_draw(wf_thumb);
 }
 
 static void cb_clear (GtkWidget * widget, gpointer data)
 {
     (void)widget;
     char *op = data;
-    int play_start, play_stop;
-    int frames;
 
-    if (strcmp (op, "loop") == 0)
+    if (strcmp(op, "loop") == 0)
     {
-        play_start = patch_get_sample_start (patch);
-        play_stop = patch_get_sample_stop (patch);
-        patch_set_loop_start (patch, play_start);
-        patch_set_loop_stop (patch, play_stop);
+        int play_start = patch_get_mark(patch, WF_MARK_PLAY_START);
+        int play_stop =  patch_get_mark(patch, WF_MARK_PLAY_STOP);
+        patch_set_mark(patch, WF_MARK_LOOP_START, play_start);
+        patch_set_mark(patch, WF_MARK_LOOP_STOP, play_stop);
      }
-     else if (strcmp (op, "play") == 0)
+     else if (strcmp(op, "play") == 0)
      {
-        frames = patch_get_frames (patch);
-        patch_set_sample_start (patch, 0);
-        patch_set_sample_stop (patch, frames - 1);
+        int frames = patch_get_mark(patch, WF_MARK_STOP);
+        patch_set_mark(patch, WF_MARK_PLAY_START, 0);
+        patch_set_mark(patch, WF_MARK_PLAY_STOP, frames - 1);
      }
 
     cb_mark_combo_changed(mark_combo, 0);
     gtk_widget_queue_draw(waveform);
+    gtk_widget_queue_draw(wf_thumb);
 }
 
 
@@ -126,6 +127,7 @@ static void cb_mark_spin_changed(GtkWidget * spin, gpointer data)
     waveform_set_mark_frame(WAVEFORM(waveform), val);
     update_mark_val(val);
     gtk_widget_queue_draw(waveform);
+    gtk_widget_queue_draw(wf_thumb);
 }
 
 
@@ -153,6 +155,7 @@ static void update_mark_spin(void)
     g_signal_handlers_unblock_by_func(mark_spin, cb_mark_spin_changed, 0);
 
     update_mark_val(val);
+    gtk_widget_queue_draw(wf_thumb);
 }
 
 
@@ -262,23 +265,21 @@ debug("start:%f stop:%f hscroll range value:%f\n", start,stop,val);
 
      /* emit value-changed signal so waveform is redrawn with
       * the new dimensions */
-//    g_signal_emit_by_name(G_OBJECT(hscroll), "value-changed");
     g_signal_emit_by_name(G_OBJECT(hscroll), "value-changed");
 }
 
 
 
-void sample_editor_show (int id)
+void sample_editor_show(int id)
 {
     waveform_set_patch (WAVEFORM (waveform), id);
 
     patch = id;
 
-    old_play_start = patch_get_sample_start (id);
-    old_play_stop = patch_get_sample_stop (id);
-
-    old_loop_start = patch_get_loop_start (id);
-    old_loop_stop = patch_get_loop_stop (id);
+    old_play_start = patch_get_mark(patch, WF_MARK_PLAY_START);
+    old_play_stop =  patch_get_mark(patch, WF_MARK_PLAY_STOP);
+    old_loop_start = patch_get_mark(patch, WF_MARK_LOOP_START);
+    old_loop_stop =  patch_get_mark(patch, WF_MARK_LOOP_STOP);
 
     gtk_combo_box_set_active(GTK_COMBO_BOX(mark_combo), WF_MARK_PLAY_START);
 

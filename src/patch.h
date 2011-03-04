@@ -92,6 +92,20 @@ enum
      PATCH_PLAY_TO_END = 1 << 6
 };
 
+
+
+enum
+{
+    WF_MARK_START,
+    WF_MARK_PLAY_START,
+    WF_MARK_LOOP_START,
+    WF_MARK_LOOP_STOP,
+    WF_MARK_PLAY_STOP,
+    WF_MARK_STOP
+};
+
+
+
 /* type for playmode bitfield */
 typedef guint8 PatchPlayMode;
 
