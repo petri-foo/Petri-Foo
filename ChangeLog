@@ -1,3 +1,10 @@
+2011-03-14  James Morris <james@jwm-art.net>
+	* yeah like i remember ffs, b!
+	* implemented sampler x-fades
+	* implemented sampler fade-in/outs
+	* tweaked mono+legato code
+	* tweaked adsr attack for when using mono+legato
+
 2011-03-04  James Morris <james@jwm-art.net>
 	* another hopelessy out-of-date Changelog entry
 	* removed specific patch_set/patch_get methods for

@@ -2,9 +2,6 @@ note: these items are in addition to features mentioned
 in the README as goals for Petri-Foo.
 
 
--Sampler - xfades/fadeins
-
-
 -Fix and remove artefacts arising from use of LAT for log_amplitude
  function in maths.[ch] (research info online about alternatives
  such as curved ADSRs  for example).
@@ -13,15 +10,10 @@ in the README as goals for Petri-Foo.
  never adopted).
 
 -Restore refresh functions in most GTK GUI classes
--Clean/tidy gobject/custom widget code/creation/whatever
- ie try to ascertain if it's done properly or not yet!
 
 
--Replace PHAT with custom cairo-based widgets
+-Replace PHAT with inented-here custom cairo-based widgets
 
-
--Get data members residing in GUI GtkObjectClass into private data structs.
- maybe.. it might be more important for some than others.
 
 
 -Sample Editor
@@ -31,6 +23,6 @@ in the README as goals for Petri-Foo.
     + zoom in/out/all buttons
 
 
--Surely keyboard tracking is missing? Surely? C'mon?
+-Surely keyboard tracking is missing?
 
 

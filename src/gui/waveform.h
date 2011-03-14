@@ -68,11 +68,6 @@ void        waveform_goto_mark_next (Waveform* wf);
 void        waveform_set_mark(Waveform* wf, int mark_id);
 int         waveform_get_mark(Waveform* wf);
 
-int         waveform_get_mark_spin_range(Waveform*, int* min, int* max);
-
-void        waveform_set_mark_frame(Waveform* wf, int frame);
-int         waveform_get_mark_frame(Waveform* wf);
-
 gboolean    waveform_get_interactive (Waveform* wf);
 
 int         waveform_detect_single_mark(Waveform*);

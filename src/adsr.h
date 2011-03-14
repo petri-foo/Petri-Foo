@@ -39,6 +39,7 @@ typedef struct _ADSR
 {
     ADSRState state;		/* what phase of the envelope we are in */
      Tick      ticks;		/* how far along we are in the current state */
+     float     aval;        /* value we attacked from */
      float     val;		/* our current value [0.0, 1.0] */
      float     rval;		/* value we released at */
      Tick      delay;		/* delay length in ticks */

@@ -59,7 +59,76 @@ inline static int mod_src_ok(int id)
 }
 
 
-static int get_patch_param(int patch_id, PatchParamType param, PatchParam** p)
+inline static gboolean mark_ok(int id)
+{
+    if (id < WF_MARK_START || id > WF_MARK_STOP)
+        return FALSE;
+    return TRUE;
+}
+
+inline static gboolean mark_settable(int id)
+{
+    if (id < WF_MARK_PLAY_START || id > WF_MARK_PLAY_STOP)
+        return FALSE;
+    return TRUE;
+}
+
+
+static inline void set_mark_frame(int patch, int mark, int frame)
+{
+    *(patches[patch].marks[mark]) = frame;
+}
+
+
+static inline int get_mark_frame(int patch, int mark)
+{
+    return *(patches[patch].marks[mark]);
+}
+
+
+static int get_mark_frame_range(int patch, int mark, int* min, int* max)
+{
+    int xfade = patches[patch].xfade_samples;
+
+    if (mark == WF_MARK_START || mark == WF_MARK_STOP)
+    {
+        *min = *max = get_mark_frame(patch, mark);
+        /* indicate non-editable! */
+        return -1;
+    }
+
+    /* potential range: */
+    *min = get_mark_frame(patch, mark - 1);
+    *max = get_mark_frame(patch, mark + 1);
+
+    /* tweak if necessary */
+    switch(mark)
+    {
+    case WF_MARK_PLAY_START:
+        *max -= xfade;
+        break;
+    case WF_MARK_PLAY_STOP:
+        *min += xfade;
+        break;
+    case WF_MARK_LOOP_START:
+        *min += xfade;
+        *max -= xfade;
+        break;
+    case WF_MARK_LOOP_STOP:
+        *min += xfade;
+        *max -= xfade;
+        break;
+    }
+
+    return get_mark_frame(patch, mark);
+}
+
+
+
+
+
+static int get_patch_param(int patch_id, PatchParamType param,
+                                                            PatchParam** p)
 {
     if (!isok(patch_id))
         return PATCH_ID_INVALID;
@@ -610,18 +679,18 @@ int patch_get_lfo_sync (int patch_id, int lfo_id, gboolean* val)
 }
 
 
-/*****************************************************************************/
-/*************************** PARAMETER SETTERS *******************************/
-/*****************************************************************************/
+/**************************************************************************/
+/************************ PARAMETER SETTERS *******************************/
+/**************************************************************************/
 
 /* sets channel patch listens on */
 int patch_set_channel (int id, int channel)
 {
     if (!isok (id))
-	return PATCH_ID_INVALID;
+        return PATCH_ID_INVALID;
 
     if (channel < 0 || channel > 15)
-	return PATCH_CHANNEL_INVALID;
+        return PATCH_CHANNEL_INVALID;
 
     patches[id].channel = channel;
     return 0;
@@ -631,7 +700,7 @@ int patch_set_channel (int id, int channel)
 int patch_set_cut (int id, int cut)
 {
     if (!isok (id))
-	return PATCH_ID_INVALID;
+        return PATCH_ID_INVALID;
     patches[id].cut = cut;
     return 0;
 }
@@ -640,7 +709,7 @@ int patch_set_cut (int id, int cut)
 int patch_set_cut_by (int id, int cut_by)
 {
     if (!isok (id))
-	return PATCH_ID_INVALID;
+        return PATCH_ID_INVALID;
     patches[id].cut_by = cut_by;
     return 0;
 }
@@ -662,122 +731,38 @@ int patch_set_cutoff (int id, float freq)
 int patch_set_legato(int id, gboolean val)
 {
     if (!isok (id))
-	return PATCH_ID_INVALID;
+        return PATCH_ID_INVALID;
     patches[id].legato = val;
     return 0;
 }
-    
 
-/* set the point within the sample to begin playing
-int patch_set_sample_start (int id, int start)
+
+int patch_set_fade_samples(int id, int samples)
 {
     if (!isok (id))
-	return PATCH_ID_INVALID;
+        return PATCH_ID_INVALID;
 
     if (patches[id].sample->sp == NULL)
-	return 0;
+        return 0;
 
-    if (start < 0)
+    if (samples < 0)
     {
-	debug ("refusing to set negative sample start point\n");
-	return PATCH_PARAM_INVALID;
+        debug ("refusing to set negative fade length\n");
+        return PATCH_PARAM_INVALID;
     }
 
-    if (start > patches[id].sample_stop)
+    if (patches[id].play_start + samples * 2 >= patches[id].play_stop)
     {
-	debug ("refusing to set incongruous sample start point\n");
-	return PATCH_PARAM_INVALID;
+        debug ("refusing to set fade length greater than half the "
+               " number of samples between play start and play stop\n");
+        return PATCH_PARAM_INVALID;
     }
 
-    if (start + patches[id].sample_fade_in >= patches[id].sample_stop)
-    {
-	debug ("refusing to set sample start point without room for fade-in\n");
-	return PATCH_PARAM_INVALID;
-    }
-
-    patches[id].sample_start = start;
+    patches[id].fade_samples = samples;
     return 0;
 }
-*/
 
-/* set the point within the sample to stop playing
-int patch_set_sample_stop (int id, int stop)
-{
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-
-    if (patches[id].sample->sp == NULL)
-	return 0;
-
-    if (stop >= patches[id].sample->frames)
-    {
-	debug ("refusing to set sample stop greater than sample frame count\n");
-	return PATCH_PARAM_INVALID;
-    }
-
-    if (stop < patches[id].sample_start)
-    {
-	debug ("refusing to set incongruous sample stop point\n");
-	return PATCH_PARAM_INVALID;
-    }
-
-    if (stop >= patches[id].sample->frames - patches[id].sample_fade_out)
-    {
-	debug ("refusing to set sample stop point without room for fade-out\n");
-	return PATCH_PARAM_INVALID;
-    }
-
-    patches[id].sample_stop = stop;
-    return 0;
-}
-*/
-
-/* sets the start loop point
-int patch_set_loop_start (int id, int start)
-{
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-
-    if (patches[id].sample->sp == NULL)
-	return 0;
-
-    if (start < patches[id].sample_start)
-	start = patches[id].sample_start;
-    else if (start >= patches[id].sample_stop)
-	start = patches[id].sample_stop;
-
-    patches[id].loop_start = start;
-    if (start > patches[id].loop_stop)
-	patches[id].loop_stop = start;
-
-    return 0;
-}
-*/
-
-
-/* sets the stopping loop point
-int patch_set_loop_stop (int id, int stop)
-{
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-
-    if (patches[id].sample->sp == NULL)
-	return 0;
-
-    if (stop > patches[id].sample_stop)
-	stop = patches[id].sample_stop;
-    else if (stop < patches[id].sample_start)
-	stop = patches[id].sample_start;
-
-    patches[id].loop_stop = stop;
-    if (stop < patches[id].loop_start)
-	patches[id].loop_start = stop;
-
-    return 0;
-}
-*/
-/*
-int patch_set_sample_xfade (int id, int samples)
+int patch_set_xfade_samples(int id, int samples)
 {
     if (!isok (id))
         return PATCH_ID_INVALID;
@@ -791,73 +776,25 @@ int patch_set_sample_xfade (int id, int samples)
         return PATCH_PARAM_INVALID;
     }
 
-    if (patches[id].loop_start + samples >= patches[id].sample_stop)
+    if (patches[id].loop_start + samples >= patches[id].loop_stop)
     {
-        debug ("refusing to set xfade length greater than samples between start and stop\n");
+        debug ("refusing to set xfade length greater than samples"
+               " between play start and play stop\n");
         return PATCH_PARAM_INVALID;
     }
 
-    if (patches[id].sample_stop + samples > patches[id].sample->frames)
+    if (patches[id].loop_stop + samples > patches[id].play_stop)
     {
-        debug ("refusing to set xfade length greater than length after stop\n");
+        debug ("refusing to set xfade length greater than samples"
+               " between loop stop and play stop\n");
         return PATCH_PARAM_INVALID;
     }
 
-    patches[id].sample_xfade = samples;
+debug("setting xfade to %d\n",samples);
+    patches[id].xfade_samples = samples;
     return 0;
 }
-*/
-/*
-int patch_set_sample_fade_in (int id, int samples)
-{
-    if (!isok (id))
-        return PATCH_ID_INVALID;
 
-    if (patches[id].sample->sp == NULL)
-        return 0;
-
-    if (samples < 0)
-    {
-        debug ("refusing to set negative fade-in length\n");
-        return PATCH_PARAM_INVALID;
-    }
-
-    if (patches[id].sample_start + samples >= patches[id].sample_stop)
-    {
-        debug ("refusing to set fade-in length greater than samples between start and stop\n");
-        return PATCH_PARAM_INVALID;
-    }
-
-    patches[id].sample_fade_in = samples;
-    return 0;
-}
-*/
-
-/*
-int patch_set_sample_fade_out (int id, int samples)
-{
-    if (!isok (id))
-        return PATCH_ID_INVALID;
-
-    if (patches[id].sample->sp == NULL)
-        return 0;
-
-    if (samples < 0)
-    {
-        debug ("refusing to set negative fade-out length\n");
-        return PATCH_PARAM_INVALID;
-    }
-
-    if (patches[id].sample_stop + samples > patches[id].sample->frames)
-    {
-        debug ("refusing to set fade-out length greater than length after stop\n");
-        return PATCH_PARAM_INVALID;
-    }
-
-    patches[id].sample_fade_out = samples;
-    return 0;
-}
-*/
 
 /* sets the lower note of a patch's range */
 int patch_set_lower_note (int id, int note)
@@ -873,22 +810,130 @@ int patch_set_lower_note (int id, int note)
 }
 
 
-int patch_set_mark(int id, int mark, int frame)
+int patch_set_mark_frame(int patch, int mark, int frame)
 {
-    if (!isok(id))
-        return PATCH_ID_INVALID;
+    if (!isok(patch))
+        return -1;
 
-    if (patches[id].sample->sp == NULL)
-        return 0;
+    if (patches[patch].sample->sp == NULL)
+        return -1;
 
-    if (mark < WF_MARK_START || mark > WF_MARK_STOP)
-        return PATCH_PARAM_INVALID;
+    if (!mark_settable(mark))
+        return -1;
 
-    if (frame < 0 || frame > patches[id].sample->frames)
-        return PATCH_PARAM_INVALID;
 
-    *(patches[id].marks[mark]) = frame;
-    return 0;
+    int min;
+    int max;
+    get_mark_frame_range(patch, mark, &min, &max);
+
+    if (frame < min || frame > max)
+        return -1;
+
+    set_mark_frame(patch, mark, frame);
+    return mark;
+}
+
+
+int patch_set_mark_frame_expand(int patch, int mark, int frame,
+                                                     int* also_changed)
+{
+    int xfade = patches[patch].xfade_samples;
+    int fade = patches[patch].fade_samples;
+
+    if (!isok(patch))
+        return -1;
+
+    if (patches[patch].sample->sp == NULL)
+        return -1;
+
+    *also_changed = -1;
+    int also_frame = -1;
+
+    switch(mark)
+    {
+    case WF_MARK_PLAY_START:
+        also_frame = frame + xfade; /* pot loop start pos */
+
+        if (frame + fade * 2 >= get_mark_frame(patch, WF_MARK_PLAY_STOP)
+         || also_frame >= get_mark_frame(patch, WF_MARK_LOOP_STOP))
+        {
+            mark = -1;
+        }
+        else if (also_frame > get_mark_frame(patch, WF_MARK_LOOP_START))
+        {   /* moving play start along pushes loop start along... */
+            if (also_frame + xfade
+                < get_mark_frame(patch, WF_MARK_LOOP_STOP))
+            {
+                *also_changed = WF_MARK_LOOP_START;
+            }
+            else
+                mark = -1;
+        }
+        break;
+
+    case WF_MARK_PLAY_STOP:
+        also_frame = frame - xfade; /* pot loop stop pos */
+
+        if (frame - fade * 2<= get_mark_frame(patch, WF_MARK_PLAY_START)
+         || also_frame <= get_mark_frame(patch, WF_MARK_LOOP_START))
+        {
+            mark = -1;
+        }
+        else if (also_frame < get_mark_frame(patch, WF_MARK_LOOP_STOP))
+        {
+            if (also_frame - xfade
+                > get_mark_frame(patch, WF_MARK_LOOP_START))
+            {
+                *also_changed = WF_MARK_LOOP_STOP;
+            }
+            else
+                mark = -1;
+        }
+        break;
+
+    case WF_MARK_LOOP_START:
+        also_frame = frame - xfade; /* pot play start pos */
+
+        if (frame + xfade >= get_mark_frame(patch, WF_MARK_LOOP_STOP))
+            mark = -1;
+        else if (also_frame < get_mark_frame(patch, WF_MARK_PLAY_START))
+        {
+            if (also_frame > 0)
+                *also_changed = WF_MARK_PLAY_START;
+            else
+                mark = -1;
+        }
+        break;
+
+    case WF_MARK_LOOP_STOP:
+        also_frame = frame + xfade /* pot play stop pos */;
+
+        if (frame - xfade <= get_mark_frame(patch, WF_MARK_LOOP_START))
+            mark = -1;
+        else if (also_frame > get_mark_frame(patch, WF_MARK_PLAY_STOP))
+        {
+            if (also_frame < get_mark_frame(patch, WF_MARK_STOP))
+                *also_changed = WF_MARK_PLAY_STOP;
+            else
+                mark = -1;
+        }
+        break;
+
+    default:
+        mark = -1;
+    }
+
+    if (mark != -1)
+    {
+        set_mark_frame(patch, mark, frame);
+    }
+
+    if (*also_changed != -1)
+    {
+        set_mark_frame(patch, *also_changed, also_frame);
+    }
+
+    return mark;
 }
 
 
@@ -1160,66 +1205,8 @@ gboolean patch_get_legato(int id)
     if (!isok (id))
 	return PATCH_ID_INVALID;
     return patches[id].legato;
-}   
-
-/* get the starting playback point
-int patch_get_sample_start (int id)
-{
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-    return patches[id].sample_start;
-}
-*/
-
-/* get the stopping playback point
-int patch_get_sample_stop (int id)
-{
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-    return patches[id].sample_stop;
-}
-*/
-
-/* get the starting loop point
-int patch_get_loop_start (int id)
-{
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-    return patches[id].loop_start;
-}
-*/
-
-/* get the stopping loop point
-int patch_get_loop_stop (int id)
-{
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-    return patches[id].loop_stop;
-}
-*/
-
-/*
-int patch_get_sample_xfade (int id)
-{
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-    return patches[id].sample_xfade;
 }
 
-int patch_get_sample_fade_in (int id)
-{
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-    return patches[id].sample_fade_in;
-}
-
-int patch_get_sample_fade_out (int id)
-{
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-    return patches[id].sample_fade_out;
-}
-*/
 
 /* get the lower note */
 int patch_get_lower_note (int id)
@@ -1230,22 +1217,29 @@ int patch_get_lower_note (int id)
 }
 
 
-int patch_get_mark(int id, int mark)
+int patch_get_mark_frame(int patch, int mark)
 {
-    if (!isok(id))
-        return PATCH_ID_INVALID;
+    if (!isok(patch))
+        return -1;
 
-    if (patches[id].sample->sp == NULL)
-        return 0;
+    if (patches[patch].sample->sp == NULL)
+        return -1;
 
-    if (mark < WF_MARK_START || mark > WF_MARK_STOP)
-        return PATCH_PARAM_INVALID;
+    if (!mark_ok(mark))
+        return -1;
 
-    return *(patches[id].marks[mark]);
+    return get_mark_frame(patch, mark);
 }
 
 
+int patch_get_mark_frame_range(int patch, int mark, int* frame_min,
+                                                    int* frame_max)
+{
+    if (!isok(patch) || !mark_ok(mark))
+        return -1;
 
+    return get_mark_frame_range(patch, mark, frame_min, frame_max);
+}
 
 /* get whether this patch is monophonic or not */
 gboolean patch_get_monophonic(int id)
@@ -1381,6 +1375,44 @@ float patch_get_amplitude (int id)
     return patches[id].vol.val;
 }
 
+
+int patch_get_fade_samples(int id)
+{
+    if (!isok (id))
+        return PATCH_ID_INVALID;
+    return patches[id].fade_samples;
+}
+
+int patch_get_xfade_samples(int id)
+{
+    if (!isok (id))
+        return PATCH_ID_INVALID;
+    return patches[id].xfade_samples;
+}
+
+
+int patch_get_max_fade_samples(int id)
+{
+    return (patches[id].play_stop - patches[id].play_start) / 2;
+}
+
+
+int patch_get_max_xfade_samples(int id)
+{
+    int min = patches[id].sample->frames;
+    int tmp;
+    
+    tmp = patches[id].loop_stop - patches[id].loop_start;
+    min = (tmp < min) ? tmp : min;
+
+    tmp = patches[id].play_stop - patches[id].loop_stop;
+    min = (tmp < min) ? tmp : min;
+
+    tmp = patches[id].loop_start - patches[id].play_start;
+    min = (tmp < min) ? tmp : min;
+
+    return tmp;
+}
 
 
 /******************************************************************/

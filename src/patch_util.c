@@ -29,36 +29,13 @@ static int start_frame = 0;
 /**************************************************************************/
 
 
-/* inline static int isok(int id) see private/patch_data.h */
+/*  inline definitions shared by patch and patch_util:
+ *                          (see private/patch_data.h)
+ */
 INLINE_ISOK_DEF
-
-
-/* locks a patch so that it will be ignored by patch_render() */
-inline static void patch_lock (int id)
-{
-    g_assert (id >= 0 && id < PATCH_COUNT);
-    pthread_mutex_lock (&patches[id].mutex);
-}
-
-/*  same as above, but returns immediately with EBUSY if mutex
- *  is already held */
-inline static int patch_trylock (int id)
-{
-    g_assert (id >= 0 && id < PATCH_COUNT);
-    return pthread_mutex_trylock (&patches[id].mutex);
-}
-
-/* unlocks a patch after use */
-inline static void patch_unlock (int id)
-{
-    g_assert (id >= 0 && id < PATCH_COUNT);
-    pthread_mutex_unlock (&patches[id].mutex);
-}
-
-
-/*  inline static void
-    patch_trigger_global_lfo(int patch_id, LFO* lfo, LFOParams* lfopar)
-    inline static function def macro, see private/patch_data.h */
+INLINE_PATCH_LOCK_DEF
+INLINE_PATCH_TRYLOCK_DEF
+INLINE_PATCH_UNLOCK_DEF
 INLINE_PATCH_TRIGGER_GLOBAL_LFO_DEF
 
 
@@ -133,19 +110,15 @@ int patch_create (const char *name)
     patches[id].play_start = 0;
     patches[id].play_stop = 0;
 
-    patches[id].sample_xfade = 0;
-    patches[id].sample_fade_in = 0;
-    patches[id].sample_fade_out = 0;
-
     patches[id].loop_start = 0;
     patches[id].loop_stop = 0;
 
-    patches[id].marks[WF_MARK_START] = &start_frame;
+    patches[id].marks[WF_MARK_START] =      &start_frame;
+    patches[id].marks[WF_MARK_STOP] =       &patches[id].sample_stop;
     patches[id].marks[WF_MARK_PLAY_START] = &patches[id].play_start;
     patches[id].marks[WF_MARK_PLAY_STOP] =  &patches[id].play_stop;
     patches[id].marks[WF_MARK_LOOP_START] = &patches[id].loop_start;
     patches[id].marks[WF_MARK_LOOP_STOP] =  &patches[id].loop_stop;
-/*  can't set WF_MARK_STOP until the sample is loaded */
 
     patches[id].porta = FALSE;
     patches[id].mono = FALSE;
@@ -157,7 +130,10 @@ int patch_create (const char *name)
     patches[id].mod1_pitch_min = 1.0;
     patches[id].mod2_pitch_max = 1.0;
     patches[id].mod2_pitch_min = 1.0;
-     
+
+    patches[id].fade_samples = DEFAULT_FADE_SAMPLES;
+    patches[id].xfade_samples = DEFAULT_FADE_SAMPLES;
+
     /* default adsr params */
     defadsr.env_on  = FALSE;
     defadsr.delay   = 0.0;
@@ -193,7 +169,7 @@ int patch_create (const char *name)
     patches[id].vol.mod2_id = MOD_SRC_NONE;
     patches[id].vol.mod1_amt = 0;
     patches[id].vol.mod2_amt = 0;
-    patches[id].vol.direct_mod_id = MOD_SRC_FIRST_EG;
+    patches[id].vol.direct_mod_id = MOD_SRC_NONE;
     patches[id].vol.vel_amt = 1.0;
 
     /* panning */
@@ -237,6 +213,9 @@ int patch_create (const char *name)
     defvoice.stepf = 0;
     defvoice.vel = 0;
 
+    defvoice.fade_posi = -1;
+    defvoice.xfade_posi = -1;
+
     defvoice.vol_mod1 = 0;
     defvoice.vol_mod2 = 0;
     defvoice.vol_direct = 0;
@@ -256,10 +235,6 @@ int patch_create (const char *name)
     for (i = 0; i < VOICE_MAX_ENVS; i++)
     {
         patches[id].env_params[i] = defadsr;
-        if (i == 0)
-        {
-            patches[id].env_params[i].env_on = TRUE;
-        }
         adsr_init(&defvoice.env[i]);
     }
 
@@ -301,7 +276,8 @@ int patch_destroy (int id)
     int index;
 
     if (!isok (id))
-	return PATCH_ID_INVALID;
+        return PATCH_ID_INVALID;
+
     debug ("Removing patch: %d\n", id);
 
     patch_lock (id);
@@ -585,12 +561,12 @@ int patch_sample_load (int id, const char *name)
     int val;
 
     if (!isok (id))
-	return PATCH_ID_INVALID;
+        return PATCH_ID_INVALID;
 
     if (name == NULL)
     {
-	debug ("Refusing to load null sample for patch %d\n", id);
-	return PATCH_PARAM_INVALID;
+        debug ("Refusing to load null sample for patch %d\n", id);
+        return PATCH_PARAM_INVALID;
     }
 
     debug ("Loading sample %s for patch %d\n", name, id);
@@ -601,17 +577,19 @@ int patch_sample_load (int id, const char *name)
     patch_lock (id);
     val = sample_load_file (patches[id].sample, name, patch_samplerate);
 
-    /* set the sample/loop start/stop point appropriately */
-    patches[id].sample_xfade = 0;
-    patches[id].sample_fade_in = 0;
-    patches[id].sample_fade_out = 0;
+    patches[id].sample_stop = patches[id].sample->frames - 1;
 
     patches[id].play_start = 0;
-    patches[id].play_stop = patches[id].sample->frames - 1;
-    patches[id].loop_start = 0;
-    patches[id].loop_stop = patches[id].sample->frames - 1;
+    patches[id].play_stop = patches[id].sample_stop;
+    patches[id].loop_start = patches[id].xfade_samples;
+    patches[id].loop_stop = patches[id].sample_stop -
+                                    patches[id].xfade_samples;
 
-    patches[id].marks[WF_MARK_STOP] = &patches[id].sample->frames;
+    patches[id].fade_samples = 100;
+    patches[id].xfade_samples = 100;
+
+    if (patches[id].sample_stop < patches[id].fade_samples)
+        patches[id].fade_samples = patches[id].xfade_samples = 0;
 
     patch_unlock (id);
     return val;
@@ -632,9 +610,6 @@ void patch_sample_unload (int id)
     patches[id].play_stop = 0;
     patches[id].loop_start = 0;
     patches[id].loop_stop = 0;
-    patches[id].sample_xfade = 0;
-    patches[id].sample_fade_in = 0;
-    patches[id].sample_fade_out = 0;
 
     patch_unlock (id);
 }
@@ -668,24 +643,23 @@ void patch_set_samplerate (int rate)
     patch_samplerate = rate;
 
     debug ("changing samplerate to %d\n", rate);
+
     if (patch_samplerate != oldrate)
-    {	 
-	for (id = 0; id < PATCH_COUNT; id++)
-	{
-	    if (!patches[id].active)
-		continue;
-	       
-	    name = patch_get_sample_name (id);
-	    patch_sample_load (id, name);
-	    g_free (name);
-	}
+    {
+        for (id = 0; id < PATCH_COUNT; id++)
+        {
+            if (!patches[id].active)
+                continue;
+
+            name = patch_get_sample_name (id);
+            patch_sample_load (id, name);
+            g_free (name);
+        }
     }
 
-    patch_declick_dec = 1.0 / (PATCH_MIN_RELEASE * rate);
     patch_legato_lag = PATCH_LEGATO_LAG * rate;
-    debug("patch_declick_dec = %f\n", patch_declick_dec);
     debug("patch_legato_lag = %d\n", patch_legato_lag);
-     
+
     patch_trigger_global_lfos ( );
 }
 

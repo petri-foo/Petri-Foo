@@ -17,9 +17,6 @@ const float  ALMOST_ZERO = 1e-6;
 float        patch_samplerate = DRIVER_DEFAULT_SAMPLERATE;
 int          patch_legato_lag = 20;     /* bogus initial value */
 
-float        patch_declick_dec = 0.1;   /* bogus initial value 
-                                         * FIXME: patch_declic_dec
-                                         * will become deprecated */
 
 Patch        patches[PATCH_COUNT];
 

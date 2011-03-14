@@ -11,5 +11,7 @@ void sample_editor_set_thumb(GtkWidget* thumb);
 
 void sample_editor_show(int id);
 
+void sample_editor_update(void);
+
 
 #endif /* __SAMPLE_EDITOR_H__ */

@@ -52,13 +52,17 @@ int patch_set_cut          (int id, int cut);
 int patch_set_cut_by       (int id, int cut_by);
 int patch_set_cutoff       (int id, float freq);
 int patch_set_legato       (int id, gboolean val);
-/*
-int patch_set_loop_start   (int id, int start);
-int patch_set_loop_stop    (int id, int stop);
-*/
 int patch_set_lower_note   (int id, int note);
 
-int patch_set_mark         (int patch_id, int mark_id, int frame);
+/* both of these return mark_id on success */
+int patch_set_mark_frame   (int patch_id, int mark_id, int frame);
+
+/* returns mark_id on sucessful setting, if another mark required
+    moving to accomodate the set mark, the id of the moved mark will
+    be set via also_changed which is otherwise -1.
+ */
+int patch_set_mark_frame_expand(int patch_id, int mark_id, int frame,
+                                                    int* also_changed);
 
 int patch_set_monophonic   (int id, gboolean val);
 int patch_set_name         (int id, const char* name);
@@ -71,15 +75,12 @@ int patch_set_portamento   (int id, gboolean val);
 int patch_set_portamento_time(int id, float secs);
 int patch_set_range        (int id, int range);
 int patch_set_resonance     (int id, float reso);
-/*
-int patch_set_sample_start (int id, int start);
-int patch_set_sample_stop  (int id, int stop);
-*/
+
 int patch_set_upper_note   (int id, int note);
 int patch_set_amplitude    (int id, float vol);
-int patch_set_sample_xfade (int id, int samples);
-int patch_set_sample_fade_in (int id, int samples);
-int patch_set_sample_fade_out(int id, int samples);
+
+int patch_set_fade_samples (int id, int samples);
+int patch_set_xfade_samples(int id, int samples);
 
 /* parameter getters */
 int           patch_get_channel       (int id);
@@ -89,13 +90,12 @@ float         patch_get_cutoff        (int id);
 int           patch_get_display_index (int id);
 int           patch_get_frames        (int id);
 gboolean      patch_get_legato        (int id);
-/*
-int           patch_get_loop_start    (int id);
-int           patch_get_loop_stop     (int id);
-*/
 int           patch_get_lower_note    (int id);
 
-int           patch_get_mark          (int patch_id, int mark_id);
+int           patch_get_mark_frame      (int patch_id, int mark_id);
+int           patch_get_mark_frame_range(int patch_id, int mark_id,
+                                                       int* frame_min,
+                                                       int* frame_max);
 
 gboolean      patch_get_monophonic    (int id);
 char*         patch_get_name          (int id);
@@ -110,18 +110,14 @@ int           patch_get_range         (int id);
 float         patch_get_resonance     (int id);
 const float*  patch_get_sample        (int id);
 char*         patch_get_sample_name   (int id);
-/*
-int           patch_get_sample_start  (int id);
-int           patch_get_sample_stop   (int id);
-*/
 int           patch_get_upper_note    (int id);
 float         patch_get_amplitude     (int id);
-int           patch_get_sample_xfade  (int id);
-int           patch_get_sample_fade_in (int id);
-int           patch_get_sample_fade_out(int id);
+int           patch_get_fade_samples  (int id);
+int           patch_get_xfade_samples (int id);
+int           patch_get_max_fade_samples(int id);
+int           patch_get_max_xfade_samples(int id);
 
 /* param */
-
 int patch_param_get_value(int patch_id, PatchParamType, float* val);
 int patch_param_set_value(int patch_id, PatchParamType, float  val);
 

@@ -167,6 +167,7 @@ static void file_cb(GtkButton* button, SampleTabPrivate* p)
     sample_selector_show(p->patch, window);
     update_file_button(p);
     gtk_widget_queue_draw(p->waveform);
+    sample_editor_update();
 }
 
 

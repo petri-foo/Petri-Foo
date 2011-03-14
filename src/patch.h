@@ -11,7 +11,7 @@ enum
 {
     PATCH_COUNT = 64,           /* maximum patches */
     PATCH_MAX_NAME = 32,        /* maximum length of patch name */
-    PATCH_VOICE_COUNT = 8,      /* maximum active voices per patch */
+    PATCH_VOICE_COUNT = 16,     /* maximum active voices per patch */
     PATCH_MAX_PITCH_STEPS = 48, /* maximum val allowable for pitch_steps */
 
     PATCH_MAX_LFOS = 5, /* LFO's global in scope to patch */
@@ -71,25 +71,25 @@ enum
 enum
 {
      /* direction */
-     PATCH_PLAY_FORWARD = 1,
-     PATCH_PLAY_REVERSE = 1 << 1,
+     PATCH_PLAY_FORWARD =       1 << 0,
+     PATCH_PLAY_REVERSE =       1 << 1,
      /************/
 
      /* duration */
-     PATCH_PLAY_SINGLESHOT = 1 << 2,
-     PATCH_PLAY_TRIM = 1 << 3,
-     PATCH_PLAY_LOOP = 1 << 4,
+     PATCH_PLAY_SINGLESHOT =    1 << 2,
+     PATCH_PLAY_TRIM =          1 << 3,
+     PATCH_PLAY_LOOP =          1 << 4,
      /***********/
 
      /* ping pong mode can be set independently of all the other
       * params, but it should only be tested for if PATCH_PLAY_LOOP is set */
-     PATCH_PLAY_PINGPONG = 1 << 5,
+     PATCH_PLAY_PINGPONG =      1 << 5,
 
     /*  patch play to end should only be tested for if PATCH_PLAY_LOOP is
         set. if active, after note_off, playback continues past loop end
         toward sample end
      */
-     PATCH_PLAY_TO_END = 1 << 6
+     PATCH_PLAY_TO_END =        1 << 6,
 };
 
 

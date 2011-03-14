@@ -20,10 +20,12 @@ void adsr_init (ADSR* env)
 
 void adsr_trigger (ADSR* env)
 {
-     env->state = ADSR_STATE_DELAY;
-     env->ticks = 0;
-     env->val = 0;
-     env->rval = 0;
+    env->state = ADSR_STATE_DELAY;
+    env->ticks = 0;
+    env->aval = env->val;
+
+/* no re-zero:     env->val = 0; */
+/*  this doesn't need zeroing here anyway env->rval = 0; */
 }
 
 void adsr_release (ADSR* env)
@@ -40,7 +42,8 @@ float adsr_tick (ADSR* e)
      switch (e->state)
      {
      case ADSR_STATE_DELAY:
-	  e->val = 0.0;
+	  if (e->delay)
+        e->val = 0.0;
 
 	  if (++e->ticks > e->delay)
 	  {
@@ -56,7 +59,7 @@ float adsr_tick (ADSR* e)
 	  else
 	  {
 	       d = (e->ticks * 1.0) / e->attack;
-	       e->val = lerp (0.0, 1.0, d);
+	       e->val = lerp (e->aval, 1.0, d);
 	  }
 
 	  if (++e->ticks > e->attack)

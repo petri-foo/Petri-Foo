@@ -30,17 +30,15 @@ extern float        patch_samplerate;
 extern int          patch_legato_lag;
 
 
-/* how much to decrease v->declick_vol by each tick; calculated to
- * take PATCH_MIN_RELEASE seconds */
-extern float        patch_declick_dec;  /* FIXME: declick_dec will become
-                                         * deprecated */
-
 
 /* the patches */
 extern Patch        patches[PATCH_COUNT];
 
 
 extern float* mod_id_to_pointer(int id, Patch* p, PatchVoice* v);
+
+
+#define DEFAULT_FADE_SAMPLES 100
 
 
 #endif

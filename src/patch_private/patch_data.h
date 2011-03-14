@@ -14,6 +14,15 @@ typedef enum
     RELEASE_ALL         /* release all voices for a given patch */
 } release_t;
 
+typedef enum
+{
+    PLAYSTATE_OFF =         0,
+    PLAYSTATE_PLAY =        1 << 1,
+    PLAYSTATE_LOOP =        1 << 2,
+    PLAYSTATE_FADE_IN =     1 << 3,
+    PLAYSTATE_FADE_OUT =    1 << 4,
+} playstate_t;
+
 
 /* type for currently playing notes (voices) */
 typedef struct _PatchVoice
@@ -26,7 +35,6 @@ typedef struct _PatchVoice
     gboolean  released;     /* whether we've been released or not */
     gboolean  to_end;       /* whether we're to go to end of sample after
                                loop or not */
-    float     declick_vol;  /* current volume for declick phase */
     int       dir;          /* current direction
                              * (forward == 1, reverse == -1) */
     int       note;         /* the note that activated us */
@@ -38,6 +46,7 @@ typedef struct _PatchVoice
     guint32   posf;         /* fractional sample index */
     int       stepi;        /* integer step amount */
     guint32   stepf;        /* fractional step amount */
+
     float     vel;          /* velocity; volume of this voice */
 
     float*  vol_mod1;
@@ -59,24 +68,29 @@ typedef struct _PatchVoice
     ADSR      env[VOICE_MAX_ENVS];
     LFO       lfo[VOICE_MAX_LFOS];
 
-    float     fll;		/* lowpass filter buffer, left */
-    float     flr;		/* lowpass filter buffer, right */
-    float     fbl;		/* bandpass filter buffer, left */
-    float     fbr;		/* bandpass filter buffer, right */
+    float     fll;  /* lowpass filter buffer, left */
+    float     flr;  /* lowpass filter buffer, right */
+    float     fbl;  /* bandpass filter buffer, left */
+    float     fbr;  /* bandpass filter buffer, right */
 
-    float   xfl;    /* xfade buffer left */
-    float   xfr;    /* xfade buffer right */
+    /* formerly declick_vol */
+    playstate_t playstate;
+    gboolean    xfade;
 
+    int     fade_posi;  /* position in fade ie 0 ~ fade_samples - */
+    guint32 fade_posf;  /* used for all fades: in, out, and x */
 
-    float   xfade_step;
-    float   fade_in_step;
-    float   fade_out_step;
+    int     fade_out_start_pos;
 
-    int xfade_smp;
-    int fadein_smp;
-    int fadeout_smp;
-    
-    
+    float   fade_declick;
+
+    int     xfade_point_posi;
+    guint32 xfade_point_posf;
+    int     xfade_posi; /* position in xfade ie 0 ~ xfade_samples */
+    guint32 xfade_posf;
+    int     xfade_dir;  /* direction of continuation */
+
+    float   xfade_declick;
 
 } PatchVoice;
 
@@ -122,12 +136,12 @@ typedef struct _Patch
     int      loop_start;    /* the first frame to loop at */
     int      loop_stop;     /* the last frame to loop at */
 
+    int     sample_stop;    /* very last frame in sample */
+
     int*    marks[WF_MARK_STOP + 1];
 
-
-    int     sample_xfade;
-    int     sample_fade_in;
-    int     sample_fade_out;
+    int     fade_samples;
+    int     xfade_samples;
 
     gboolean porta;         /* whether portamento is being used or not */
     float    porta_secs;    /* length of portamento slides in seconds */
@@ -207,6 +221,32 @@ patch_trigger_global_lfo(int patch_id, LFO* lfo, LFOParams* lfopar) \
     lfo->freq_mod1 = mod_id_to_pointer(lfopar->mod1_id, p, NULL);   \
     lfo->freq_mod2 = mod_id_to_pointer(lfopar->mod2_id, p, NULL);   \
     lfo_trigger(lfo, lfopar);                                       \
+}
+
+#define INLINE_PATCH_LOCK_DEF                                       \
+/* locks a patch so that it will be ignored by patch_render() */    \
+inline static void patch_lock (int id)                              \
+{                                                                   \
+    g_assert (id >= 0 && id < PATCH_COUNT);                         \
+    pthread_mutex_lock (&patches[id].mutex);                        \
+}
+
+
+#define INLINE_PATCH_TRYLOCK_DEF                                    \
+/*  same as above, but returns immediately with EBUSY if mutex      \
+ *  is already held */                                              \
+inline static int patch_trylock (int id)                            \
+{                                                                   \
+    g_assert (id >= 0 && id < PATCH_COUNT);                         \
+    return pthread_mutex_trylock (&patches[id].mutex);              \
+}
+
+#define INLINE_PATCH_UNLOCK_DEF                                     \
+/* unlocks a patch after use */                                     \
+inline static void patch_unlock (int id)                            \
+{                                                                   \
+    g_assert (id >= 0 && id < PATCH_COUNT);                         \
+    pthread_mutex_unlock (&patches[id].mutex);                      \
 }
 
 
