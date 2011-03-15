@@ -1,19 +1,49 @@
 #include <gtk/gtk.h>
 
+#include "audio-settings.h"
 #include "gui.h"
 #include "petri-foo.h"
+#include "jackdriver.h"
 #include "driver.h"
 #include "sync.h"
+
+
+#include <string.h>
 
 
 static GtkWidget* window;
 
 
-#if defined HAVE_JACK_SESSION
-void jack_settings_session_aux_cb(jack_session_event_t* event, void* arg)
+#ifdef HAVE_JACK_SESSION
+static int gui_session_cb(void *data)
 {
-    session_event = event;
-    g_idle_add( session_callback, arg );
+    jack_session_event_t *ev = (jack_session_event_t *)data;
+    char filename[256];
+    char command[256];
+
+    snprintf(filename,  sizeof(filename), "%sbank.beef", ev->session_dir);
+    snprintf(command,   sizeof(command),
+                        "petri-foo -U %s ${SESSION_DIR}myfile.state",
+                        ev->client_uuid                                 );
+
+    /* FIXME: implement!
+    your_save_function( filename );
+     */
+
+    ev->command_line = strdup(command);
+    jack_session_reply(jackdriver_get_client(), ev);
+
+    if (ev->type == JackSessionSaveAndQuit)
+         gtk_main_quit();
+
+    jack_session_event_free(ev);
+
+    return 0;
+}
+
+void audio_settings_session_cb(jack_session_event_t *event, void *arg )
+{
+    g_idle_add(gui_session_cb, event);
 }
 #endif
 

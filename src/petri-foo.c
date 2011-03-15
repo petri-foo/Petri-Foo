@@ -23,8 +23,8 @@ void show_usage (void)
 {
 	printf ("Usage: petri-foo [options] [bankname]\n\n");
 	printf ("Options:\n");
-	printf ("  -n, --name <name>  Specify instance name, defaults to \"petri-foo\"\n");
-	printf ("  -h, --help         Display this help message\n\n");
+	printf("  -n, --name <name>  Specify instance name, defaults to \"petri-foo\"\n" );
+	printf("  -h, --help         Display this help message\n\n");
 	printf ("For more information, please see:\n");
 	printf ("http://petri-foo.sourceforge.net/\n");
 }
@@ -91,6 +91,7 @@ int main(int argc, char *argv[])
 
 	/* start */
 	driver_start();
+    mixer_set_jack_client(jackdriver_get_client());
 	midi_start();
 #ifdef HAVE_LASH
 	lashdriver_start();

@@ -251,7 +251,6 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
             if (empty < 0)
             {
                 index = gzr;
-                debug("stealing voice:%d\n", index);
             }
             else
                 index = empty;
@@ -268,9 +267,6 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
             v->relset = -1;	/* cancel any pending release */
             v->relmode = RELEASE_NONE;
             prepare_pitch(p, v, note);
-
-            debug ("the rest of this function is irrelevant now...\n");
-
             return;     /* the rest of this function is
                          * irrelevant now, fuck it */
         }
@@ -295,24 +291,15 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
         if (i == PATCH_VOICE_COUNT)
         {
             index = gzr;
-            debug("stealing voice:%d\n", index);
         }
         else
         {
             index = i;
-            debug("using voice:%d\n", index);
         }
     }
 
     v = &p->voices[index];
 
-    debug("trigger patch note:%d\n", note);
-
-/*
-    debug("\t\tfade_posi:%d\n", v->fade_posi);
-    debug("\t\txfade_posi:%d\n", v->xfade_posi);
-    debug("\t\trelset:%d\n", v->relset);
-*/
     /* shutdown any running voices if monophonic */
     if (p->mono && !p->legato)
         patch_release_patch(p, -69, RELEASE_CUTOFF);
@@ -350,11 +337,6 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
 
     if (!(p->mono && p->legato && v->active))
         playstate_init_fade_in(p, v);
-
-/*
-    debug("\t\tfade_posi:%d\n", v->fade_posi);
-    debug("\t\txfade_posi:%d\n", v->xfade_posi);
-*/
 
     prepare_pitch(p, v, note);
 
@@ -827,14 +809,12 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
 
             if (!(p->play_mode & PATCH_PLAY_SINGLESHOT))
             {
-                debug("playstate singleshot\n");
                 if (!v->vol_direct)
                 {
                     playstate_init_fade_out(p, v);
                 }
                 else if (p->play_mode & PATCH_PLAY_TO_END)
                 {
-                    debug("playstate set to play\n");
                     v->playstate = PLAYSTATE_PLAY;
                     v->to_end = TRUE;
 

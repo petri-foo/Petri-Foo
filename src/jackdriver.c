@@ -10,6 +10,7 @@
 
 #ifdef HAVE_JACK_SESSION
 #include <jack/session.h>
+#include "gui/audio-settings.h"
 #endif /* HAVE_JACK_SESSION */
 
 #include <gtk/gtk.h>
@@ -23,6 +24,7 @@
 #include "sync.h"
 #include "lfo.h"
 #include "beef.h"
+
 
 /* prototypes */
 static int start(void);
@@ -77,36 +79,6 @@ map_control(unsigned char chan, int param, float value, Tick tick)
                                        tick);
 }
 
-
-#if defined HAVE_JACK_SESSION
-static int session_callback(void *arg)
-{
-    char filename[256];
-    char command[256];
-
-    snprintf( filename, sizeof(filename),
-                        "%sbank.beef",
-                        session_event->session_dir );
-
-    snprintf( command, sizeof(command),
-                        "petri-foo -U %s ${SESSION_DIR}bank.beef",
-                        session_event->client_uuid );
-
-    beef_write(filename);
-
-    session_event->command_line = strdup( command );
-
-    jack_session_reply( client, session_event );
-
-    if (session_event->type == JackSessionSaveAndQuit)
-        gtk_main_quit();
-
-    jack_session_event_free (session_event);
-
-    return 0;
-}
-
-#endif
 
 static int process(jack_nframes_t frames, void* arg)
 {
@@ -271,7 +243,7 @@ static int start(void)
 
 #ifdef HAVE_JACK_SESSION
     if (jack_set_session_callback)
-        jack_set_session_callback(client, session_callback_aux, 0);
+        jack_set_session_callback(client, audio_settings_session_cb, 0);
 #endif
 
      jack_on_shutdown (client, shutdown, 0);

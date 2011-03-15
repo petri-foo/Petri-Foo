@@ -151,9 +151,15 @@ void mixer_init ( )
      amplitude = DEFAULT_AMPLITUDE;
      pthread_mutex_init (&preview.mutex, NULL);
      preview.sample = sample_new ( );
-     jc = jackdriver_get_client();
      debug ("done\n");
 }
+
+
+void mixer_set_jack_client(jack_client_t* client)
+{
+    jc = client;
+}
+
 
 /* mix current soundscape into buf */
 void mixer_mixdown (float *buf, int frames)
