@@ -1,3 +1,19 @@
+KNOWN BUGS
+==========
+
+* mixer_mixdown is sometimes called before mixer_set_jack_client
+resulting in a segfault. i've not yet determined if that statement
+is true or not, but it seems likely.
+
+
+
+
+
+
+-------------------------
+the list that follows is inherited from Specimen. i've not actually checked
+if it is still relevant or not - jwm 2011/03/28
+
 Known Bugs
 ==========
 

@@ -9,13 +9,12 @@
 #include "basic_combos.h"
 
 
-/* must match order of items in menu */
 enum
 {
     SINE,
     TRIANGLE,
     SAW,
-    SQUARE,
+    SQUARE
 };
 
 enum
@@ -275,7 +274,8 @@ static void unblock(LfoTabPrivate* p)
 static void lfo_tab_init(LfoTab* self)
 {
     LfoTabPrivate* p = LFO_TAB_GET_PRIVATE(self);
-    const char* shapes[] = { "Sine", "Triangle", "Saw", "Square", 0 };
+
+    const char** shapes = lfo_get_shape_names();
 
     GtkBox* box = GTK_BOX(self);
     GtkWidget* title;

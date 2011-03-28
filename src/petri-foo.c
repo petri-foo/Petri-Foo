@@ -11,7 +11,7 @@
 #include "lfo.h"
 #include "patch.h"
 #include "mixer.h"
-#include "beef.h"
+#include "dish_file.h"
 
 #ifdef HAVE_LASH
 #include "lashdriver.h"
@@ -85,13 +85,12 @@ int main(int argc, char *argv[])
 
 	if (optind < argc) 
 	{
-		beef_read(argv[optind]);
+		dish_file_read(argv[optind]);
 		gui_refresh();
 	}
 
 	/* start */
 	driver_start();
-    mixer_set_jack_client(jackdriver_get_client());
 	midi_start();
 #ifdef HAVE_LASH
 	lashdriver_start();

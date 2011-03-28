@@ -3,7 +3,7 @@
 
 #include "instance.h"
 #include "lashdriver.h"
-#include "beef.h"
+#include "dish_file.h"
 #include "gui/gui.h"
 
 
@@ -47,10 +47,11 @@ gboolean lashdriver_process (void* absolutely_nothing)
             path = (char*)calloc(strlen(str)+11, sizeof(char));
             strcpy(path, str);         /* path = dir */
             strcat(path, "/");         /* path += "/" */
-            strcat(path, "bank.beef"); /* path += "bank.beef" */
+            strcat(path, "bank.dish"); /* path += "bank.beef" */
             fprintf(stderr, "Saving to file %s\n", path);
-            beef_write(path);
-            lash_send_event(lash_client, lash_event_new_with_type(LASH_Save_File));
+            dish_file_write(path);
+            lash_send_event(lash_client,
+                        lash_event_new_with_type(LASH_Save_File));
         }
         else if (lash_event_get_type(event) == LASH_Restore_File)
         {
@@ -58,9 +59,9 @@ gboolean lashdriver_process (void* absolutely_nothing)
             path = (char*)calloc(strlen(str)+11, sizeof(char));
             strcpy(path, str);         /* path = dir */
             strcat(path, "/");         /* path += "/" */
-            strcat(path, "bank.beef"); /* path += "bank.beef" */
+            strcat(path, "bank.dish"); /* path += "bank.beef" */
             fprintf(stderr, "Restoring from file %s\n", path);
-            beef_read(path);
+            dish_file_read(path);
             gui_refresh();
             lash_send_event(lash_client, lash_event_new_with_type(LASH_Restore_File));
         }

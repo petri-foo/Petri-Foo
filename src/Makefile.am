@@ -4,9 +4,9 @@ bin_PROGRAMS = petri-foo
 
 petri_foo_SOURCES = 					\
 	adsr.c			adsr.h			\
-	beef.c			beef.h			\
 				config.h		\
 				control.h		\
+	dish_file.c		dish_file.h		\
 	driver.c		driver.h		\
 	instance.c		instance.h		\
 	jackdriver.c		jackdriver.h		\

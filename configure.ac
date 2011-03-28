@@ -129,7 +129,12 @@ echo -n "      Jack midi support: "
 if test "x$HAVE_JACK" = xyes ; then
     echo "yes with jack >= 0.116.0"
 fi
-
+echo -n "   Jack session support: "
+if test "x$HAVE_JACK_SESSION" = xyes ; then
+    echo "yes"
+else
+    echo "not found"
+fi
 echo -n "           LASH support: "
 if test "x$with_lash" = xyes; then
     echo "yes with lash-1.0 >= 0.5.0"

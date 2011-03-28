@@ -119,8 +119,8 @@ typedef enum
     PATCH_PARAM_RESONANCE,
     PATCH_PARAM_PITCH,
     PATCH_PARAM_LFO_FREQ
-}
-PatchParamType;
+
+} PatchParamType;
 
 
 /* utility functions */

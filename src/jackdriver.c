@@ -23,7 +23,6 @@
 #include "mixer.h"
 #include "sync.h"
 #include "lfo.h"
-#include "beef.h"
 
 
 /* prototypes */
@@ -238,6 +237,8 @@ static int start(void)
         pthread_mutex_unlock (&running_mutex);
         return -1;
     }
+
+    mixer_set_jack_client(jackdriver_get_client());
 
     jack_set_process_callback (client, process, 0);
 
