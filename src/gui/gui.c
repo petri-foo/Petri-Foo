@@ -141,9 +141,6 @@ static void cb_quit (GtkWidget* widget, gpointer data)
 {
     (void)widget;(void)data;
     debug ("Quitting\n");
-
-    mod_src_destroy_names();
-
     gtk_main_quit ( );
 }
 
@@ -169,6 +166,8 @@ static void
 cb_menu_patch_add (GtkWidget * menu_item, GtkWidget * main_window)
 {
     (void)menu_item;
+    static int patch_no = 1;
+    char buf[80];
 
     GtkWidget *dialog;
     GtkWidget *entry;
@@ -189,7 +188,9 @@ cb_menu_patch_add (GtkWidget * menu_item, GtkWidget * main_window)
     /* create entry box */
     entry = gtk_entry_new();
     gtk_entry_set_max_length(GTK_ENTRY(entry), PATCH_MAX_NAME);
-    gtk_entry_set_text(GTK_ENTRY(entry), "Patch Name");
+    snprintf(buf, 80, "Untitled Patch #%d", patch_no++);
+    buf[79] = 0; /* paranoiac critical method */
+    gtk_entry_set_text(GTK_ENTRY(entry), buf);
     gtk_entry_set_activates_default(GTK_ENTRY(entry), TRUE);
 
     /* I wish I had a "changed" event... */
@@ -353,7 +354,10 @@ static void cb_menu_file_new_bank (GtkWidget * widget, gpointer data)
 {
     (void)widget;(void)data;
     if (bank_ops_new ( ) == 0)
+    {
         patch_list_update (PATCH_LIST(patch_list), 0, PATCH_LIST_INDEX);
+        master_section_update(MASTER_SECTION(master_section));
+    }
 }
 
 
@@ -361,7 +365,10 @@ static void cb_menu_file_open_bank (GtkWidget * widget, gpointer data)
 {
     (void)widget;(void)data;
     if (bank_ops_open(window) == 0)
+    {
         patch_list_update (PATCH_LIST(patch_list), 0, PATCH_LIST_INDEX);
+        master_section_update(MASTER_SECTION(master_section));
+    }
 }
 
 
@@ -421,6 +428,8 @@ static void cb_patch_list_changed(PatchList* list, gpointer data)
     (void)data;
     int patch = patch_list_get_current_patch(list);
 
+    debug("patch list changed!\n");
+
     patch_section_set_patch(PATCH_SECTION(patch_section), patch);
     midi_section_set_patch(MIDI_SECTION(midi_section), patch);
     channel_section_set_patch(CHANNEL_SECTION(channel_section), patch);
@@ -437,8 +446,6 @@ int gui_init(void)
     const char* instance_name = get_instance_name();
 
     debug ("Initializing GUI\n");
-
-    mod_src_create_names();
 
     /* main window */
     window = gtk_window_new (GTK_WINDOW_TOPLEVEL);

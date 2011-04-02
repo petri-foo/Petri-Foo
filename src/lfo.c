@@ -19,7 +19,7 @@ static float sqtab[255];		/* square */
 static float tritab[255];		/* triangle */
 static float sawtab[255];		/* saw */
 
-static const char* shapes[] = { "Sine", "Triangle", "Saw", "Square", 0 };
+static const char* shapes[] = { "sine", "triangle", "saw", "square", 0 };
 
 const char** lfo_get_shape_names(void)
 {

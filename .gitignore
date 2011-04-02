@@ -11,6 +11,7 @@ Makefile.in
 *.lo
 *.swp
 *.wav
+*.petri-foo
 
 aclocal.m4
 autom4te.cache/

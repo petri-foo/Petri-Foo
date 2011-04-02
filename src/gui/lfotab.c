@@ -5,6 +5,7 @@
 #include "idselector.h"
 #include "lfo.h"
 #include "mod_src.h"
+#include "names.h"
 #include "patch_set_and_get.h"
 #include "basic_combos.h"
 
@@ -16,6 +17,7 @@ enum
     SAW,
     SQUARE
 };
+
 
 enum
 {
@@ -275,7 +277,7 @@ static void lfo_tab_init(LfoTab* self)
 {
     LfoTabPrivate* p = LFO_TAB_GET_PRIVATE(self);
 
-    const char** shapes = lfo_get_shape_names();
+    static const char* shapes[] = { "Sine", "Triangle", "Saw", "Square", 0 };
 
     GtkBox* box = GTK_BOX(self);
     GtkWidget* title;
@@ -293,8 +295,7 @@ static void lfo_tab_init(LfoTab* self)
 
     /* parameter selector */
     p->idsel = id_selector_new();
-    id_selector_set(ID_SELECTOR(p->idsel), mod_src_lfo_names(),
-                                                ID_SELECTOR_V);
+    id_selector_set(ID_SELECTOR(p->idsel), names_lfos_get(), ID_SELECTOR_V);
     gtk_box_pack_start(box, p->idsel, FALSE, FALSE, 0);
     gtk_widget_show(p->idsel);
 

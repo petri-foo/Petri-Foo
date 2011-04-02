@@ -4,6 +4,7 @@
 #include "gui.h"
 #include "idselector.h"
 #include "mod_src.h"
+#include "names.h"
 #include "patch_set_and_get.h"
 
 
@@ -191,8 +192,7 @@ static void envelope_tab_init(EnvelopeTab* self)
 
     /* parameter selector */
     p->idsel = id_selector_new();
-    id_selector_set(ID_SELECTOR(p->idsel), mod_src_adsr_names(),
-                                                ID_SELECTOR_H);
+    id_selector_set(ID_SELECTOR(p->idsel), names_egs_get(), ID_SELECTOR_H);
     gtk_box_pack_start(box, p->idsel, FALSE, FALSE, 0);
     gtk_widget_show(p->idsel);
 

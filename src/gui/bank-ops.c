@@ -46,33 +46,6 @@ static void file_chooser_add_filter(GtkWidget* chooser, const char* name,
 }
 
 
-static void open_bank_verify(GtkWidget * dialog)
-{
-    GtkWidget *msg;
-    int val;
-    char *name = (char *)
-            gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
-
-    if ((val = dish_file_read(name)) < 0)
-    {
-        errmsg ("Failed to open file %s\n", name);
-        msg = gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL,
-                                    GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE,
-                                    "Failed to open file %s.", name);
-        g_signal_connect_swapped(G_OBJECT(msg), "response",
-                                    G_CALLBACK (gtk_widget_destroy), msg);
-        gtk_widget_show (msg);
-    }
-    else
-    {
-        debug ("Succesfully opened file %s\n", name);
-        free(last_bank);
-        last_bank = strdup(name);
-        gtk_dialog_response(GTK_DIALOG(dialog), GTK_RESPONSE_ACCEPT);
-     }
-}
-
-
 int bank_ops_save_as (GtkWidget* parent_window)
 {
     GtkWidget *dialog;
@@ -162,21 +135,42 @@ int bank_ops_open(GtkWidget* parent_window)
                                           GTK_RESPONSE_CANCEL,
                                           GTK_STOCK_OPEN,
                                           GTK_RESPONSE_ACCEPT, NULL);
-
-    gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(dialog), last_bank);
+    if (last_bank)
+        gtk_file_chooser_select_filename(GTK_FILE_CHOOSER(dialog),
+                                                        last_bank);
 
     file_chooser_add_filter(dialog, "Petri-Foo files", filter);
     file_chooser_add_filter(dialog, "All files", "*");
 
-    g_signal_connect_swapped(G_OBJECT(dialog),
-                             "file-activated",
-                             G_CALLBACK(open_bank_verify),
-                             dialog);
-
     if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT)
-        val = 0;
+    {
+        char *name = (char *)
+            gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+
+        if ((val = dish_file_read(name)) < 0)
+        {
+            errmsg("Failed to read file %s\n", name);
+            GtkWidget* msg = gtk_message_dialog_new(GTK_WINDOW(dialog),
+                                    GTK_DIALOG_MODAL,
+                                    GTK_MESSAGE_ERROR,
+                                    GTK_BUTTONS_CLOSE,
+                                    "Failed to read file %s\n.", name);
+
+            g_signal_connect_swapped(G_OBJECT(msg), "response",
+                                    G_CALLBACK(gtk_widget_destroy), msg);
+            gtk_widget_show (msg);
+        }
+        else
+        {
+            debug ("Succesfully read file %s\n", name);
+            free(last_bank);
+            last_bank = strdup(name);
+        }
+    }
     else
+    {
         val = -1;
+    }
 
     gtk_widget_destroy(dialog);
 

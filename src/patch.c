@@ -724,14 +724,12 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
         {
             if ((v->dir > 0) && (v->posi > p->loop_stop))
             {
-        debug("posi %d > loop_stop %d\n",v->posi, p->loop_stop);
                 playstate_init_x_fade(p, v);
                 v->posi = p->loop_stop;
                 v->dir = -1;
             }
             else if ((v->dir < 0) && (v->posi < p->loop_start))
             {
-        debug("posi %d < loop_start %d\n",v->posi, p->loop_start);
                 playstate_init_x_fade(p, v);
                 v->posi = p->loop_start;
                 v->dir = 1;
@@ -950,7 +948,6 @@ void patch_release (int chan, int note)
                     && note >= patches[i].lower_note
                         && note <= patches[i].upper_note)))
         {
-            debug("releasing: patch[%d] note:%d\n", i, note);
             patch_release_patch (&patches[i], note, RELEASE_NOTEOFF);
         }
     }

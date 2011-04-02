@@ -213,6 +213,9 @@ int patch_create (const char *name)
     defvoice.stepf = 0;
     defvoice.vel = 0;
 
+    defvoice.playstate = PLAYSTATE_OFF;
+    defvoice.xfade = FALSE;
+
     defvoice.fade_posi = -1;
     defvoice.xfade_posi = -1;
 

@@ -14,6 +14,7 @@ petri_foo_SOURCES = 					\
 	maths.c			maths.h			\
 	midi.c			midi.h			\
 	mixer.c			mixer.h			\
+	names.c			names.h			\
 	patch.c			patch.h			\
 	patch_set_and_get.c	patch_set_and_get.h	\
 	patch_util.c		patch_util.h		\

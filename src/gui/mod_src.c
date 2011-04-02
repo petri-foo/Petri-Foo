@@ -2,11 +2,9 @@
 
 #include "gui.h"
 #include "mod_src.h"
+#include "names.h"
 #include "petri-foo.h"
 #include "patch_set_and_get.h"
-
-
-#include <string.h>
 
 
 enum {
@@ -19,34 +17,12 @@ enum {
 static GtkListStore* mod_src_list_all = 0;
 static GtkListStore* mod_src_list_global = 0;
 
-static char** mod_src_names = 0;
-
-
-static const char* adsr_names[] = {
-    "EG1", "EG2", "EG3", "EG4", "EG5", 0
-};
-
-static const char* lfo_names[] = {
-    "GLFO1", "GLFO2", "GLFO3", "GLFO4", "GLFO5",
-    "VLFO1", "VLFO2", "VLFO3", "VLFO4", "VLFO5"
-};
-
-static const char* param_names[] = {
-    "Amplitude",
-    "Pan",
-    "Cutoff",
-    "Resonance",
-    "Pitch",
-    "Frequency Modulation"
-};
-
-
 
 static void mod_src_create_models(void)
 {
     GtkTreeIter iter;
-
     int i;
+    char** mod_src_names = names_mod_srcs_get();
 
     mod_src_list_all = gtk_list_store_new(N_COLUMNS,
                                           G_TYPE_STRING,
@@ -235,131 +211,5 @@ int mod_src_combo_get_model_id(GtkComboBox* combo)
         return MOD_SRC_INPUTS_GLOBAL;
 
     return MOD_SRC_INPUTS_UNKNOWN;
-}
-
-
-void mod_src_create_names(void)
-{
-    const char none[] = "OFF";
-    const char one[] = "1.0";
-
-    int i;
-    int id;
-
-    /* check for mismatched counts etc: */
-    if (!mod_src_adsr_names() || !mod_src_lfo_names())
-    {
-        debug("*** PROBLEM OF DEATH IS FORECAST ***\n");
-        return;
-    }
-
-    mod_src_names = malloc(sizeof(*mod_src_names) * MOD_SRC_LAST);
-
-    for (i = 0; i < MOD_SRC_LAST; ++i)
-        mod_src_names[i] = 0;
-
-    mod_src_names[MOD_SRC_NONE] = malloc(strlen(none) + 1);
-    strcpy(mod_src_names[MOD_SRC_NONE], none);
-    mod_src_names[MOD_SRC_ONE] = malloc(strlen(one) + 1);
-    strcpy(mod_src_names[MOD_SRC_ONE], one);
-
-    for (i = MOD_SRC_FIRST_EG; i < MOD_SRC_LAST_EG; ++i)
-    {
-        id = i - MOD_SRC_FIRST_EG;
-        if (adsr_names[id])
-        {
-            mod_src_names[i] = malloc(strlen(adsr_names[id]) + 1);
-            strcpy(mod_src_names[i], adsr_names[id]);
-        }
-        else
-        {
-            debug("adsr_names mismatch adsr count\n");
-            break;
-        }
-    }
-
-    for (i = MOD_SRC_FIRST_GLFO; i < MOD_SRC_LAST_GLFO; ++i)
-    {
-        id = i - MOD_SRC_FIRST_GLFO;
-        mod_src_names[i] = malloc(strlen(lfo_names[id]) + 1);
-        strcpy(mod_src_names[i], lfo_names[id]);
-    }
-
-    for (i = MOD_SRC_FIRST_VLFO; i < MOD_SRC_LAST_VLFO; ++i)
-    {
-        id = (MOD_SRC_LAST_GLFO - MOD_SRC_FIRST_GLFO)
-             + (i - MOD_SRC_FIRST_VLFO);
-        mod_src_names[i] = malloc(strlen(lfo_names[id]) + 1);
-        strcpy(mod_src_names[i], lfo_names[id]);
-    }
-}
-
-
-void mod_src_destroy_names(void)
-{
-    if (mod_src_names)
-    {
-        int i;
-
-        for (i = 0; i < MOD_SRC_LAST; ++i)
-            if (mod_src_names[i])
-                free(mod_src_names[i]);
-
-        free(mod_src_names);
-    }
-}
-
-
-char** mod_src_get_names(void)
-{
-    if (!mod_src_names)
-    {
-        debug("returns NULL\n");
-    }
-    return mod_src_names;
-}
-
-
-const char** mod_src_adsr_names(void)
-{
-    int i;
-
-    for (i = 0; adsr_names[i] != 0; ++i);
-
-    if (i != VOICE_MAX_ENVS)
-    {
-        debug(  "Friendly warning to the programmer:\n"
-                "You've either changed the enum value for VOICE_MAX_ENVS\n"
-                "Or you've changed the list of ADSR names\n"
-                "In either case it's broken now. Please fix!\n");
-        return 0;
-    }
-
-    return adsr_names;
-}
-
-const char** mod_src_lfo_names(void)
-{
-    int i;
-
-    for (i = 0; lfo_names[i] != 0; ++i);
-
-    if (i != TOTAL_LFOS)
-    {
-        debug(  "Friendly warning to the programmer:\n"
-                "You've either changed the enum value for PATCH_MAX_LFOS\n"
-                "and/or ther enum value VOICE_MAX_LFOS\n"
-                "Or you've changed the list of LFO names\n"
-                "In either case it's broken now. Please fix!\n");
-        return 0;
-    }
-
-    return lfo_names;
-}
-
-
-const char** mod_src_param_names(void)
-{
-    return param_names;
 }
 

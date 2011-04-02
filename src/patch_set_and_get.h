@@ -73,7 +73,7 @@ int patch_set_pitch_steps  (int id, int steps);
 int patch_set_play_mode    (int id, PatchPlayMode mode);
 int patch_set_portamento   (int id, gboolean val);
 int patch_set_portamento_time(int id, float secs);
-int patch_set_range        (int id, int range);
+int patch_set_range        (int id, gboolean range);
 int patch_set_resonance     (int id, float reso);
 
 int patch_set_upper_note   (int id, int note);
@@ -106,7 +106,7 @@ int           patch_get_pitch_steps   (int id);
 PatchPlayMode patch_get_play_mode     (int id);
 gboolean      patch_get_portamento    (int id);
 float        patch_get_portamento_time(int id);
-int           patch_get_range         (int id);
+gboolean      patch_get_range         (int id);
 float         patch_get_resonance     (int id);
 const float*  patch_get_sample        (int id);
 char*         patch_get_sample_name   (int id);

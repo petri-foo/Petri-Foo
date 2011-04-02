@@ -27,7 +27,6 @@ typedef enum
 }
 LFOShape;
 
-const char** lfo_get_shape_names(void);
 
 typedef struct _LFOParams
 {

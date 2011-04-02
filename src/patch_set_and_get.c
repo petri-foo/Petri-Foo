@@ -171,7 +171,6 @@ float* mod_id_to_pointer(int id, Patch* p, PatchVoice* v)
     if (!id)
         return 0;
 
-//    debug("mod:%d\n",id);
 
     if (id == MOD_SRC_ONE)
         return &one;
@@ -821,9 +820,9 @@ int patch_set_mark_frame(int patch, int mark, int frame)
     if (!mark_settable(mark))
         return -1;
 
-
     int min;
     int max;
+
     get_mark_frame_range(patch, mark, &min, &max);
 
     if (frame < min || frame > max)
@@ -837,6 +836,7 @@ int patch_set_mark_frame(int patch, int mark, int frame)
 int patch_set_mark_frame_expand(int patch, int mark, int frame,
                                                      int* also_changed)
 {
+    int also = 0;
     int xfade = patches[patch].xfade_samples;
     int fade = patches[patch].fade_samples;
 
@@ -845,6 +845,13 @@ int patch_set_mark_frame_expand(int patch, int mark, int frame,
 
     if (patches[patch].sample->sp == NULL)
         return -1;
+
+    /*  if callee wishes not to be informed about which marks get changed
+        as a result of changing this one, also_changed will be NULL. It
+        needs to be a valid pointer.
+     */
+    if (!also_changed)
+        also_changed = &also;
 
     *also_changed = -1;
     int also_frame = -1;
@@ -1093,7 +1100,7 @@ int patch_set_portamento_time (int id, float secs)
 }
 
 /* set patch to listen to a range of notes if non-zero */
-int patch_set_range (int id, int range)
+int patch_set_range (int id, gboolean range)
 {
     if (!isok (id))
 	return PATCH_ID_INVALID;
@@ -1323,10 +1330,8 @@ float patch_get_portamento_time (int id)
 }
 
 /* get whether a range of notes is used or not */
-int patch_get_range (int id)
+gboolean patch_get_range (int id)
 {
-    if (!isok (id))
-	return PATCH_ID_INVALID;
     return patches[id].range;
 }
 
@@ -1560,7 +1565,7 @@ int patch_set_vel_amount (int patch_id, PatchParamType param, float amt)
 {
     PatchParam* p;
     int err;
-     
+     debug("set vel amount:%d %d %f\n",patch_id, param, amt);
     if (!isok (patch_id))
 	return PATCH_ID_INVALID;
 

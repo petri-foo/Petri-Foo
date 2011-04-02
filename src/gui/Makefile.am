@@ -20,7 +20,6 @@ libgui_a_SOURCES = 					\
 	sample-editor.c		sample-editor.h		\
 	sample-selector.c	sample-selector.h	\
 	sampletab.c		sampletab.h		\
-	velocitytab.c		velocitytab.h		\
 	voicetab.c		voicetab.h		\
 	waveform.c		waveform.h
 

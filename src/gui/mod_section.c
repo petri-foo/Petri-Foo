@@ -4,6 +4,7 @@
 #include "mod_section.h"
 #include "gui.h"
 #include "patch_set_and_get.h"
+#include "names.h"
 
 #include "mod_src.h"
 
@@ -59,11 +60,8 @@ static void param2_cb(GtkWidget* w, ModSectionPrivate* p)
 
 static void vel_sens_cb(GtkWidget* w, ModSectionPrivate* p)
 {
-    if (p->param != PATCH_PARAM_PITCH)
-    {
-        float val  = phat_fan_slider_get_value(PHAT_FAN_SLIDER(w));
-        patch_set_vel_amount(p->patch_id, p->param, val);
-    }
+    float val  = phat_fan_slider_get_value(PHAT_FAN_SLIDER(w));
+    patch_set_vel_amount(p->patch_id, p->param, val);
 }
 
 
@@ -115,8 +113,8 @@ static void connect(ModSectionPrivate* p)
     if (p->param == PATCH_PARAM_PITCH)
         g_signal_connect(G_OBJECT(p->param2),    "value-changed",
                         G_CALLBACK(param2_cb),      (gpointer)p);
-    else
-        g_signal_connect(G_OBJECT(p->vel_sens),  "value-changed",
+
+    g_signal_connect(G_OBJECT(p->vel_sens),  "value-changed",
                         G_CALLBACK(vel_sens_cb),    (gpointer)p);
 
     if (p->param == PATCH_PARAM_AMPLITUDE)
@@ -148,8 +146,8 @@ static void block(ModSectionPrivate* p)
 
     if (p->param == PATCH_PARAM_PITCH)
         g_signal_handlers_block_by_func(p->param2, param2_cb, p);
-    else
-        g_signal_handlers_block_by_func(p->vel_sens, vel_sens_cb, p);
+
+    g_signal_handlers_block_by_func(p->vel_sens, vel_sens_cb, p);
 
     if (p->param == PATCH_PARAM_AMPLITUDE)
         g_signal_handlers_block_by_func(p->env_combo,mod_src_cb, p);
@@ -172,8 +170,9 @@ static void unblock(ModSectionPrivate* p)
 
     if (p->param == PATCH_PARAM_PITCH)
         g_signal_handlers_unblock_by_func(p->param2, param2_cb,  p);
-    else
-        g_signal_handlers_unblock_by_func(p->vel_sens, vel_sens_cb, p);
+
+    g_signal_handlers_unblock_by_func(p->vel_sens, vel_sens_cb, p);
+
     if (p->param == PATCH_PARAM_AMPLITUDE)
         g_signal_handlers_unblock_by_func(p->env_combo, mod_src_cb, p);
 
@@ -238,7 +237,7 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
     float range_hi = 1.0;
 
     const char* lstr;
-    const char** param_names = mod_src_param_names();
+    const char** param_names = names_params_get();
 
     int y = 0;
 
@@ -319,18 +318,18 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
                                             GTK_EXPAND | GTK_FILL, 0, 0, 0);
         gtk_widget_show(p->param2);
     }
-    else
-    {
-        /* velocity sensitivity */
-        label = gtk_label_new("Vel.Sens:");
-        gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
-        gtk_table_attach(t, label, 5, 6, y, y + 1, GTK_FILL, 0, 0, 0);
-        gtk_widget_show(label);
 
-        p->vel_sens = phat_hfan_slider_new_with_range(0.0, 0.0, 1.0, 0.1);
-        gtk_table_attach_defaults(t, p->vel_sens, 7, 8, y, y + 1);
-        gtk_widget_show(p->vel_sens);
-    }
+    ++y;
+
+    /* velocity sensitivity */
+    label = gtk_label_new("Vel.Sens:");
+    gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
+    gtk_table_attach(t, label, 1, 2, y, y + 1, GTK_FILL, 0, 0, 0);
+    gtk_widget_show(label);
+
+    p->vel_sens = phat_hfan_slider_new_with_range(0.0, 0.0, 1.0, 0.1);
+    gtk_table_attach_defaults(t, p->vel_sens, 3, 4, y, y + 1);
+    gtk_widget_show(p->vel_sens);
 
     ++y;
 
@@ -465,8 +464,8 @@ void mod_section_set_patch(ModSection* self, int patch_id)
 
     if (p->param == PATCH_PARAM_PITCH)
         param2 = patch_get_pitch_steps(p->patch_id);
-    else
-        patch_get_vel_amount(patch_id, p->param, &vsens);
+
+    patch_get_vel_amount(patch_id, p->param, &vsens);
 
 get_mod_srcs:
 
@@ -509,8 +508,8 @@ get_mod_srcs:
     if (p->param == PATCH_PARAM_PITCH)
         phat_slider_button_set_value(PHAT_SLIDER_BUTTON(p->param2),
                                                                 param2);
-    else
-        phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->vel_sens), vsens);
+
+    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->vel_sens), vsens);
 
     if (p->param == PATCH_PARAM_AMPLITUDE)
         gtk_combo_box_set_active_iter(GTK_COMBO_BOX(p->env_combo),

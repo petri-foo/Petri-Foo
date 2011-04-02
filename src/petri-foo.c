@@ -11,6 +11,7 @@
 #include "lfo.h"
 #include "patch.h"
 #include "mixer.h"
+#include "names.h"
 #include "dish_file.h"
 
 #ifdef HAVE_LASH
@@ -28,6 +29,7 @@ void show_usage (void)
 	printf ("For more information, please see:\n");
 	printf ("http://petri-foo.sourceforge.net/\n");
 }
+
 
 int main(int argc, char *argv[])
 {
@@ -73,6 +75,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* constructors */
+    names_create();
 #ifdef HAVE_LASH
 	lashdriver_init(lash_args);
 #endif
@@ -107,7 +110,7 @@ int main(int argc, char *argv[])
 	patch_shutdown();
 	mixer_shutdown();
     free_instance_name();
-
+    names_destroy();
 	debug("Goodbye.\n");
 	return 0;
 }
