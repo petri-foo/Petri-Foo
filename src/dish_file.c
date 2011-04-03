@@ -716,7 +716,7 @@ int dish_file_read_param(xmlNodePtr node,   int patch_id,
     float   n;
     xmlChar* prop;
     xmlNodePtr node1;
-debug("read:%s\n", names_params_get()[param]);
+
     switch(param)
     {
     case PATCH_PARAM_AMPLITUDE: pname = "level";    break;
@@ -796,29 +796,50 @@ debug("read:%s\n", names_params_get()[param]);
             errmsg("ignoring:%s\n", (const char*)node1->name);
         }
     }
+
+    return 0;
+}
+
+
+int dish_file_read_voice(xmlNodePtr node, int patch_id)
+{
+    xmlChar*    prop;
+    float n;
+    int i;
+
+    if ((prop = xmlGetProp(node, BAD_CAST "cut")))
+        if (sscanf((const char*)prop, "%d", &i))
+            patch_set_cut(patch_id, i);
+
+    if ((prop = xmlGetProp(node, BAD_CAST "cut_by")))
+        if (sscanf((const char*)prop, "%d", &i))
+            patch_set_cut_by(patch_id, i);
+
+    if ((prop = xmlGetProp(node, BAD_CAST "portamento")))
+        patch_set_portamento(patch_id, xmlstr_to_bool(prop));
+
+    if ((prop = xmlGetProp(node, BAD_CAST "portamento_time")))
+        if (sscanf((const char*)prop, "%f", &n))
+            patch_set_portamento_time(patch_id, n);
+
+    if ((prop = xmlGetProp(node, BAD_CAST "monophonic")))
+        patch_set_monophonic(patch_id, xmlstr_to_bool(prop));
+
+    if ((prop = xmlGetProp(node, BAD_CAST "legato")))
+        patch_set_legato(patch_id, xmlstr_to_bool(prop));
+
+    return 0;
 }
 
 
 int dish_file_read(char *path)
 {
-    int rc;
-
-    gboolean sample_loaded = FALSE;
-
-    const char* samplefile = 0;
-
     xmlDocPtr   doc;
     xmlNodePtr  noderoot;
     xmlNodePtr  nodepatch;
     xmlNodePtr  node1;
     xmlNodePtr  node2;
-
     xmlChar*    prop;
-
-    char    buf[BUFSIZE];
-    int     i, j;
-    int*    patch_id;
-    int     patch_count;
     float   n;
 
     debug("Loading bank from file %s\n", path);
@@ -924,7 +945,7 @@ int dish_file_read(char *path)
                 }
                 else if (xmlStrcmp(node2->name, BAD_CAST "Voice") == 0)
                 {
-                    debug("voice xml node\n");
+                    dish_file_read_voice(node2, patch_id);
                 }
                 else
                 {
