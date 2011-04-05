@@ -43,7 +43,8 @@ static void mod_src_create_models(void)
                                     -1);
 
             if ((i >= MOD_SRC_FIRST_EG   && i <= MOD_SRC_LAST_EG)
-             || (i >= MOD_SRC_FIRST_VLFO && i <= MOD_SRC_LAST_VLFO))
+             || (i >= MOD_SRC_FIRST_VLFO && i <= MOD_SRC_LAST_VLFO)
+             || (i == MOD_SRC_KEY || i == MOD_SRC_VELOCITY))
                 continue;
 
             gtk_list_store_append ( mod_src_list_global, &iter);

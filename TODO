@@ -1,6 +1,12 @@
+TESTING 3rd April 2011 -jwm
+--
+
+
+-------------
 note: these items are in addition to features mentioned
 in the README as goals for Petri-Foo.
 
+-key tracking.
 
 -Fix and remove artefacts arising from use of LAT for log_amplitude
  function in maths.[ch] (research info online about alternatives
@@ -11,18 +17,11 @@ in the README as goals for Petri-Foo.
 
 -Restore refresh functions in most GTK GUI classes
 
-
 -Replace PHAT with inented-here custom cairo-based widgets
-
-
 
 -Sample Editor
     + two tool modes: pointer, and zoom
     + zoom tool: select area and zoom
     + pointer tool: *drag* play/loop point markers
     + zoom in/out/all buttons
-
-
--Surely keyboard tracking is missing?
-
 

@@ -168,12 +168,13 @@ INLINE_PATCH_TRIGGER_GLOBAL_LFO_DEF
 
 float* mod_id_to_pointer(int id, Patch* p, PatchVoice* v)
 {
-    if (!id)
-        return 0;
-
-
-    if (id == MOD_SRC_ONE)
-        return &one;
+    switch(id)
+    {
+    case 0:                 return 0;
+    case MOD_SRC_ONE:       return &one;
+    case MOD_SRC_VELOCITY:  return &v->vel;
+    case MOD_SRC_KEY:       return &v->key_track;
+    }
 
     if (id >= MOD_SRC_FIRST_EG
      && id <  MOD_SRC_LAST_EG)
@@ -775,7 +776,7 @@ int patch_set_xfade_samples(int id, int samples)
         return PATCH_PARAM_INVALID;
     }
 
-    if (patches[id].loop_start + samples >= patches[id].loop_stop)
+    if (patches[id].loop_start + samples > patches[id].loop_stop)
     {
         debug ("refusing to set xfade length greater than samples"
                " between play start and play stop\n");
@@ -1406,7 +1407,7 @@ int patch_get_max_xfade_samples(int id)
 {
     int min = patches[id].sample->frames;
     int tmp;
-    
+
     tmp = patches[id].loop_stop - patches[id].loop_start;
     min = (tmp < min) ? tmp : min;
 
@@ -1416,7 +1417,9 @@ int patch_get_max_xfade_samples(int id)
     tmp = patches[id].loop_start - patches[id].play_start;
     min = (tmp < min) ? tmp : min;
 
-    return tmp;
+debug("max xfade samples:%d\n", min);
+
+    return min;
 }
 
 

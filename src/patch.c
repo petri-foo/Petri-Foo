@@ -162,6 +162,9 @@ inline static void prepare_pitch(Patch* p, PatchVoice* v, int note)
 {
     double scale; /* base pitch scaling factor */
 
+    v->key_track = (note - p->lower_note) / (float)(p->upper_note - p->lower_note);
+    debug("key_track:%f\n", v->key_track);
+
     /* this applies the tuning factor */
     scale = pow(2, (p->pitch.val * p->pitch_steps) / 12.0);
 
@@ -709,15 +712,21 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
 
         if (v->fade_posi > p->fade_samples)
         {
+/*
             v->playstate = (p->play_mode & PATCH_PLAY_LOOP)
                                     ? PLAYSTATE_LOOP
                                     : PLAYSTATE_PLAY;
+ */
+            v->playstate = PLAYSTATE_PLAY;
             v->fade_declick = 1.0;
         }
         else
             v->fade_declick = ((float)v->fade_posi / p->fade_samples);
     }
+/*
     else if (v->playstate == PLAYSTATE_LOOP)
+*/
+    if (p->play_mode & PATCH_PLAY_LOOP)
     {
         /* adjust our indices according to our play mode */
         if (p->play_mode & PATCH_PLAY_PINGPONG)
@@ -749,18 +758,27 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
             }
         }
     }
-    else if (v->playstate == PLAYSTATE_PLAY)
-    {
-        if (   ((v->dir > 0) && (v->posi > v->fade_out_start_pos))
-            || ((v->dir < 0) && (v->posi < v->fade_out_start_pos)))
-        {
-            playstate_init_fade_out(p, v);
 
-            if (v->playstate == PLAYSTATE_OFF)
-                return -1;
+    if (v->playstate == PLAYSTATE_PLAY)
+    {
+        /* The potential for a fade out is limited firstly by:
+         *  a) we're using a non-looping playmode.
+         *  b) we're looping but the note has been released
+         */
+        if (!(p->play_mode & PATCH_PLAY_LOOP)
+         || ((p->play_mode & PATCH_PLAY_LOOP) && v->released))
+        {
+            if (   ((v->dir > 0) && (v->posi > v->fade_out_start_pos))
+                || ((v->dir < 0) && (v->posi < v->fade_out_start_pos)))
+            {
+                playstate_init_fade_out(p, v);
+
+                if (v->playstate == PLAYSTATE_OFF)
+                    return -1;
+            }
         }
     }
-
+    
     if (v->playstate == PLAYSTATE_FADE_OUT)
     {
         advance_fwd(&v->fade_posi, &v->fade_posf, v->stepi, v->stepf);

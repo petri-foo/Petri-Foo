@@ -41,6 +41,8 @@ void names_create(void)
 {
     const char none[] = "OFF";
     const char one[] = "1.0";
+    const char key[] = "Key";
+    const char velocity[] = "Velocity";
 
     int i;
     int id;
@@ -63,6 +65,10 @@ void names_create(void)
     strcpy(mod_src_names[MOD_SRC_NONE], none);
     mod_src_names[MOD_SRC_ONE] = malloc(strlen(one) + 1);
     strcpy(mod_src_names[MOD_SRC_ONE], one);
+    mod_src_names[MOD_SRC_KEY] = malloc(strlen(key) + 1);
+    strcpy(mod_src_names[MOD_SRC_KEY], key);
+    mod_src_names[MOD_SRC_VELOCITY] = malloc(strlen(velocity) + 1);
+    strcpy(mod_src_names[MOD_SRC_VELOCITY], velocity);
 
     for (i = MOD_SRC_FIRST_EG; i < MOD_SRC_LAST_EG; ++i)
     {

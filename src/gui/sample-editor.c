@@ -45,6 +45,8 @@ static GtkWidget*   mark_spin;
 static GtkWidget*   mark_val;
 
 
+static void update_mark_spin(void);
+static void update_fade_spins(void);
 static void cb_mark_combo_changed(GtkWidget* combo, gpointer data);
 
 static void cb_close (GtkWidget * widget, gpointer data)
@@ -131,6 +133,7 @@ static void cb_mark_spin_changed(GtkWidget * spin, gpointer data)
     int mark = waveform_get_mark(WAVEFORM(waveform));
     patch_set_mark_frame(patch, mark, val);
     update_mark_val(val);
+    update_fade_spins(); /* so xfade spin button range is set correctly */
     gtk_widget_queue_draw(waveform);
     gtk_widget_queue_draw(wf_thumb);
 }
@@ -149,6 +152,7 @@ static void cb_xfade_spin_changed(GtkWidget * spin, gpointer data)
     debug("x-fade changed\n");
     int val = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(xfade_spin));
     patch_set_xfade_samples(patch, val);
+    update_mark_spin(); /* so mark spin range is set correctly */
 }
 
 
@@ -174,6 +178,8 @@ static void update_mark_spin(void)
     gtk_spin_button_set_range(GTK_SPIN_BUTTON(mark_spin), min, max);
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(mark_spin), val);
     g_signal_handlers_unblock_by_func(mark_spin, cb_mark_spin_changed, 0);
+
+    update_fade_spins(); /* ie set the range of xfade */
     update_mark_val(val);
 }
 

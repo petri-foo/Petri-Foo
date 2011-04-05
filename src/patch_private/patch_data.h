@@ -48,6 +48,7 @@ typedef struct _PatchVoice
     guint32   stepf;        /* fractional step amount */
 
     float     vel;          /* velocity; volume of this voice */
+    float     key_track;    /* note / 128 */
 
     float*  vol_mod1;
     float*  vol_mod2;

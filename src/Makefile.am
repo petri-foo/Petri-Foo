@@ -22,8 +22,9 @@ petri_foo_SOURCES = 					\
 	sample.c		sample.h		\
 	sync.c			sync.h			\
 	ticks.c			ticks.h			\
-	patch_private/patch_defs.c
-
+	patch_private/patch_data.h			\
+	patch_private/patch_defs.c			\
+	patch_private/patch_defs.h
                                                                                                                                                                         
 if WITH_LASH                                                                                                                                                            
 petri_foo_SOURCES += 					\
