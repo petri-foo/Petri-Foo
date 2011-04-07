@@ -77,6 +77,7 @@ typedef struct _PatchVoice
     /* formerly declick_vol */
     playstate_t playstate;
     gboolean    xfade;
+    gboolean    loop;
 
     int     fade_posi;  /* position in fade ie 0 ~ fade_samples - */
     guint32 fade_posf;  /* used for all fades: in, out, and x */

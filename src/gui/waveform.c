@@ -862,9 +862,15 @@ static void waveform_draw(Waveform * wf)
     WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
 
     cairo_t* cr;
+    debug("gtk_version:%d\n", GTK_MINOR_VERSION);
 
+    #if GTK_MINOR_VERSION < 20
+    if (!GTK_WIDGET_REALIZED(widget))
+        return;
+    #else
     if (!gtk_widget_get_realized(widget))
         return;
+    #endif
 
     debug("drawing %p\n", p);
 

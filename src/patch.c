@@ -162,9 +162,6 @@ inline static void prepare_pitch(Patch* p, PatchVoice* v, int note)
 {
     double scale; /* base pitch scaling factor */
 
-    v->key_track = (note - p->lower_note) / (float)(p->upper_note - p->lower_note);
-    debug("key_track:%f\n", v->key_track);
-
     /* this applies the tuning factor */
     scale = pow(2, (p->pitch.val * p->pitch_steps) / 12.0);
 
@@ -313,9 +310,12 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
     v->relmode = RELEASE_NONE;
     v->released = FALSE;
     v->to_end = FALSE; /* TRUE after loop */
-
+    v->xfade = FALSE;
+    v->loop = p->play_mode & PATCH_PLAY_LOOP;
 
     v->note = note;
+    v->key_track =
+        (note - p->lower_note) / (float)(p->upper_note - p->lower_note);
 
     if (!p->mono && !p->legato)
     {
@@ -726,7 +726,7 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
 /*
     else if (v->playstate == PLAYSTATE_LOOP)
 */
-    if (p->play_mode & PATCH_PLAY_LOOP)
+    if (v->loop)
     {
         /* adjust our indices according to our play mode */
         if (p->play_mode & PATCH_PLAY_PINGPONG)
@@ -832,6 +832,7 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
                 else if (p->play_mode & PATCH_PLAY_TO_END)
                 {
                     v->playstate = PLAYSTATE_PLAY;
+                    v->loop = FALSE;
                     v->to_end = TRUE;
 
                     if (p->play_mode & PATCH_PLAY_PINGPONG)
