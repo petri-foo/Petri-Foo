@@ -101,7 +101,6 @@ int patch_create (const char *name)
     /* default values */
     patches[id].channel = 0;
     patches[id].note = 60;
-    patches[id].range = 0;
     patches[id].lower_note = 60;
     patches[id].upper_note = 60;
     patches[id].play_mode = PATCH_PLAY_FORWARD | PATCH_PLAY_SINGLESHOT;
@@ -171,6 +170,7 @@ int patch_create (const char *name)
     patches[id].vol.mod2_amt = 0;
     patches[id].vol.direct_mod_id = MOD_SRC_NONE;
     patches[id].vol.vel_amt = 1.0;
+    patches[id].vol.key_amt = 0.0;
 
     /* panning */
     patches[id].pan.val = 0.0;
@@ -179,6 +179,7 @@ int patch_create (const char *name)
     patches[id].pan.mod1_amt = 0;
     patches[id].pan.mod2_amt = 0;
     patches[id].pan.vel_amt = 0;
+    patches[id].pan.key_amt = 0.0;
 
     /* cutoff */
     patches[id].ffreq.val = 1.0;
@@ -187,6 +188,7 @@ int patch_create (const char *name)
     patches[id].ffreq.mod1_amt = 0;
     patches[id].ffreq.mod2_amt = 0;
     patches[id].ffreq.vel_amt = 0;
+    patches[id].ffreq.key_amt = 0;
 
     /* resonance */
     patches[id].freso.val = 0.0;
@@ -195,6 +197,7 @@ int patch_create (const char *name)
     patches[id].freso.mod1_amt = 0;
     patches[id].freso.mod2_amt = 0;
     patches[id].freso.vel_amt = 0;
+    patches[id].freso.key_amt = 0;
 
     /* pitch */
     patches[id].pitch.val = 0.0;
@@ -203,6 +206,7 @@ int patch_create (const char *name)
     patches[id].pitch.mod1_amt = 0;
     patches[id].pitch.mod2_amt = 0;
     patches[id].pitch.vel_amt = 0;
+    patches[id].pitch.key_amt = 1.0;
 
     /* default voice */
     defvoice.active = FALSE;
@@ -270,6 +274,14 @@ int patch_create (const char *name)
     }
 
     patch_unlock (id);
+
+    if (strcmp(name, "Default") == 0)
+    {
+        patch_sample_load(id, "Default");
+        patches[id].lower_note = 48;
+        patches[id].upper_note = 71;
+    }
+
     return id;
 }
 
@@ -327,56 +339,56 @@ int patch_dump (int **dump)
     count = patch_count ( );
 
     if (count == 0)
-	return count;
+        return count;
 
     /* allocate dump */
     *dump = malloc (sizeof (int) * count);
     if (*dump == NULL)
-	return PATCH_ALLOC_FAIL;
+        return PATCH_ALLOC_FAIL;
 
     /* place active patches into dump array */
     for (id = i = 0; id < PATCH_COUNT; id++)
-	if (patches[id].active)
-	    (*dump)[i++] = id;
+        if (patches[id].active)
+            (*dump)[i++] = id;
 
     /* sort dump array by channel in ascending order */
     for (i = 0; i < count; i++)
     {
-	for (j = i; j < count; j++)
-	{
-	    if (patches[(*dump)[j]].channel <
-		patches[(*dump)[i]].channel)
-	    {
-		tmp = (*dump)[i];
-		(*dump)[i] = (*dump)[j];
-		(*dump)[j] = tmp;
-	    }
-	}
+        for (j = i; j < count; j++)
+        {
+            if (patches[(*dump)[j]].channel <
+                patches[(*dump)[i]].channel)
+            {
+                tmp = (*dump)[i];
+                (*dump)[i] = (*dump)[j];
+                (*dump)[j] = tmp;
+            }
+        }
     }
 
     /* sort dump array by note in ascending order while preserving
      * existing channel order */
     for (i = 0; i < MIDI_CHANS; i++)
     {
-	for (j = 0; j < count; j++)
-	{
-	    if (patches[(*dump)[j]].channel != i)
-		continue;
-	    
-	    for (k = j; k < count; k++)
-	    {
-		if (patches[(*dump)[k]].channel != i)
-		    continue;
+        for (j = 0; j < count; j++)
+        {
+            if (patches[(*dump)[j]].channel != i)
+                continue;
 
-		if (patches[(*dump)[k]].note <
-		    patches[(*dump)[j]].note)
-		{
-		    tmp = (*dump)[j];
-		    (*dump)[j] = (*dump)[k];
-		    (*dump)[k] = tmp;
-		}
-	    }
-	}
+            for (k = j; k < count; k++)
+            {
+                if (patches[(*dump)[k]].channel != i)
+                    continue;
+
+                if (patches[(*dump)[k]].note <
+                    patches[(*dump)[j]].note)
+                {
+                    tmp = (*dump)[j];
+                    (*dump)[j] = (*dump)[k];
+                    (*dump)[k] = tmp;
+                }
+            }
+        }
     }
 
     return count;
@@ -578,7 +590,11 @@ int patch_sample_load (int id, const char *name)
     /* we lock *after* we call patch_flush because patch_flush does
      * its own locking */
     patch_lock (id);
-    val = sample_load_file (patches[id].sample, name, patch_samplerate);
+
+    if (strcmp(name, "Default") == 0)
+        val = sample_default(patches[id].sample, patch_samplerate);
+    else
+        val = sample_load_file (patches[id].sample, name, patch_samplerate);
 
     patches[id].sample_stop = patches[id].sample->frames - 1;
 

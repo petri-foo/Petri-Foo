@@ -1,9 +1,11 @@
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sndfile.h>
 #include <samplerate.h>
 #include "petri-foo.h"
 #include "sample.h"
+
 
 Sample* sample_new ( )
 {
@@ -23,6 +25,34 @@ void sample_free (Sample* sample)
      g_string_free (sample->file, TRUE);
      g_free (sample->sp);
      g_free (sample);
+}
+
+int sample_default(Sample* sample, int rate)
+{
+    int frames = rate / 8;
+    float freq_st = M_PI * 2.0 / (rate / 523.251);
+    float rad = 0;
+    int i;
+    float* tmp = malloc(frames * 2 * sizeof(float));
+
+    if (!tmp)
+    {
+        errmsg("Unable to allocate space for (default) samples!\n");
+        return -1;
+    }
+
+    sample->frames = frames;
+    sample->sp = tmp;
+
+    for (i = 0; i < frames; ++i)
+    {
+        float s = sin(rad);
+        *tmp++ = s;
+        *tmp++ = s;
+        rad += freq_st;
+    }
+
+    sample->file = g_string_new("Default");
 }
 
 int sample_load_file (Sample* sample, const char* name, int rate)
@@ -54,7 +84,7 @@ int sample_load_file (Sample* sample, const char* name, int rate)
      }
 
      /* set aside space for samples */
-     if ((tmp =  malloc (sfinfo.frames * sfinfo.channels * sizeof (float))) == NULL)
+     if (!(tmp = malloc(sfinfo.frames * sfinfo.channels * sizeof(float))))
      {
 	  errmsg ("Unable to allocate space for samples!\n");
 	  sf_close (sfp);

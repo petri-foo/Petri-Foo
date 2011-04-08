@@ -26,6 +26,7 @@ void        sample_free      (Sample*);
 int         sample_load_file (Sample* sample, const char* name, int rate);
 void        sample_free_file (Sample* sample);
 const char* sample_get_file  (Sample* sample);
+int         sample_default   (Sample* sample, int rate);
 
 
 #endif /* __SAMPLE_H__ */

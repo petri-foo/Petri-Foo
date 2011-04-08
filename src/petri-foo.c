@@ -100,6 +100,10 @@ int main(int argc, char *argv[])
 	lashdriver_set_jack_name((char*)driver_get_client_name());
 	lashdriver_set_alsa_id(midi_get_client_id());
 #endif
+
+    patch_create("Default");
+    gui_refresh();
+
 	gtk_main();
 
 	/* stop */

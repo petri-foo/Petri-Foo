@@ -77,7 +77,6 @@ static gboolean range_cb(GnomeCanvasItem* item, GdkEvent* event,
     int note;
     int lower;
     int upper;
-    int range;
     int change_range = 0;
     PatchList* list;
 
@@ -94,7 +93,6 @@ static gboolean range_cb(GnomeCanvasItem* item, GdkEvent* event,
     note = patch_get_note(p->patch);
     lower = patch_get_lower_note(p->patch);
     upper = patch_get_upper_note(p->patch);
-    range = patch_get_range(p->patch);
 
     /* process the click */
     if (event->button.button == 1)
@@ -122,7 +120,7 @@ static gboolean range_cb(GnomeCanvasItem* item, GdkEvent* event,
     /* if the range is off, and a range adjusting button wasn't
      * pressed, then clamp the range down to nothing (which will
      * result in it remaining disabled) */
-    if (!range && !change_range)
+    if (lower != upper && !change_range)
         lower = upper = note;
 
     /* reposition note */
@@ -145,15 +143,9 @@ static gboolean range_cb(GnomeCanvasItem* item, GdkEvent* event,
     patch_set_upper_note(p->patch, upper);
 
     if (lower == upper)
-    {
-        patch_set_range(p->patch, FALSE);
         gnome_canvas_item_hide(p->range);
-    }
     else
-    {
-        patch_set_range(p->patch, TRUE);
         gnome_canvas_item_show(p->range);
-    }
 
     /* we might have moved this patch around relative to the list;
      * update the list and try to keep this patch selected */
@@ -321,7 +313,6 @@ void midi_section_set_patch(MidiSection* self, int patch)
     int note;
     int lower;
     int upper;
-    int range;
 
     p->patch = patch;
 
@@ -339,12 +330,12 @@ void midi_section_set_patch(MidiSection* self, int patch)
     }
     else
     {
+
         set_sensitive(p, TRUE);
 
         note = patch_get_note(patch);
         lower = patch_get_lower_note(patch);
         upper = patch_get_upper_note(patch);
-        range = patch_get_range(patch);
 
         block(p);
 
@@ -360,7 +351,7 @@ void midi_section_set_patch(MidiSection* self, int patch)
         gnome_canvas_item_set(p->range, "x2",
                 (gdouble) (upper * PHAT_KEYBOARD_KEY_WIDTH
                                  + PHAT_KEYBOARD_KEY_WIDTH - 1), NULL);
-        if (range)
+        if (lower != upper)
             gnome_canvas_item_show(p->range);
         else
             gnome_canvas_item_hide(p->range);

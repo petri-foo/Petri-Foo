@@ -651,8 +651,10 @@ int gui_init(void)
 
 
 void gui_refresh(void)
-{
-    patch_list_update (PATCH_LIST(patch_list), 0, PATCH_LIST_INDEX);
+{debug("hi there\n");
+    master_section_update(MASTER_SECTION(master_section));
+    patch_list_update(PATCH_LIST(patch_list), 0, PATCH_LIST_INDEX);
+    cb_patch_list_changed(PATCH_LIST(patch_list), NULL);
 }
 
 

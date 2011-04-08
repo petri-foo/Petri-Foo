@@ -48,7 +48,7 @@ typedef struct _PatchVoice
     guint32   stepf;        /* fractional step amount */
 
     float     vel;          /* velocity; volume of this voice */
-    float     key_track;    /* note / 128 */
+    float     key_track;    /* = (note - lower) / (upper - lower) */
 
     float*  vol_mod1;
     float*  vol_mod2;
@@ -110,11 +110,11 @@ typedef struct _PatchParam
     float   mod2_amt;
 
     /* direct effect modulation source */
-
-    gboolean has_direct;     /* might not make sense for all params */
     int     direct_mod_id;
 
+    /* velocity sensitivity and keyboard tracking */
     float   vel_amt;
+    float   key_amt;
 
 } PatchParam;
 
@@ -128,7 +128,7 @@ typedef struct _Patch
     char     name[PATCH_MAX_NAME];
     int      channel;       /* midi channel to listen on */
     int      note;          /* midi note to listen on */
-    int      range;         /* whether to listen to range of notes or not */
+/*    int      range;          whether to listen to range of notes or not */
     int      lower_note;    /* lowest note in range */
     int      upper_note;    /* highest note in range */
     int      cut;           /* cut signal this patch emits */

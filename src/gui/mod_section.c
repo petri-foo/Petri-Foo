@@ -25,6 +25,7 @@ struct _ModSectionPrivate
     GtkWidget*      param2;
     GtkWidget*      env_combo;
     GtkWidget*      vel_sens;
+    GtkWidget*      key_track;
     GtkWidget*      mod1_combo;
     GtkWidget*      mod1_amount;
     GtkWidget*      mod2_combo;
@@ -62,6 +63,12 @@ static void vel_sens_cb(GtkWidget* w, ModSectionPrivate* p)
 {
     float val  = phat_fan_slider_get_value(PHAT_FAN_SLIDER(w));
     patch_set_vel_amount(p->patch_id, p->param, val);
+}
+
+static void key_track_cb(GtkWidget* w, ModSectionPrivate* p)
+{
+    float val  = phat_fan_slider_get_value(PHAT_FAN_SLIDER(w));
+    patch_set_key_amount(p->patch_id, p->param, val);
 }
 
 
@@ -107,18 +114,21 @@ static void connect(ModSectionPrivate* p)
     if (p->mod_only)
         goto connect_mod_srcs;
 
-    g_signal_connect(G_OBJECT(p->param1),        "value-changed",
+    g_signal_connect(G_OBJECT(p->param1),       "value-changed",
                         G_CALLBACK(param1_cb),      (gpointer)p);
 
     if (p->param == PATCH_PARAM_PITCH)
-        g_signal_connect(G_OBJECT(p->param2),    "value-changed",
+        g_signal_connect(G_OBJECT(p->param2),   "value-changed",
                         G_CALLBACK(param2_cb),      (gpointer)p);
 
-    g_signal_connect(G_OBJECT(p->vel_sens),  "value-changed",
+    g_signal_connect(G_OBJECT(p->vel_sens),     "value-changed",
                         G_CALLBACK(vel_sens_cb),    (gpointer)p);
 
+    g_signal_connect(G_OBJECT(p->key_track),    "value-changed",
+                        G_CALLBACK(key_track_cb),   (gpointer)p);
+
     if (p->param == PATCH_PARAM_AMPLITUDE)
-        g_signal_connect(G_OBJECT(p->env_combo), "changed",
+        g_signal_connect(G_OBJECT(p->env_combo),"changed",
                         G_CALLBACK(mod_src_cb),     (gpointer)p);
 
 connect_mod_srcs:
@@ -147,6 +157,7 @@ static void block(ModSectionPrivate* p)
     if (p->param == PATCH_PARAM_PITCH)
         g_signal_handlers_block_by_func(p->param2, param2_cb, p);
 
+    g_signal_handlers_block_by_func(p->key_track, key_track_cb, p);
     g_signal_handlers_block_by_func(p->vel_sens, vel_sens_cb, p);
 
     if (p->param == PATCH_PARAM_AMPLITUDE)
@@ -171,6 +182,7 @@ static void unblock(ModSectionPrivate* p)
     if (p->param == PATCH_PARAM_PITCH)
         g_signal_handlers_unblock_by_func(p->param2, param2_cb,  p);
 
+    g_signal_handlers_unblock_by_func(p->key_track, key_track_cb, p);
     g_signal_handlers_unblock_by_func(p->vel_sens, vel_sens_cb, p);
 
     if (p->param == PATCH_PARAM_AMPLITUDE)
@@ -322,7 +334,7 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
     ++y;
 
     /* velocity sensitivity */
-    label = gtk_label_new("Vel.Sens:");
+    label = gtk_label_new("Velocity Sensitivity:");
     gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
     gtk_table_attach(t, label, 1, 2, y, y + 1, GTK_FILL, 0, 0, 0);
     gtk_widget_show(label);
@@ -330,6 +342,18 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
     p->vel_sens = phat_hfan_slider_new_with_range(0.0, 0.0, 1.0, 0.1);
     gtk_table_attach_defaults(t, p->vel_sens, 3, 4, y, y + 1);
     gtk_widget_show(p->vel_sens);
+
+    ++y;
+
+    /* key tracking */
+    label = gtk_label_new("Key Tracking:");
+    gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
+    gtk_table_attach(t, label, 1, 2, y, y + 1, GTK_FILL, 0, 0, 0);
+    gtk_widget_show(label);
+
+    p->key_track = phat_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
+    gtk_table_attach_defaults(t, p->key_track, 3, 4, y, y + 1);
+    gtk_widget_show(p->key_track);
 
     ++y;
 
@@ -445,6 +469,7 @@ void mod_section_set_patch(ModSection* self, int patch_id)
     float param1 = PATCH_PARAM_INVALID;
     float param2 = PATCH_PARAM_INVALID;
     float vsens;
+    float ktrack;
     int envsrc, m1src, m2src;
     float m1amt, m2amt;
 
@@ -466,6 +491,7 @@ void mod_section_set_patch(ModSection* self, int patch_id)
         param2 = patch_get_pitch_steps(p->patch_id);
 
     patch_get_vel_amount(patch_id, p->param, &vsens);
+    patch_get_key_amount(patch_id, p->param, &ktrack);
 
 get_mod_srcs:
 
@@ -506,9 +532,9 @@ get_mod_srcs:
     phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->param1), param1);
 
     if (p->param == PATCH_PARAM_PITCH)
-        phat_slider_button_set_value(PHAT_SLIDER_BUTTON(p->param2),
-                                                                param2);
+        phat_slider_button_set_value(PHAT_SLIDER_BUTTON(p->param2), param2);
 
+    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->key_track), ktrack);
     phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->vel_sens), vsens);
 
     if (p->param == PATCH_PARAM_AMPLITUDE)

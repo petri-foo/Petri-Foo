@@ -106,7 +106,12 @@ int           patch_get_pitch_steps   (int id);
 PatchPlayMode patch_get_play_mode     (int id);
 gboolean      patch_get_portamento    (int id);
 float        patch_get_portamento_time(int id);
+
+/* still don't get the point of this:
 gboolean      patch_get_range         (int id);
+  seems to be TRUE when lower != upper.
+ */
+
 float         patch_get_resonance     (int id);
 const float*  patch_get_sample        (int id);
 char*         patch_get_sample_name   (int id);
@@ -128,6 +133,7 @@ int patch_set_mod1_amt(int patch_id, PatchParamType, float amount);
 int patch_set_mod2_amt(int patch_id, PatchParamType, float amount);
 int patch_set_amp_env(int patch_id, int modsrc_id);
 int patch_set_vel_amount(int id, PatchParamType param, float amt);
+int patch_set_key_amount(int id, PatchParamType param, float amt);
 
 /* modulation getters */
 int patch_get_mod1_src(int patch_id, PatchParamType, int* modsrc_id);
@@ -136,6 +142,7 @@ int patch_get_mod1_amt(int patch_id, PatchParamType, float* amount);
 int patch_get_mod2_amt(int patch_id, PatchParamType, float* amount);
 int patch_get_amp_env(int patch_id, int* modsrc_id);
 int patch_get_vel_amount(int id, PatchParamType param, float* val);
+int patch_get_key_amount(int id, PatchParamType param, float* val);
 
 /* lfo modulation setters */
 int patch_set_lfo_mod1_src(int patch_id, int lfo_id, int modsrc_id);

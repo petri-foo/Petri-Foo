@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_INIT(configure.ac)
-AM_INIT_AUTOMAKE(petri-foo, 0.0.1)
+AM_INIT_AUTOMAKE(petri-foo, 0.0.2)
 AM_CONFIG_HEADER(src/config.h)
 
 # compilation

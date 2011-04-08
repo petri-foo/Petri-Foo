@@ -1100,7 +1100,7 @@ int patch_set_portamento_time (int id, float secs)
     return 0;
 }
 
-/* set patch to listen to a range of notes if non-zero */
+/* set patch to listen to a range of notes if non-zero
 int patch_set_range (int id, gboolean range)
 {
     if (!isok (id))
@@ -1109,6 +1109,7 @@ int patch_set_range (int id, gboolean range)
     patches[id].range = range;
     return 0;
 }
+*/
 
 /* set the filter's resonance */
 int patch_set_resonance (int id, float reso)
@@ -1330,11 +1331,13 @@ float patch_get_portamento_time (int id)
     return patches[id].porta_secs;
 }
 
-/* get whether a range of notes is used or not */
+/* get whether a range of notes is used or not
 gboolean patch_get_range (int id)
 {
     return patches[id].range;
 }
+*/
+
 
 /* get the filter's resonance amount */
 float patch_get_resonance (int id)
@@ -1564,21 +1567,40 @@ int patch_set_amp_env(int patch_id, int modsrc_id)
 }
 
 
-int patch_set_vel_amount (int patch_id, PatchParamType param, float amt)
+int patch_set_vel_amount(int patch_id, PatchParamType param, float amt)
 {
     PatchParam* p;
     int err;
-     debug("set vel amount:%d %d %f\n",patch_id, param, amt);
+
     if (!isok (patch_id))
-	return PATCH_ID_INVALID;
+        return PATCH_ID_INVALID;
 
     if ((err = get_patch_param(patch_id, param, &p)) < 0)
-	return err;
+        return err;
 
     if (amt < 0.0 || amt > 1.0)
-	return PATCH_PARAM_INVALID;
+        return PATCH_PARAM_INVALID;
 
     p->vel_amt = amt;
+    return 0;
+}
+
+
+int patch_set_key_amount(int patch_id, PatchParamType param, float amt)
+{
+    PatchParam* p;
+    int err;
+
+    if (!isok (patch_id))
+        return PATCH_ID_INVALID;
+
+    if ((err = get_patch_param(patch_id, param, &p)) < 0)
+        return err;
+
+    if (amt < -1.0 || amt > 1.0)
+        return PATCH_PARAM_INVALID;
+
+    p->key_amt = amt;
     return 0;
 }
 
@@ -1651,12 +1673,28 @@ int patch_get_vel_amount (int patch_id, PatchParamType param, float* val)
     int err;
      
     if (!isok (patch_id))
-	return PATCH_ID_INVALID;
+        return PATCH_ID_INVALID;
 
     if ((err = get_patch_param(patch_id, param, &p)) < 0)
-	return err;
+        return err;
 
     *val = p->vel_amt;
+    return 0;
+}
+
+
+int patch_get_key_amount (int patch_id, PatchParamType param, float* val)
+{
+    PatchParam* p;
+    int err;
+     
+    if (!isok (patch_id))
+        return PATCH_ID_INVALID;
+
+    if ((err = get_patch_param(patch_id, param, &p)) < 0)
+        return err;
+
+    *val = p->key_amt;
     return 0;
 }
 

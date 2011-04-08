@@ -162,6 +162,8 @@ inline static void prepare_pitch(Patch* p, PatchVoice* v, int note)
 {
     double scale; /* base pitch scaling factor */
 
+    float k = p->note - note;
+
     /* this applies the tuning factor */
     scale = pow(2, (p->pitch.val * p->pitch_steps) / 12.0);
 
@@ -169,19 +171,21 @@ inline static void prepare_pitch(Patch* p, PatchVoice* v, int note)
     {
         /* we calculate the pitch here because we can't be certain
          * what the current value of the last voice's pitch is */
-        v->pitch = pow(2, (p->last_note - p->note) / 12.0);
+        v->pitch =
+            pow(2, (p->last_note - p->note) * p->pitch.key_amt / 12.0);
         v->pitch *= scale;
         v->porta_ticks = ticks_secs_to_ticks (p->porta_secs);
 
         /* calculate the value to be added to pitch each tick by
          * subtracting the target pitch from the initial pitch and
          * dividing by porta_ticks */
-        v->pitch_step = ((pow(2, (note - p->note) / 12.0)
+        v->pitch_step =
+            ((pow(2, (note - p->note) * p->pitch.key_amt / 12.0)
                              * scale) - v->pitch) / v->porta_ticks;
     }
     else
     {
-        v->pitch = pow(2, (note - p->note) / 12.0);
+        v->pitch = pow(2, (note - p->note) * p->pitch.key_amt / 12.0);
         v->pitch *= scale;
         v->porta_ticks = 0;
     }
@@ -207,11 +211,22 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
     int index;          /* the index we ended up settling on */
     int gzr = 0;        /* index of the oldest running patch */
     int empty = -1;     /* index of the first empty patch we encountered */
+    float key_track;
     Tick oldest = ticks;/* time of the oldest running patch */
 
     /* we don't activate voices if we don't have a sample */
     if (p->sample->sp == NULL)
         return;
+
+
+    /*  key track could be zero, which might mean a zero amplitude
+     *  note, but don't assume it does...
+     */
+    if (p->upper_note == p->lower_note)
+        key_track = 1.0;
+    else
+        key_track = (float)(note - p->lower_note)
+                                / (p->upper_note - p->lower_note);
 
     if (p->mono && p->legato)
     {
@@ -266,9 +281,15 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
             v->vel = vel;
             v->relset = -1;	/* cancel any pending release */
             v->relmode = RELEASE_NONE;
+            v->released = FALSE;
+            v->to_end = FALSE;
+            v->xfade = FALSE;
+            v->loop = p->play_mode & PATCH_PLAY_LOOP;
+            v->key_track = key_track;
             prepare_pitch(p, v, note);
-            return;     /* the rest of this function is
-                         * irrelevant now, fuck it */
+            return; /* the rest of this function deals with other
+                     * voice modes so we're best off out of here...
+                     */
         }
     }
     else
@@ -312,10 +333,8 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
     v->to_end = FALSE; /* TRUE after loop */
     v->xfade = FALSE;
     v->loop = p->play_mode & PATCH_PLAY_LOOP;
-
     v->note = note;
-    v->key_track =
-        (note - p->lower_note) / (float)(p->upper_note - p->lower_note);
+    v->key_track = key_track;
 
     if (!p->mono && !p->legato)
     {
@@ -468,6 +487,12 @@ pan (Patch * p, PatchVoice * v, int index, float *l, float *r)
     /* scale to velocity */
     pan = lerp (pan, pan * v->vel, p->pan.vel_amt);
 
+    /* scale for key tracking */
+    if (p->pan.key_amt < 0)
+        pan = lerp(pan, pan * (1.0 - v->key_track), p->pan.key_amt * -1);
+    else
+        pan = lerp(pan, pan * v->key_track, p->pan.key_amt);
+
     if (pan > 1.0)
         pan = 1.0;
     else if (pan < -1.0)
@@ -504,6 +529,14 @@ filter (Patch* p, PatchVoice* v, int index,  float* l, float* r)
     /* scale to velocity */
     ffreq = lerp (ffreq, ffreq * v->vel, p->ffreq.vel_amt);
 
+    /* scale for key tracking */
+    if (p->ffreq.key_amt < 0)
+        ffreq = lerp(   ffreq,
+                        ffreq * (1.0 - v->key_track),
+                        p->ffreq.key_amt * -1);
+    else
+        ffreq = lerp(   ffreq, ffreq * v->key_track, p->ffreq.key_amt);
+
     /* clip */
     if (ffreq > 1.0)
         ffreq = 1.0;
@@ -521,6 +554,14 @@ filter (Patch* p, PatchVoice* v, int index,  float* l, float* r)
 
     /* scale to velocity */
     freso = lerp (freso, freso * v->vel, p->freso.vel_amt);
+
+    /* scale for key tracking */
+    if (p->freso.key_amt < 0)
+        freso = lerp(   freso,
+                        freso * (1.0 - v->key_track),
+                        p->freso.key_amt * -1);
+    else
+        freso = lerp(   freso, freso * v->key_track, p->freso.key_amt);
 
     /* clip */
     if (freso > 1.0)
@@ -562,6 +603,12 @@ gain (Patch* p, PatchVoice* v, int index, float* l, float* r)
     if (v->vol_direct)
         vol *= *v->vol_direct;
 
+    /* scale for key tracking */
+    if (p->vol.key_amt < 0)
+        vol = lerp(vol, vol * (1.0 - v->key_track), p->vol.key_amt * -1);
+    else
+        vol = lerp(vol, vol * v->key_track, p->vol.key_amt);
+
     /* velocity should be the last parameter considered because it
      * has the most "importance" */
     vol = lerp (vol, vol * v->vel, p->vol.vel_amt);
@@ -573,7 +620,8 @@ gain (Patch* p, PatchVoice* v, int index, float* l, float* r)
         vol = 0.0;
 
     /* as a last step, make logarithmic */
-   logvol = log_amplitude(vol);
+/*   logvol = log_amplitude(vol);
+*/
 
     /* adjust amplitude */
 
@@ -693,6 +741,24 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
         recalc = TRUE;
         pitch = lerp (pitch, pitch * v->vel, p->pitch.vel_amt);
     }
+
+    /* scale for key tracking */
+    /* hmmm not sure this is \"sane\"?
+    if (p->pitch.key_amt < ALMOST_ZERO * -1)
+    {
+        recalc = TRUE;
+        pitch = lerp(   pitch,
+                        pitch * (1.0 - v->key_track),
+                        p->pitch.key_amt * -1);
+    }
+    else if (p->pitch.key_amt > ALMOST_ZERO)
+    {
+        recalc = TRUE;
+        pitch = lerp(   pitch,
+                        pitch * v->key_track,
+                        p->pitch.key_amt);
+    }
+    */
 
     if (recalc)
     {
@@ -962,10 +1028,8 @@ void patch_release (int chan, int note)
     for (i = 0; i < PATCH_COUNT; i++)
     {
         if (patches[i].active && patches[i].channel == chan
-            && (patches[i].note == note 
-                || (patches[i].range > 0
-                    && note >= patches[i].lower_note
-                        && note <= patches[i].upper_note)))
+            && (note >= patches[i].lower_note
+             && note <= patches[i].upper_note))
         {
             patch_release_patch (&patches[i], note, RELEASE_NOTEOFF);
         }
@@ -1031,10 +1095,8 @@ void patch_trigger (int chan, int note, float vel, Tick ticks)
     {
 	if (patches[i].active
 	    && patches[i].channel == chan
-	    && (patches[i].note == note
-		|| (patches[i].range
-		    && note >= patches[i].lower_note
-		    && note <= patches[i].upper_note)))
+	    && (note >= patches[i].lower_note
+		    && note <= patches[i].upper_note))
 	{
 
 	    idp[j++] = i;
@@ -1054,13 +1116,13 @@ void patch_trigger (int chan, int note, float vel, Tick ticks)
 void patch_trigger_with_id (int id, int note, float vel, Tick ticks)
 {
     if (id < 0 || id >= PATCH_COUNT)
-	return;
+        return;
+
     if (!patches[id].active)
-	return;
+        return;
+
     if (note < patches[id].lower_note || note > patches[id].upper_note)
-	return;
-    if (!patches[id].range && note != patches[id].note)
-	return;
+        return;
 
     patch_cut_patch (&patches[id]);
     patch_trigger_patch (&patches[id], note, vel, ticks);

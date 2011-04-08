@@ -67,6 +67,7 @@ dish_file_write_param(xmlNodePtr nodeparent, int patch_id,
     float   mod1amt;
     float   mod2amt;
     float   velsens;
+    float   keytrack;
 
     if (patch_param_get_value(patch_id, param, &val1)
                                                 == PATCH_PARAM_INVALID)
@@ -106,6 +107,11 @@ dish_file_write_param(xmlNodePtr nodeparent, int patch_id,
     patch_get_vel_amount(patch_id, param, &velsens);
     snprintf(buf, BUFSIZE, "%f", velsens);
     xmlNewProp(node1, BAD_CAST "velocity_sensing", BAD_CAST buf);
+
+    /* keyboard tracking */
+    patch_get_key_amount(patch_id, param, &keytrack);
+    snprintf(buf, BUFSIZE, "%f", keytrack);
+    xmlNewProp(node1, BAD_CAST "keyboard_tracking", BAD_CAST buf);
 
     if (param == PATCH_PARAM_AMPLITUDE)
     {
@@ -550,11 +556,6 @@ int dish_file_read_sample(xmlNodePtr node, int patch_id)
             if ((prop = xmlGetProp(node1, BAD_CAST "upper")))
                 if (sscanf((const char*)prop, "%d", &upper) == 1)
                     patch_set_upper_note(patch_id,  upper);
-
-            if (lower != root || upper != root || lower != upper)
-                patch_set_range(patch_id, 1);
-            else /* still don't have a clue what this does !*/
-                patch_set_range(patch_id, 0);
         }
         else
         {
@@ -743,19 +744,12 @@ int dish_file_read_param(xmlNodePtr node,   int patch_id,
     }
 
     if ((prop = xmlGetProp(node, BAD_CAST "velocity_sensing")))
-    {
-        debug("gonna attempt to run scanf on '%s'\n",prop);
         if (sscanf((const char*)prop, "%f", &n) == 1)
-        {
-            debug("gonna set vel amount now:\n");
             patch_set_vel_amount(patch_id, param, n);
-            debug("done\n");
-        }
-        else
-        {
-            debug("not setting vel amount, scanf error\n");
-        }
-    }
+
+    if ((prop = xmlGetProp(node, BAD_CAST "keyboard_tracking")))
+        if (sscanf((const char*)prop, "%f", &n) == 1)
+            patch_set_key_amount(patch_id, param, n);
 
     for (   node1 = node->children;
             node1 != NULL;
