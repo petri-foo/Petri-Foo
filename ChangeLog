@@ -1,3 +1,10 @@
+2011-04-10  James Morris <james@jwm-art.net>
+	* forgotten all sorts of much more important changes than:
+	* added -DGSEAL_ENABLE for aid gtk3 transition at some
+	  point in the future.
+	* removed patch_set/get_range and range gboolean from
+	  patch_data. basically range = (lower note == upper note).
+
 2011-03-14  James Morris <james@jwm-art.net>
 	* yeah like i remember ffs, b!
 	* implemented sampler x-fades

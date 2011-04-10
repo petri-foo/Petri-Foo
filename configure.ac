@@ -15,7 +15,7 @@ AC_ARG_ENABLE([debug],
 if test x$with_debug = xno; then
     CFLAGS="-O3 -std=gnu99"
 else
-    CFLAGS="-O0 -std=gnu99 -ggdb -Wextra -DGTK_DISABLE_DEPRECATED -DGDK_DISABLE_DEPRECATED"
+    CFLAGS="-O0 -std=gnu99 -ggdb -Wextra -DGTK_DISABLE_DEPRECATED -DGDK_DISABLE_DEPRECATED -DGSEAL_ENABLE"
     AC_DEFINE(DEBUG, 1, [[whether to display debugging output or not]])
 fi
 
