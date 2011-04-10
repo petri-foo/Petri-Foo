@@ -85,6 +85,8 @@ int patch_create (const char *name)
     LFOParams deflfo;
     PatchVoice defvoice;
 
+    gboolean default_patch = (strcmp("Default", name) == 0);
+
     /* find an unoccupied patch id */
     for (id = 0; patches[id].active; id++)
         if (id == PATCH_COUNT)
@@ -103,7 +105,9 @@ int patch_create (const char *name)
     patches[id].note = 60;
     patches[id].lower_note = 60;
     patches[id].upper_note = 60;
-    patches[id].play_mode = PATCH_PLAY_FORWARD | PATCH_PLAY_SINGLESHOT;
+    patches[id].play_mode = (default_patch  ? PATCH_PLAY_LOOP
+                                            : PATCH_PLAY_SINGLESHOT)
+                                            | PATCH_PLAY_FORWARD;
     patches[id].cut = 0;
     patches[id].cut_by = 0;
     patches[id].play_start = 0;
@@ -168,7 +172,8 @@ int patch_create (const char *name)
     patches[id].vol.mod2_id = MOD_SRC_NONE;
     patches[id].vol.mod1_amt = 0;
     patches[id].vol.mod2_amt = 0;
-    patches[id].vol.direct_mod_id = MOD_SRC_NONE;
+    patches[id].vol.direct_mod_id = (default_patch  ? MOD_SRC_FIRST_EG
+                                                    : MOD_SRC_NONE);
     patches[id].vol.vel_amt = 1.0;
     patches[id].vol.key_amt = 0.0;
 
@@ -243,6 +248,13 @@ int patch_create (const char *name)
     {
         patches[id].env_params[i] = defadsr;
         adsr_init(&defvoice.env[i]);
+    }
+
+    if (default_patch)
+    {
+        patches[id].env_params[0].env_on = TRUE;
+        patches[id].env_params[0].release = 0.250;
+        
     }
 
     for (i = 0; i < VOICE_MAX_LFOS; i++)
@@ -574,6 +586,7 @@ const char *patch_strerror (int error)
 int patch_sample_load (int id, const char *name)
 {
     int val;
+    gboolean defsample = (strcmp(name,"Default") == 0);
 
     if (!isok (id))
         return PATCH_ID_INVALID;
@@ -591,7 +604,7 @@ int patch_sample_load (int id, const char *name)
      * its own locking */
     patch_lock (id);
 
-    if (strcmp(name, "Default") == 0)
+    if (defsample)
         val = sample_default(patches[id].sample, patch_samplerate);
     else
         val = sample_load_file (patches[id].sample, name, patch_samplerate);
@@ -600,12 +613,23 @@ int patch_sample_load (int id, const char *name)
 
     patches[id].play_start = 0;
     patches[id].play_stop = patches[id].sample_stop;
-    patches[id].loop_start = patches[id].xfade_samples;
-    patches[id].loop_stop = patches[id].sample_stop -
-                                    patches[id].xfade_samples;
 
-    patches[id].fade_samples = 100;
-    patches[id].xfade_samples = 100;
+    if (defsample)
+    {
+        patches[id].loop_start = 294;
+        patches[id].loop_stop = 5181;
+        patches[id].fade_samples = 100;
+        patches[id].xfade_samples = 0;
+    }
+    else
+    {
+        patches[id].loop_start = patches[id].xfade_samples;
+        patches[id].loop_stop = patches[id].sample_stop -
+                                    patches[id].xfade_samples;
+        patches[id].fade_samples = 100;
+        patches[id].xfade_samples = 100;
+    }
+
 
     if (patches[id].sample_stop < patches[id].fade_samples)
         patches[id].fade_samples = patches[id].xfade_samples = 0;

@@ -168,22 +168,24 @@ cb_menu_patch_add (GtkWidget * menu_item, GtkWidget * main_window)
     (void)menu_item;
     static int patch_no = 1;
     char buf[80];
+    int val;
 
     GtkWidget *dialog;
     GtkWidget *entry;
-    int val;
+    GtkWidget*  content_area; /* formerly: dialog->vbox */
 
     /* dialog box */
-    dialog = gtk_dialog_new_with_buttons ("Add Patch",
-					  GTK_WINDOW (main_window),
-					  GTK_DIALOG_MODAL |
-					  GTK_DIALOG_DESTROY_WITH_PARENT,
-					  GTK_STOCK_OK,
-					  GTK_RESPONSE_ACCEPT,
-					  GTK_STOCK_CANCEL,
-					  GTK_RESPONSE_REJECT, NULL);
-    gtk_dialog_set_default_response (GTK_DIALOG (dialog),
-				     GTK_RESPONSE_ACCEPT);
+    dialog = gtk_dialog_new_with_buttons("Add Patch",
+                            GTK_WINDOW (main_window),
+                            GTK_DIALOG_MODAL |
+                            GTK_DIALOG_DESTROY_WITH_PARENT,
+                            GTK_STOCK_OK,
+                            GTK_RESPONSE_ACCEPT,
+                            GTK_STOCK_CANCEL,
+                            GTK_RESPONSE_REJECT, NULL);
+
+    gtk_dialog_set_default_response(GTK_DIALOG (dialog),
+                            GTK_RESPONSE_ACCEPT);
 
     /* create entry box */
     entry = gtk_entry_new();
@@ -193,31 +195,35 @@ cb_menu_patch_add (GtkWidget * menu_item, GtkWidget * main_window)
     gtk_entry_set_text(GTK_ENTRY(entry), buf);
     gtk_entry_set_activates_default(GTK_ENTRY(entry), TRUE);
 
-    /* I wish I had a "changed" event... */
-    g_signal_connect (G_OBJECT (entry), "key-press-event",
-		      G_CALLBACK (cb_menu_patch_name_verify),
-		      (gpointer) dialog);
-    g_signal_connect (G_OBJECT (entry), "key-release-event",
-		      G_CALLBACK (cb_menu_patch_name_verify),
-		      (gpointer) dialog);
-    gtk_box_pack_start (GTK_BOX (GTK_DIALOG (dialog)->vbox), entry, FALSE,
-			FALSE, 0);
+    g_signal_connect(G_OBJECT(entry), "key-press-event",
+                            G_CALLBACK(cb_menu_patch_name_verify),
+                            (gpointer) dialog);
+
+    g_signal_connect(G_OBJECT(entry), "key-release-event",
+                            G_CALLBACK(cb_menu_patch_name_verify),
+                            (gpointer)dialog);
+
+    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    gtk_box_pack_start(GTK_BOX(content_area), entry, FALSE, FALSE, 0);
     gtk_widget_show (entry);
 
     /* guaranteed to have a string in there if response is 'accept'
      * due to sensitivity callback */
     if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
     {
-	val = patch_create ((char *) gtk_entry_get_text (GTK_ENTRY (entry)));
-	if (val < 0)
-	{
-	    errmsg ("Failed to create a new patch (%s).\n",
-		    patch_strerror (val));
-	    return;
-	}
+        val = patch_create((char *)gtk_entry_get_text(GTK_ENTRY(entry)));
+        if (val < 0)
+        {
+            errmsg ("Failed to create a new patch (%s).\n",
+            patch_strerror (val));
+            return;
+        }
 
-	patch_set_channel(val, channel_section_get_channel(CHANNEL_SECTION(channel_section)));
-	patch_list_update (PATCH_LIST(patch_list), val, PATCH_LIST_PATCH);
+        patch_set_channel(val,
+                channel_section_get_channel(
+                        CHANNEL_SECTION(channel_section)));
+
+        patch_list_update (PATCH_LIST(patch_list), val, PATCH_LIST_PATCH);
     }
 
     gtk_widget_destroy (dialog);
@@ -255,27 +261,29 @@ cb_menu_patch_rename (GtkWidget * menu_item, GtkWidget * main_window)
 
     GtkWidget *dialog;
     GtkWidget *entry;
+    GtkWidget*  content_area; /* formerly: dialog->vbox */
     int val;
     int index;
     int cp;
 
     if ((cp = patch_list_get_current_patch(PATCH_LIST(patch_list))) < 0)
     {
-	debug ("No patches to rename, infidel.\n");
-	return;
+        debug ("No patches to rename, infidel.\n");
+        return;
     }
 
     /* dialog box */
-    dialog = gtk_dialog_new_with_buttons ("Rename Patch",
-					  GTK_WINDOW (main_window),
-					  GTK_DIALOG_MODAL |
-					  GTK_DIALOG_DESTROY_WITH_PARENT,
-					  GTK_STOCK_OK,
-					  GTK_RESPONSE_ACCEPT,
-					  GTK_STOCK_CANCEL,
-					  GTK_RESPONSE_REJECT, NULL);
-    gtk_dialog_set_default_response (GTK_DIALOG (dialog),
-				     GTK_RESPONSE_ACCEPT);
+    dialog = gtk_dialog_new_with_buttons("Rename Patch",
+                            GTK_WINDOW(main_window),
+                            GTK_DIALOG_MODAL |
+                            GTK_DIALOG_DESTROY_WITH_PARENT,
+                            GTK_STOCK_OK,
+                            GTK_RESPONSE_ACCEPT,
+                            GTK_STOCK_CANCEL,
+                            GTK_RESPONSE_REJECT, NULL);
+
+    gtk_dialog_set_default_response(GTK_DIALOG(dialog),
+                                    GTK_RESPONSE_ACCEPT);
 
     /* create entry box */
     entry = gtk_entry_new();
@@ -283,34 +291,34 @@ cb_menu_patch_rename (GtkWidget * menu_item, GtkWidget * main_window)
     gtk_entry_set_text(GTK_ENTRY(entry), patch_get_name (cp));
     gtk_entry_set_activates_default(GTK_ENTRY(entry), TRUE);
 
-    /* I wish I had a "changed" event... */
-    g_signal_connect (G_OBJECT (entry), "key-press-event",
-		      G_CALLBACK (cb_menu_patch_name_verify),
-		      (gpointer) dialog);
-    g_signal_connect (G_OBJECT (entry), "key-release-event",
-		      G_CALLBACK (cb_menu_patch_name_verify),
-		      (gpointer) dialog);
-    gtk_box_pack_start (GTK_BOX (GTK_DIALOG (dialog)->vbox), entry, FALSE,
-			FALSE, 0);
+    g_signal_connect(G_OBJECT (entry), "key-press-event",
+                        G_CALLBACK(cb_menu_patch_name_verify),
+                        (gpointer)dialog);
+
+    g_signal_connect(G_OBJECT(entry), "key-release-event",
+                        G_CALLBACK(cb_menu_patch_name_verify),
+                        (gpointer) dialog);
+
+    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    gtk_box_pack_start(GTK_BOX(content_area), entry, FALSE, FALSE, 0);
     gtk_widget_show (entry);
 
     /* guaranteed to have a string in there if response is 'accept'
      * due to sensitivity callback */
     if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
     {
-	val =
-	    patch_set_name (cp,
-			    (char *)
-			    gtk_entry_get_text (GTK_ENTRY (entry)));
-	if (val < 0)
-	{
-	    errmsg ("Failed to rename patch (%s).\n",
-		    patch_strerror (val));
-	    return;
-	}
+        val = patch_set_name (cp,
+                (char *)gtk_entry_get_text (GTK_ENTRY (entry)));
 
-	index = patch_list_get_current_index (PATCH_LIST(patch_list));
-	patch_list_update (PATCH_LIST(patch_list), index, PATCH_LIST_INDEX);
+        if (val < 0)
+        {
+            errmsg ("Failed to rename patch (%s).\n",
+            patch_strerror (val));
+            return;
+        }
+
+        index = patch_list_get_current_index (PATCH_LIST(patch_list));
+        patch_list_update (PATCH_LIST(patch_list), index, PATCH_LIST_INDEX);
     }
 
     gtk_widget_destroy (dialog);

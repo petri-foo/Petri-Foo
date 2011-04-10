@@ -233,14 +233,17 @@ waveform_configure(GtkWidget * widget, GdkEventConfigure * event)
 {
     (void)event;
     WaveformPrivate* p = WAVEFORM_GET_PRIVATE(widget);
+    GtkAllocation allocation;
+    gtk_widget_get_allocation(widget, &allocation);
 
-    p->width = widget->allocation.width;
-    p->height = widget->allocation.height;
+    p->width = allocation.width;
+    p->height = allocation.height;
 
     if (p->pixmap)
         g_object_unref(p->pixmap);
 
-    p->pixmap = gdk_pixmap_new(widget->window, p->width, p->height, -1);
+    p->pixmap = gdk_pixmap_new(gtk_widget_get_window(widget),
+                                    p->width, p->height, -1);
 
     waveform_draw(WAVEFORM(widget));
 
@@ -269,7 +272,7 @@ waveform_expose (GtkWidget * widget, GdkEventExpose * event)
     if (event->area.width == p->width && event->area.height == p->height)
         waveform_draw(WAVEFORM(widget));
 
-    cr = gdk_cairo_create (widget->window);
+    cr = gdk_cairo_create(gtk_widget_get_window(widget));
     gdk_cairo_set_source_pixmap (cr, p->pixmap, 0, 0);
     gdk_cairo_rectangle (cr, &event->area);
     cairo_fill (cr);

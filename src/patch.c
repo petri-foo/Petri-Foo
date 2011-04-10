@@ -43,6 +43,7 @@ inline static void playstate_init_fade_in(Patch* p, PatchVoice* v)
     {
         v->playstate = PLAYSTATE_FADE_IN;
         v->fade_posi = 0;
+        v->fade_posf = 0;
         v->fade_declick = 0.0;
     }
     else
@@ -438,8 +439,11 @@ pitchscale (Patch * p, PatchVoice * v, float *l, float *r)
 
         if (y1 < 0 || y1 >= p->sample->frames * 2)
         {
-            debug("xfade_point_posi out of range:%d frames:%d\n",
+            debug("xfade:%s xfade_point_posi out of range:%d frames:%d\n",
+                    (v->xfade ? "YES" : "NO"),
                     v->xfade_point_posi, p->sample->frames);
+            debug("xfade_samples:%d xfade_posi:%d\n",
+                    p->xfade_samples, v->xfade_posi);
             y1 = 0;
         }
 
@@ -742,24 +746,6 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
         pitch = lerp (pitch, pitch * v->vel, p->pitch.vel_amt);
     }
 
-    /* scale for key tracking */
-    /* hmmm not sure this is \"sane\"?
-    if (p->pitch.key_amt < ALMOST_ZERO * -1)
-    {
-        recalc = TRUE;
-        pitch = lerp(   pitch,
-                        pitch * (1.0 - v->key_track),
-                        p->pitch.key_amt * -1);
-    }
-    else if (p->pitch.key_amt > ALMOST_ZERO)
-    {
-        recalc = TRUE;
-        pitch = lerp(   pitch,
-                        pitch * v->key_track,
-                        p->pitch.key_amt);
-    }
-    */
-
     if (recalc)
     {
         v->stepi = pitch;
@@ -770,40 +756,31 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
 
     advance_pos(v->dir, &v->posi,  &v->posf, v->stepi,  v->stepf);
 
-    /* ah ha ha ha ha ha */
-
     if (v->playstate == PLAYSTATE_FADE_IN)
     {
         advance_fwd(&v->fade_posi, &v->fade_posf, v->stepi, v->stepf);
 
-        if (v->fade_posi > p->fade_samples)
+        if (v->fade_posi >= p->fade_samples)
         {
-/*
-            v->playstate = (p->play_mode & PATCH_PLAY_LOOP)
-                                    ? PLAYSTATE_LOOP
-                                    : PLAYSTATE_PLAY;
- */
-            v->playstate = PLAYSTATE_PLAY;
+           v->playstate = PLAYSTATE_PLAY;
             v->fade_declick = 1.0;
         }
         else
             v->fade_declick = ((float)v->fade_posi / p->fade_samples);
     }
-/*
-    else if (v->playstate == PLAYSTATE_LOOP)
-*/
+
     if (v->loop)
     {
         /* adjust our indices according to our play mode */
         if (p->play_mode & PATCH_PLAY_PINGPONG)
         {
-            if ((v->dir > 0) && (v->posi > p->loop_stop))
+            if ((v->dir > 0) && (v->posi >= p->loop_stop))
             {
                 playstate_init_x_fade(p, v);
                 v->posi = p->loop_stop;
                 v->dir = -1;
             }
-            else if ((v->dir < 0) && (v->posi < p->loop_start))
+            else if ((v->dir < 0) && (v->posi <= p->loop_start))
             {
                 playstate_init_x_fade(p, v);
                 v->posi = p->loop_start;
@@ -812,12 +789,12 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
         }
         else
         {
-            if ((v->dir > 0) && (v->posi > p->loop_stop))
+            if ((v->dir > 0) && (v->posi >= p->loop_stop))
             {
                 playstate_init_x_fade(p, v);
                 v->posi = p->loop_start;
             }
-            else if ((v->dir < 0) && (v->posi < p->loop_start))
+            else if ((v->dir < 0) && (v->posi <= p->loop_start))
             {
                 playstate_init_x_fade(p, v);
                 v->posi = p->loop_stop;
@@ -849,7 +826,7 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
     {
         advance_fwd(&v->fade_posi, &v->fade_posf, v->stepi, v->stepf);
 
-        if (v->fade_posi > p->fade_samples)
+        if (v->fade_posi >= p->fade_samples)
         {
             v->playstate = PLAYSTATE_OFF;
             v->fade_declick = 0.0;
@@ -867,7 +844,7 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
 
         advance_fwd(&v->xfade_posi, &v->xfade_posf, v->stepi, v->stepf);
 
-        if (v->xfade_posi > p->xfade_samples)
+        if (v->xfade_posi >= p->xfade_samples)
         {
             v->xfade = FALSE;
             v->xfade_declick = 1.0;

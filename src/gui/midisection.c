@@ -77,7 +77,7 @@ static gboolean range_cb(GnomeCanvasItem* item, GdkEvent* event,
     int note;
     int lower;
     int upper;
-    int change_range = 0;
+    gboolean change_range = FALSE;
     PatchList* list;
 
     /* a ghetto form of set-insensitive */
@@ -98,7 +98,7 @@ static gboolean range_cb(GnomeCanvasItem* item, GdkEvent* event,
     if (event->button.button == 1)
     {
         lower = clicked;
-        change_range = 1;
+        change_range = TRUE;
     }
     else if (event->button.button == 2)
     {
@@ -107,7 +107,7 @@ static gboolean range_cb(GnomeCanvasItem* item, GdkEvent* event,
     else if (event->button.button == 3)
     {
         upper = clicked;
-        change_range = 1;
+        change_range = TRUE;
     }
 
     /* clamp the parameters */
@@ -120,7 +120,7 @@ static gboolean range_cb(GnomeCanvasItem* item, GdkEvent* event,
     /* if the range is off, and a range adjusting button wasn't
      * pressed, then clamp the range down to nothing (which will
      * result in it remaining disabled) */
-    if (lower != upper && !change_range)
+    if (!change_range && lower == upper)
         lower = upper = note;
 
     /* reposition note */
@@ -325,8 +325,9 @@ void midi_section_set_patch(MidiSection* self, int patch)
         if (p->ignore)
             p->ignore = FALSE;
         else
-            gtk_adjustment_set_value(p->adj, (0.5 * p->adj->upper)
-                                            - (p->adj->page_size / 2));
+            gtk_adjustment_set_value(p->adj,
+                (0.5 * gtk_adjustment_get_upper(p->adj)
+                    - gtk_adjustment_get_page_size(p->adj) / 2));
     }
     else
     {
@@ -361,8 +362,10 @@ void midi_section_set_patch(MidiSection* self, int patch)
             p->ignore = FALSE;
         else
             gtk_adjustment_set_value(p->adj,
-                    ((note+1.0) / MIDI_NOTES) * p->adj->upper
-                                        - (p->adj->page_size / 2));
+                ((note + 1.0) / MIDI_NOTES)
+                    * gtk_adjustment_get_upper(p->adj)
+                    - gtk_adjustment_get_page_size(p->adj) / 2);
+
         unblock(p);
     }
 }
