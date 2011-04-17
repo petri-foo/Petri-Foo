@@ -4,8 +4,10 @@
 
 #include <gtk/gtk.h>
 
+#include "sampletab.h"
 
-int sample_selector_show(int id, GtkWidget* parent_window);
+
+int sample_selector_show(int id, GtkWidget* parent_window, SampleTab*);
 
 
 #endif /* __SAMPLE_SELECTOR_H__ */

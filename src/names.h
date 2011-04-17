@@ -3,6 +3,12 @@
 
 #include <stdbool.h>
 
+typedef struct _id_name
+{
+    const int id;
+    const char* name;
+} id_name;
+
 
 void            names_create(void);
 void            names_destroy(void);
@@ -24,5 +30,7 @@ int             names_lfos_id_from_str(const char*);
 const char**    names_params_get(void);
 int             names_params_id_from_str(const char*);
 
+const id_name const*
+                names_sample_raw_get(void);
 
 #endif

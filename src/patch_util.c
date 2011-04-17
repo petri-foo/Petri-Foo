@@ -1,4 +1,4 @@
-#include "patch_set_and_get.h"
+#include "patch_util.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -14,10 +14,9 @@
 #include "sample.h"
 #include "adsr.h"
 #include "lfo.h"
-#include "driver.h"		/* for DRIVER_DEFAULT_SAMPLERATE */
-#include "midi.h"		/* for MIDI_CHANS */
-
-
+#include "driver.h"     /* for DRIVER_DEFAULT_SAMPLERATE */
+#include "midi.h"       /* for MIDI_CHANS */
+#include "patch_set_and_get.h"
 
 #include "patch_private/patch_data.h"
 #include "patch_private/patch_defs.h"
@@ -221,6 +220,7 @@ int patch_create (const char *name)
     defvoice.stepi = 0;
     defvoice.stepf = 0;
     defvoice.vel = 0;
+    defvoice.ticks = 0;
 
     defvoice.playstate = PLAYSTATE_OFF;
     defvoice.xfade = FALSE;
@@ -289,9 +289,9 @@ int patch_create (const char *name)
 
     if (strcmp(name, "Default") == 0)
     {
-        patch_sample_load(id, "Default");
-        patches[id].lower_note = 48;
-        patches[id].upper_note = 71;
+        patch_sample_load(id, "Default", 0, 0, 0);
+        patches[id].lower_note = 36;
+        patches[id].upper_note = 83;
     }
 
     return id;
@@ -310,7 +310,7 @@ int patch_destroy (int id)
     patch_lock (id);
 
     patches[id].active = 0;
-    sample_free_file (patches[id].sample);
+    sample_free_data(patches[id].sample);
 
     patch_unlock (id);
 
@@ -406,80 +406,86 @@ int patch_dump (int **dump)
     return count;
 }
 
-int patch_duplicate (int target)
+int patch_duplicate(int src_id)
 {
-    /* we'll come back to this... */
-    return PATCH_ID_INVALID;
+    int dest_id;
+    int i;
+    Sample* oldsample;
+    float* glfo_tables[PATCH_MAX_LFOS];
 
-/*
-    int id, i;
-    Sample* oldsam;
-    float* vol;
-    float* pan;
-    float* cut;
-    float* res;
-    float* pitch;
-     
-    if (target < 0 || target > PATCH_COUNT || !patches[target].active)
+    if (!isok(src_id))
         return PATCH_ID_INVALID;
 
-    for (id = 0; patches[id].active; id++)
-        if (id == PATCH_COUNT)
+    if (!patches[src_id].active)
+        return PATCH_ID_INVALID;
+
+    /* find an empty patch and set id to its id */
+
+    for (dest_id = 0; patches[dest_id].active; dest_id++)
+        if (dest_id == PATCH_COUNT)
             return PATCH_LIMIT;
 
-    debug ("Creating patch (%d) from patch %s (%d).\n", id,
-           patches[target].name, target);
+    debug ("Creating patch (%d) from patch %s (%d).\n", dest_id,
+           patches[src_id].name, src_id);
 
-    patch_lock (id);
-*/
-    /* we have to store and restore our pointers to allocated memory,
-     * because the assignment below will overwrite them </kludge?> */
-/* yeah, um, this might now be changed to frequency modulation sources...
-    vol = patches[id].vol.lfo_tab;
-    pan = patches[id].pan.lfo_tab;
-    cut = patches[id].ffreq.lfo_tab;
-    res = patches[id].freso.lfo_tab;
-    pitch = patches[id].pitch.lfo_tab;
-    oldsam = patches[id].sample;
-     
-    patches[id] = patches[target];
+    patch_lock(dest_id);
 
-    patches[id].vol.lfo_tab = vol;
-    patches[id].pan.lfo_tab = pan;
-    patches[id].ffreq.lfo_tab = cut;
-    patches[id].freso.lfo_tab = res;
-    patches[id].pitch.lfo_tab = pitch;
-    patches[id].sample = oldsam;
+    /* store pointers in destination patch:
+     */
+    oldsample = patches[dest_id].sample;
 
-*/
-    /* this is residual paranoia, I think */
-/*
-    patches[id].sample->sp = NULL;
+    for (i = 0; i < PATCH_MAX_LFOS; ++i)
+        glfo_tables[i] = patches[dest_id].glfo_table[i];
 
-    if (patches[target].sample->sp != NULL)
+    /* copy the patch:
+     */
+    patches[dest_id] = patches[src_id];
+
+    /* restore pointers in destination patch:
+     */
+    patches[dest_id].sample = oldsample;
+
+    for (i = 0; i < PATCH_MAX_LFOS; ++i)
+        patches[dest_id].glfo_table[i] = glfo_tables[i];
+
+    /* dest and src currently share pointers to sample data.
+       set dest's pointer to NULL...
+     */
+    patches[dest_id].sample->sp = NULL;
+
+    /* ...so src's data is not free'd when the sample is loaded.
+     */
+
+    if (patches[src_id].sample->sp != NULL)
     {
-	patch_sample_load (id, sample_get_file (patches[target].sample));
+        Sample* s = patches[src_id].sample;
+        patch_sample_load(dest_id, s->filename, s->raw_samplerate,
+                                                s->raw_channels,
+                                                s->sndfile_format);
     }
-*/
+
     /* set display_index to next unique value */
-/*
-    patches[id].display_index = 0;
+
+    patches[dest_id].display_index = 0;
+
     for (i = 0; i < PATCH_COUNT; i++)
     {
-	if (i == id)
-	    continue;
-	if (patches[i].active
-	    && patches[i].display_index >= patches[id].display_index)
-	{
-	    patches[id].display_index = patches[i].display_index + 1;
-	}
-    }
-    debug ("chosen display: %d\n", patches[id].display_index);
+        if (i == dest_id)
+            continue;
 
-    patch_unlock (id);
-    return id;
-*/
+        if (patches[i].active
+         && patches[i].display_index >= patches[dest_id].display_index)
+        {
+            patches[dest_id].display_index = patches[i].display_index + 1;
+        }
+    }
+
+    debug ("chosen display: %d\n", patches[dest_id].display_index);
+    patch_unlock(dest_id);
+
+    return dest_id;
 }
+
 
 /* stop all currently playing voices in given patch */
 int patch_flush (int id)
@@ -583,10 +589,13 @@ const char *patch_strerror (int error)
 }
 
 /* loads a sample file for a patch */
-int patch_sample_load (int id, const char *name)
+int patch_sample_load(int id, const char *name,
+                                    int raw_samplerate,
+                                    int raw_channels,
+                                    int sndfile_format)
 {
     int val;
-    gboolean defsample = (strcmp(name,"Default") == 0);
+    gboolean defsample = (strcmp(name, "Default") == 0);
 
     if (!isok (id))
         return PATCH_ID_INVALID;
@@ -607,7 +616,11 @@ int patch_sample_load (int id, const char *name)
     if (defsample)
         val = sample_default(patches[id].sample, patch_samplerate);
     else
-        val = sample_load_file (patches[id].sample, name, patch_samplerate);
+        val = sample_load_file(patches[id].sample, name,
+                                            patch_samplerate,
+                                            raw_samplerate,
+                                            raw_channels,
+                                            sndfile_format);
 
     patches[id].sample_stop = patches[id].sample->frames - 1;
 
@@ -623,13 +636,12 @@ int patch_sample_load (int id, const char *name)
     }
     else
     {
+        patches[id].fade_samples = 100;
+        patches[id].xfade_samples = 100;
         patches[id].loop_start = patches[id].xfade_samples;
         patches[id].loop_stop = patches[id].sample_stop -
                                     patches[id].xfade_samples;
-        patches[id].fade_samples = 100;
-        patches[id].xfade_samples = 100;
     }
-
 
     if (patches[id].sample_stop < patches[id].fade_samples)
         patches[id].fade_samples = patches[id].xfade_samples = 0;
@@ -637,6 +649,16 @@ int patch_sample_load (int id, const char *name)
     patch_unlock (id);
     return val;
 }
+
+
+const Sample* patch_sample_data(int id)
+{
+    if (!isok(id))
+        return 0;
+
+    return patches[id].sample;
+}
+
 
 /* unloads a patch's sample */
 void patch_sample_unload (int id)
@@ -647,7 +669,7 @@ void patch_sample_unload (int id)
     debug ("Unloading sample for patch %d\n", id);
     patch_lock (id);
 
-    sample_free_file (patches[id].sample);
+    sample_free_data(patches[id].sample);
 
     patches[id].play_start = 0;
     patches[id].play_stop = 0;
@@ -680,7 +702,7 @@ void patch_set_buffersize (int nframes)
 void patch_set_samplerate (int rate)
 {
     int id;
-    char *name;
+    const char *name;
     int oldrate = patch_samplerate;
 
     patch_samplerate = rate;
@@ -694,9 +716,13 @@ void patch_set_samplerate (int rate)
             if (!patches[id].active)
                 continue;
 
-            name = patch_get_sample_name (id);
-            patch_sample_load (id, name);
-            g_free (name);
+            if (patches[id].sample->sp != NULL)
+            {
+                Sample* s = patches[id].sample;
+                patch_sample_load(id, s->filename,  s->raw_samplerate,
+                                                    s->raw_channels,
+                                                    s->sndfile_format);
+            }
         }
     }
 

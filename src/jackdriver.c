@@ -243,11 +243,23 @@ static int start(void)
     jack_set_process_callback (client, process, 0);
 
 #ifdef HAVE_JACK_SESSION
+    debug("HAVE JACK SESSION\n");
     if (jack_set_session_callback)
-        jack_set_session_callback(client, audio_settings_session_cb, 0);
+    {
+        debug("setting session callback... ");
+
+        if (jack_set_session_callback(client, audio_settings_session_cb, 0))
+        {
+            printf("fail\n");
+        }
+        else
+        {
+            printf("ok\n");
+        }
+    }
 #endif
 
-     jack_on_shutdown (client, shutdown, 0);
+    jack_on_shutdown (client, shutdown, 0);
 
     lport = jack_port_register( client,
                                 "out_left",

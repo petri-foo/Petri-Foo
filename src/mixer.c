@@ -7,8 +7,7 @@
 #include "maths.h"
 #include "ticks.h"
 #include "lfo.h"
-
-
+#include "patch_util.h"
 #include "jackdriver.h"
 
 
@@ -114,7 +113,7 @@ inline static void preview_render (float *buf, int frames)
 	       if ((preview.next_frame = j / 2) >= preview.sample->frames)
 	       {
 		    preview.active = 0;
-		    sample_free_file (preview.sample);
+		    sample_free_data(preview.sample);
 	       }
 	  }
 	  else
@@ -351,17 +350,22 @@ void mixer_direct_control(int chan, ControlParamType param,
      }
 }
 
-/* preview a sample file */
-void mixer_preview (char *name)
+
+void mixer_preview(char *name,  int raw_samplerate,
+                                    int raw_channels,
+                                    int sndfile_format)
 {
      pthread_mutex_lock (&preview.mutex);
      preview.active = 0;
-     sample_load_file (preview.sample, name, samplerate);
-
+     sample_load_file(preview.sample, name,  samplerate,
+                                             raw_samplerate,
+                                             raw_channels,
+                                             sndfile_format);
      preview.next_frame = 0;
      preview.active = 1;
      pthread_mutex_unlock (&preview.mutex);
 }
+
 
 /* set the master amplitude */
 int mixer_set_amplitude (float vol)

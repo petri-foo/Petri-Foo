@@ -1100,16 +1100,6 @@ int patch_set_portamento_time (int id, float secs)
     return 0;
 }
 
-/* set patch to listen to a range of notes if non-zero
-int patch_set_range (int id, gboolean range)
-{
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-     
-    patches[id].range = range;
-    return 0;
-}
-*/
 
 /* set the filter's resonance */
 int patch_set_resonance (int id, float reso)
@@ -1200,10 +1190,12 @@ int patch_get_display_index (int id)
 int patch_get_frames (int id)
 {
     if (!isok (id))
-	return PATCH_ID_INVALID;
+        return PATCH_ID_INVALID;
 
     if (patches[id].sample->sp == NULL)
-	return 0;
+        return 0;
+
+   debug("patches[%d].sample->frames:%d\n", id, patches[id].sample->frames);
 
     return patches[id].sample->frames;
 }
@@ -1331,13 +1323,6 @@ float patch_get_portamento_time (int id)
     return patches[id].porta_secs;
 }
 
-/* get whether a range of notes is used or not
-gboolean patch_get_range (int id)
-{
-    return patches[id].range;
-}
-*/
-
 
 /* get the filter's resonance amount */
 float patch_get_resonance (int id)
@@ -1357,15 +1342,12 @@ const float *patch_get_sample (int id)
 }
 
 /* get the name of the sample file */
-char *patch_get_sample_name (int id)
+const char *patch_get_sample_name (int id)
 {
-    char *name;
-
     if (id < 0 || id >= PATCH_COUNT || !patches[id].active)
-	name = strdup ("\0");
-    else
-	name = strdup (sample_get_file (patches[id].sample));
-    return name;
+        return 0;
+
+    return patches[id].sample->filename;
 }
 
 /* get the upper note */

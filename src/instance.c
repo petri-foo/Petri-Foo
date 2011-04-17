@@ -3,12 +3,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "config.h"
 
 static char *instance_name = 0;
 
 const char* get_instance_name(void)
 {
-    return (instance_name) ? instance_name : DEFAULT_INSTANCE_NAME;
+    return (instance_name) ? instance_name : PACKAGE;
 }
 
 

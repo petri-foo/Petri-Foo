@@ -42,6 +42,7 @@ GType       sample_tab_get_type(void);
 
 GtkWidget*  sample_tab_new(void);
 void        sample_tab_set_patch(SampleTab*, int patch);
+void        sample_tab_update_waveforms(SampleTab*);
 
 
 G_END_DECLS

@@ -3,6 +3,7 @@
 #include "gui.h"
 #include "petri-foo.h"
 #include "patch_set_and_get.h"
+#include "patch_util.h"
 
 /* magic numbers */
 enum

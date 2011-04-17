@@ -1,3 +1,14 @@
+2011-04-17  James Morris <james@jwm-art.net>
+	* really can't remember much at all, this is the best
+	  i've got:
+	* added ability to load raw/headerless samples
+	* cleaned up sample-selector gtkfilechooser code
+	* fixed loop/xfade bug/glitch/badcrash resulting
+	  from setting xfade after setting loop points
+	  derived from sample length and xfade length
+	  when loading sample.
+	* lots of meaningless-to-user modifications
+
 2011-04-10  James Morris <james@jwm-art.net>
 	* forgotten all sorts of much more important changes than:
 	* added -DGSEAL_ENABLE for aid gtk3 transition at some

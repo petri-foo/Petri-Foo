@@ -383,7 +383,7 @@ static void draw_back(WaveformPrivate* p, int w, int h, cairo_t* cr)
     cairo_pattern_t *bg_play;
     cairo_pattern_t *bg_loop;
 
-    frames = patch_get_frames (p->patch);
+    frames = patch_get_frames(p->patch);
 
     if (frames > 0)
     {
@@ -564,7 +564,7 @@ static void draw_wave(WaveformPrivate* p, int w, int h, cairo_t* cr)
     if ((wav = patch_get_sample (p->patch)) == NULL)
         return;
 
-    frames = patch_get_frames (p->patch);
+    frames = patch_get_frames(p->patch);
     start = frames * p->range_start;
     stop = frames * p->range_stop;
     play_start = patch_get_mark_frame(p->patch, WF_MARK_PLAY_START);
@@ -865,7 +865,6 @@ static void waveform_draw(Waveform * wf)
     WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
 
     cairo_t* cr;
-    debug("gtk_version:%d\n", GTK_MINOR_VERSION);
 
     #if GTK_MINOR_VERSION < 20
     if (!GTK_WIDGET_REALIZED(widget))

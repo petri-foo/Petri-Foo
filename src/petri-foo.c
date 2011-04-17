@@ -10,6 +10,7 @@
 #include "driver.h"
 #include "lfo.h"
 #include "patch.h"
+#include "patch_util.h"
 #include "mixer.h"
 #include "names.h"
 #include "dish_file.h"
@@ -91,6 +92,9 @@ int main(int argc, char *argv[])
 		dish_file_read(argv[optind]);
 		gui_refresh();
 	}
+    else
+        patch_create("Default");
+
 
 	/* start */
 	driver_start();
@@ -101,7 +105,6 @@ int main(int argc, char *argv[])
 	lashdriver_set_alsa_id(midi_get_client_id());
 #endif
 
-    patch_create("Default");
     gui_refresh();
 
 	gtk_main();

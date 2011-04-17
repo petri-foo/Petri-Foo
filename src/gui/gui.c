@@ -21,6 +21,7 @@
 #include "audio-settings.h"
 #include "mod_src.h"
 #include "patch_set_and_get.h"
+#include "patch_util.h"
 
 /* windows */
 static GtkWidget* window;

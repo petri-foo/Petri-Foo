@@ -6,29 +6,45 @@
 #include "jackdriver.h"
 #include "driver.h"
 #include "sync.h"
-
+#include "dish_file.h"
 
 #include <string.h>
-
+#include <stdlib.h>
 
 static GtkWidget* window;
 
 
 #ifdef HAVE_JACK_SESSION
-static int gui_session_cb(void *data)
+static gboolean gui_session_cb(void *data)
 {
-    jack_session_event_t *ev = (jack_session_event_t *)data;
-    char filename[256];
+    size_t len;
+    const char bank[] = "bank";
+    const char cmdname[] = PACKAGE;
+    char* bankfilename;
+    char* filename;
     char command[256];
+    jack_session_event_t *ev = (jack_session_event_t *)data;
 
-    snprintf(filename,  sizeof(filename), "%sbank.beef", ev->session_dir);
+    len = strlen(bank);
+    len += strlen(dish_file_extension());
+    bankfilename = malloc(len + 1);
+    sprintf(bankfilename, "%s%s", bank, dish_file_extension());
+
+    debug("bankfilename:%s\n", bankfilename);
+
+    len+= strlen(ev->session_dir);
+    filename = malloc(len + 1);
+    sprintf(filename, "%s%s", ev->session_dir, bankfilename);
+
+    debug("filename:%s\n",filename);
+
     snprintf(command,   sizeof(command),
-                        "petri-foo -U %s ${SESSION_DIR}myfile.state",
-                        ev->client_uuid                                 );
+                        "petri-foo -U %s ${SESSION_DIR}%s",
+                        ev->client_uuid, bankfilename);
 
-    /* FIXME: implement!
-    your_save_function( filename );
-     */
+    debug("command:%s\n",command);
+
+    dish_file_write(filename);
 
     ev->command_line = strdup(command);
     jack_session_reply(jackdriver_get_client(), ev);
@@ -38,11 +54,12 @@ static int gui_session_cb(void *data)
 
     jack_session_event_free(ev);
 
-    return 0;
+    return FALSE;
 }
 
 void audio_settings_session_cb(jack_session_event_t *event, void *arg )
 {
+    debug("adding g_idle_add thingy\n");
     g_idle_add(gui_session_cb, event);
 }
 #endif

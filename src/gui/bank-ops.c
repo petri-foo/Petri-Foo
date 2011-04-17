@@ -5,6 +5,7 @@
 
 #include "dish_file.h"
 #include "patch.h"
+#include "patch_util.h"
 #include "petri-foo.h"
 
 static char *last_bank = 0;

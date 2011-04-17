@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <sndfile.h> /* for format enumerations */
 
 static char** mod_src_names = 0;
 
@@ -35,7 +36,6 @@ static const char* param_names[] = {
     "Resonance",
     "Frequency Modulation", 0
 };
-
 
 void names_create(void)
 {
@@ -297,3 +297,29 @@ int names_params_id_from_str(const char* str)
     return -1;
 }
 
+const id_name const * names_sample_raw_get(void)
+{
+    static id_name raw_formats[] = {
+        { SF_FORMAT_RAW | SF_FORMAT_PCM_U8,   "Unsigned 8 bit data" },
+        { SF_FORMAT_RAW | SF_FORMAT_PCM_S8,   "Signed 8 bit data"   },
+        { SF_FORMAT_RAW | SF_FORMAT_PCM_16,   "Signed 16 bit data"  },
+        { SF_FORMAT_RAW | SF_FORMAT_PCM_24,   "Signed 24 bit data"  },
+        { SF_FORMAT_RAW | SF_FORMAT_PCM_32,   "Signed 32 bit data"  },
+        { SF_FORMAT_RAW | SF_FORMAT_FLOAT,    "32 bit float data"   },
+        { SF_FORMAT_RAW | SF_FORMAT_DOUBLE,   "64 bit float data"   },
+        { SF_FORMAT_RAW | SF_FORMAT_ULAW,     "U-Law encoded"       },
+        { SF_FORMAT_RAW | SF_FORMAT_ALAW,     "A-Law encoded"       },
+        { SF_FORMAT_RAW | SF_FORMAT_GSM610,   "GSM 6.10 encoding"   },
+        { SF_FORMAT_RAW | SF_FORMAT_DWVW_12,
+                        "12 bit Delta Width Variable Word encoding" },
+        { SF_FORMAT_RAW | SF_FORMAT_DWVW_16,
+                        "16 bit Delta Width Variable Word encoding" },
+        { SF_FORMAT_RAW | SF_FORMAT_DWVW_24,
+                        "24 bit Delta Width Variable Word encoding" },
+        { SF_FORMAT_RAW | SF_FORMAT_VOX_ADPCM,
+                        "Oki Dialogic ADPCM encoding"               },
+        { 0, 0                                                      }
+    };
+
+    return raw_formats;
+}

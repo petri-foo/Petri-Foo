@@ -8,7 +8,9 @@
 #include "names.h"
 #include "petri-foo.h"
 #include "patch.h"
+#include "patch_util.h"
 #include "patch_set_and_get.h"
+#include "sample.h"
 
 
 #define BUFSIZE 256
@@ -42,6 +44,30 @@ static int dish_file_write_sample_mode_props(xmlNodePtr node, int patch_id)
     xmlNewProp(node,    BAD_CAST "to_end",
                         BAD_CAST (playmode & PATCH_PLAY_TO_END  ? "true"
                                                                 : "false"));
+    return 0;
+}
+
+
+static int dish_file_write_sample_raw(xmlNodePtr nodeparent, int patch_id)
+{
+    xmlNodePtr node;
+    const Sample* s = patch_sample_data(patch_id);
+    char buf[BUFSIZE];
+
+    if (!(s->raw_samplerate || s->raw_channels || s->sndfile_format))
+        return 0;
+
+    node = xmlNewTextChild(nodeparent, NULL, BAD_CAST "Raw", NULL);
+
+    snprintf(buf, BUFSIZE, "%d", s->raw_samplerate);
+    xmlNewProp(node, BAD_CAST "samplerate", BAD_CAST buf);
+
+    snprintf(buf, BUFSIZE, "%d", s->raw_channels);
+    xmlNewProp(node, BAD_CAST "channels", BAD_CAST buf);
+
+    snprintf(buf, BUFSIZE, "%d", s->sndfile_format);
+    xmlNewProp(node, BAD_CAST "sndfile_format", BAD_CAST buf);
+
     return 0;
 }
 
@@ -321,6 +347,9 @@ int dish_file_write(char *name)
         /* play mode, reverse, to_end */
         dish_file_write_sample_mode_props(node1, patch_id[i]);
 
+        /* raw samplerate, raw channels, sndfile format */
+        dish_file_write_sample_raw(node1, patch_id[i]);
+
         /* sample play */
         node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Play", NULL);
 
@@ -457,17 +486,13 @@ int dish_file_read_sample(xmlNodePtr node, int patch_id)
     xmlChar* prop;
     xmlNodePtr node1;
     int s;
+    char* filename = 0;
+    gboolean sample_loaded = FALSE;
 
     int mode = PATCH_PLAY_SINGLESHOT;
 
     if ((prop = xmlGetProp(node, BAD_CAST "file")))
-    {
-        if (patch_sample_load(patch_id, (const char*)prop) != 0)
-        {
-            errmsg("failed to load sample:%s\n", (const char*)prop);
-            return 0;
-        }
-    }
+        filename = strdup((const char*)prop);
 
     if ((prop = xmlGetProp(node, BAD_CAST "mode")))
     {
@@ -504,7 +529,42 @@ int dish_file_read_sample(xmlNodePtr node, int patch_id)
         if (node1->type != XML_ELEMENT_NODE)
             continue;
 
-        if (xmlStrcmp(node1->name, BAD_CAST "Play") == 0)
+        if (!sample_loaded)
+        {
+            int n;
+            int raw_samplerate = 0;
+            int raw_channels = 0;
+            int sndfile_format = 0;
+            int err;
+
+            if (xmlStrcmp(node1->name, BAD_CAST "Raw") == 0)
+            {
+                if ((prop = xmlGetProp(node1, BAD_CAST "samplerate")))
+                    if (sscanf((const char*)prop, "%d", &n) == 1)
+                        raw_samplerate = n;
+
+                if ((prop = xmlGetProp(node1, BAD_CAST "channels")))
+                    if (sscanf((const char*)prop, "%d", &n) == 1)
+                        raw_channels = n;
+
+                if ((prop = xmlGetProp(node1, BAD_CAST "sndfile_format")))
+                    if (sscanf((const char*)prop, "%d", &n) == 1)
+                        sndfile_format = n;
+            }
+
+            err = patch_sample_load(patch_id, filename,
+                                              raw_samplerate,
+                                              raw_channels,
+                                              sndfile_format);
+            if (err)
+            {
+                errmsg("failed to load sample:%s\n", (const char*)prop);
+                return 0;
+            }
+
+            sample_loaded = TRUE;
+        }
+        else if (xmlStrcmp(node1->name, BAD_CAST "Play") == 0)
         {
             if ((prop = xmlGetProp(node1, BAD_CAST "start")))
             {

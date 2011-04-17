@@ -1,8 +1,6 @@
 #ifndef __INSTANCE_H__
 #define __INSTANCE_H__
 
-#define DEFAULT_INSTANCE_NAME "petri-foo"
-
 
 const char* get_instance_name(void);
 void        set_instance_name(const char*);

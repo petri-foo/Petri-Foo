@@ -114,13 +114,20 @@ gboolean      patch_get_range         (int id);
 
 float         patch_get_resonance     (int id);
 const float*  patch_get_sample        (int id);
-char*         patch_get_sample_name   (int id);
+const char*   patch_get_sample_name   (int id);
 int           patch_get_upper_note    (int id);
 float         patch_get_amplitude     (int id);
 int           patch_get_fade_samples  (int id);
 int           patch_get_xfade_samples (int id);
 int           patch_get_max_fade_samples(int id);
 int           patch_get_max_xfade_samples(int id);
+
+
+/* returns 0 if non-raw sample loaded */
+int patch_get_raw_samplerate(int id);
+int patch_get_raw_channels(int id);
+int patch_get_raw_sndfile_format(int id);
+
 
 /* param */
 int patch_param_get_value(int patch_id, PatchParamType, float* val);

@@ -7,25 +7,45 @@
 #include "sample.h"
 
 
-Sample* sample_new ( )
+#include <stdbool.h>
+
+
+Sample* sample_new(void)
 {
-     Sample* sample;
+    Sample* sample = malloc(sizeof(*sample));
 
-     sample = g_new0 (Sample, 1);
+    if (!sample)
+        return 0;
 
-     sample->sp     = NULL;
-     sample->frames = 0;
-     sample->file   = g_string_new ("");
+    sample->sp = 0;
+    sample->frames = 0;
+    sample->filename = 0;
 
-     return sample;
+    sample->raw_samplerate = 0;
+    sample->raw_channels = 0;
+    sample->sndfile_format = 0;
+
+    return sample;
 }
 
 void sample_free (Sample* sample)
 {
-     g_string_free (sample->file, TRUE);
-     g_free (sample->sp);
-     g_free (sample);
+    free(sample->filename);
+    free(sample->sp);
+    free(sample);
 }
+
+
+void sample_shallow_copy(Sample* dest, const Sample* src)
+{
+    dest->sp =              0;
+    dest->frames =          src->frames;
+    dest->raw_samplerate =  src->raw_samplerate;
+    dest->raw_channels =    src->raw_channels;
+    dest->sndfile_format =  src->sndfile_format;
+    dest->filename =        strdup(src->filename);
+}
+
 
 int sample_default(Sample* sample, int rate)
 {
@@ -52,130 +72,219 @@ int sample_default(Sample* sample, int rate)
         rad += freq_st;
     }
 
-    sample->file = g_string_new("Default");
+    sample->filename = strdup("Default");
+    return 0;
 }
 
-int sample_load_file (Sample* sample, const char* name, int rate)
+
+static float* resample(float* samples,  int rate,
+                                        SF_INFO* sfinfo,
+                                        int* output_frames)
 {
-     SNDFILE* sfp;
-     SF_INFO sfinfo;
-     SRC_DATA data;
-     float* tmp;
-     double ratio;
-     int err, i;
+    double ratio;
+    int frames;
 
-     if ((sfp = sf_open (name, SFM_READ, &sfinfo)) == NULL)
-     {
-	  debug ("libsndfile doesn't like %s\n", name);
-	  return -1;
-     }
+    ratio = rate / (sfinfo->samplerate * 1.0);
+    frames = (int)sfinfo->frames;
 
-    if ((sf_count_t)(int)sfinfo.frames != sfinfo.frames)
+    debug ("Resampling...\n");
+
+    int err;
+    SRC_DATA src;
+    float* tmp = malloc(sizeof(float) * sfinfo->frames
+                                      * sfinfo->channels
+                                      * ratio);
+    if (!tmp)
+    {
+        errmsg ("Out of memory for resampling\n");
+        return 0;
+    }
+
+    src.src_ratio = ratio;
+    src.data_in = samples;
+    src.data_out = tmp;
+    src.input_frames = sfinfo->frames;
+    src.output_frames = sfinfo->frames * ratio;
+
+    frames = (int)src.output_frames;
+
+    if (frames != src.output_frames)
+    {
+        errmsg("resampled sample would be too long\n");
+        free(tmp);
+        return 0;
+    }
+
+    err = src_simple(&src, SRC_SINC_BEST_QUALITY, sfinfo->channels);
+    if (err)
+    {
+        errmsg("Failed to resample (%s)\n", src_strerror(err));
+        free(tmp);
+        return 0;
+    }
+
+    *output_frames = frames;
+    return tmp;
+}
+
+
+static float* mono_to_stereo(float* samples, SF_INFO* sfinfo)
+{
+    debug ("Converting mono to stereo...\n");
+
+    int i;
+    float* tmp = malloc(sizeof(float) * sfinfo->frames * 2);
+
+    if (!tmp)
+    {
+        errmsg ("Out of memory for mono to stereo conversion.\n");
+        return 0;
+    }
+
+    for (i = 0; i < sfinfo->frames; i++)
+        tmp[2 * i] = tmp[2 * i + 1] = samples[i];
+
+    return tmp;
+}
+
+
+static float* read_audio(SNDFILE* sfp, SF_INFO* sfinfo)
+{
+    float* tmp;
+    int frames = (int)sfinfo->frames;
+
+    if (frames != sfinfo->frames)
     {
         errmsg("sample is too long\n");
+        return 0;
+    }
+
+    if (sfinfo->channels > 2)
+    {
+        errmsg ("Data can't have more than 2 channels\n");
+        sf_close (sfp);
+        return 0;
+    }
+
+    /* set aside space for samples */
+    if (!(tmp = malloc(sfinfo->frames * sfinfo->channels * sizeof(*tmp))))
+    {
+        errmsg ("Unable to allocate space for samples!\n");
+        sf_close (sfp);
+        return 0;
+    }
+
+    /* load sample file into memory */
+    if (sf_readf_float(sfp, tmp, sfinfo->frames) != sfinfo->frames)
+    {
+        errmsg("libsndfile had problems reading file, aborting\n");
+        free(tmp);
+        return 0;
+    }
+
+    debug ("Read %d frames into memory.\n", (int) sfinfo->frames);
+
+    return tmp;
+}
+
+
+int sample_load_file(Sample* sample, const char* name,
+                                        int rate,
+                                        int raw_samplerate,
+                                        int raw_channels,
+                                        int sndfile_format)
+{
+    SNDFILE* sfp;
+    SF_INFO sfinfo = { 0, 0, 0, 0, 0, 0 };
+    float* tmp;
+    int frames;
+    bool raw = (raw_samplerate || raw_channels || sndfile_format);
+
+    if (raw)
+    {
+        sfinfo.samplerate = raw_samplerate;
+        sfinfo.channels = raw_channels;
+        sfinfo.format = sndfile_format;
+
+        if (!sf_format_check(&sfinfo))
+        {
+            debug("LIBSNDFILE found error in format. aborting.\n");
+            return -1;
+        }
+    }
+
+    if ((sfp = sf_open (name, SFM_READ, &sfinfo)) == NULL)
+    {
+        debug ("libsndfile doesn't like %s\n", name);
         return -1;
     }
 
-     if (sfinfo.channels > 2)
-     {
-	  errmsg ("Data can't have more than 2 channels\n");
-	  sf_close (sfp);
-	  return -1;
-     }
+    if (!(tmp = read_audio(sfp, &sfinfo)))
+        return -1;
 
-     /* set aside space for samples */
-     if (!(tmp = malloc(sfinfo.frames * sfinfo.channels * sizeof(float))))
-     {
-	  errmsg ("Unable to allocate space for samples!\n");
-	  sf_close (sfp);
-	  return -1;
-     }
+    sf_close(sfp);
 
-     /* free existing samples, if any, and point to new space */
-     if (sample->sp != NULL)
-	  free (sample->sp);
-     sample->sp = tmp;
-     sample->frames = (int) sfinfo.frames;
-     g_string_assign (sample->file, name);
+    if (sfinfo.samplerate != rate)
+    {
+        float* tmp2 = resample(tmp, rate, &sfinfo, &frames);
 
-     /* load sample file into memory */
-     if (sf_readf_float (sfp, sample->sp, sfinfo.frames) != sfinfo.frames)
-     {
-	  errmsg ("Didn't read correct number of frames into memory... this is bad...\n");
-     }
-     else
-     {
-	  debug ("Read %d frames into memory.\n", (int) sfinfo.frames);
-     }
+        if (!tmp2)
+        {
+            free(tmp);
+            debug("failed to resample file\n");
+            return -1;
+        }
 
-     /* resample if necessary */
-     if ((ratio = rate / (sfinfo.samplerate * 1.0)) != 1.0)
-     {
-	  debug ("Resampling... \n");
-	  if ((tmp =
-	       malloc (sizeof (float) * sfinfo.frames * sfinfo.channels *
-		       ratio)) == NULL)
-	  {
-	       errmsg ("Couldn't malloc( ) output buffer, unable to samplerate convert\n");
-	       sf_close (sfp);
-	       return -1;
-	  }
-	  data.src_ratio = ratio;
-	  data.data_in = sample->sp;
-	  data.data_out = tmp;
-	  data.input_frames = sfinfo.frames;
-	  data.output_frames = sfinfo.frames * ratio;
-	  if ((err =
-	       src_simple (&data, SRC_SINC_BEST_QUALITY,
-			   sfinfo.channels)) != 0)
-	  {
-	       errmsg ("Failed to resample (%s)\n", src_strerror (err));
-	       free (tmp);
-	       sf_close (sfp);
-	       return -1;
-	  }
-	  if (sample->sp != NULL)
-	       free (sample->sp);
-	  sample->sp = tmp;
-	  sample->frames = data.output_frames_gen;
-	  debug ("done.\n");
-     }
+        free(tmp);
+        tmp = tmp2;
+    }
+    else
+        frames = sfinfo.frames;
 
-     /* convert mono samples to stereo if necessary */
-     if (sfinfo.channels == 1)
-     {
-	  debug ("Converting mono to stereo... ");
-	  if ((tmp = malloc (sizeof (float) * sample->frames * 2)) == NULL)
-	  {
-	       errmsg ("Couldn't malloc( ) output buffer, unable to convert to stereo\n");
-	       sf_close (sfp);
-	       return -1;
-	  }
-	  for (i = 0; i < sample->frames; i++)
-	  {
-	       tmp[2 * i] = sample->sp[i];
-	       tmp[2 * i + 1] = sample->sp[i];
-	  }
-	  if (sample->sp != NULL)
-	       free (sample->sp);
-	  sample->sp = tmp;
-	  debug ("done\n");
-     }
+    if (sfinfo.channels == 1)
+    {
+        float* tmp2 = mono_to_stereo(tmp, &sfinfo);
 
-     sf_close (sfp);
-     return 0;
+        if (!tmp2)
+        {
+            free(tmp);
+            debug("failed to convert mono to stereo\n");
+            return -1;
+        }
+
+        free(tmp);
+        tmp = tmp2;
+    }
+
+    free(sample->sp);
+    free(sample->filename);
+
+    sample->filename = strdup(name);
+
+    sample->sp = tmp;
+    sample->frames = frames;
+
+    if (raw)
+    {
+        sample->raw_samplerate = raw_samplerate;
+        sample->raw_channels = raw_channels;
+        sample->sndfile_format = sndfile_format;
+    }
+    else
+    {
+        sample->raw_samplerate = 0;
+        sample->raw_channels = 0;
+        sample->sndfile_format = 0;
+    }
+
+    return 0;
 }
 
-void sample_free_file (Sample* sample)
+
+void sample_free_data(Sample* sample)
 {
-     g_free (sample->sp);
-     sample->sp = NULL;
-     g_string_assign (sample->file, "");
+    free(sample->sp);
+    free(sample->filename);
+    sample->sp = 0;
+    sample->filename = 0;
 }
-
-const char* sample_get_file (Sample* sample)
-{
-     return sample->file->str;
-}
-
-

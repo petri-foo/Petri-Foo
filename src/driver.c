@@ -4,6 +4,7 @@
 #include "patch.h"
 #include "mixer.h"
 #include "ticks.h"
+#include "patch_util.h"
 
 
 #include <strings.h> /* strcasecmp */

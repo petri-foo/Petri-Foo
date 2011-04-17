@@ -128,7 +128,6 @@ typedef struct _Patch
     char     name[PATCH_MAX_NAME];
     int      channel;       /* midi channel to listen on */
     int      note;          /* midi note to listen on */
-/*    int      range;          whether to listen to range of notes or not */
     int      lower_note;    /* lowest note in range */
     int      upper_note;    /* highest note in range */
     int      cut;           /* cut signal this patch emits */

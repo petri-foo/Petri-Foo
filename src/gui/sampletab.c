@@ -48,12 +48,12 @@ static void sample_tab_class_init(SampleTabClass* klass)
 
 static void update_file_button(SampleTabPrivate* p)
 {
-    char* name;
+    const char* name;
     char* base;
 
     name = patch_get_sample_name(p->patch);
 
-    if (*name == '\0')
+    if (!name)
     {
         gtk_label_set_text(GTK_LABEL(p->file_label), "Load Sample");
     }
@@ -63,7 +63,6 @@ static void update_file_button(SampleTabPrivate* p)
         gtk_label_set_text(GTK_LABEL(p->file_label), base);
         g_free(base);
     }
-    g_free(name);
 }
 
 
@@ -155,8 +154,9 @@ static void reverse_cb(GtkWidget* check, SampleTabPrivate* p)
 }
 
 
-static void file_cb(GtkButton* button, SampleTabPrivate* p)
+static void file_cb(GtkButton* button, SampleTab* self)
 {
+    SampleTabPrivate* p = SAMPLE_TAB_GET_PRIVATE(self);
     GtkWidget* window = gtk_widget_get_toplevel(GTK_WIDGET(button));
 
     if (!gtk_widget_is_toplevel(window))
@@ -164,15 +164,17 @@ static void file_cb(GtkButton* button, SampleTabPrivate* p)
         debug("failed to discover top-level window\n");
     }
 
-    sample_selector_show(p->patch, window);
+    sample_selector_show(p->patch, window, self);
     update_file_button(p);
     gtk_widget_queue_draw(p->waveform);
     sample_editor_update();
 }
 
 
-static void connect(SampleTabPrivate* p)
+static void connect(SampleTab* self)
 {
+    SampleTabPrivate* p = SAMPLE_TAB_GET_PRIVATE(self);
+
     g_signal_connect(G_OBJECT(p->waveform), "button-press-event",
                             G_CALLBACK(waveform_cb), (gpointer)p);
 
@@ -181,7 +183,7 @@ static void connect(SampleTabPrivate* p)
     g_signal_connect(G_OBJECT(p->reverse_check), "toggled",
                             G_CALLBACK(reverse_cb), (gpointer)p);
     g_signal_connect(G_OBJECT(p->file_button), "clicked",
-                            G_CALLBACK(file_cb), (gpointer)p);
+                            G_CALLBACK(file_cb), (gpointer)self);
     g_signal_connect(G_OBJECT(p->to_end_check), "toggled",
                             G_CALLBACK(to_end_cb), (gpointer)p);
 
@@ -304,7 +306,7 @@ static void sample_tab_init(SampleTab* self)
     gtk_box_pack_start(GTK_BOX(hbox), p->to_end_check, TRUE, TRUE, 0);
     gtk_widget_show(p->to_end_check);
 
-    connect(p);
+    connect(self);
 }
 
 
@@ -356,3 +358,10 @@ void sample_tab_set_patch(SampleTab* self, int patch)
     unblock(p);
 }
 
+
+void sample_tab_update_waveforms(SampleTab* self)
+{
+    SampleTabPrivate* p = SAMPLE_TAB_GET_PRIVATE(self);
+    gtk_widget_queue_draw(p->waveform);
+    sample_editor_update();
+}

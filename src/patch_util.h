@@ -3,6 +3,7 @@
 
 
 #include "patch.h"
+#include "sample.h"
 
 
 /* utility functions */
@@ -16,7 +17,14 @@ int         patch_flush           (int id);
 void        patch_flush_all       (void);
 void        patch_init            (void);
 const char* patch_strerror        (int error);
-int         patch_sample_load     (int id, const char* file);
+
+int         patch_sample_load     (int id, const char* file,
+            /* 0 for non-raw data */    int raw_samplerate,
+            /* 0 for non-raw data */    int raw_channels,
+            /* 0 for non-raw data */    int sndfile_format);
+
+const Sample* patch_sample_data(int id);
+
 void        patch_sample_unload   (int id);
 void        patch_set_buffersize  (int nframes);
 void        patch_set_samplerate  (int rate);

@@ -1,6 +1,7 @@
 #include "petri-foo.h"
 #include "midi.h"
 #include "patch.h"
+#include "patch_util.h"
 #include "sync.h"
 
 static SyncMethod sync_method = SYNC_METHOD_MIDI;
