@@ -60,6 +60,7 @@ static void cb_close (GtkWidget * widget, gpointer data)
 static void cb_play (GtkWidget * widget, gpointer data)
 {
     (void)widget;(void)data;
+     mixer_note_off_with_id (patch, patch_get_note (patch));
      mixer_note_on_with_id (patch, patch_get_note (patch), 1.0);
 }
 

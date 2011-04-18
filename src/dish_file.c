@@ -558,10 +558,12 @@ int dish_file_read_sample(xmlNodePtr node, int patch_id)
                                               sndfile_format);
             if (err)
             {
-                errmsg("failed to load sample:%s\n", (const char*)prop);
+                errmsg("failed to load sample:%s\n", (const char*)filename);
                 return 0;
             }
 
+            free(filename);
+            filename = 0;
             sample_loaded = TRUE;
         }
         else if (xmlStrcmp(node1->name, BAD_CAST "Play") == 0)

@@ -258,7 +258,10 @@ int patch_create (const char *name)
     }
 
     for (i = 0; i < VOICE_MAX_LFOS; i++)
+    {
+        patches[id].vlfo_params[i] = deflfo;
         lfo_prepare(&defvoice.lfo[i]);
+    }
 
     defvoice.fll = 0;
     defvoice.flr = 0;

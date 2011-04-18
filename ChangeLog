@@ -1,3 +1,10 @@
+2011-04-18  James Morris <james@jwm-art.net>
+	* fixed seg-fault when sample-selector was opened on
+	  an empty bank.
+	* make repetitions of sample-editor play button turn off
+	  previously triggered playing sample before playing again.
+	* give voice lfos sensible starting frequency.
+
 2011-04-17  James Morris <james@jwm-art.net>
 	* really can't remember much at all, this is the best
 	  i've got:
