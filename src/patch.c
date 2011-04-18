@@ -219,7 +219,6 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
     if (p->sample->sp == NULL)
         return;
 
-
     /*  key track could be zero, which might mean a zero amplitude
      *  note, but don't assume it does...
      */
@@ -323,8 +322,12 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
     v = &p->voices[index];
 
     /* shutdown any running voices if monophonic */
-    if (p->mono && !p->legato)
+/*    if (p->mono && !p->legato)*/
+    if (p->mono)
+    {
+        debug("releaseing the monotony\n");
         patch_release_patch(p, -69, RELEASE_CUTOFF);
+    }
 
     /* fill in our voice */
     v->ticks = ticks;

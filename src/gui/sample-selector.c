@@ -90,7 +90,9 @@ static void cb_load(raw_box* rb)
     }
     else
     {   /* don't repeat load sample */
-        if (strcmp(name, patch_get_sample_name(patch)) == 0)
+        Sample* s = patch_sample_data(patch);
+
+        if (s->filename && strcmp(name, s->filename) == 0)
             return;
 
         if ((err = patch_sample_load(patch, name, 0, 0, 0)))
