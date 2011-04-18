@@ -43,7 +43,7 @@ void sample_shallow_copy(Sample* dest, const Sample* src)
     dest->raw_samplerate =  src->raw_samplerate;
     dest->raw_channels =    src->raw_channels;
     dest->sndfile_format =  src->sndfile_format;
-    dest->filename =        strdup(src->filename);
+    dest->filename =        (!src->filename) ? 0 : strdup(src->filename);
 }
 
 

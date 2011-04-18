@@ -343,9 +343,12 @@ int sample_selector_show(int id, GtkWidget* parent_window,
 
     sample_shallow_copy(last_sample, patch_sample_data(patch));
 
-    if (strcmp(last_sample->filename, "Default") != 0)
+    if (last_sample->filename &&
+        strcmp(last_sample->filename, "Default") != 0)
+    {
         gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(dialog),
                                 last_sample->filename);
+    }
 
     load = gtk_dialog_add_button(GTK_DIALOG(dialog),
                                 "Load", RESPONSE_LOAD);
