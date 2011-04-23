@@ -124,14 +124,16 @@ inline static void patch_release_patch(Patch* p, int note, release_t mode)
         if (p->voices[i].active && (p->voices[i].note == note || note < 0))
         {
             v = &p->voices[i];
-
             /* we don't really release here, that's the job of
              * advance( ); we just tell it *when* to release */
-            v->relset = 0;
+            v->relset = (p->mono && p->legato) ? patch_legato_lag : 0;
             v->relmode = mode;
 
-            if (p->mono && p->legato)
-                v->relset += patch_legato_lag;
+/*
+            if (mode == RELEASE_CUTOFF)
+                playstate_init_fade_out(p, v);
+ */
+
         }
     }
 }
@@ -203,15 +205,17 @@ inline static void prepare_pitch(Patch* p, PatchVoice* v, int note)
 }
 
 
+/**************************************************************************
+ *********************     PATCH TRIGGER PATCH      ***********************
+ **************************************************************************/
+
 /* a helper function to activate a voice for a patch */
 inline static void
 patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
 {
-    int i,j;
+    int i;
     PatchVoice* v;
     int index;          /* the index we ended up settling on */
-    int gzr = 0;        /* index of the oldest running patch */
-    int empty = -1;     /* index of the first empty patch we encountered */
     float key_track;
     Tick oldest = ticks;/* time of the oldest running patch */
 
@@ -230,6 +234,9 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
 
     if (p->mono && p->legato)
     {
+        int gzr;
+        int empty = -1;
+
         /* find a voice to retrigger */
         for (i = 0; i < PATCH_VOICE_COUNT; ++i)
         {
@@ -242,10 +249,9 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
             if (!p->voices[i].active)
                 empty = i;
 
-        /* we need to make sure that we don't grab a voice that is
-         * busy trying to release itself, otherwise we'll take it
-         * over, only to be promptly reduced to zero amplitude and
-         * shut down... */
+        /* don't grab a voice that is releasing, otherwise the new 
+         * will fade out instead of the old.
+         */
             else if (!p->voices[i].released)
                 break;
 
@@ -258,23 +264,21 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
                 break;
         }
 
+        debug("voice test break at voice %d of %d\n", i, PATCH_VOICE_COUNT);
+
     /* if we couldn't find a voice to take over, use the first
      * empty one we encountered; failing that, we'll take the
      * oldest running */
         if (i == PATCH_VOICE_COUNT)
         {
-            if (empty < 0)
-            {
-                index = gzr;
-            }
-            else
-                index = empty;
-
-        /* ...apparently, I don't think very highly of the above logic... */
+            debug("using voice:0\n");
+            index = (empty >= 0) ? empty : gzr;
+            /* ignore all that logic and set index to zero */
             index = 0;
         }
         else
         {
+            debug("using voice:%d\n", i);
             v = &p->voices[i];
             v->ticks = ticks;
             v->note = note;
@@ -292,8 +296,10 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
                      */
         }
     }
-    else
-    {
+    else /* mono w/o legato, or poly */
+    {    
+        int gzr;
+
         /* find a free voice slot and determine the oldest running voice */
         for (i = 0; i < PATCH_VOICE_COUNT; ++i)
         {
@@ -309,20 +315,13 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
 
         /* take the oldest running voice's slot if we couldn't find an
          * empty one */
-        if (i == PATCH_VOICE_COUNT)
-        {
-            index = gzr;
-        }
-        else
-        {
-            index = i;
-        }
+        index = (i == PATCH_VOICE_COUNT) ? gzr : i;
+        debug("note on at voice:%d\n",index);
     }
 
     v = &p->voices[index];
 
     /* shutdown any running voices if monophonic */
-/*    if (p->mono && !p->legato)*/
     if (p->mono)
     {
         debug("releaseing the monotony\n");
@@ -340,8 +339,8 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
     v->note = note;
     v->key_track = key_track;
 
-    if (!p->mono && !p->legato)
-    {
+    if (!(p->mono && p->legato))
+    {debug("filter reset\n");
         v->fll = 0;
         v->fbl = 0;
         v->flr = 0;
@@ -366,24 +365,24 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
 
     prepare_pitch(p, v, note);
 
-    for (j = 0; j < VOICE_MAX_ENVS; j++)
+    for (i = 0; i < VOICE_MAX_ENVS; i++)
     {
-        adsr_set_params(&v->env[j], &p->env_params[j]);
-        adsr_trigger(&v->env[j]);
+        adsr_set_params(&v->env[i], &p->env_params[i]);
+        adsr_trigger(&v->env[i]);
     }
 
-    for (j = 0; j < VOICE_MAX_LFOS; j++)
+    for (i = 0; i < VOICE_MAX_LFOS; i++)
     {
-        v->lfo[j].freq_mod1 =
-            mod_id_to_pointer(p->vlfo_params[j].mod1_id, p, v);
+        v->lfo[i].freq_mod1 =
+            mod_id_to_pointer(p->vlfo_params[i].mod1_id, p, v);
 
-        v->lfo[j].freq_mod2 =
-            mod_id_to_pointer(p->vlfo_params[j].mod2_id, p, v);
+        v->lfo[i].freq_mod2 =
+            mod_id_to_pointer(p->vlfo_params[i].mod2_id, p, v);
 
-        v->lfo[j].mod1_amt = p->vlfo_params[j].mod1_amt;
-        v->lfo[j].mod2_amt = p->vlfo_params[j].mod2_amt;
+        v->lfo[i].mod1_amt = p->vlfo_params[i].mod1_amt;
+        v->lfo[i].mod2_amt = p->vlfo_params[i].mod2_amt;
 
-        lfo_trigger (&v->lfo[j], &p->vlfo_params[j]);
+        lfo_trigger (&v->lfo[i], &p->vlfo_params[i]);
     }
 
     /* mark our territory */
@@ -860,43 +859,62 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
         nb: relset == -1 between note-on and note-off.
      */
 
-    if (v->relset >= 0 && !v->released)
+    if (v->relset >= 0)
     {
-        if (v->relset == 0)
+        switch(v->relmode)
         {
-            for (j = 0; j < VOICE_MAX_ENVS; j++)
-                adsr_release (&v->env[j]);
+        case RELEASE_NOTEOFF:
+            if (v->released)
+                break;
 
-            v->released = TRUE;
-
-            if (!(p->play_mode & PATCH_PLAY_SINGLESHOT))
+            if (v->relset == 0)
             {
-                if (!v->vol_direct)
-                {
-                    playstate_init_fade_out(p, v);
-                }
-                else if (p->play_mode & PATCH_PLAY_TO_END)
-                {
-                    v->playstate = PLAYSTATE_PLAY;
-                    v->loop = FALSE;
-                    v->to_end = TRUE;
+                debug("release mode: NOTEOFF\n");
 
-                    if (p->play_mode & PATCH_PLAY_PINGPONG)
+                for (j = 0; j < VOICE_MAX_ENVS; j++)
+                    adsr_release (&v->env[j]);
+
+                v->released = TRUE;
+
+                if (!(p->play_mode & PATCH_PLAY_SINGLESHOT))
+                {
+                    if (!v->vol_direct)
                     {
-                        if (v->dir == -1)
-                            v->fade_out_start_pos =
-                                    p->play_start + p->fade_samples;
-                        else
-                            v->fade_out_start_pos =
-                                    p->play_stop - p->fade_samples;
+                        playstate_init_fade_out(p, v);
+                    }
+                    else if (p->play_mode & PATCH_PLAY_TO_END)
+                    {
+                        v->playstate = PLAYSTATE_PLAY;
+                        v->loop = FALSE;
+                        v->to_end = TRUE;
+
+                        if (p->play_mode & PATCH_PLAY_PINGPONG)
+                        {
+                            if (v->dir == -1)
+                                v->fade_out_start_pos =
+                                        p->play_start + p->fade_samples;
+                            else
+                                v->fade_out_start_pos =
+                                        p->play_stop - p->fade_samples;
+                        }
                     }
                 }
             }
-        }
-        else
-            --v->relset;
-    }
 
+            --v->relset;
+            break;
+
+        case RELEASE_CUTOFF:
+        default:
+            if (v->relset == 0)
+            {
+                debug("release mode: CUTOFF\n");
+                playstate_init_fade_out(p, v);
+            }
+
+            --v->relset;
+        }
+    }
 
     return 0;
 }

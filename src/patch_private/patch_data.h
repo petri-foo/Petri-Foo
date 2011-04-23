@@ -10,6 +10,7 @@ typedef enum
 {
     RELEASE_NONE,       /* release no voices */
     RELEASE_NOTEOFF,    /* release is a result of a midi noteoff */
+    RELEASE_STEAL,      /* release is result of voice stealing */
     RELEASE_CUTOFF,     /* release is a result of a cut */
     RELEASE_ALL         /* release all voices for a given patch */
 } release_t;
