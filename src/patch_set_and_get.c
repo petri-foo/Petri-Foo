@@ -739,6 +739,7 @@ int patch_set_legato(int id, gboolean val)
 
 int patch_set_fade_samples(int id, int samples)
 {
+debug("set fade samples id:%d samples:%d\n",id,samples);
     if (!isok (id))
         return PATCH_ID_INVALID;
 

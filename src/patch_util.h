@@ -23,6 +23,8 @@ int         patch_sample_load     (int id, const char* file,
             /* 0 for non-raw data */    int raw_channels,
             /* 0 for non-raw data */    int sndfile_format);
 
+int         patch_sample_load_from(int dest_id, int src_id);
+
 const Sample* patch_sample_data(int id);
 
 void        patch_sample_unload   (int id);

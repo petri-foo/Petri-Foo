@@ -460,12 +460,7 @@ int patch_duplicate(int src_id)
      */
 
     if (patches[src_id].sample->sp != NULL)
-    {
-        Sample* s = patches[src_id].sample;
-        patch_sample_load(dest_id, s->filename, s->raw_samplerate,
-                                                s->raw_channels,
-                                                s->sndfile_format);
-    }
+        patch_sample_load_from(dest_id, src_id);
 
     /* set display_index to next unique value */
 
@@ -591,6 +586,8 @@ const char *patch_strerror (int error)
     }
 }
 
+
+
 /* loads a sample file for a patch */
 int patch_sample_load(int id, const char *name,
                                     int raw_samplerate,
@@ -653,6 +650,52 @@ int patch_sample_load(int id, const char *name,
     return val;
 }
 
+
+int patch_sample_load_from(int dest_id,  int src_id)
+{
+    int val;
+    const char* name;
+    gboolean defsample;
+
+    if (!isok(dest_id) || !isok(src_id))
+        return PATCH_ID_INVALID;
+
+    name = patches[src_id].sample->filename;
+    defsample = (strcmp(name, "Default") == 0);
+
+
+    debug ("Duplicating sample %s from patch %d to patch %d\n",
+            name,   src_id,     dest_id);
+
+    /* lock *after* calling patch_flush because patch_flush
+     * does its own locking
+     */
+    patch_flush(dest_id);
+    patch_lock(dest_id);
+
+    sample_shallow_copy(patches[dest_id].sample, patches[src_id].sample);
+
+    if (defsample)
+        val = sample_default(patches[dest_id].sample, patch_samplerate);
+    else
+        val = sample_load_file( patches[dest_id].sample,
+                                name, patch_samplerate,
+                                patches[src_id].sample->raw_samplerate,
+                                patches[src_id].sample->raw_channels,
+                                patches[src_id].sample->sndfile_format);
+
+/*
+    patches[dest_id].sample_stop =  patches[dest_id].sample->frames - 1;
+    patches[dest_id].play_start =   patches[src_id].play_start;
+    patches[dest_id].play_stop =    patches[src_id].play_stop;
+    patches[dest_id].loop_start =   patches[src_id].loop_start;
+    patches[dest_id].loop_stop =    patches[src_id].loop_stop;
+    patches[dest_id].fade_samples = patches[src_id].fade_samples;
+    patches[dest_id].xfade_samples= patches[src_id].xfade_samples;
+*/
+    patch_unlock(dest_id);
+    return val;
+}
 
 const Sample* patch_sample_data(int id)
 {

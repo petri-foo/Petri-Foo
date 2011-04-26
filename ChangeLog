@@ -1,3 +1,15 @@
+2011-04-26  James Morris <james@jwm-art.net>
+	* fixed bug causing sample play start/stop/fade
+	  values to not be re-loaded from bank.
+
+	* fade in/out declick applied at gain stage
+	  rather than as previously in pitchscale. does
+	  improve things a little.
+
+2011-04-25  James Morris <james@jwm-art.net>
+	* fixed patch-load code to read channel information
+	* disabled LASH by default (can be enabled via configure).
+
 2011-04-18  James Morris <james@jwm-art.net>
 	* fixed seg-fault when sample-selector was opened on
 	  an empty bank.

@@ -6,7 +6,12 @@ TESTING 3rd April 2011 -jwm
 note: these items are in addition to features mentioned
 in the README as goals for Petri-Foo.
 
--key tracking.
+-Show bank name in window title rather than petri-foo - petri-foo.
+
+-Some kind of file container where samples can be saved along
+ with bank file. Ie, for distribution of banks and/or
+ resampled samples (possibly).
+
 
 -Fix and remove artefacts arising from use of LAT for log_amplitude
  function in maths.[ch] (research info online about alternatives
@@ -15,9 +20,8 @@ in the README as goals for Petri-Foo.
 -Add context menu to patch list (I did this in June 2008 but it was
  never adopted).
 
--Restore refresh functions in most GTK GUI classes
+-Replace PHAT with invented-here custom cairo-based widgets
 
--Replace PHAT with inented-here custom cairo-based widgets
 
 -Sample Editor
     + two tool modes: pointer, and zoom

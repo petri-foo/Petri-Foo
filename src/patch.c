@@ -128,12 +128,6 @@ inline static void patch_release_patch(Patch* p, int note, release_t mode)
              * advance( ); we just tell it *when* to release */
             v->relset = (p->mono && p->legato) ? patch_legato_lag : 0;
             v->relmode = mode;
-
-/*
-            if (mode == RELEASE_CUTOFF)
-                playstate_init_fade_out(p, v);
- */
-
         }
     }
 }
@@ -340,13 +334,18 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
     v->key_track = key_track;
 
     if (!(p->mono && p->legato))
-    {debug("filter reset\n");
+        v->vel = vel;
+
+    if (!p->mono)
+    {
+        debug("filter reset\n");
         v->fll = 0;
         v->fbl = 0;
         v->flr = 0;
         v->fbr = 0;
-        v->vel = vel;
     }
+
+debug("\t\tv:vel:%f\n",v->vel);
 
     v->vol_mod1 =   mod_id_to_pointer(p->vol.mod1_id, p, v);
     v->vol_mod2 =   mod_id_to_pointer(p->vol.mod2_id, p, v);
@@ -468,9 +467,6 @@ pitchscale (Patch * p, PatchVoice * v, float *l, float *r)
                     p->sample->sp[y3 + 1],  v->xfade_point_posf >> 24)
                                             * (1.0 - v->xfade_declick);
     }
-
-    *l *= v->fade_declick;
-    *r *= v->fade_declick;
 }
 
 
@@ -619,6 +615,9 @@ gain (Patch* p, PatchVoice* v, int index, float* l, float* r)
      * has the most "importance" */
     vol = lerp (vol, vol * v->vel, p->vol.vel_amt);
 
+    /* apply fade in/out */
+    vol *= v->fade_declick;
+
     /* clip */
     if (vol > 1.0)
         vol = 1.0;
@@ -639,9 +638,13 @@ gain (Patch* p, PatchVoice* v, int index, float* l, float* r)
     *r *= logvol;
 */
     /* check to see if we've finished a release */
-    if (v->released && (v->fade_declick == 0.0 
-    || (v->vol_direct && *v->vol_direct < ALMOST_ZERO)))
+    if (v->released && (v->fade_declick == 0.0f //< ALMOST_ZERO
+                    || (v->vol_direct && *v->vol_direct < ALMOST_ZERO)))
     {
+        if (v->vol_direct)
+        {
+            debug("v->vol_direct:%1.6f\n", *v->vol_direct);
+        }
         return -1;
     }
 
@@ -831,11 +834,12 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
         if (v->fade_posi >= p->fade_samples)
         {
             v->playstate = PLAYSTATE_OFF;
+            debug("fadeout end at %f\n", v->fade_declick);
             v->fade_declick = 0.0;
             return -1;
         }
-        else
-            v->fade_declick = 1.0 - ((float)v->fade_posi / p->fade_samples);
+
+        v->fade_declick = 1.0 - ((float)v->fade_posi / p->fade_samples);
     }
 
     if (v->xfade)

@@ -20,10 +20,10 @@ else
 fi
 
 # disable lash support?
-with_lash="yes"
+with_lash="no"
 AC_ARG_ENABLE([lash], 
     [AC_HELP_STRING([--disable-lash],
-        [disable lash support (default is NO)])],
+        [disable lash support (default is YES)])],
     [if test x$enable_lash = xno; then with_lash=no ; fi])
 
 echo with_lash:$with_lash

@@ -566,7 +566,8 @@ int dish_file_read_sample(xmlNodePtr node, int patch_id)
             filename = 0;
             sample_loaded = TRUE;
         }
-        else if (xmlStrcmp(node1->name, BAD_CAST "Play") == 0)
+
+        if (xmlStrcmp(node1->name, BAD_CAST "Play") == 0)
         {
             if ((prop = xmlGetProp(node1, BAD_CAST "start")))
             {
@@ -948,6 +949,13 @@ int dish_file_read(char *path)
             /* patch name */
             if ((prop = xmlGetProp(nodepatch, BAD_CAST "name")))
                 patch_set_name(patch_id, (const char*)prop);
+
+            if ((prop = xmlGetProp(nodepatch, BAD_CAST "channel")))
+            {
+                int c;
+                if (sscanf((const char*)prop, "%d", &c))
+                    patch_set_channel(patch_id, c);
+            }
 
             for (node2 = nodepatch->children;
                  node2 != NULL;
