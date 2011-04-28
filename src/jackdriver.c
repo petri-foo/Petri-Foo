@@ -377,7 +377,7 @@ static const char* getname(void)
 
 static void* getid(void)
 {
-     return (void*) jack_get_client_name(client);
+    return (void*)jack_get_client_name(client);
 }
 
 void jackdriver_set_uuid      (char *uuid)

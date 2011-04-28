@@ -6,7 +6,6 @@ libgui_a_SOURCES = 					\
 	basic_combos.c		basic_combos.h		\
 	channelsection.c	channelsection.h	\
 	envelopetab.c		envelopetab.h		\
-	filtertab.c		filtertab.h		\
 	gui.c			gui.h			\
 	idselector.c		idselector.h		\
 	lfotab.c		lfotab.h		\

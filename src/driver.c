@@ -102,6 +102,7 @@ const char* driver_get_client_name(void)
 {
     if (curdriver < 0)
         return 0;
+
     return drivers[curdriver]->getid();
 }
 

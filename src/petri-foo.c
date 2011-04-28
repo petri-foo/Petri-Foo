@@ -80,18 +80,15 @@ int main(int argc, char *argv[])
 #ifdef HAVE_LASH
 	lashdriver_init(lash_args);
 #endif
-	gtk_init(&argc, &argv);
-	driver_init();
-	lfo_init();
-	mixer_init();
-	patch_init();
-	gui_init();
+    gtk_init(&argc, &argv);
+    gui_init();
+    driver_init();
+    lfo_init();
+    mixer_init();
+    patch_init();
 
-	if (optind < argc) 
-	{
-		dish_file_read(argv[optind]);
-		gui_refresh();
-	}
+    if (optind < argc) 
+        dish_file_read(argv[optind]);
     else
         patch_create("Default");
 
@@ -105,9 +102,13 @@ int main(int argc, char *argv[])
 	lashdriver_set_alsa_id(midi_get_client_id());
 #endif
 
+
     gui_refresh();
 
-	gtk_main();
+    if (optind < argc)
+        gui_set_window_title(argv[optind]);
+
+    gtk_main();
 
 	/* stop */
 	midi_stop();

@@ -38,33 +38,20 @@ static void connect(ChannelSection* self)
 static void channel_section_init(ChannelSection* self)
 {
     GtkBox* box = GTK_BOX(self);
-    GtkWidget* hbox;
-    GtkWidget* label;
-    GtkWidget* pad;
+    GtkWidget* hbox = gtk_hbox_new(FALSE, 0);
+    GtkBox* h = GTK_BOX(hbox);
 
     self->patch = -1;
 
-    /* hbox */
-    hbox = gtk_hbox_new(FALSE, 0);
-    gtk_box_pack_start(box, hbox, FALSE, FALSE, 0);
-    gtk_widget_show(hbox);
-    
-    /* channel label */
-    label = gtk_label_new("Channel:");
-    gtk_box_pack_start(GTK_BOX(hbox), label, FALSE, FALSE, 0);
-    gtk_widget_show(label);
-
-    /* hpad */
-    pad = gui_hpad_new(GUI_TEXTSPACE);
-    gtk_box_pack_start(GTK_BOX(hbox), pad, FALSE, FALSE, 0);
-    gtk_widget_show(pad);
+    gui_pack(box, hbox);
+    gui_label_pack("Channel:", h);
+    gui_pack(h, gui_hpad_new(GUI_TEXTSPACE));
 
     /* channel sliderbutton */
     self->chan_sb = phat_slider_button_new_with_range(1, 1, MIDI_CHANS,1,0);
     phat_slider_button_set_threshold(PHAT_SLIDER_BUTTON(self->chan_sb),
                                                         GUI_THRESHOLD);
-    gtk_box_pack_start(GTK_BOX(hbox), self->chan_sb, TRUE, TRUE, 0);
-    gtk_widget_show(self->chan_sb);
+    gui_pack(h, self->chan_sb);
 
     /* done */
     connect(self);
@@ -102,28 +89,20 @@ void channel_section_set_patch(ChannelSection* self, int patch)
     self->patch = patch;
 
     if (patch < 0)
-    {
-	set_sensitive(self, FALSE);
-    }
+        set_sensitive(self, FALSE);
     else
     {
-	set_sensitive(self, TRUE);
-
-	channel = patch_get_channel(patch);
-
-	block(self);
-
-	phat_slider_button_set_value(PHAT_SLIDER_BUTTON(self->chan_sb), channel+1);
-	
-	unblock(self);
+        set_sensitive(self, TRUE);
+        channel = patch_get_channel(patch);
+        block(self);
+        phat_slider_button_set_value(PHAT_SLIDER_BUTTON(self->chan_sb),
+                                                                channel+1);
+        unblock(self);
     }
 }
 
 
 int channel_section_get_channel(ChannelSection* self)
 {
-    if (self->patch < 0)
-	return 0;
-    
-    return patch_get_channel(self->patch);
+    return (self->patch < 0) ? 0 : patch_get_channel(self->patch);
 }

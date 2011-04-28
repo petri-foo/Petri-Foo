@@ -90,7 +90,7 @@ static void cb_load(raw_box* rb)
     }
     else
     {   /* don't repeat load sample */
-        Sample* s = patch_sample_data(patch);
+        const Sample* s = patch_sample_data(patch);
 
         if (s->filename && strcmp(name, s->filename) == 0)
             return;
@@ -225,7 +225,6 @@ static void raw_toggled_cb(GtkToggleButton* raw_toggle, gpointer data)
 static raw_box* raw_box_new(GtkWidget* dialog)
 {
     GtkTable* t;
-    GtkWidget* tmp;
     int y = 0;
 
     raw_box* rb = malloc(sizeof(*rb));
@@ -254,56 +253,44 @@ static raw_box* raw_box_new(GtkWidget* dialog)
     t = GTK_TABLE(rb->table);
 
     rb->format = basic_combo_id_name_create(names_sample_raw_get());
-    gtk_table_attach_defaults(t, rb->format, 0, 2, y, y + 1);
+    gui_attach(t, rb->format, 0, 2, y, y + 1);
 
-    tmp = gtk_label_new("Sample rate:");
-    gtk_table_attach_defaults(t, tmp, 2, 4, y, y + 1);
+    gui_label_attach("Sample rate:", t, 2, 4, y, y + 1);
 
     rb->sr_adj = (GtkAdjustment*)
         gtk_adjustment_new(44100, 8000, 192000, 100, 1000, 0);
     rb->samplerate = gtk_spin_button_new(rb->sr_adj, 1.0, 0);
-    gtk_table_attach_defaults(t, rb->samplerate, 3, 4, y, y + 1);
+    gui_attach(t, rb->samplerate, 3, 4, y, y + 1);
 
     ++y;
 
-    rb->mono = gtk_radio_button_new(NULL);
-    tmp = gtk_label_new("Mono");
-    gtk_container_add(GTK_CONTAINER(rb->mono), tmp);
-    rb->stereo =gtk_radio_button_new_from_widget(
-                                GTK_RADIO_BUTTON(rb->mono));
-    tmp = gtk_label_new("Stereo");
-    gtk_container_add(GTK_CONTAINER(rb->stereo), tmp);
+    rb->mono = gtk_radio_button_new_with_label(NULL,"Mono");
+    rb->stereo = gtk_radio_button_new_with_label_from_widget(
+                                            GTK_RADIO_BUTTON(rb->mono),
+                                                            "Stereo");
+    gui_attach(t, rb->mono, 0, 1, y, y + 1);
+    gui_attach(t, rb->stereo, 1, 2, y, y + 1);
 
-    gtk_table_attach_defaults(t, rb->mono, 0, 1, y, y + 1);
-    gtk_table_attach_defaults(t, rb->stereo, 1, 2, y, y + 1);
+    rb->file_endian = gtk_radio_button_new_with_label(NULL, "File Endian");
+    rb->little_endian = gtk_radio_button_new_with_label_from_widget(
+                                    GTK_RADIO_BUTTON(rb->file_endian),
+                                                        "Little Endian");
+    rb->big_endian = gtk_radio_button_new_with_label_from_widget(
+                                    GTK_RADIO_BUTTON(rb->little_endian),
+                                                        "Big Endian");
+    gui_attach(t, rb->file_endian, 2, 3, y, y + 1);
+    gui_attach(t, rb->little_endian, 3, 4, y, y + 1);
+    gui_attach(t, rb->big_endian, 4, 5, y, y + 1);
 
-    rb->file_endian = gtk_radio_button_new(NULL);
-    tmp = gtk_label_new("File Endian");
-    gtk_container_add(GTK_CONTAINER(rb->file_endian), tmp);
-
-    rb->little_endian = gtk_radio_button_new_from_widget(
-                                GTK_RADIO_BUTTON(rb->file_endian));
-    tmp = gtk_label_new("Little Endian");
-    gtk_container_add(GTK_CONTAINER(rb->little_endian), tmp);
-
-    rb->big_endian = gtk_radio_button_new_from_widget(
-                                GTK_RADIO_BUTTON(rb->little_endian));
-    tmp = gtk_label_new("Big Endian");
-    gtk_container_add(GTK_CONTAINER(rb->big_endian), tmp);
-
-    gtk_table_attach_defaults(t, rb->file_endian, 2, 3, y, y + 1);
-    gtk_table_attach_defaults(t, rb->little_endian, 3, 4, y, y + 1);
-    gtk_table_attach_defaults(t, rb->big_endian, 4, 5, y, y + 1);
-
-    g_signal_connect(GTK_OBJECT(rb->mono), "toggled",
+    g_signal_connect(GTK_OBJECT(rb->mono),          "toggled",
                                 G_CALLBACK(raw_toggles_toggled_cb), rb);
-    g_signal_connect(GTK_OBJECT(rb->stereo), "toggled",
+    g_signal_connect(GTK_OBJECT(rb->stereo),        "toggled",
                                 G_CALLBACK(raw_toggles_toggled_cb), rb);
-    g_signal_connect(GTK_OBJECT(rb->file_endian), "toggled",
+    g_signal_connect(GTK_OBJECT(rb->file_endian),   "toggled",
                                 G_CALLBACK(raw_toggles_toggled_cb), rb);
     g_signal_connect(GTK_OBJECT(rb->little_endian), "toggled",
                                 G_CALLBACK(raw_toggles_toggled_cb), rb);
-    g_signal_connect(GTK_OBJECT(rb->big_endian), "toggled",
+    g_signal_connect(GTK_OBJECT(rb->big_endian),    "toggled",
                                 G_CALLBACK(raw_toggles_toggled_cb), rb);
 
     /* table should be hidden by default */
@@ -317,10 +304,6 @@ int sample_selector_show(int id, GtkWidget* parent_window,
                                  SampleTab* sampletab)
 {
     GtkWidget* dialog;
-    GtkWidget* load;
-    GtkWidget* preview;
-    GtkWidget* tmp;
-    GtkWidget* vbox;
     raw_box* rawbox;
 
     enum {
@@ -352,10 +335,10 @@ int sample_selector_show(int id, GtkWidget* parent_window,
                                 last_sample->filename);
     }
 
-    load = gtk_dialog_add_button(GTK_DIALOG(dialog),
+    gtk_dialog_add_button(GTK_DIALOG(dialog),
                                 "Load", RESPONSE_LOAD);
 
-    preview = gtk_dialog_add_button(GTK_DIALOG(dialog),
+    gtk_dialog_add_button(GTK_DIALOG(dialog),
                                 "Pre_view", RESPONSE_PREVIEW);
 
 again:

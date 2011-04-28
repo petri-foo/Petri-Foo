@@ -7,6 +7,7 @@
 #include "instance.h"
 #include "petri-foo.h"
 
+#include "driver.h"
 #include "mixer.h"
 #include "gui.h"
 #include "patchsection.h"
@@ -125,6 +126,46 @@ GtkWidget* gui_section_new(const char* name, GtkWidget** box)
     *box = hbox;
     return vbox;
 }
+
+
+void gui_attach(GtkTable* table, GtkWidget* widget, guint l, guint r,
+                                                    guint t, guint b)
+{
+    gtk_table_attach(table, widget, l, r, t, b, GTK_FILL | GTK_EXPAND,
+                                                GTK_SHRINK,
+                                                0, 0);
+    gtk_widget_show(widget);
+}
+
+
+GtkWidget*  gui_label_attach(const char* str, GtkTable* table,
+                                              guint l, guint r,
+                                              guint t, guint b)
+{
+    GtkWidget* label = gtk_label_new(str);
+    gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
+    gui_attach(table, label, l, r, t, b);
+    gtk_widget_show(label);
+    return label;
+}
+
+
+void gui_pack(GtkBox* box , GtkWidget* widget)
+{
+    gtk_box_pack_start(box, widget, FALSE, FALSE, 0);
+    gtk_widget_show(widget);
+}
+
+
+/* packs (and shows) label into box (returns label) */
+GtkWidget*  gui_label_pack(const char* str, GtkBox* box)
+{
+    GtkWidget* label = gtk_label_new(str);
+    gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
+    gui_pack(box, label);
+    return label;
+}
+
 
 
 /* when the 'x' button is clicked on the titlebar */
@@ -452,13 +493,13 @@ int gui_init(void)
     GtkWidget* menubar;
     GtkWidget* vbox;
 
-    const char* instance_name = get_instance_name();
 
     debug ("Initializing GUI\n");
 
     /* main window */
     window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 
+/*
     if (instance_name)
     {
         size_t len = strlen(instance_name);
@@ -472,7 +513,7 @@ int gui_init(void)
     }
     else
       gtk_window_set_title (GTK_WINDOW (window), "Petri-Foo");
-
+*/
     g_signal_connect (G_OBJECT (window), "delete-event",
 		      G_CALLBACK (cb_delete), NULL);
     g_signal_connect (G_OBJECT (window), "destroy", G_CALLBACK (cb_quit),
@@ -660,7 +701,8 @@ int gui_init(void)
 
 
 void gui_refresh(void)
-{debug("hi there\n");
+{
+    gui_set_window_title(bank_ops_bank());
     master_section_update(MASTER_SECTION(master_section));
     patch_list_update(PATCH_LIST(patch_list), 0, PATCH_LIST_INDEX);
     cb_patch_list_changed(PATCH_LIST(patch_list), NULL);
@@ -670,4 +712,21 @@ void gui_refresh(void)
 PatchList* gui_get_patch_list(void)
 {
     return PATCH_LIST(patch_list);
+}
+
+
+void gui_set_window_title(const char* title)
+{
+    const char* name = driver_get_client_name();
+
+    if (name)
+    {
+        char buf[80];
+        sprintf(buf, "%s - %s", name, (title) ? title : "Untitled");
+
+        gtk_window_set_title (GTK_WINDOW (window), buf);
+    }
+    else
+        gtk_window_set_title (GTK_WINDOW (window), PACKAGE);
+
 }

@@ -7,8 +7,29 @@
 #include "patch.h"
 #include "patch_util.h"
 #include "petri-foo.h"
+#include "gui.h"
+
 
 static char *last_bank = 0;
+
+static const char* untitled_bank = "Untitled bank";
+char* bankname = 0;
+
+
+const char* bank_ops_bank(void)
+{
+    return (bankname) ? bankname : untitled_bank;
+}
+
+
+static void set_bankname(const char* name)
+{
+    if (bankname)
+        free(bankname);
+
+    bankname = (name) ? strdup(name) : NULL;
+    gui_set_window_title(bankname);
+}
 
 
 inline static char* strconcat(const char* str1, const char* str2)
@@ -94,6 +115,7 @@ int bank_ops_save_as (GtkWidget* parent_window)
             debug ("Succesfully wrote file %s\n", name);
             free(last_bank);
             last_bank = strdup(name);
+            set_bankname(name);
         }
     }
     else
@@ -166,6 +188,7 @@ int bank_ops_open(GtkWidget* parent_window)
             debug ("Succesfully read file %s\n", name);
             free(last_bank);
             last_bank = strdup(name);
+            set_bankname(name);
         }
     }
     else
@@ -185,6 +208,7 @@ int bank_ops_new(void)
 {
     patch_destroy_all();
     free(last_bank);
-    last_bank = 0;
+    last_bank = NULL;
+    set_bankname(NULL);
     return 0;
 }

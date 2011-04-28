@@ -239,11 +239,8 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
 {
     ModSectionPrivate* p = MOD_SECTION_GET_PRIVATE(self);
     GtkBox* box;
-    GtkWidget* title;
     GtkWidget* table;
     GtkTable* t;
-    GtkWidget* pad;
-    GtkWidget* label;
 
     float range_low = 0.0;
     float range_hi = 1.0;
@@ -253,43 +250,35 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
 
     int y = 0;
 
+    int a1 = 0, a2 = 1;
+    int b1 = 1, b2 = 2;
+    int c1 = 2, c2 = 3;
+
     box = GTK_BOX(self);
     p->param = param;
 
     gtk_container_set_border_width(GTK_CONTAINER(self), GUI_BORDERSPACE);
 
     /* table */
-    table = gtk_table_new(8, 4, FALSE);
+    table = gtk_table_new(8, 3, FALSE);
     t = (GtkTable*)table;
     gtk_box_pack_start(box, table, FALSE, FALSE, 0);
     gtk_widget_show(table);
 
     /* title */
-    title = gui_title_new(param_names[param]);
-    gtk_table_attach_defaults(t, title, 0, 4, y, y + 1);
-    gtk_widget_show(title);
-
+    gui_attach(t, gui_title_new(param_names[param]), a1, c2, y, y + 1);
     ++y;
 
     /* indentation */
-    pad = gui_hpad_new(GUI_INDENT);
-    gtk_table_attach(t, pad, 0, 1, y, y + 1, 0, 0, 0, 0);
-    gtk_widget_show(pad);
-
+    gui_attach(t, gui_hpad_new(GUI_INDENT), a1, a2, y, y + 1);
     ++y;
 
     /* title padding */
-    pad = gui_vpad_new(GUI_TITLESPACE);
-    gtk_table_attach(t, pad, 1, 2, y, y + 1, 0, 0, 0, 0);
-    gtk_widget_show(pad);
-
+    gui_attach(t, gui_vpad_new(GUI_TITLESPACE), b1, b2, y, y + 1);
     ++y;
 
     /* label column spacing (of some description!?) */
-    pad = gui_hpad_new(GUI_TEXTSPACE);
-    gtk_table_attach(t, pad, 2, 3, y, y + 1, 0, 0, 0, 0);
-    gtk_widget_show(pad);
-
+    gui_attach(t, gui_hpad_new(GUI_TEXTSPACE), c1, c2, y, y + 1);
     ++y;
 
     if (p->mod_only)
@@ -297,78 +286,49 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
 
     switch(param)
     {
-    case PATCH_PARAM_AMPLITUDE: lstr = "Level";     break;
-    case PATCH_PARAM_PANNING:   lstr = "Position";  break;
-    case PATCH_PARAM_PITCH:     lstr = "Tuning";    break;
+    case PATCH_PARAM_AMPLITUDE: lstr = "Level:";    break;
+    case PATCH_PARAM_PANNING:   lstr = "Position:"; break;
+    case PATCH_PARAM_PITCH:     lstr = "Tuning:";   break;
                                                     break;
     default:
         lstr = param_names[param];
         break;
     }
 
-    label = gtk_label_new(lstr);
-
-    gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
-    gtk_table_attach(GTK_TABLE(table), label, 1, 2, y, y + 1,
-                                            GTK_FILL, 0, 0, 0);
-    gtk_widget_show(label);
+    gui_label_attach(lstr, t, a1, a2, y, y + 1);
 
     if (param == PATCH_PARAM_PANNING || param == PATCH_PARAM_PITCH)
         range_low = -1.0;
 
     p->param1 = phat_hfan_slider_new_with_range(0.0, range_low,
                                                         range_hi,   0.1);
-    gtk_table_attach(GTK_TABLE(table), p->param1, 3, 4, y, y + 1,
-                                            GTK_EXPAND | GTK_FILL, 0, 0, 0);
-    gtk_widget_show(p->param1);
-
+    gui_attach(t, p->param1, b1, b2, y, y + 1);
 
     if (param == PATCH_PARAM_PITCH)
     {
         p->param2 = mod_src_new_pitch_adjustment();
-        gtk_table_attach(GTK_TABLE(table), p->param2, 5, 6, y, y + 1,
-                                            GTK_EXPAND | GTK_FILL, 0, 0, 0);
-        gtk_widget_show(p->param2);
+        gui_attach(t, p->param2, c1, c2, y, y + 1);
     }
-
     ++y;
 
     /* velocity sensitivity */
-    label = gtk_label_new("Velocity Sensitivity:");
-    gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
-    gtk_table_attach(t, label, 1, 2, y, y + 1, GTK_FILL, 0, 0, 0);
-    gtk_widget_show(label);
-
+    gui_label_attach("Vel.Sens:", t, a1, a2, y, y + 1);
     p->vel_sens = phat_hfan_slider_new_with_range(0.0, 0.0, 1.0, 0.1);
-    gtk_table_attach_defaults(t, p->vel_sens, 3, 4, y, y + 1);
-    gtk_widget_show(p->vel_sens);
-
+    gui_attach(t, p->vel_sens, b1, b2, y, y + 1);
     ++y;
 
     /* key tracking */
-    label = gtk_label_new("Key Tracking:");
-    gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
-    gtk_table_attach(t, label, 1, 2, y, y + 1, GTK_FILL, 0, 0, 0);
-    gtk_widget_show(label);
-
+    gui_label_attach("Key Track:", t, a1, a2, y, y + 1);
     p->key_track = phat_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
-    gtk_table_attach_defaults(t, p->key_track, 3, 4, y, y + 1);
-    gtk_widget_show(p->key_track);
-
+    gui_attach(t, p->key_track, b1, b2, y, y + 1);
     ++y;
 
     if (param == PATCH_PARAM_AMPLITUDE)
     {
         /* env input source */
-        label = gtk_label_new("Env:");
-        gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
-        gtk_table_attach(t, label, 1, 2, y, y + 1, GTK_FILL, 0, 0, 0);
-        gtk_widget_show(label);
-
+        gui_label_attach("Env:", t, a1, a2, y, y + 1);
         p->env_combo = mod_src_new_combo_with_cell();
-        gtk_table_attach_defaults(t, p->env_combo, 3, 4, y, y + 1);
-        gtk_widget_show(p->env_combo);
-
+        gui_attach(t, p->env_combo, b1, b2, y, y + 1);
         ++y;
     }
 
@@ -377,42 +337,29 @@ create_mod_srcs:
 
 
     /* mod1 input source */
-    label = gtk_label_new("Mod1:");
-    gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
-    gtk_table_attach(t, label, 1, 2, y, y + 1, GTK_FILL, 0, 0, 0);
-    gtk_widget_show(label);
-
+    gui_label_attach("Mod1:", t, a1, a2, y, y + 1);
     p->mod1_combo = mod_src_new_combo_with_cell();
-    gtk_table_attach_defaults(t, p->mod1_combo, 3, 4, y, y + 1);
-    gtk_widget_show(p->mod1_combo);
+    gui_attach(t, p->mod1_combo, b1, b2, y, y + 1);
 
     if (param == PATCH_PARAM_PITCH)
         p->mod1_amount = mod_src_new_pitch_adjustment();
     else
         p->mod1_amount = phat_hfan_slider_new_with_range(0.0, -1.0,
                                                             1.0, 0.1);
-    gtk_table_attach_defaults(t, p->mod1_amount, 5, 6, y, y + 1);
-    gtk_widget_show(p->mod1_amount);
-
+    gui_attach(t, p->mod1_amount, c1, c2, y, y + 1);
     ++y;
 
     /* mod2 input source */
-    label = gtk_label_new("Mod2:");
-    gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
-    gtk_table_attach(t, label, 1, 2, y, y + 1, GTK_FILL, 0, 0, 0);
-    gtk_widget_show(label);
-
+    gui_label_attach("Mod2:", t, a1, a2, y, y + 1);
     p->mod2_combo = mod_src_new_combo_with_cell();
-    gtk_table_attach_defaults(t, p->mod2_combo, 3, 4, y, y + 1);
-    gtk_widget_show(p->mod2_combo);
+    gui_attach(t, p->mod2_combo, b1, b2, y, y + 1);
 
     if (param == PATCH_PARAM_PITCH)
         p->mod2_amount = mod_src_new_pitch_adjustment();
     else
         p->mod2_amount = phat_hfan_slider_new_with_range(0.0, -1.0,
                                                             1.0, 0.1);
-    gtk_table_attach_defaults(t, p->mod2_amount, 5, 6, y, y + 1);
-    gtk_widget_show(p->mod2_amount);
+    gui_attach(t, p->mod2_amount, c1, c2, y, y + 1);
 
     /* done */
     connect(p);

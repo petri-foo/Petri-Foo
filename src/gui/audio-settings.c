@@ -19,7 +19,6 @@ static gboolean gui_session_cb(void *data)
 {
     size_t len;
     const char bank[] = "bank";
-    const char cmdname[] = PACKAGE;
     char* bankfilename;
     char* filename;
     char command[256];
@@ -59,6 +58,7 @@ static gboolean gui_session_cb(void *data)
 
 void audio_settings_session_cb(jack_session_event_t *event, void *arg )
 {
+    (void)arg;
     debug("adding g_idle_add thingy\n");
     g_idle_add(gui_session_cb, event);
 }

@@ -18,16 +18,31 @@ enum
 };
 
 /* returns a titlefied label */
-GtkWidget* gui_title_new(const char* msg);
+GtkWidget*  gui_title_new(const char* msg);
 
 /* returns a horizontal padding widget of the chosen size */
-GtkWidget* gui_hpad_new(int size);
+GtkWidget*  gui_hpad_new(int size);
 
 /* returns a vertical padding widget of the chosen size */
-GtkWidget* gui_vpad_new(int size);
+GtkWidget*  gui_vpad_new(int size);
 
 /* returns a newly prepared section and a box to put children in */
-GtkWidget* gui_section_new(const char* name, GtkWidget** box);
+GtkWidget*  gui_section_new(const char* name, GtkWidget** box);
+
+/* attaches (and shows) widget to table */
+void        gui_attach(GtkTable*, GtkWidget*, guint l, guint r,
+                                              guint t, guint b);
+
+/* attaches (and shows) label  to table */
+GtkWidget*  gui_label_attach(const char*, GtkTable*, guint l, guint r,
+                                                     guint t, guint b);
+
+/* packs (and shows) widget into box */
+void        gui_pack(GtkBox*, GtkWidget*);
+
+/* packs (and shows) label into box (returns label) */
+GtkWidget*  gui_label_pack(const char*, GtkBox*);
+
 
 /* prepare the gui for use */
 int gui_init(void);
@@ -37,5 +52,9 @@ void gui_refresh(void);
 
 /* get the gui's PatchList widget */
 PatchList* gui_get_patch_list(void);
+
+/* set petri-foo window title */
+void gui_set_window_title(const char* title);
+
 
 #endif /* __GUI_H__ */

@@ -1,3 +1,26 @@
+2011-04-27  James Morris <james@jwm-art.net>
+	* changing global lfo parameters no longer resets their
+	  phase.
+
+	* lfos upper frequency increased from 20hrtz to 250hrtz.
+
+	* (technically it's 2011-04-28 but psychologically...)
+
+	* GUI CHANGES: making maintenence simpler. no accounting
+	  for taste ;-)
+
+	* prevent global lfos from having any delay/attack in
+	  gui (and dish file).
+
+	* most gui elements are now using one of a pair of
+	  helper functions to add them to either a table or
+	  a box. this means less LOC and homogeny.
+
+	* a few other minor gui changes meaning less steps
+	  taken to do same thing.
+
+	* removal of some spacing/indentation/padding elements.
+
 2011-04-26  James Morris <james@jwm-art.net>
 	* fixed bug causing sample play start/stop/fade
 	  values to not be re-loaded from bank.

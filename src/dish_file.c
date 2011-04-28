@@ -17,6 +17,7 @@
 
 static const char* dish_file_ext = ".petri-foo";
 
+
 const char* dish_file_extension(void)
 {
     return dish_file_ext;
@@ -246,13 +247,16 @@ dish_file_write_lfo(xmlNodePtr nodeparent, int patch_id, int lfo_id)
     xmlNewProp(node1,   BAD_CAST "positive",
                         BAD_CAST (state ? "true" : "false"));
 
-    patch_get_lfo_delay(patch_id, lfo_id, &val);
-    snprintf(buf, BUFSIZE, "%f", val);
-    xmlNewProp(node1,   BAD_CAST "delay",   BAD_CAST buf);
+    if (!patch_lfo_is_global(lfo_id))
+    {
+        patch_get_lfo_delay(patch_id, lfo_id, &val);
+        snprintf(buf, BUFSIZE, "%f", val);
+        xmlNewProp(node1,   BAD_CAST "delay",   BAD_CAST buf);
 
-    patch_get_lfo_attack(patch_id, lfo_id, &val);
-    snprintf(buf, BUFSIZE, "%f", val);
-    xmlNewProp(node1,   BAD_CAST "attack",  BAD_CAST buf);
+        patch_get_lfo_attack(patch_id, lfo_id, &val);
+        snprintf(buf, BUFSIZE, "%f", val);
+        xmlNewProp(node1,   BAD_CAST "attack",  BAD_CAST buf);
+    }
 
     node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Frequency", NULL);
     patch_get_lfo_freq(patch_id, lfo_id, &val);
@@ -745,13 +749,16 @@ int dish_file_read_lfo(xmlNodePtr node, int patch_id)
     if ((prop = xmlGetProp(node, BAD_CAST "positive")))
         patch_set_lfo_positive(patch_id, lfo_id, xmlstr_to_bool(prop));
 
-    if ((prop = xmlGetProp(node, BAD_CAST "delay")))
-        if (sscanf((const char*)prop, "%f", &n) == 1)
-            patch_set_lfo_delay(patch_id, lfo_id, n);
+    if (!patch_lfo_is_global(lfo_id))
+    {
+        if ((prop = xmlGetProp(node, BAD_CAST "delay")))
+            if (sscanf((const char*)prop, "%f", &n) == 1)
+                patch_set_lfo_delay(patch_id, lfo_id, n);
 
-    if ((prop = xmlGetProp(node, BAD_CAST "attack")))
-        if (sscanf((const char*)prop, "%f", &n) == 1)
-            patch_set_lfo_attack(patch_id, lfo_id, n);
+        if ((prop = xmlGetProp(node, BAD_CAST "attack")))
+            if (sscanf((const char*)prop, "%f", &n) == 1)
+                patch_set_lfo_attack(patch_id, lfo_id, n);
+    }
 
     for (   node1 = node->children;
             node1 != NULL;

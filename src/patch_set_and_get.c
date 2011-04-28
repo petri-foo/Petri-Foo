@@ -463,7 +463,7 @@ int patch_set_lfo_attack (int patch_id, int lfo_id, float secs)
     lfopar->attack = secs;
 
     if (lfo)
-        lfo_trigger(lfo, lfopar);
+        lfo_rigger(lfo, lfopar);
 
     return 0;
 }
@@ -484,7 +484,7 @@ int patch_set_lfo_beats (int patch_id, int lfo_id, float beats)
     lfopar->sync_beats = beats;
 
     if (lfo)
-        lfo_trigger(lfo, lfopar);
+        lfo_rigger(lfo, lfopar);
 
     return 0;
 }
@@ -505,7 +505,7 @@ int patch_set_lfo_delay (int patch_id, int lfo_id, float secs)
     lfopar->delay = secs;
 
     if (lfo)
-        lfo_trigger(lfo, lfopar);
+        lfo_rigger(lfo, lfopar);
 
     return 0;
 }
@@ -526,7 +526,7 @@ int patch_set_lfo_freq (int patch_id, int lfo_id, float freq)
     lfopar->freq = freq;
 
     if (lfo)
-        lfo_trigger(lfo, lfopar);
+        lfo_rigger(lfo, lfopar);
 
     return 0;
 }
@@ -545,7 +545,7 @@ int patch_set_lfo_positive (int patch_id, int lfo_id, gboolean state)
     lfopar->positive = state;
 
     if (lfo)
-        lfo_trigger(lfo, lfopar);
+        lfo_rigger(lfo, lfopar);
 
     return 0;
 }
@@ -564,7 +564,7 @@ int patch_set_lfo_shape (int patch_id, int lfo_id, LFOShape shape)
     lfopar->shape = shape;
 
     if (lfo)
-        lfo_trigger(lfo, lfopar);
+        lfo_rigger(lfo, lfopar);
 
     return 0;
 }
@@ -582,7 +582,7 @@ int patch_set_lfo_sync (int patch_id, int lfo_id, gboolean state)
     lfopar->sync = state;
 
     if (lfo)
-        lfo_trigger(lfo, lfopar);
+        lfo_rigger(lfo, lfopar);
 
     return 0;
 }

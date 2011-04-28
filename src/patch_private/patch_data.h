@@ -222,7 +222,7 @@ patch_trigger_global_lfo(int patch_id, LFO* lfo, LFOParams* lfopar) \
     Patch* p = &patches[patch_id];                                  \
     lfo->freq_mod1 = mod_id_to_pointer(lfopar->mod1_id, p, NULL);   \
     lfo->freq_mod2 = mod_id_to_pointer(lfopar->mod2_id, p, NULL);   \
-    lfo_trigger(lfo, lfopar);                                       \
+    lfo_rigger(lfo, lfopar);                                       \
 }
 
 #define INLINE_PATCH_LOCK_DEF                                       \

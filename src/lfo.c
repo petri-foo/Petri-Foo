@@ -96,45 +96,47 @@ void lfo_prepare (LFO* lfo)
      lfo->attack_ticks = 0;
 }
 
+void lfo_rigger (LFO* lfo, LFOParams* params)
+{
+    lfo->positive = params->positive;
+
+    switch (params->shape)
+    {
+    case LFO_SHAPE_TRIANGLE:
+        lfo->tab = tritab;
+        break;
+    case LFO_SHAPE_SAW:
+        lfo->tab = sawtab;
+        break;
+    case LFO_SHAPE_SQUARE:
+        lfo->tab = sqtab;
+        break;
+    case LFO_SHAPE_SINE:		/* fallthrough is intentional */
+    default:
+        lfo->tab = sintab;
+        break;
+    }
+
+    /* we recalculate our phase increment in case the tempo or
+     * samplerate has changed */
+    if (params->sync)
+        lfo_set_inc_from_beats (lfo, params->sync_beats);
+    else
+        lfo_set_inc_from_freq (lfo, params->freq);
+
+    lfo->delay = ticks_secs_to_ticks (params->delay);
+    lfo->attack = ticks_secs_to_ticks (params->attack);
+    lfo->attack_ticks = 0;
+
+    lfo->mod1_amt = params->mod1_amt;
+    lfo->mod2_amt = params->mod2_amt;
+}
+
 void lfo_trigger (LFO* lfo, LFOParams* params)
 {
-     lfo->positive = params->positive;
-     
-     switch (params->shape)
-     {
-     case LFO_SHAPE_TRIANGLE:
-	  lfo->tab = tritab;
-	  break;
-     case LFO_SHAPE_SAW:
-	  lfo->tab = sawtab;
-	  break;
-     case LFO_SHAPE_SQUARE:
-	  lfo->tab = sqtab;
-	  break;
-     case LFO_SHAPE_SINE:		/* fallthrough is intentional */
-     default:
-	  lfo->tab = sintab;
-	  break;
-     }
-
-     /* we recalculate our phase increment in case the tempo or
-      * samplerate has changed */
-     if (params->sync)
-     {
-	  lfo_set_inc_from_beats (lfo, params->sync_beats);
-     }
-     else
-     {
-	  lfo_set_inc_from_freq (lfo, params->freq);
-     }
-
-     lfo->delay = ticks_secs_to_ticks (params->delay);
-     lfo->attack = ticks_secs_to_ticks (params->attack);
-     lfo->attack_ticks = 0;
-     lfo->phase = 0;
-     lfo->val = 0;
-     lfo->mod1_amt = params->mod1_amt;
-     lfo->mod2_amt = params->mod2_amt;
+    lfo_rigger(lfo, params);
+    lfo->phase = 0;
+    lfo->val = 0;
 }
 
 float lfo_tick (LFO* lfo)

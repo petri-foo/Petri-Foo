@@ -157,7 +157,7 @@ void id_selector_set(IDSelector* ids, const char** item_names, int orient)
                 ? gtk_hbox_new(FALSE, 0)
                 : gtk_vbox_new(FALSE, 0);
 
-    gtk_box_pack_start(GTK_BOX(ids), xbox, TRUE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(ids), xbox, FALSE, FALSE, 0);
     gtk_widget_show(xbox);
     box = GTK_BOX(xbox);
 
@@ -166,7 +166,7 @@ void id_selector_set(IDSelector* ids, const char** item_names, int orient)
         p->names[i] = malloc(strlen(item_names[i]) + 1);
         strcpy(p->names[i], item_names[i]);
         p->buttons[i] = gtk_toggle_button_new_with_label(p->names[i]);
-        gtk_box_pack_start(box, p->buttons[i], TRUE, TRUE, 0);
+        gtk_box_pack_start(box, p->buttons[i], FALSE, FALSE, 0);
         gtk_widget_show(p->buttons[i]);
         g_signal_connect(G_OBJECT(p->buttons[i]), "button-press-event",
                             G_CALLBACK(press_cb), (gpointer)p);

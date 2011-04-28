@@ -85,6 +85,9 @@ void lfo_prepare (LFO* lfo);
  * take effect */
 void lfo_trigger (LFO* lfo, LFOParams* params);
 
+/* like lfo_trigger except it don't reset phase */
+void lfo_rigger (LFO* lfo, LFOParams* params);
+
 /* advance an LFO and return its new value */
 float lfo_tick (LFO* lfo);
 

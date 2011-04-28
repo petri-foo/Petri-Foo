@@ -184,8 +184,10 @@ static void envelope_tab_init(EnvelopeTab* self)
     GtkWidget* title;
     GtkWidget* table;
     GtkTable* t;
-    GtkWidget* pad;
-    GtkWidget* label;
+
+    int y = 0;
+    int a1 = 0, a2 = 1;
+    int b1 = 1, b2 = 2;
 
     p->patch = -1;
     gtk_container_set_border_width(GTK_CONTAINER(self), GUI_BORDERSPACE);
@@ -193,98 +195,58 @@ static void envelope_tab_init(EnvelopeTab* self)
     /* parameter selector */
     p->idsel = id_selector_new();
     id_selector_set(ID_SELECTOR(p->idsel), names_egs_get(), ID_SELECTOR_H);
-    gtk_box_pack_start(box, p->idsel, FALSE, FALSE, 0);
-    gtk_widget_show(p->idsel);
+    gui_pack(box, p->idsel);
 
     /* selector padding */
-    pad = gui_vpad_new(GUI_SPACING);
-    gtk_box_pack_start(box, pad, FALSE, FALSE, 0);
-    gtk_widget_show(pad);
+    gui_pack(box, gui_vpad_new(GUI_SPACING));
 
     /* table */
-    table = gtk_table_new(9, 4, FALSE);
+    table = gtk_table_new(9, 2, FALSE);
     t = (GtkTable*) table;
-    gtk_box_pack_start(box, table, FALSE, FALSE, 0);
-    gtk_widget_show(table);
+    gui_pack(box, table);
 
     /* envelope title  */
     title = gui_title_new("Envelope Generator");
     p->env_check = gtk_check_button_new();
     gtk_container_add(GTK_CONTAINER(p->env_check), title);
-    gtk_table_attach_defaults(t, p->env_check, 0, 4, 0, 1);
+    gui_attach(t, p->env_check, a1, b2, y, y + 1);
     gtk_widget_show(title);
-    gtk_widget_show(p->env_check);
-
-    /* indentation */
-    pad = gui_hpad_new(GUI_INDENT);
-    gtk_table_attach(t, pad, 0, 1, 1, 2, 0, 0, 0, 0);
-    gtk_widget_show(pad);
-
-    /* envelope title padding */
-    pad = gui_vpad_new(GUI_TITLESPACE);
-    gtk_table_attach(t, pad, 1, 2, 1, 2, 0, 0, 0, 0);
-    gtk_widget_show(pad);
-
-    /* label-fan column spacing */
-    pad = gui_hpad_new(GUI_TEXTSPACE);
-    gtk_table_attach(t, pad, 2, 3, 1, 2, 0, 0, 0, 0);
-    gtk_widget_show(pad);
+    ++y;
 
     /* delay fan */
-    label = gtk_label_new("Delay:");
+    gui_label_attach("Delay:", t, a1, a2, y, y + 1);
     p->delay_fan = phat_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
-    gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
-    gtk_table_attach(t, label, 1, 2, 2, 3, GTK_FILL, 0, 0, 0);
-    gtk_table_attach_defaults(t, p->delay_fan, 3, 4, 2, 3);
-    gtk_widget_show(label);
-    gtk_widget_show(p->delay_fan);
+    gui_attach(t, p->delay_fan, b1, b2, y, y + 1);
+    ++y;
 
     /* attack fan */
-    label = gtk_label_new("Attack:");
+    gui_label_attach("Attack:", t, a1, a2, y, y + 1);
     p->attack_fan = phat_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
-    gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
-    gtk_table_attach(t, label, 1, 2, 3, 4, GTK_FILL, 0, 0, 0);
-    gtk_table_attach_defaults(t, p->attack_fan, 3, 4, 3, 4);
-    gtk_widget_show(label);
-    gtk_widget_show(p->attack_fan);
+    gui_attach(t, p->attack_fan, b1, b2, y, y + 1);
+    ++y;
 
     /* hold fan */
-    label = gtk_label_new("Hold:");
+    gui_label_attach("Hold:", t, a1, a2, y, y + 1);
     p->hold_fan = phat_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
-    gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
-    gtk_table_attach(t, label, 1, 2, 4, 5, GTK_FILL, 0, 0, 0);
-    gtk_table_attach_defaults(t, p->hold_fan, 3, 4, 4, 5);
-    gtk_widget_show(label);
-    gtk_widget_show(p->hold_fan);
+    gui_attach(t, p->hold_fan, b1, b2, y, y + 1);
+    ++y;
 
     /* decay fan */
-    label = gtk_label_new("Decay:");
+    gui_label_attach("Decay:", t, a1, a2, y, y + 1);
     p->decay_fan = phat_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
-    gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
-    gtk_table_attach(t, label, 1, 2, 5, 6, GTK_FILL, 0, 0, 0);
-    gtk_table_attach_defaults(t, p->decay_fan, 3, 4, 5, 6);
-    gtk_widget_show(label);
-    gtk_widget_show(p->decay_fan);
+    gui_attach(t, p->decay_fan, b1, b2, y, y + 1);
+    ++y;
 
     /* sustain fan */
-    label = gtk_label_new("Sustain:");
+    gui_label_attach("Sustain:", t, a1, a2, y, y + 1);
     p->sustain_fan = phat_hfan_slider_new_with_range(0.7, 0.0, 1.0, 0.01);
-    gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
-    gtk_table_attach(t, label, 1, 2, 6, 7, GTK_FILL, 0, 0, 0);
-    gtk_table_attach_defaults(t, p->sustain_fan, 3, 4, 6, 7);
-    gtk_widget_show(label);
-    gtk_widget_show(p->sustain_fan);
+    gui_attach(t, p->sustain_fan, b1, b2, y, y + 1);
+    ++y;
 
     /* release fan */
-    label = gtk_label_new("Release:");
+    gui_label_attach("Release:", t, a1, a2, y, y  + 1);
     p->release_fan = phat_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
-    gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
-    gtk_table_attach(t, label, 1, 2, 7, 8, GTK_FILL, 0, 0, 0);
-    gtk_table_attach_defaults(t, p->release_fan, 3, 4, 7, 8);
-    gtk_widget_show(label);
-    gtk_widget_show(p->release_fan);
-
-    gtk_table_set_row_spacing(t, 7, GUI_SPACING);
+    gui_attach(t, p->release_fan, b1, b2, y, y + 1);
 
     set_sensitive(p, FALSE);
     connect(p);
