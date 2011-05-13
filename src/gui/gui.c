@@ -20,7 +20,7 @@
 #include "sample-selector.h"
 #include "bank-ops.h"
 #include "audio-settings.h"
-#include "mod_src.h"
+#include "mod_src_gui.h"
 #include "patch_set_and_get.h"
 #include "patch_util.h"
 

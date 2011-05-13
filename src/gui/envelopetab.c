@@ -3,6 +3,7 @@
 #include "envelopetab.h"
 #include "gui.h"
 #include "idselector.h"
+#include "mod_src_gui.h"
 #include "mod_src.h"
 #include "names.h"
 #include "patch_set_and_get.h"
@@ -185,6 +186,8 @@ static void envelope_tab_init(EnvelopeTab* self)
     GtkWidget* table;
     GtkTable* t;
 
+    id_name* egs;
+
     int y = 0;
     int a1 = 0, a2 = 1;
     int b1 = 1, b2 = 2;
@@ -194,7 +197,14 @@ static void envelope_tab_init(EnvelopeTab* self)
 
     /* parameter selector */
     p->idsel = id_selector_new();
-    id_selector_set(ID_SELECTOR(p->idsel), names_egs_get(), ID_SELECTOR_H);
+    egs = mod_src_get(MOD_SRC_EG);
+
+    id_selector_set(ID_SELECTOR(p->idsel),
+                    egs,
+                    ID_SELECTOR_H);
+
+    mod_src_free(egs);
+
     gui_pack(box, p->idsel);
 
     /* selector padding */
@@ -257,7 +267,7 @@ static void update_env(EnvelopeTabPrivate* p)
 {
     int i = p->patch;
     float l, a, h, d, s, r;
-    gboolean on;
+    bool on;
 
     int id;
 

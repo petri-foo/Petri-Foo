@@ -10,21 +10,9 @@
 #include <strings.h>
 #include <sndfile.h> /* for format enumerations */
 
-static char** mod_src_names = 0;
 
 static const char* shape_names[] = {
     "Sine", "Triangle", "Saw", "Square", 0
-};
-
-
-static const char* eg_names[] = {
-    "EG1", "EG2", "EG3", "EG4", "EG5", 0
-};
-
-
-static const char* lfo_names[] = {
-    "GLFO1", "GLFO2", "GLFO3", "GLFO4", "GLFO5",
-    "VLFO1", "VLFO2", "VLFO3", "VLFO4", "VLFO5", 0
 };
 
 
@@ -37,84 +25,76 @@ static const char* param_names[] = {
     "Frequency Modulation", 0
 };
 
-void names_create(void)
+
+id_name* id_name_new(int id, const char* name)
 {
-    const char none[] = "OFF";
-    const char one[] = "1.0";
-    const char key[] = "Key";
-    const char velocity[] = "Velocity";
+    id_name* idname = malloc(sizeof(*idname));
 
-    int i;
-    int id;
+    if (!idname)
+        return 0;
 
-    /* check for mismatched counts etc: */
-    #ifdef DEBUG
-    if (!names_egs_get() || !names_lfos_get())
-    {
-        debug("*** PROBLEM OF DEATH IS FORECAST ***\n");
-        return;
-    }
-    #endif
+    debug("creating id_name %p %d %s\n", idname, id, name);
+    id_name_init(idname, id, name);
 
-    mod_src_names = malloc(sizeof(*mod_src_names) * MOD_SRC_LAST);
-
-    for (i = 0; i < MOD_SRC_LAST; ++i)
-        mod_src_names[i] = 0;
-
-    mod_src_names[MOD_SRC_NONE] = malloc(strlen(none) + 1);
-    strcpy(mod_src_names[MOD_SRC_NONE], none);
-    mod_src_names[MOD_SRC_ONE] = malloc(strlen(one) + 1);
-    strcpy(mod_src_names[MOD_SRC_ONE], one);
-    mod_src_names[MOD_SRC_KEY] = malloc(strlen(key) + 1);
-    strcpy(mod_src_names[MOD_SRC_KEY], key);
-    mod_src_names[MOD_SRC_VELOCITY] = malloc(strlen(velocity) + 1);
-    strcpy(mod_src_names[MOD_SRC_VELOCITY], velocity);
-
-    for (i = MOD_SRC_FIRST_EG; i < MOD_SRC_LAST_EG; ++i)
-    {
-        id = i - MOD_SRC_FIRST_EG;
-        if (eg_names[id])
-        {
-            mod_src_names[i] = malloc(strlen(eg_names[id]) + 1);
-            strcpy(mod_src_names[i], eg_names[id]);
-        }
-        else
-        {
-            debug("adsr_names mismatch adsr count\n");
-            break;
-        }
-    }
-
-    for (i = MOD_SRC_FIRST_GLFO; i < MOD_SRC_LAST_GLFO; ++i)
-    {
-        id = i - MOD_SRC_FIRST_GLFO;
-        mod_src_names[i] = malloc(strlen(lfo_names[id]) + 1);
-        strcpy(mod_src_names[i], lfo_names[id]);
-    }
-
-    for (i = MOD_SRC_FIRST_VLFO; i < MOD_SRC_LAST_VLFO; ++i)
-    {
-        id = (MOD_SRC_LAST_GLFO - MOD_SRC_FIRST_GLFO)
-             + (i - MOD_SRC_FIRST_VLFO);
-        mod_src_names[i] = malloc(strlen(lfo_names[id]) + 1);
-        strcpy(mod_src_names[i], lfo_names[id]);
-    }
+    return idname;
 }
 
 
-void names_destroy(void)
+void id_name_init(id_name* idname, int id, const char* name)
 {
-    if (mod_src_names)
+    idname->id = id;
+    idname->name = 0;
+
+    if (name)
     {
-        int i;
-
-        for (i = 0; i < MOD_SRC_LAST; ++i)
-            if (mod_src_names[i])
-                free(mod_src_names[i]);
-
-        free(mod_src_names);
-        mod_src_names = 0;
+        idname->name = malloc(strlen(name) + 1);
+        strcpy(idname->name, name);
     }
+    debug("initialized id_name %p %d %s\n", idname, id, name);
+}
+
+
+id_name* id_name_dup(const id_name* src)
+{
+    return id_name_new(src->id, src->name);
+}
+
+
+void id_name_free(id_name* idname)
+{
+    if (!idname)
+        return;
+
+    debug("freeing %p %d %s\n", idname, idname->id, idname->name);
+
+    if (idname->name)
+        free(idname->name);
+
+    free(idname);
+}
+
+
+id_name* id_name_sequence(id_name* start, int first_id, int count,
+                                                    const char* name_fmt)
+{
+    int i;
+    int n;
+    const int blen = 40;
+    char buf[blen];
+    id_name* idnames = start;
+
+    for (i = 0; i < count; ++i)
+    {
+        if ((n = snprintf(buf, blen, name_fmt, i + 1)))
+        {
+            if (n == blen)
+                buf[blen - 1] = '\0';
+
+            id_name_init(start++, first_id + i, buf);
+        }
+    }
+
+    return start;
 }
 
 
@@ -136,155 +116,11 @@ int names_lfo_shapes_id_from_str(const char* str)
 }
 
 
-char** names_mod_srcs_get(void)
-{
-    #ifdef DEBUG
-    if (!mod_src_names)
-    {
-        debug("mod_src_names not set\n");
-    }
-    #endif
-    return mod_src_names;
-}
-
-
-int names_mod_srcs_id_from_str(const char* str)
-{
-    int i;
-
-    for (i = 0; i < MOD_SRC_LAST; ++i)
-    {
-        if (mod_src_names[i])
-        {
-            if (strcasecmp(str, mod_src_names[i]) == 0)
-                return i;
-        }
-    }
-
-    return -1;
-}
-
-
-const char** names_egs_get(void)
-{
-    #ifdef DEBUG
-    int i;
-
-    for (i = 0; eg_names[i] != 0; ++i);
-
-    if (i != VOICE_MAX_ENVS)
-    {
-        debug(  "Friendly warning to the programmer:\n"
-                "You've either changed the enum value for VOICE_MAX_ENVS\n"
-                "Or you've changed the list of ADSR names\n"
-                "In either case it's broken now. Please fix!\n");
-        return 0;
-    }
-    #endif
-    return eg_names;
-}
-
-
-bool names_egs_maybe_eg_id(const char* str)
-{
-    if (strlen(str) != 3)
-        return FALSE;
-
-    if (strncmp(str, "EG", 2) == 0)
-        return TRUE;
-
-    return FALSE;
-}
-
-
-int names_egs_id_from_str(const char* str)
-{
-    int id = 0;
-
-    #ifdef DEBUG
-    if (strncmp(str, "EG", 2) != 0)
-        return -1;
-    #endif
-
-    if (sscanf(&str[2], "%d", &id) != 1)
-        return -1;
-
-    /* EG1 has id zero */
-    --id;
-
-    return (id >= 0 && id < VOICE_MAX_ENVS) ? id : -1;
-}
-
-
-const char** names_lfos_get(void)
-{
-    #ifdef DEBUG
-    int i;
-
-    for (i = 0; lfo_names[i] != 0; ++i);
-
-    if (i != TOTAL_LFOS)
-    {
-        debug(  "Friendly warning to the programmer:\n"
-                "You've either changed the enum value for PATCH_MAX_LFOS\n"
-                "and/or ther enum value VOICE_MAX_LFOS\n"
-                "Or you've changed the list of LFO names\n"
-                "In either case it's broken now. Please fix!\n");
-        return 0;
-    }
-    #endif
-    return lfo_names;
-}
-
-
-bool names_lfos_maybe_lfo_id(const char* str)
-{
-    if (strlen(str) != 5)
-        return FALSE;
-
-    if (strncmp(&str[1], "LFO", 3) == 0)
-        return TRUE;
-
-    return FALSE;
-}
-
-
-int names_lfos_id_from_str(const char* str)
-{
-    int id;
-
-    #ifdef DEBUG
-    if (strncmp(&str[1], "LFO", 3) != 0)
-        return -1;
-    #endif
-
-    if (sscanf(&str[4], "%d", &id) != 1)
-        return -1;
-
-    --id; /* first LFO has id zero */
-
-    if (str[0] == 'G')
-    {
-        if (id < 0 || id > PATCH_MAX_LFOS)
-            return -1;
-    }
-    else if (str[0] == 'V')
-    {
-        if (id < 0 || id > VOICE_MAX_LFOS)
-            return -1;
-
-        id += PATCH_MAX_LFOS;
-    }
-    else
-        return -1;
-
-    return id;
-}
-
 const char** names_params_get(void)
 {
     return param_names;
 }
+
 
 int names_params_id_from_str(const char* str)
 {
@@ -297,9 +133,22 @@ int names_params_id_from_str(const char* str)
     return -1;
 }
 
-const id_name const * names_sample_raw_get(void)
+
+typedef struct _sample_raw_format
 {
-    static id_name raw_formats[] = {
+    const int id;
+    const char* name;
+
+} sample_raw_format;
+
+
+/*  i previously simply returned the static array below, but now because
+    struct id_name has aquired more dynamic use cases, the simple method
+    can no longer be used so simply :-(
+ */
+id_name* names_sample_raw_format_get(void)
+{
+    static sample_raw_format raw_formats[] = {
         { SF_FORMAT_RAW | SF_FORMAT_PCM_U8,   "Unsigned 8 bit data" },
         { SF_FORMAT_RAW | SF_FORMAT_PCM_S8,   "Signed 8 bit data"   },
         { SF_FORMAT_RAW | SF_FORMAT_PCM_16,   "Signed 16 bit data"  },
@@ -321,5 +170,21 @@ const id_name const * names_sample_raw_get(void)
         { 0, 0                                                      }
     };
 
-    return raw_formats;
+    id_name* ids = 0;
+    int count = 0;
+
+    for (count = 0; raw_formats[count].name != 0; ++count);
+
+    ids = malloc(sizeof(*ids) * count);
+
+    if (!ids)
+        return 0;
+
+    for (count = 0; raw_formats[count].name != 0; ++count)
+        id_name_init(&ids[count], raw_formats[count].id,
+                                  raw_formats[count].name);
+
+    id_name_init(&ids[count - 1], 0, 0);
+
+    return ids;
 }

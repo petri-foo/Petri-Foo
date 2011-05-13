@@ -1,37 +1,42 @@
-2011-04-27  James Morris <james@jwm-art.net>
-	* changing global lfo parameters no longer resets their
-	  phase.
+2011-05-THIRTEEN James Morris <james@jwm-art.net>
+	* simplified mono+legato voice operation
+	  after removing half the logic which was ignored, it only left
+	  logic which could be easily simplified. that's what i've done.
+	* oh yes and i forgot to mention yesterday that i'd rejiggled
+	  a load of the patch_private goings on, too. made that directory
+	  build as a static lib. there was some rationale there at some
+	  point for doing it. honest.
 
-	* lfos upper frequency increased from 20hrtz to 250hrtz.
+2011-05-12  James Morris <james@jwm-art.net>
+	* This is a release of major code tweakery under the hood.
+	* LFO is now an opaque data type
+	* ADSR is now an opaque data type 
+	* Patch and PatchVoice now allocated from heap.
+	* scrapped passing around of lfo and envelope array indices
+	  from public patch functions. 
 
-	* (technically it's 2011-04-28 but psychologically...)
+	* naming and id, names.h/names.c +mod_src.h/mod_src.c
+	*** previously, lfo and eg names were seperate entities, and their
+	*** IDs were simply index numbers of an array.
+	*** now however, modulation source names and modulation source IDs
+	*** are used instead.
+	*** this has required some changes into how modulation source IDs
+	*** work. the IDS now have 4 categories, MISC, EG, VLFO, and GLFO
+	*** which have ID values of 0x10, 0x20, 0x40, and 0x80 respectively.
+	*** So if an EG is expected, just (expected_eg_id & MOD_SRC_EG) to
+	*** discover if the ID is an EG ID.
+	*** these ID values are now passed around where the old lfo/eg index
+	*** values were.
+	*** example IDs:
+	***	name:"VLFO1" id:MOD_SRC_VLFO
+	***	name:"VLFO3" id:MOD_SRC_VLFO + 2
+	***	name:"Key"   id:MOD_SRC_KEY
+	***	...see patch.h for more.
+	*** it should be noted, that src/gui/mod_src.[ch] have been renamed
+	*** as src/gui/mod_src_gui.[ch] so as not to conflict with the newly
+	*** created mod_src.[ch]
 
-	* GUI CHANGES: making maintenence simpler. no accounting
-	  for taste ;-)
 
-	* prevent global lfos from having any delay/attack in
-	  gui (and dish file).
-
-	* most gui elements are now using one of a pair of
-	  helper functions to add them to either a table or
-	  a box. this means less LOC and homogeny.
-
-	* a few other minor gui changes meaning less steps
-	  taken to do same thing.
-
-	* removal of some spacing/indentation/padding elements.
-
-2011-04-26  James Morris <james@jwm-art.net>
-	* fixed bug causing sample play start/stop/fade
-	  values to not be re-loaded from bank.
-
-	* fade in/out declick applied at gain stage
-	  rather than as previously in pitchscale. does
-	  improve things a little.
-
-2011-04-25  James Morris <james@jwm-art.net>
-	* fixed patch-load code to read channel information
-	* disabled LASH by default (can be enabled via configure).
 
 2011-04-18  James Morris <james@jwm-art.net>
 	* fixed seg-fault when sample-selector was opened on

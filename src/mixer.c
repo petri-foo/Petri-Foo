@@ -1,5 +1,5 @@
 #include <pthread.h>
-#include <glib.h>
+
 #include "patch.h"
 #include "petri-foo.h"
 #include "driver.h"
@@ -77,7 +77,7 @@ static Event* volatile writer = events;
 static Event* volatile reader = events;
 static Event direct_events[EVENTMAX]; /* events coming from the audio thread */
 static int direct_events_end;
-static int samplerate = DRIVER_DEFAULT_SAMPLERATE;
+static int samplerate = -1;
 
 static jack_client_t* jc;
 

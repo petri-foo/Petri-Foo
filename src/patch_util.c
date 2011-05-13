@@ -4,7 +4,6 @@
 #include <string.h>
 #include <math.h>
 #include <pthread.h>
-#include <glib.h>
 
 
 #include "petri-foo.h"
@@ -18,10 +17,15 @@
 #include "midi.h"       /* for MIDI_CHANS */
 #include "patch_set_and_get.h"
 
+
 #include "patch_private/patch_data.h"
 #include "patch_private/patch_defs.h"
+#include "patch_private/patch_macros.h"
 
+
+/*
 static int start_frame = 0;
+*/
 
 /**************************************************************************/
 /********************** PRIVATE GENERAL HELPER FUNCTIONS*******************/
@@ -47,10 +51,13 @@ void patch_trigger_global_lfos ( )
 
     for (patch_id = 0; patch_id < PATCH_COUNT; patch_id++)
     {
+        if (!patches[patch_id] || !patches[patch_id]->active)
+            continue;
+
         for (lfo_id = 0; lfo_id < PATCH_MAX_LFOS; lfo_id++)
         {
-            LFO* lfo =          &patches[patch_id].glfo[lfo_id];
-            LFOParams* lfopar = &patches[patch_id].glfo_params[lfo_id];
+            LFO* lfo =          patches[patch_id]->glfo[lfo_id];
+            LFOParams* lfopar = &patches[patch_id]->glfo_params[lfo_id];
             patch_trigger_global_lfo(patch_id, lfo, lfopar);
         }
     }
@@ -65,279 +72,126 @@ void patch_trigger_global_lfos ( )
 /**************************************************************************/
 
 /* returns the number of patches currently active */
-int patch_count ( )
+int patch_count()
 {
     int id, count;
 
     for (id = count = 0; id < PATCH_COUNT; id++)
-        if (patches[id].active)
+        if (patches[id] && patches[id]->active)
             count++;
 
     return count;
 }
 
-/* returns assigned patch id on success, negative value on failure */
-int patch_create (const char *name)
-{
-    int id, i;
-    ADSRParams defadsr;
-    LFOParams deflfo;
-    PatchVoice defvoice;
 
-    gboolean default_patch = (strcmp("Default", name) == 0);
+int patch_create(const char *name)
+{
+    int id;
+    Patch* p;
+    bool default_patch = (strcmp("Default", name) == 0);
 
     /* find an unoccupied patch id */
-    for (id = 0; patches[id].active; id++)
+    for (id = 0; patches[id] && patches[id]->active; ++id)
         if (id == PATCH_COUNT)
             return PATCH_LIMIT;
 
-    patch_lock (id);
-    patches[id].active = 1;
-
-    debug ("Creating patch %s (%d).\n", name, id);
-
-    /* name */
-    g_strlcpy (patches[id].name, name, PATCH_MAX_NAME);
-     
-    /* default values */
-    patches[id].channel = 0;
-    patches[id].note = 60;
-    patches[id].lower_note = 60;
-    patches[id].upper_note = 60;
-    patches[id].play_mode = (default_patch  ? PATCH_PLAY_LOOP
-                                            : PATCH_PLAY_SINGLESHOT)
-                                            | PATCH_PLAY_FORWARD;
-    patches[id].cut = 0;
-    patches[id].cut_by = 0;
-    patches[id].play_start = 0;
-    patches[id].play_stop = 0;
-
-    patches[id].loop_start = 0;
-    patches[id].loop_stop = 0;
-
-    patches[id].marks[WF_MARK_START] =      &start_frame;
-    patches[id].marks[WF_MARK_STOP] =       &patches[id].sample_stop;
-    patches[id].marks[WF_MARK_PLAY_START] = &patches[id].play_start;
-    patches[id].marks[WF_MARK_PLAY_STOP] =  &patches[id].play_stop;
-    patches[id].marks[WF_MARK_LOOP_START] = &patches[id].loop_start;
-    patches[id].marks[WF_MARK_LOOP_STOP] =  &patches[id].loop_stop;
-
-    patches[id].porta = FALSE;
-    patches[id].mono = FALSE;
-    patches[id].legato = FALSE;
-    patches[id].porta_secs = 0.05;
-    patches[id].pitch_steps = 2;
-    patches[id].pitch_bend = 0;
-    patches[id].mod1_pitch_max = 1.0;
-    patches[id].mod1_pitch_min = 1.0;
-    patches[id].mod2_pitch_max = 1.0;
-    patches[id].mod2_pitch_min = 1.0;
-
-    patches[id].fade_samples = DEFAULT_FADE_SAMPLES;
-    patches[id].xfade_samples = DEFAULT_FADE_SAMPLES;
-
-    /* default adsr params */
-    defadsr.env_on  = FALSE;
-    defadsr.delay   = 0.0;
-    defadsr.attack  = 0.005;
-    defadsr.hold    = 0.0;
-    defadsr.decay   = 0.0;
-    defadsr.sustain = 1.0;
-    defadsr.release = 0.150;
-
-    /* default lfo params */
-    deflfo.lfo_on = FALSE;
-    deflfo.positive = FALSE;
-    deflfo.shape = LFO_SHAPE_SINE;
-    deflfo.freq = 1.0;
-    deflfo.sync_beats = 1.0;
-    deflfo.sync = FALSE;
-    deflfo.delay = 0.0;
-    deflfo.attack = 0.0;
-    deflfo.mod1_id = MOD_SRC_NONE;
-    deflfo.mod2_id = MOD_SRC_NONE;
-    deflfo.mod1_amt = 0.0;
-    deflfo.mod2_amt = 0.0;
-
-    for (i = 0; i < PATCH_MAX_LFOS; i++)
+    if (!(p = patch_new(name)))
     {
-        patches[id].glfo_params[i] = deflfo;
-        lfo_prepare (&patches[id].glfo[i]);
+        errmsg("Failed to create new patch\n");
+        return PATCH_ALLOC_FAIL;
     }
 
-    /* amplitude */
-    patches[id].vol.val = DEFAULT_AMPLITUDE;
-    patches[id].vol.mod1_id = MOD_SRC_NONE;
-    patches[id].vol.mod2_id = MOD_SRC_NONE;
-    patches[id].vol.mod1_amt = 0;
-    patches[id].vol.mod2_amt = 0;
-    patches[id].vol.direct_mod_id = (default_patch  ? MOD_SRC_FIRST_EG
-                                                    : MOD_SRC_NONE);
-    patches[id].vol.vel_amt = 1.0;
-    patches[id].vol.key_amt = 0.0;
+    debug ("Creating patch %s (%d) [%p].\n", name, id, p);
 
-    /* panning */
-    patches[id].pan.val = 0.0;
-    patches[id].pan.mod1_id = MOD_SRC_NONE;
-    patches[id].pan.mod2_id = MOD_SRC_NONE;
-    patches[id].pan.mod1_amt = 0;
-    patches[id].pan.mod2_amt = 0;
-    patches[id].pan.vel_amt = 0;
-    patches[id].pan.key_amt = 0.0;
+    patches[id] = p;
 
-    /* cutoff */
-    patches[id].ffreq.val = 1.0;
-    patches[id].ffreq.mod1_id = MOD_SRC_NONE;
-    patches[id].ffreq.mod2_id = MOD_SRC_NONE;
-    patches[id].ffreq.mod1_amt = 0;
-    patches[id].ffreq.mod2_amt = 0;
-    patches[id].ffreq.vel_amt = 0;
-    patches[id].ffreq.key_amt = 0;
+    patch_lock(id);
 
-    /* resonance */
-    patches[id].freso.val = 0.0;
-    patches[id].freso.mod1_id = MOD_SRC_NONE;
-    patches[id].freso.mod2_id = MOD_SRC_NONE;
-    patches[id].freso.mod1_amt = 0;
-    patches[id].freso.mod2_amt = 0;
-    patches[id].freso.vel_amt = 0;
-    patches[id].freso.key_amt = 0;
-
-    /* pitch */
-    patches[id].pitch.val = 0.0;
-    patches[id].pitch.mod1_id = MOD_SRC_NONE;
-    patches[id].pitch.mod2_id = MOD_SRC_NONE;
-    patches[id].pitch.mod1_amt = 0;
-    patches[id].pitch.mod2_amt = 0;
-    patches[id].pitch.vel_amt = 0;
-    patches[id].pitch.key_amt = 1.0;
-
-    /* default voice */
-    defvoice.active = FALSE;
-    defvoice.note = 0;
-    defvoice.posi = 0;
-    defvoice.posf = 0;
-    defvoice.stepi = 0;
-    defvoice.stepf = 0;
-    defvoice.vel = 0;
-    defvoice.ticks = 0;
-
-    defvoice.playstate = PLAYSTATE_OFF;
-    defvoice.xfade = FALSE;
-
-    defvoice.fade_posi = -1;
-    defvoice.xfade_posi = -1;
-
-    defvoice.vol_mod1 = 0;
-    defvoice.vol_mod2 = 0;
-    defvoice.vol_direct = 0;
-
-    defvoice.pan_mod1 = 0;
-    defvoice.pan_mod2 = 0;
-
-    defvoice.ffreq_mod1 = 0;
-    defvoice.ffreq_mod2 = 0;
-
-    defvoice.freso_mod1 = 0;
-    defvoice.freso_mod2 = 0;
-
-    defvoice.pitch_mod1 = 0;
-    defvoice.pitch_mod2 = 0;
-
-    for (i = 0; i < VOICE_MAX_ENVS; i++)
-    {
-        patches[id].env_params[i] = defadsr;
-        adsr_init(&defvoice.env[i]);
-    }
+    p->active = true;
 
     if (default_patch)
     {
-        patches[id].env_params[0].env_on = TRUE;
-        patches[id].env_params[0].release = 0.250;
-        
-    }
+        /* "Default" values */
+        ADSRParams* eg1 = &p->env_params[0];
 
-    for (i = 0; i < VOICE_MAX_LFOS; i++)
-    {
-        patches[id].vlfo_params[i] = deflfo;
-        lfo_prepare(&defvoice.lfo[i]);
-    }
+        p->play_mode = (default_patch
+                            ? PATCH_PLAY_LOOP
+                            : PATCH_PLAY_SINGLESHOT) | PATCH_PLAY_FORWARD;
 
-    defvoice.fll = 0;
-    defvoice.flr = 0;
-    defvoice.fbl = 0;
-    defvoice.fbr = 0;
+        p->fade_samples =  DEFAULT_FADE_SAMPLES;
+        p->xfade_samples = DEFAULT_FADE_SAMPLES;
 
-     /* initialize voices */
-    for (i = 0; i < PATCH_VOICE_COUNT; i++)
-    {
-        patches[id].voices[i] = defvoice;
-        patches[id].last_note = 60;
-    }
+        /* default adsr params */
+        eg1->env_on  = true;
+        eg1->delay   = 0.0;
+        eg1->attack  = 0.005;
+        eg1->hold    = 0.0;
+        eg1->decay   = 0.0;
+        eg1->sustain = 1.0;
+        eg1->release = 0.375;
 
-    /* set display_index to next unique value */
-    patches[id].display_index = 0;
-    for (i = 0; i < PATCH_COUNT; i++)
-    {
-        if (i == id)
-            continue;
-        if (patches[i].active
-            && patches[i].display_index >= patches[id].display_index)
-        {
-            patches[id].display_index = patches[i].display_index + 1;
-        }
-    }
+        /* use eg1 for amplitude envelope */
+        p->vol.direct_mod_id = MOD_SRC_EG;
 
-    patch_unlock (id);
+        patch_unlock(id);
 
-    if (strcmp(name, "Default") == 0)
-    {
         patch_sample_load(id, "Default", 0, 0, 0);
-        patches[id].lower_note = 36;
-        patches[id].upper_note = 83;
+        p->lower_note = 36;
+        p->upper_note = 83;
     }
+
+    patch_unlock(id);
 
     return id;
 }
 
-/* destroy a single patch with given id */
-int patch_destroy (int id)
+
+int patch_destroy(int id)
 {
     int index;
+    Patch* p;
 
-    if (!isok (id))
+    if (!isok(id))
         return PATCH_ID_INVALID;
 
     debug ("Removing patch: %d\n", id);
 
-    patch_lock (id);
+    index = patches[id]->display_index;
 
-    patches[id].active = 0;
-    sample_free_data(patches[id].sample);
+    patch_lock(id);
+    p = patches[id];
+    patches[id]->active = false;
+    patch_unlock(id);
 
-    patch_unlock (id);
+    patches[id] = 0;
+    patch_free(p);
 
     /* every active patch with a display_index greater than this
      * patch's needs to have it's value decremented so that we
      * preservere continuity; no locking necessary because the
      * display_index is not thread-shared data */
-    index = patches[id].display_index;
+
     for (id = 0; id < PATCH_COUNT; id++)
     {
-        if (patches[id].active && patches[id].display_index > index)
-            patches[id].display_index--;
+        if (patches[id] && patches[id]->active
+                        && patches[id]->display_index > index)
+        {
+            --patches[id]->display_index;
+        }
     }
 
     return 0;
 }
 
+
+
 /* destroy all patches */
-void patch_destroy_all ( )
+void patch_destroy_all(void)
 {
     int id;
 
     for (id = 0; id < PATCH_COUNT; id++)
-	patch_destroy (id);
+        patch_destroy (id);
 
     return;
 }
@@ -351,19 +205,19 @@ int patch_dump (int **dump)
     *dump = NULL;
 
     /* determine number of patches */
-    count = patch_count ( );
+    count = patch_count();
 
     if (count == 0)
         return count;
 
     /* allocate dump */
-    *dump = malloc (sizeof (int) * count);
+    *dump = malloc(sizeof(int) * count);
     if (*dump == NULL)
         return PATCH_ALLOC_FAIL;
 
     /* place active patches into dump array */
     for (id = i = 0; id < PATCH_COUNT; id++)
-        if (patches[id].active)
+        if (patches[id] && patches[id]->active)
             (*dump)[i++] = id;
 
     /* sort dump array by channel in ascending order */
@@ -371,8 +225,8 @@ int patch_dump (int **dump)
     {
         for (j = i; j < count; j++)
         {
-            if (patches[(*dump)[j]].channel <
-                patches[(*dump)[i]].channel)
+            if (patches[(*dump)[j]]->channel <
+                patches[(*dump)[i]]->channel)
             {
                 tmp = (*dump)[i];
                 (*dump)[i] = (*dump)[j];
@@ -387,16 +241,16 @@ int patch_dump (int **dump)
     {
         for (j = 0; j < count; j++)
         {
-            if (patches[(*dump)[j]].channel != i)
+            if (patches[(*dump)[j]]->channel != i)
                 continue;
 
             for (k = j; k < count; k++)
             {
-                if (patches[(*dump)[k]].channel != i)
+                if (patches[(*dump)[k]]->channel != i)
                     continue;
 
-                if (patches[(*dump)[k]].note <
-                    patches[(*dump)[j]].note)
+                if (patches[(*dump)[k]]->note <
+                    patches[(*dump)[j]]->note)
                 {
                     tmp = (*dump)[j];
                     (*dump)[j] = (*dump)[k];
@@ -419,26 +273,29 @@ int patch_duplicate(int src_id)
     if (!isok(src_id))
         return PATCH_ID_INVALID;
 
-    if (!patches[src_id].active)
+    if (!patches[src_id]->active)
         return PATCH_ID_INVALID;
 
     /* find an empty patch and set id to its id */
 
-    for (dest_id = 0; patches[dest_id].active; dest_id++)
+    for (dest_id = 0; patches[dest_id]
+                   && patches[dest_id]->active; dest_id++)
+    {
         if (dest_id == PATCH_COUNT)
             return PATCH_LIMIT;
+    }
 
     debug ("Creating patch (%d) from patch %s (%d).\n", dest_id,
-           patches[src_id].name, src_id);
+           patches[src_id]->name, src_id);
 
     patch_lock(dest_id);
 
     /* store pointers in destination patch:
      */
-    oldsample = patches[dest_id].sample;
+    oldsample = patches[dest_id]->sample;
 
     for (i = 0; i < PATCH_MAX_LFOS; ++i)
-        glfo_tables[i] = patches[dest_id].glfo_table[i];
+        glfo_tables[i] = patches[dest_id]->glfo_table[i];
 
     /* copy the patch:
      */
@@ -446,39 +303,39 @@ int patch_duplicate(int src_id)
 
     /* restore pointers in destination patch:
      */
-    patches[dest_id].sample = oldsample;
+    patches[dest_id]->sample = oldsample;
 
     for (i = 0; i < PATCH_MAX_LFOS; ++i)
-        patches[dest_id].glfo_table[i] = glfo_tables[i];
+        patches[dest_id]->glfo_table[i] = glfo_tables[i];
 
     /* dest and src currently share pointers to sample data.
        set dest's pointer to NULL...
      */
-    patches[dest_id].sample->sp = NULL;
+    patches[dest_id]->sample->sp = NULL;
 
     /* ...so src's data is not free'd when the sample is loaded.
      */
 
-    if (patches[src_id].sample->sp != NULL)
+    if (patches[src_id]->sample->sp != NULL)
         patch_sample_load_from(dest_id, src_id);
 
     /* set display_index to next unique value */
 
-    patches[dest_id].display_index = 0;
+    patches[dest_id]->display_index = 0;
 
     for (i = 0; i < PATCH_COUNT; i++)
     {
         if (i == dest_id)
             continue;
 
-        if (patches[i].active
-         && patches[i].display_index >= patches[dest_id].display_index)
+        if (patches[i]->active
+         && patches[i]->display_index >= patches[dest_id]->display_index)
         {
-            patches[dest_id].display_index = patches[i].display_index + 1;
+            patches[dest_id]->display_index = patches[i]->display_index + 1;
         }
     }
 
-    debug ("chosen display: %d\n", patches[dest_id].display_index);
+    debug ("chosen display: %d\n", patches[dest_id]->display_index);
     patch_unlock(dest_id);
 
     return dest_id;
@@ -493,18 +350,25 @@ int patch_flush (int id)
     if (!isok(id))
         return PATCH_ID_INVALID;
 
+debug("flusing:%d\n",id);
+
     patch_lock (id);
 
-    if (patches[id].sample->sp == NULL)
+    if (patches[id]->sample->sp == NULL)
     {
         patch_unlock (id);
         return 0;
     }
 
     for (i = 0; i < PATCH_VOICE_COUNT; i++)
-        patches[id].voices[i].active = FALSE;
+    {
+        debug("flushing voice:%d\n",i);
+        patches[id]->voices[i]->active = false;
+    }
 
     patch_unlock (id);
+
+debug("done\n");
     return 0;
 }
 
@@ -518,31 +382,9 @@ void patch_flush_all ( )
 }
 
 /* constructor */
-void patch_init ( )
+void patch_init()
 {
-    int i,j;
-
-    debug ("initializing...\n");
-    for (i = 0; i < PATCH_COUNT; i++)
-    {
-        pthread_mutex_init (&patches[i].mutex, NULL);
-        patches[i].sample = sample_new ( );
-        patches[i].vol.mod1_id =
-        patches[i].vol.mod2_id =    MOD_SRC_NONE;
-        patches[i].pan.mod1_id =
-        patches[i].pan.mod2_id =    MOD_SRC_NONE;
-        patches[i].ffreq.mod1_id =
-        patches[i].ffreq.mod2_id =  MOD_SRC_NONE;
-        patches[i].freso.mod1_id =
-        patches[i].freso.mod2_id =  MOD_SRC_NONE;
-        patches[i].pitch.mod1_id =
-        patches[i].pitch.mod2_id =  MOD_SRC_NONE;
-
-        for (j = 0; j < PATCH_MAX_LFOS; ++j)
-            patches[i].glfo_table[j] = NULL;
-    }
-
-    debug ("done\n");
+    debug("this init functions is now redundant aswell as badly named.\n");
 }
 
 /* returns error message associated with error code */
@@ -595,7 +437,7 @@ int patch_sample_load(int id, const char *name,
                                     int sndfile_format)
 {
     int val;
-    gboolean defsample = (strcmp(name, "Default") == 0);
+    bool defsample = (strcmp(name, "Default") == 0);
 
     if (!isok (id))
         return PATCH_ID_INVALID;
@@ -614,53 +456,53 @@ int patch_sample_load(int id, const char *name,
     patch_lock (id);
 
     if (defsample)
-        val = sample_default(patches[id].sample, patch_samplerate);
+        val = sample_default(patches[id]->sample, patch_samplerate);
     else
-        val = sample_load_file(patches[id].sample, name,
+        val = sample_load_file(patches[id]->sample, name,
                                             patch_samplerate,
                                             raw_samplerate,
                                             raw_channels,
                                             sndfile_format);
 
-    patches[id].sample_stop = patches[id].sample->frames - 1;
+    patches[id]->sample_stop = patches[id]->sample->frames - 1;
 
-    patches[id].play_start = 0;
-    patches[id].play_stop = patches[id].sample_stop;
+    patches[id]->play_start = 0;
+    patches[id]->play_stop = patches[id]->sample_stop;
 
     if (defsample)
     {
-        patches[id].loop_start = 294;
-        patches[id].loop_stop = 5181;
-        patches[id].fade_samples = 100;
-        patches[id].xfade_samples = 0;
+        patches[id]->loop_start = 294;
+        patches[id]->loop_stop = 5181;
+        patches[id]->fade_samples = 100;
+        patches[id]->xfade_samples = 0;
     }
     else
     {
-        patches[id].fade_samples = 100;
-        patches[id].xfade_samples = 100;
-        patches[id].loop_start = patches[id].xfade_samples;
-        patches[id].loop_stop = patches[id].sample_stop -
-                                    patches[id].xfade_samples;
+        patches[id]->fade_samples = 100;
+        patches[id]->xfade_samples = 100;
+        patches[id]->loop_start = patches[id]->xfade_samples;
+        patches[id]->loop_stop = patches[id]->sample_stop -
+                                    patches[id]->xfade_samples;
     }
 
-    if (patches[id].sample_stop < patches[id].fade_samples)
-        patches[id].fade_samples = patches[id].xfade_samples = 0;
+    if (patches[id]->sample_stop < patches[id]->fade_samples)
+        patches[id]->fade_samples = patches[id]->xfade_samples = 0;
 
     patch_unlock (id);
     return val;
 }
 
 
-int patch_sample_load_from(int dest_id,  int src_id)
+int patch_sample_load_from(int dest_id, int src_id)
 {
     int val;
     const char* name;
-    gboolean defsample;
+    bool defsample;
 
     if (!isok(dest_id) || !isok(src_id))
         return PATCH_ID_INVALID;
 
-    name = patches[src_id].sample->filename;
+    name = patches[src_id]->sample->filename;
     defsample = (strcmp(name, "Default") == 0);
 
 
@@ -673,17 +515,16 @@ int patch_sample_load_from(int dest_id,  int src_id)
     patch_flush(dest_id);
     patch_lock(dest_id);
 
-    sample_shallow_copy(patches[dest_id].sample, patches[src_id].sample);
+    sample_shallow_copy(patches[dest_id]->sample, patches[src_id]->sample);
 
     if (defsample)
-        val = sample_default(patches[dest_id].sample, patch_samplerate);
+        val = sample_default(patches[dest_id]->sample, patch_samplerate);
     else
-        val = sample_load_file( patches[dest_id].sample,
+        val = sample_load_file( patches[dest_id]->sample,
                                 name, patch_samplerate,
-                                patches[src_id].sample->raw_samplerate,
-                                patches[src_id].sample->raw_channels,
-                                patches[src_id].sample->sndfile_format);
-
+                                patches[src_id]->sample->raw_samplerate,
+                                patches[src_id]->sample->raw_channels,
+                                patches[src_id]->sample->sndfile_format);
 /*
     patches[dest_id].sample_stop =  patches[dest_id].sample->frames - 1;
     patches[dest_id].play_start =   patches[src_id].play_start;
@@ -702,7 +543,7 @@ const Sample* patch_sample_data(int id)
     if (!isok(id))
         return 0;
 
-    return patches[id].sample;
+    return patches[id]->sample;
 }
 
 
@@ -715,12 +556,12 @@ void patch_sample_unload (int id)
     debug ("Unloading sample for patch %d\n", id);
     patch_lock (id);
 
-    sample_free_data(patches[id].sample);
+    sample_free_data(patches[id]->sample);
 
-    patches[id].play_start = 0;
-    patches[id].play_stop = 0;
-    patches[id].loop_start = 0;
-    patches[id].loop_stop = 0;
+    patches[id]->play_start = 0;
+    patches[id]->play_stop = 0;
+    patches[id]->loop_start = 0;
+    patches[id]->loop_stop = 0;
 
     patch_unlock (id);
 }
@@ -730,15 +571,21 @@ void patch_sample_unload (int id)
  * mixing will stop when the buffersize changes */
 void patch_set_buffersize (int nframes)
 {
-    int i,j;
+    int i;
+
+    int oldsize = patch_buffersize;
 
     debug ("setting buffersize to %d\n", nframes);
-    for (i = 0; i < PATCH_COUNT; i++)
-    {
-        Patch* p = &patches[i];
 
-        for (j = 0; j < PATCH_MAX_LFOS; j++)
-            p->glfo_table[j] = g_renew (float, p->glfo_table[j], nframes);
+    patch_buffersize = nframes;
+
+    if (patch_buffersize != oldsize)
+    {
+        for (i = 0; i < PATCH_COUNT; i++)
+        {
+            if (patches[i])
+                patch_set_global_lfo_buffers(patches[i], patch_buffersize);
+        }
     }
 }
 
@@ -747,50 +594,46 @@ void patch_set_buffersize (int nframes)
  * mixing will stop when the samplerate changes */
 void patch_set_samplerate (int rate)
 {
-    int id;
-    const char *name;
     int oldrate = patch_samplerate;
-
-    patch_samplerate = rate;
 
     debug ("changing samplerate to %d\n", rate);
 
+    patch_samplerate = rate;
+
     if (patch_samplerate != oldrate)
     {
+        int id;
+
+        debug("samplerate changed from %d\n", oldrate);
+
         for (id = 0; id < PATCH_COUNT; id++)
         {
-            if (!patches[id].active)
+            if (!patches[id] || !patches[id]->active)
                 continue;
 
-            if (patches[id].sample->sp != NULL)
+            if (patches[id]->sample->sp != NULL)
             {
-                Sample* s = patches[id].sample;
+                Sample* s = patches[id]->sample;
                 patch_sample_load(id, s->filename,  s->raw_samplerate,
                                                     s->raw_channels,
                                                     s->sndfile_format);
             }
         }
+
+        patch_legato_lag = PATCH_LEGATO_LAG * rate;
+        patch_trigger_global_lfos();
     }
-
-    patch_legato_lag = PATCH_LEGATO_LAG * rate;
-    debug("patch_legato_lag = %d\n", patch_legato_lag);
-
-    patch_trigger_global_lfos ( );
 }
 
 /* destructor */
 void patch_shutdown ( )
 {
-    int i,j;
+    int i;
      
     debug ("shutting down...\n");
 
     for (i = 0; i < PATCH_COUNT; i++)
-    {
-        sample_free (patches[i].sample);
-        for (j = 0; j < PATCH_MAX_LFOS; j++)
-            g_free (patches[i].glfo_table[j]);
-    }
+        patch_free(patches[i]);
 
     debug ("done\n");
 }
@@ -798,8 +641,9 @@ void patch_shutdown ( )
 /* re-sync all global lfos to new tempo */
 void patch_sync (float bpm)
 {
-    lfo_set_tempo (bpm);
-    patch_trigger_global_lfos ();
+    debug("syncing global LFOs\n");
+    lfo_set_tempo(bpm);
+    patch_trigger_global_lfos();
 }
 
 

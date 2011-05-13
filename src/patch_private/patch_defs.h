@@ -2,6 +2,9 @@
 #define PRIVATE_PATCH_DEFS_H
 
 
+#include "patch.h"
+
+
 /* Don't add #includes in here. */
 
 
@@ -22,20 +25,19 @@ extern const float  ALMOST_ZERO;
 
 
 /* what sample rate we think the audio interface is running at */
-extern float        patch_samplerate;
+extern int      patch_samplerate;
+extern int      patch_buffersize;
 
 
 /* how many ticks legato releases lag; calculated to take
  * PATCH_LEGATO_LAG seconds */
-extern int          patch_legato_lag;
+extern int      patch_legato_lag;
 
 
 
 /* the patches */
-extern Patch        patches[PATCH_COUNT];
+extern Patch*   patches[PATCH_COUNT];
 
-
-extern float* mod_id_to_pointer(int id, Patch* p, PatchVoice* v);
 
 
 #define DEFAULT_FADE_SAMPLES 100

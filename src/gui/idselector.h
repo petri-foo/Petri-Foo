@@ -4,6 +4,9 @@
 #include <gtk/gtk.h>
 
 
+#include "names.h"
+
+
 G_BEGIN_DECLS
 
 
@@ -47,8 +50,10 @@ struct _IDSelectorClass
 GType       id_selector_get_type(void);
 GtkWidget*  id_selector_new(void);
 
-void        id_selector_set(IDSelector*, const char** item_names,
-                                                    int orientation);
+
+/* second argument must be an array of pointers */
+void        id_selector_set(IDSelector*,    const id_name* ids_names,
+                                            int orientation);
 
 int         id_selector_get_id(IDSelector*);
 const char* id_selector_get_name(IDSelector*);

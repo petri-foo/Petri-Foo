@@ -4,10 +4,11 @@
 #include "gui.h"
 #include "idselector.h"
 #include "lfo.h"
-#include "mod_src.h"
+#include "mod_src_gui.h"
 #include "names.h"
 #include "patch_set_and_get.h"
 #include "basic_combos.h"
+#include "mod_src.h"
 
 
 enum
@@ -290,6 +291,8 @@ static void lfo_tab_init(LfoTab* self)
     GtkWidget* pad;
     GtkWidget* label;
 
+    id_name* lfo_ids = mod_src_get(MOD_SRC_LFOS);
+
     int y = 1;
 
     /* collumns */
@@ -304,7 +307,13 @@ static void lfo_tab_init(LfoTab* self)
 
     /* parameter selector */
     p->idsel = id_selector_new();
-    id_selector_set(ID_SELECTOR(p->idsel), names_lfos_get(), ID_SELECTOR_V);
+
+    id_selector_set(ID_SELECTOR(p->idsel),
+                    lfo_ids,
+                    ID_SELECTOR_V);
+
+    mod_src_free(lfo_ids);
+
     gtk_box_pack_start(box, p->idsel, FALSE, FALSE, 0);
     gtk_widget_show(p->idsel);
 
@@ -404,8 +413,8 @@ static void update_lfo(LfoTabPrivate* p)
     LFOShape lfoshape;
     int shape;
     float freq, beats, delay, attack;
-    gboolean sync, positive;
-    gboolean on;
+    bool sync, positive;
+    bool on;
     GtkTreeIter iter;
 
     int   mod1src, mod2src;
@@ -415,20 +424,27 @@ static void update_lfo(LfoTabPrivate* p)
 
     p->lfo_id = id_selector_get_id(ID_SELECTOR(p->idsel));
 
-    int mod_srcs = (patch_lfo_is_global(p->lfo_id)
-                        ? MOD_SRC_INPUTS_GLOBAL
-                        : MOD_SRC_INPUTS_ALL);
+    debug("UPDATE LFO\t\tgot lfo id:%d\n", p->lfo_id);
+
+    int mod_srcs = (mod_src_is_global(p->lfo_id)
+                        ? MOD_SRC_GLOBALS
+                        : MOD_SRC_ALL);
+
+
+    debug("setting combo model\n");
 
     block(p);
     mod_src_combo_set_model(GTK_COMBO_BOX(p->mod1_combo), mod_srcs);
     mod_src_combo_set_model(GTK_COMBO_BOX(p->mod2_combo), mod_srcs);
     unblock(p);
 
+    debug("getting lfo (id:%d) data from patch\n", p->lfo_id);
+
     patch_get_lfo_shape(    p->patch_id, p->lfo_id, &lfoshape);
     patch_get_lfo_freq(     p->patch_id, p->lfo_id, &freq);
     patch_get_lfo_beats(    p->patch_id, p->lfo_id, &beats);
 
-    if (!patch_lfo_is_global(p->lfo_id))
+    if (!mod_src_is_global(p->lfo_id))
     {
         patch_get_lfo_delay(    p->patch_id, p->lfo_id, &delay);
         patch_get_lfo_attack(   p->patch_id, p->lfo_id, &attack);
@@ -443,6 +459,11 @@ static void update_lfo(LfoTabPrivate* p)
     patch_get_lfo_mod2_src( p->patch_id, p->lfo_id, &mod2src);
     patch_get_lfo_mod2_amt( p->patch_id, p->lfo_id, &mod2amt);
 
+    debug("mod1src:%d\n", mod1src);
+    debug("mod2src:%d\n", mod2src);
+
+    debug("getting mod src combo iter with id\n");
+
     if (!mod_src_combo_get_iter_with_id(GTK_COMBO_BOX(p->mod1_combo),
                                                         mod1src, &m1iter))
     {
@@ -455,12 +476,15 @@ static void update_lfo(LfoTabPrivate* p)
         debug("failed to get lfo mod2 source id from combo box\n");
     }
 
+
+    debug("...\n");
+
     block(p);
 
     phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->freq_fan), freq);
 
 
-    if (patch_lfo_is_global(p->lfo_id))
+    if (mod_src_is_global(p->lfo_id))
     {
         gtk_widget_hide(p->delay_fan);
         gtk_widget_hide(p->delay_label);

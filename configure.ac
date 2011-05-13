@@ -234,6 +234,7 @@ Makefile
 pixmaps/Makefile
 src/Makefile
 src/gui/Makefile
+src/patch_private/Makefile
 petri-foo.spec
 ])
 fi

@@ -16,9 +16,6 @@ enum
 };
 
 
-enum {
-     DRIVER_DEFAULT_SAMPLERATE = 44100
-};
 
 
 /* public class definition for drivers */

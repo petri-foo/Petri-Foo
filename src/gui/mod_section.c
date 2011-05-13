@@ -6,7 +6,7 @@
 #include "patch_set_and_get.h"
 #include "names.h"
 
-#include "mod_src.h"
+#include "mod_src_gui.h"
 
 
 typedef struct _ModSectionPrivate ModSectionPrivate;
@@ -380,13 +380,13 @@ void mod_section_set_list_global(ModSection* self)
 {
     ModSectionPrivate* p = MOD_SECTION_GET_PRIVATE(self);
     mod_src_combo_set_model(GTK_COMBO_BOX(p->env_combo),
-                                    MOD_SRC_INPUTS_GLOBAL);
+                                    MOD_SRC_GLOBALS);
 
     mod_src_combo_set_model(GTK_COMBO_BOX(p->mod1_combo),
-                                    MOD_SRC_INPUTS_GLOBAL);
+                                    MOD_SRC_GLOBALS);
 
     mod_src_combo_set_model(GTK_COMBO_BOX(p->mod2_combo),
-                                    MOD_SRC_INPUTS_GLOBAL);
+                                    MOD_SRC_GLOBALS);
 }
 
 
@@ -394,13 +394,13 @@ void mod_section_set_list_all(ModSection* self)
 {
     ModSectionPrivate* p = MOD_SECTION_GET_PRIVATE(self);
     mod_src_combo_set_model(GTK_COMBO_BOX(p->env_combo),
-                                    MOD_SRC_INPUTS_ALL);
+                                    MOD_SRC_ALL);
 
     mod_src_combo_set_model(GTK_COMBO_BOX(p->mod1_combo),
-                                    MOD_SRC_INPUTS_ALL);
+                                    MOD_SRC_ALL);
 
     mod_src_combo_set_model(GTK_COMBO_BOX(p->mod2_combo),
-                                    MOD_SRC_INPUTS_ALL);
+                                    MOD_SRC_ALL);
 }
 
 

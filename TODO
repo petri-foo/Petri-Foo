@@ -1,31 +1,35 @@
-TESTING 3rd April 2011 -jwm
---
+-Engine: eg/lfo
+    +lfo/eg should output zero when off
+
+-Engine: Voice modes
+    +polyphonic re-trigger mode (new note repetition cuts old note).
+
+-Engine: Keyboard tracking
+    +add to lfo's for frequency modulation
+    +add to eg's for time modulation
+
+-Engine: Velocity sensitivity
+    +add to eg's for amplitude modulation
+
+-Engine: Logarithmic Amplitudes
+    +Fix and remove artefacts arising from use of LAT for log_amplitude
+     function in maths.[ch] (research info online about alternatives
+     such as curved ADSRs for example).
+
+-GUI: general
+    +replace PHAT widgets with something else?
+    +custom cairo based widgets?
 
 
--------------
-note: these items are in addition to features mentioned
-in the README as goals for Petri-Foo.
-
--Show bank name in window title rather than petri-foo - petri-foo.
-
--Some kind of file container where samples can be saved along
- with bank file. Ie, for distribution of banks and/or
- resampled samples (possibly).
+-GUI: Patch List:
+    +add context menu
+    +make patch names editable
 
 
--Fix and remove artefacts arising from use of LAT for log_amplitude
- function in maths.[ch] (research info online about alternatives
- such as curved ADSRs  for example).
-
--Add context menu to patch list (I did this in June 2008 but it was
- never adopted).
-
--Replace PHAT with invented-here custom cairo-based widgets
-
-
--Sample Editor
+-GUI: Sample Editor
     + two tool modes: pointer, and zoom
     + zoom tool: select area and zoom
     + pointer tool: *drag* play/loop point markers
     + zoom in/out/all buttons
+
 

@@ -252,7 +252,7 @@ static raw_box* raw_box_new(GtkWidget* dialog)
 
     t = GTK_TABLE(rb->table);
 
-    rb->format = basic_combo_id_name_create(names_sample_raw_get());
+    rb->format = basic_combo_id_name_create(names_sample_raw_format_get());
     gui_attach(t, rb->format, 0, 2, y, y + 1);
 
     gui_label_attach("Sample rate:", t, 2, 4, y, y + 1);

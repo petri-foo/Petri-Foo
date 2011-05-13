@@ -4,7 +4,7 @@
 #include "ticks.h"
 
 
-static int samplerate = DRIVER_DEFAULT_SAMPLERATE;
+static int samplerate = -1;
 
 
 Tick ticks_secs_to_ticks (float secs)

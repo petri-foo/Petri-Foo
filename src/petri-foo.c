@@ -12,6 +12,7 @@
 #include "patch.h"
 #include "patch_util.h"
 #include "mixer.h"
+#include "mod_src.h"
 #include "names.h"
 #include "dish_file.h"
 
@@ -76,22 +77,16 @@ int main(int argc, char *argv[])
 	}
 
 	/* constructors */
-    names_create();
+    mod_src_create();
 #ifdef HAVE_LASH
 	lashdriver_init(lash_args);
 #endif
     gtk_init(&argc, &argv);
     gui_init();
     driver_init();
-    lfo_init();
+    lfo_tables_init();
     mixer_init();
     patch_init();
-
-    if (optind < argc) 
-        dish_file_read(argv[optind]);
-    else
-        patch_create("Default");
-
 
 	/* start */
 	driver_start();
@@ -102,6 +97,10 @@ int main(int argc, char *argv[])
 	lashdriver_set_alsa_id(midi_get_client_id());
 #endif
 
+    if (optind < argc)
+        dish_file_read(argv[optind]);
+    else
+        patch_create("Default");
 
     gui_refresh();
 
@@ -118,7 +117,7 @@ int main(int argc, char *argv[])
 	patch_shutdown();
 	mixer_shutdown();
     free_instance_name();
-    names_destroy();
+    mod_src_destroy();
 	debug("Goodbye.\n");
 	return 0;
 }

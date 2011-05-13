@@ -1,3 +1,5 @@
+#include "idselector.h"
+
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 
@@ -6,7 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "idselector.h"
+#include "petri-foo.h"
+
 
 
 enum
@@ -28,9 +31,9 @@ typedef struct _IDSelectorPrivate IDSelectorPrivate;
 struct _IDSelectorPrivate
 {
     int item_count;
-    int current_id;
+    int index;
 
-    char**      names;
+    id_name*    ids_names;
     GtkWidget** buttons;
     IDSelector* self;
 };
@@ -95,11 +98,15 @@ press_cb(GtkToggleButton* button, GdkEvent* event, IDSelectorPrivate* p)
         if (GTK_WIDGET(button) == p->buttons[i])
         {
             gtk_toggle_button_set_active(
-                GTK_TOGGLE_BUTTON(p->buttons[p->current_id]), FALSE);
-            p->current_id = i;
+                GTK_TOGGLE_BUTTON(p->buttons[p->index]), FALSE);
+            p->index = i;
             gtk_toggle_button_set_active(
-                GTK_TOGGLE_BUTTON(p->buttons[p->current_id]), TRUE);
+                GTK_TOGGLE_BUTTON(p->buttons[p->index]), TRUE);
             g_signal_emit_by_name(G_OBJECT(p->self), "changed");
+
+            debug("selected index:%d id:%d name:%s\n",
+                    i, p->ids_names[i].id, p->ids_names[i].name);
+
             return TRUE;
         }
     }
@@ -112,7 +119,7 @@ static gboolean
 enter_cb(GtkWidget* button, GdkEvent* event, IDSelectorPrivate* p)
 {
     (void)event;
-    if (p->buttons[p->current_id] == button)
+    if (p->buttons[p->index] == button)
         return TRUE;
 
     return FALSE;
@@ -124,8 +131,8 @@ static void id_selector_init(IDSelector* self)
     IDSelectorPrivate* p = ID_SELECTOR_GET_PRIVATE(self);
     p->self = self;
     p->item_count = 0;
-    p->current_id = 0;
-    p->names = 0;
+    p->index = 0;
+    p->ids_names = 0;
     p->buttons = 0;
 }
 
@@ -136,7 +143,7 @@ GtkWidget* id_selector_new(void)
 }
 
 
-void id_selector_set(IDSelector* ids, const char** item_names, int orient)
+void id_selector_set(IDSelector* ids, const id_name* ids_names, int orient)
 {
     IDSelectorPrivate* p = ID_SELECTOR_GET_PRIVATE(ids);
     GtkWidget* xbox;
@@ -144,13 +151,16 @@ void id_selector_set(IDSelector* ids, const char** item_names, int orient)
     int i;
 
     if (p->item_count)
+    {
+        debug("IDSelector has been set already.\n");
         return;
+    }
 
-    for (i = 0; item_names[i] != 0; ++i);
+    for (i = 0; ids_names[i].name != 0; ++i);
 
     p->item_count = i;
 
-    p->names = malloc(sizeof(char*) * p->item_count);
+    p->ids_names = malloc(sizeof(*p->ids_names) * p->item_count);
     p->buttons = malloc(sizeof(GtkWidget*) * p->item_count);
 
     xbox = (orient == ID_SELECTOR_H)
@@ -161,11 +171,11 @@ void id_selector_set(IDSelector* ids, const char** item_names, int orient)
     gtk_widget_show(xbox);
     box = GTK_BOX(xbox);
 
-    for (i = 0; i < p->item_count; ++i)
+    for (i = 0; i < p->item_count; ++i, ++ids_names)
     {
-        p->names[i] = malloc(strlen(item_names[i]) + 1);
-        strcpy(p->names[i], item_names[i]);
-        p->buttons[i] = gtk_toggle_button_new_with_label(p->names[i]);
+        id_name_init(&p->ids_names[i], ids_names->id, ids_names->name);
+        p->buttons[i] =
+                gtk_toggle_button_new_with_label(p->ids_names[i].name);
         gtk_box_pack_start(box, p->buttons[i], FALSE, FALSE, 0);
         gtk_widget_show(p->buttons[i]);
         g_signal_connect(G_OBJECT(p->buttons[i]), "button-press-event",
@@ -176,28 +186,36 @@ void id_selector_set(IDSelector* ids, const char** item_names, int orient)
                             G_CALLBACK(enter_cb), (gpointer)p);
     }
 
-    p->current_id = 0;
+    p->index = 0;
 
     gtk_toggle_button_set_active(
-                GTK_TOGGLE_BUTTON(p->buttons[p->current_id]),
+                GTK_TOGGLE_BUTTON(p->buttons[p->index]),
                 TRUE);
 }
 
 
 int id_selector_get_id(IDSelector* self)
 {
-    return ID_SELECTOR_GET_PRIVATE(self)->current_id;
+    IDSelectorPrivate* p = ID_SELECTOR_GET_PRIVATE(self);
+    return p->ids_names[p->index].id;
 }
 
 
 const char* id_selector_get_name(IDSelector* self)
 {
     IDSelectorPrivate* p = ID_SELECTOR_GET_PRIVATE(self);
-    return p->names[p->current_id];
+    return p->ids_names[p->index].name;
 }
 
 
 const char* id_selector_get_name_by_id(IDSelector* self, int id)
 {
-    return ID_SELECTOR_GET_PRIVATE(self)->names[id];
+    int i;
+    IDSelectorPrivate* p = ID_SELECTOR_GET_PRIVATE(self);
+
+    for (i = 0; i < p->item_count; ++i)
+        if (p->ids_names[i].id == id)
+            return p->ids_names[i].name;
+
+    return 0;
 }

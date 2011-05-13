@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <alsa/asoundlib.h>
 #include <pthread.h>
-#include <glib.h>
+
 
 #include "instance.h"
 #include "driver.h"
@@ -134,7 +134,7 @@ static void* poll_events (void* arg)
      struct pollfd* pfd;
 
      npfd = snd_seq_poll_descriptors_count (handle, POLLIN);
-     pfd = g_newa (struct pollfd, npfd);
+     pfd = alloca (sizeof(struct pollfd) * npfd);
 
      snd_seq_poll_descriptors (handle, pfd, npfd, POLLIN);
 

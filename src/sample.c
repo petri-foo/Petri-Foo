@@ -256,8 +256,12 @@ int sample_load_file(Sample* sample, const char* name,
         tmp = tmp2;
     }
 
+debug("freeing old sample data\n");
+
     free(sample->sp);
     free(sample->filename);
+
+debug("setting new sample data\n");
 
     sample->filename = strdup(name);
 
@@ -276,6 +280,8 @@ int sample_load_file(Sample* sample, const char* name,
         sample->raw_channels = 0;
         sample->sndfile_format = 0;
     }
+
+debug("sample loaded\n");
 
     return 0;
 }

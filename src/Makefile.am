@@ -1,4 +1,4 @@
-SUBDIRS = gui
+SUBDIRS = gui patch_private
 
 bin_PROGRAMS = petri-foo
 
@@ -14,6 +14,7 @@ petri_foo_SOURCES = 					\
 	maths.c			maths.h			\
 	midi.c			midi.h			\
 	mixer.c			mixer.h			\
+	mod_src.c		mod_src.h		\
 	names.c			names.h			\
 	patch.c			patch.h			\
 	patch_set_and_get.c	patch_set_and_get.h	\
@@ -21,10 +22,7 @@ petri_foo_SOURCES = 					\
 	petri-foo.c		petri-foo.h		\
 	sample.c		sample.h		\
 	sync.c			sync.h			\
-	ticks.c			ticks.h			\
-	patch_private/patch_data.h			\
-	patch_private/patch_defs.c			\
-	patch_private/patch_defs.h
+	ticks.c			ticks.h
                                                                                                                                                                         
 if WITH_LASH                                                                                                                                                            
 petri_foo_SOURCES += 					\
@@ -41,6 +39,7 @@ INCLUDES = 			\
 	@GTK_CFLAGS@
 
 petri_foo_LDADD = 		\
+	patch_private/libpatch.a\
 	gui/libgui.a 		\
 	@PHAT_LIBS@ 		\
 	@ALSA_LIBS@ 		\

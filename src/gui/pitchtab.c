@@ -4,7 +4,7 @@
 #include "gui.h"
 #include "patch.h"
 
-#include "mod_src.h"
+#include "mod_src_gui.h"
 #include "mod_section.h"
 
 static GtkVBoxClass* parent_class;

@@ -1,4 +1,3 @@
-#include <glib.h>
 #include <math.h>
 #include "maths.h"
 
@@ -348,7 +347,7 @@ static float logvolct[TABSIZE] = {
 };
 
 
-float cerp(float y0, float y1, float y2, float y3, guint8 d)
+float cerp(float y0, float y1, float y2, float y3, uint8_t d)
 {
     float s0;
 

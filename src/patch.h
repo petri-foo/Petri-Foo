@@ -1,72 +1,99 @@
 #ifndef __PATCH_H__
 #define __PATCH_H__
 
-#include <glib.h>
+
+#include <stdint.h>
+
+
 #include "ticks.h"
 #include "lfo.h"
 #include "control.h"
 
-/* magic numbers */
+
+typedef struct _Patch Patch;
+
+
 enum
 {
-    PATCH_COUNT = 64,           /* maximum patches */
-    PATCH_MAX_NAME = 32,        /* maximum length of patch name */
-    PATCH_VOICE_COUNT = 16,     /* maximum active voices per patch */
+    /* magic numbers */
+    VOICE_MAX_LFOS =        5,
+    VOICE_MAX_ENVS =        5,
+    PATCH_COUNT =           64, /* maximum patches */
+    PATCH_MAX_NAME =        32, /* maximum length of patch name */
+    PATCH_VOICE_COUNT =     16, /* maximum active voices per patch */
     PATCH_MAX_PITCH_STEPS = 48, /* maximum val allowable for pitch_steps */
-
-    PATCH_MAX_LFOS = 5, /* LFO's global in scope to patch */
-    VOICE_MAX_LFOS = 5, /* LFO's local only to a voice */
-    TOTAL_LFOS = PATCH_MAX_LFOS + VOICE_MAX_LFOS,
-
-    /*  LFO id's are in range [0, TOTAL_LFOS - 1], where
-     *  range [0, PATCH_MAX_LFOS - 1] are the global patch LFOs
-     *  and [PATCH_MAX_LFOS, TOTAL_LFOS - 1] are voice LFOs.
-     */
-
-    VOICE_MAX_ENVS = 5
+    PATCH_MAX_LFOS =        5,
+    TOTAL_LFOS =            VOICE_MAX_LFOS + PATCH_MAX_LFOS
 };
 
 
-enum
-{
-    MOD_SRC_NONE = 0,
-    MOD_SRC_ONE,
+/*  typedef enum _MOD_SRC_ID_BITMASK mod_src_id_bitmask
 
+    these are IDs for modulation sources passed to functions such as
+    patch_set_mod1_src (see patch_set_and_get.h).
+
+    additionally, these are how EGs, and LFOs are identified with
+    functions such as patch_set_eg*.
+
+    the third envelope therefor has an ID of (MOD_SRC_EG + 3).
+ */
+
+typedef enum _MOD_SRC_ID_BITMASK
+{
+    MOD_SRC_NONE,
+
+    MOD_SRC_MISC =          0x10,
+
+    /* specific enumerations for the miscellaneous mod sources */
+
+    MOD_SRC_ONE =           0x10,
     MOD_SRC_KEY,
     MOD_SRC_VELOCITY,
-    MOD_SRC_NOISE,
+/*  MOD_SRC_NOISE, */
 
-    MOD_SRC_FIRST_EG,
-    MOD_SRC_LAST_EG = MOD_SRC_FIRST_EG + VOICE_MAX_ENVS,
+    MOD_SRC__LAST_MISC__,   /* used to gain a count of misc mod srcs */
 
-    MOD_SRC_FIRST_VLFO,
-    MOD_SRC_LAST_VLFO = MOD_SRC_FIRST_VLFO + VOICE_MAX_LFOS,
+    /* no enumerations are created for specific EGs or specific LFOs */
 
-    MOD_SRC_FIRST_GLFO,
-    MOD_SRC_LAST_GLFO = MOD_SRC_FIRST_GLFO + PATCH_MAX_LFOS,
+    MOD_SRC_EG =            0x20,
 
-    MOD_SRC_LAST
-};
+    MOD_SRC_VLFO =          0x40, /* glfos not immediately following
+                                   * vlfos will cause breakage! -ru sure? */
+    MOD_SRC_GLFO =          0x80,
+
+    /* counts of EGs and LFOs are provided top of this file */
+
+    /* helpful bitmasks: */
+    MOD_SRC_GLOBALS =       MOD_SRC_GLFO,
+
+    MOD_SRC_LFOS =          MOD_SRC_VLFO | MOD_SRC_GLFO,
+
+    MOD_SRC_ALL =           MOD_SRC_MISC
+                          | MOD_SRC_EG
+                          | MOD_SRC_VLFO
+                          | MOD_SRC_GLFO
+} mod_src_id_bitmask;
 
 
 /* error codes */
 enum
 {
-/*   PATCH_PARAM_INVALID = -1,  */
-     PATCH_ID_INVALID = -2,
-     PATCH_ALLOC_FAIL = -3,
-     PATCH_NOTE_INVALID = -4,
-     PATCH_PAN_INVALID = -5,
-     PATCH_CHANNEL_INVALID = -6,
-     PATCH_VOL_INVALID = -7,
-     PATCH_PLAY_MODE_INVALID = -9,
-     PATCH_LIMIT = -10,
-     PATCH_SAMPLE_INDEX_INVALID = -11,
-     PATCH_ENV_ID_INVALID = -12,
-     PATCH_LFO_ID_INVALID = -13,
-     PATCH_MOD_SRC_INVALID = -14,
-     PATCH_MOD_AMOUNT_INVALID = -15
+/*   PATCH_PARAM_INVALID =          -1,  */
+     PATCH_ID_INVALID =             -2,
+     PATCH_ALLOC_FAIL =             -3,
+     PATCH_NOTE_INVALID =           -4,
+     PATCH_PAN_INVALID =            -5,
+     PATCH_CHANNEL_INVALID =        -6,
+     PATCH_VOL_INVALID =            -7,
+     PATCH_PLAY_MODE_INVALID =      -9,
+     PATCH_LIMIT =                  -10,
+     PATCH_SAMPLE_INDEX_INVALID =   -11,
+     PATCH_ENV_ID_INVALID =         -12,
+     PATCH_LFO_ID_INVALID =         -13,
+     PATCH_MOD_SRC_INVALID =        -14,
+     PATCH_MOD_AMOUNT_INVALID =     -15
 };
+
 
 /* These are the bitfield constants for the different ways a patch can
    be played.  I've used comments to indicate mutual exclusion among
@@ -96,7 +123,6 @@ enum
 };
 
 
-
 enum
 {
     WF_MARK_START,
@@ -109,7 +135,8 @@ enum
 
 
 /* type for playmode bitfield */
-typedef guint8 PatchPlayMode;
+typedef uint8_t PatchPlayMode;
+
 
 /* code names for modulatable parameters */
 typedef enum

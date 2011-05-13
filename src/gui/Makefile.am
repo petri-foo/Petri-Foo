@@ -12,7 +12,7 @@ libgui_a_SOURCES = 					\
 	mastersection.c		mastersection.h		\
 	midisection.c		midisection.h		\
 	mod_section.c		mod_section.h		\
-	mod_src.c		mod_src.h		\
+	mod_src_gui.c		mod_src_gui.h		\
 	paramtab.c		paramtab.h		\
 	patchlist.c		patchlist.h		\
 	patchsection.c		patchsection.h		\

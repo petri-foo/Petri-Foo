@@ -1,36 +1,46 @@
 #ifndef NAMES_H
 #define NAMES_H
 
+
 #include <stdbool.h>
+
 
 typedef struct _id_name
 {
-    const int id;
-    const char* name;
+    int id;
+    char* name;
+
 } id_name;
+
+
+id_name*        id_name_new(int id, const char* name);
+void            id_name_init(id_name*, int id, const char* name);
+id_name*        id_name_dup(const id_name*);
+void            id_name_free(id_name*);
+
+/*  create a sequence of id/name pairs. if name_fmt has a '%d' within it,
+ *  then the names will be sequentially numbered beginning at 1.
+ */
+id_name*        id_name_sequence(id_name* start, int first_id, int count,
+                                                    const char* name_fmt);
 
 
 void            names_create(void);
 void            names_destroy(void);
 
+
 const char**    names_lfo_shapes_get(void);
 int             names_lfo_shapes_id_from_str(const char*);
-
-char**          names_mod_srcs_get(void);
-int             names_mod_srcs_id_from_str(const char*);
-
-const char**    names_egs_get(void);
-bool            names_egs_maybe_eg_id(const char*);
-int             names_egs_id_from_str(const char*);
-
-const char**    names_lfos_get(void);
-bool            names_lfos_maybe_lfo_id(const char*);
-int             names_lfos_id_from_str(const char*);
 
 const char**    names_params_get(void);
 int             names_params_id_from_str(const char*);
 
-const id_name const*
-                names_sample_raw_get(void);
+
+/*  a list of supported sample file formats along with their
+    libsoundfile format ID. The function id_name_array_free
+    is provided for your convenience in order to free the
+    return value of this function.
+ */
+id_name* names_sample_raw_format_get(void);
 
 #endif

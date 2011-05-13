@@ -12,83 +12,65 @@
 
 #include "patch_private/patch_data.h"
 #include "patch_private/patch_defs.h"
+#include "patch_private/patch_macros.h"
 
 
-static float one = 1.0;
+INLINE_ISOK_DEF
 
 
-/* verifies that a given id refers to a valid patch */
-inline static int isok (int id)
-{
-    if (id < 0 || id >= PATCH_COUNT || !patches[id].active)
-	return 0;
-
-    return 1;
-}
-
-
-inline static int bad_env(int patch_id, int env_id)
+inline static int mod_src_to_eg_index(int patch_id, int id)
 {
     if (!isok(patch_id))
         return PATCH_ID_INVALID;
 
-    if (env_id < 0 || env_id >= VOICE_MAX_ENVS)
-        return PATCH_ENV_ID_INVALID;
+    id -= MOD_SRC_EG;
 
-    return 0;
+    return (id >= 0 && id < VOICE_MAX_ENVS)
+                ? id
+                : PATCH_ENV_ID_INVALID;
 }
 
 
-inline static int bad_lfo(int patch_id, int lfo_id)
+static int mod_src_ok(int id)
 {
-    if (!isok(patch_id))
-        return PATCH_ID_INVALID;
-
-    if (lfo_id < 0 || lfo_id >= TOTAL_LFOS)
-        return PATCH_LFO_ID_INVALID;
-
-    return 0;
+    return (id & MOD_SRC_ALL || id == MOD_SRC_NONE)
+            ? 0 
+            : PATCH_MOD_SRC_INVALID;
 }
 
 
-inline static int mod_src_ok(int id)
-{
-    if (id < MOD_SRC_NONE || id >= MOD_SRC_LAST)
-        return PATCH_MOD_SRC_INVALID;
-    return 0;
-}
-
-
-inline static gboolean mark_ok(int id)
+inline static bool mark_ok(int id)
 {
     if (id < WF_MARK_START || id > WF_MARK_STOP)
-        return FALSE;
-    return TRUE;
+        return false;
+
+    return true;
 }
 
-inline static gboolean mark_settable(int id)
+inline static bool mark_settable(int id)
 {
     if (id < WF_MARK_PLAY_START || id > WF_MARK_PLAY_STOP)
-        return FALSE;
-    return TRUE;
+        return false;
+
+    return true;
 }
 
 
 static inline void set_mark_frame(int patch, int mark, int frame)
 {
-    *(patches[patch].marks[mark]) = frame;
+    *(patches[patch]->marks[mark]) = frame;
 }
 
 
 static inline int get_mark_frame(int patch, int mark)
 {
-    return *(patches[patch].marks[mark]);
+    return *(patches[patch]->marks[mark]);
 }
 
 
 static int get_mark_frame_range(int patch, int mark, int* min, int* max)
 {
-    int xfade = patches[patch].xfade_samples;
+    int xfade = patches[patch]->xfade_samples;
 
     if (mark == WF_MARK_START || mark == WF_MARK_STOP)
     {
@@ -124,9 +106,6 @@ static int get_mark_frame_range(int patch, int mark, int* min, int* max)
 }
 
 
-
-
-
 static int get_patch_param(int patch_id, PatchParamType param,
                                                             PatchParam** p)
 {
@@ -135,11 +114,11 @@ static int get_patch_param(int patch_id, PatchParamType param,
 
     switch(param)
     {
-    case PATCH_PARAM_AMPLITUDE: *p = &patches[patch_id].vol;      break;
-    case PATCH_PARAM_PANNING:   *p = &patches[patch_id].pan;      break;
-    case PATCH_PARAM_CUTOFF:    *p = &patches[patch_id].ffreq;    break;
-    case PATCH_PARAM_RESONANCE: *p = &patches[patch_id].freso;    break;
-    case PATCH_PARAM_PITCH:     *p = &patches[patch_id].pitch;    break;
+    case PATCH_PARAM_AMPLITUDE: *p = &patches[patch_id]->vol;      break;
+    case PATCH_PARAM_PANNING:   *p = &patches[patch_id]->pan;      break;
+    case PATCH_PARAM_CUTOFF:    *p = &patches[patch_id]->ffreq;    break;
+    case PATCH_PARAM_RESONANCE: *p = &patches[patch_id]->freso;    break;
+    case PATCH_PARAM_PITCH:     *p = &patches[patch_id]->pitch;    break;
     default:
         debug ("Invalid request for address of param\n");
         return PATCH_PARAM_INVALID;
@@ -149,159 +128,110 @@ static int get_patch_param(int patch_id, PatchParamType param,
 }
 
 
-gboolean patch_lfo_is_global(int lfo_id)
-{
-    if (lfo_id >= 0 && lfo_id < MOD_SRC_LAST_GLFO - MOD_SRC_FIRST_GLFO)
-    {
-        debug("lfo_is_global:input:%d TRUE\n", lfo_id)
-        return TRUE;
-    }
-
-    debug("lfo_is_global:input:%d FALSE\n", lfo_id)
-    return FALSE;
-}
-
-
 /* inline static function def macro, see private/patch_data.h */
 INLINE_PATCH_TRIGGER_GLOBAL_LFO_DEF
 
 
-float* mod_id_to_pointer(int id, Patch* p, PatchVoice* v)
+
+/**************************************************************************/
+/************************* ENVELOPE SETTERS *******************************/
+/**************************************************************************/
+
+
+int patch_set_env_on (int patch_id, int eg, bool state)
 {
-    switch(id)
-    {
-    case 0:                 return 0;
-    case MOD_SRC_ONE:       return &one;
-    case MOD_SRC_VELOCITY:  return &v->vel;
-    case MOD_SRC_KEY:       return &v->key_track;
-    }
+    eg = mod_src_to_eg_index(patch_id, eg);
 
-    if (id >= MOD_SRC_FIRST_EG
-     && id <  MOD_SRC_LAST_EG)
-    {
-        int env_id = id - MOD_SRC_FIRST_EG;
-        return &v->env[env_id].val;
-    }
+    if (eg < 0)
+        return eg; /* as error code */
 
-    if (id >= MOD_SRC_FIRST_GLFO
-     && id <  MOD_SRC_LAST_GLFO)
-    {
-        int lfo_id = id - MOD_SRC_FIRST_GLFO;
-        return &p->glfo[lfo_id].val;
-    }
-
-    if (id >= MOD_SRC_FIRST_VLFO
-     && id <  MOD_SRC_LAST_VLFO)
-    {
-        int lfo_id = id - MOD_SRC_FIRST_VLFO;
-        return &v->lfo[lfo_id].val;
-    }
-
-    debug("unknown modulation source:%d\n", id);
-
-    return 0;
-}
-
-
-/*****************************************************************************/
-/*************************** ENVELOPE SETTERS ********************************/
-/*****************************************************************************/
-
-
-int patch_set_env_on (int patch_id, int env_id, gboolean state)
-{
-    int err;
-
-    if ((err = bad_env(patch_id, env_id)))
-        return err;
-
-    patches[patch_id].env_params[env_id].env_on = state;
+    patches[patch_id]->env_params[eg].env_on = state;
     return 0;
 }
 
 
 /* sets the delay length in seconds */
-int patch_set_env_delay (int patch_id, int env_id, float secs)
+int patch_set_env_delay (int patch_id, int eg, float secs)
 {
-    int err;
+    eg = mod_src_to_eg_index(patch_id, eg);
 
-    if ((err = bad_env(patch_id, env_id)))
-        return err;
+    if (eg < 0)
+        return eg; /* as error code */
 
     if (secs < 0.0)
         return PATCH_PARAM_INVALID;
 
-    patches[patch_id].env_params[env_id].delay = secs;
+    patches[patch_id]->env_params[eg].delay = secs;
     return 0;
 }
 
 /* sets the attack length in seconds */
-int patch_set_env_attack (int patch_id, int env_id, float secs)
+int patch_set_env_attack (int patch_id, int eg, float secs)
 {
-    int err;
+    eg = mod_src_to_eg_index(patch_id, eg);
 
-    if ((err = bad_env(patch_id, env_id)))
-        return err;
+    if (eg < 0)
+        return eg; /* as error code */
 
     if (secs < 0.0)
         return PATCH_PARAM_INVALID;
 
-    patches[patch_id].env_params[env_id].attack = secs;
+    patches[patch_id]->env_params[eg].attack = secs;
     return 0;
 }
 
 /* sets the hold length in seconds */
-int patch_set_env_hold (int patch_id, int env_id, float secs)
+int patch_set_env_hold (int patch_id, int eg, float secs)
 {
-    int err;
+    eg = mod_src_to_eg_index(patch_id, eg);
 
-    if ((err = bad_env(patch_id, env_id)))
-        return err;
+    if (eg < 0)
+        return eg; /* as error code */
 
     if (secs < 0.0)
         return PATCH_PARAM_INVALID;
 
-    patches[patch_id].env_params[env_id].hold = secs;
+    patches[patch_id]->env_params[eg].hold = secs;
     return 0;
 }
 
 /* sets the decay length in seconds */
-int patch_set_env_decay (int patch_id, int env_id, float secs)
+int patch_set_env_decay (int patch_id, int eg, float secs)
 {
-    int err;
+    eg = mod_src_to_eg_index(patch_id, eg);
 
-    if ((err = bad_env(patch_id, env_id)))
-        return err;
+    if (eg < 0)
+        return eg; /* as error code */
 
     if (secs < 0.0)
         return PATCH_PARAM_INVALID;
 
-    patches[patch_id].env_params[env_id].decay = secs;
+    patches[patch_id]->env_params[eg].decay = secs;
     return 0;
 }
 
 /* sets the sustain level */
-int patch_set_env_sustain (int patch_id, int env_id, float level)
+int patch_set_env_sustain (int patch_id, int eg, float level)
 {
-    int err;
+    eg = mod_src_to_eg_index(patch_id, eg);
 
-    if ((err = bad_env(patch_id, env_id)))
-        return err;
+    if (eg < 0)
+        return eg; /* as error code */
 
     if (level < 0.0 || level > 1.0)
         return PATCH_PARAM_INVALID;
 
-    patches[patch_id].env_params[env_id].sustain = level;
+    patches[patch_id]->env_params[eg].sustain = level;
     return 0;
 }
 
 /* sets the release length in seconds */
-int patch_set_env_release (int patch_id, int env_id, float secs)
+int patch_set_env_release (int patch_id, int eg, float secs)
 {
-    int err;
+    eg = mod_src_to_eg_index(patch_id, eg);
 
-    if ((err = bad_env(patch_id, env_id)))
-        return err;
+    if (eg < 0)
+        return eg; /* as error code */
 
     if (secs < 0.0)
         return PATCH_PARAM_INVALID;
@@ -309,87 +239,101 @@ int patch_set_env_release (int patch_id, int env_id, float secs)
     if (secs < PATCH_MIN_RELEASE)
         secs = PATCH_MIN_RELEASE;
 
-    patches[patch_id].env_params[env_id].release = secs;
+    patches[patch_id]->env_params[eg].release = secs;
     return 0;
 }
 
-/*****************************************************************************/
-/*************************** ENVELOPE GETTERS ********************************/
-/*****************************************************************************/
+/**************************************************************************/
+/************************* ENVELOPE GETTERS *******************************/
+/**************************************************************************/
 
 /* places the delay length in seconds into val */
-int patch_get_env_on(int patch_id, int env_id, gboolean* val)
+int patch_get_env_on(int patch_id, int eg, bool* val)
 {
-    int err;
-    if ((err = bad_env(patch_id, env_id)))
-        return err;
-    *val = patches[patch_id].env_params[env_id].env_on;
+    eg = mod_src_to_eg_index(patch_id, eg);
+
+    if (eg < 0)
+        return eg; /* as error code */
+
+    *val = patches[patch_id]->env_params[eg].env_on;
     return 0;
 }
 
 
 
 /* places the delay length in seconds into val */
-int patch_get_env_delay (int patch_id, int env_id, float* val)
+int patch_get_env_delay (int patch_id, int eg, float* val)
 {
-    int err;
-    if ((err = bad_env(patch_id, env_id)))
-        return err;
-    *val = patches[patch_id].env_params[env_id].delay;
+    eg = mod_src_to_eg_index(patch_id, eg);
+
+    if (eg < 0)
+        return eg; /* as error code */
+
+    *val = patches[patch_id]->env_params[eg].delay;
     return 0;
 }
 
 
 /* places the attack length in seconds into val */
-int patch_get_env_attack (int patch_id, int env_id, float* val)
+int patch_get_env_attack (int patch_id, int eg, float* val)
 {
-    int err;
-    if ((err = bad_env(patch_id, env_id)))
-        return err;
-    *val = patches[patch_id].env_params[env_id].attack;
+    eg = mod_src_to_eg_index(patch_id, eg);
+
+    if (eg < 0)
+        return eg; /* as error code */
+
+    *val = patches[patch_id]->env_params[eg].attack;
     return 0;
 }
 
 
 /* places the hold length in seconds into val */
-int patch_get_env_hold (int patch_id, int env_id, float* val)
+int patch_get_env_hold (int patch_id, int eg, float* val)
 {
-    int err;
-    if ((err = bad_env(patch_id, env_id)))
-        return err;
-    *val = patches[patch_id].env_params[env_id].hold;
+    eg = mod_src_to_eg_index(patch_id, eg);
+
+    if (eg < 0)
+        return eg; /* as error code */
+
+    *val = patches[patch_id]->env_params[eg].hold;
     return 0;
 }
 
 
 /* places the decay length in seconds into val */
-int patch_get_env_decay (int patch_id, int env_id, float* val)
+int patch_get_env_decay (int patch_id, int eg, float* val)
 {
-    int err;
-    if ((err = bad_env(patch_id, env_id)))
-        return err;
-    *val = patches[patch_id].env_params[env_id].decay;
+    eg = mod_src_to_eg_index(patch_id, eg);
+
+    if (eg < 0)
+        return eg; /* as error code */
+
+    *val = patches[patch_id]->env_params[eg].decay;
     return 0;
 }
 
 
 /* places the sustain level into val */
-int patch_get_env_sustain (int patch_id, int env_id, float* val)
+int patch_get_env_sustain (int patch_id, int eg, float* val)
 {
-    int err;
-    if ((err = bad_env(patch_id, env_id)))
-        return err;
-    *val = patches[patch_id].env_params[env_id].sustain;
+    eg = mod_src_to_eg_index(patch_id, eg);
+
+    if (eg < 0)
+        return eg; /* as error code */
+
+    *val = patches[patch_id]->env_params[eg].sustain;
     return 0;
 }
 
 /* places the release length in seconds into val */
-int patch_get_env_release (int patch_id, int env_id, float* val)
+int patch_get_env_release (int patch_id, int eg, float* val)
 {
-    int err;
-    if ((err = bad_env(patch_id, env_id)))
-        return err;
-    *val = patches[patch_id].env_params[env_id].release;
+    eg = mod_src_to_eg_index(patch_id, eg);
+
+    if (eg < 0)
+        return eg; /* as error code */
+
+    *val = patches[patch_id]->env_params[eg].release;
 
     /* we hide the fact that we have a min release value from the
      * outside world (they're on a need-to-know basis) */
@@ -402,7 +346,7 @@ int patch_get_env_release (int patch_id, int env_id, float* val)
 /*************************** LFO SETTERS ********************************/
 /************************************************************************/
 
-int lfo_from_id(int patch_id, int lfo_id, LFO** lfo, LFOParams** lfopar)
+static int lfo_from_id(int patch_id, int id, LFO** lfo, LFOParams** lfopar)
 {
     if (lfo)
         *lfo = 0;
@@ -412,25 +356,38 @@ int lfo_from_id(int patch_id, int lfo_id, LFO** lfo, LFOParams** lfopar)
     if (!isok(patch_id))
         return PATCH_ID_INVALID;
 
-    if (lfo_id < 0 || lfo_id >= TOTAL_LFOS)
+    if ((id & MOD_SRC_VLFO) && (id & MOD_SRC_GLFO))
         return PATCH_LFO_ID_INVALID;
 
-    if (lfo_id < PATCH_MAX_LFOS)
+    if (id & MOD_SRC_VLFO)
     {
-        if (lfo)
-            *lfo = &patches[patch_id].glfo[lfo_id];
-        *lfopar = &patches[patch_id].glfo_params[lfo_id];
-    }
-    else
-    {
-        /* we don't know voice information so can't set *lfo */
-        *lfopar = &patches[patch_id].vlfo_params[lfo_id - PATCH_MAX_LFOS];
+        id -= MOD_SRC_VLFO;
+
+        if (id < VOICE_MAX_LFOS)
+            *lfopar = &patches[patch_id]->vlfo_params[id];
+
+        return 0;
     }
 
-    return 0;
+    if (id & MOD_SRC_GLFO)
+    {
+        id -= MOD_SRC_GLFO;
+
+        if (id < PATCH_MAX_LFOS)
+        {
+            if (lfo)
+                *lfo = patches[patch_id]->glfo[id];
+
+            *lfopar = &patches[patch_id]->glfo_params[id];
+        }
+
+        return 0;
+    }
+
+    return PATCH_LFO_ID_INVALID;
 }
 
-int patch_set_lfo_on (int patch_id, int lfo_id, gboolean state)
+int patch_set_lfo_on (int patch_id, int lfo_id, bool state)
 {
     LFO*        lfo;
     LFOParams*  lfopar;
@@ -533,7 +490,7 @@ int patch_set_lfo_freq (int patch_id, int lfo_id, float freq)
 
 
 /* set whether to constrain the param's LFOs to positive values or not */
-int patch_set_lfo_positive (int patch_id, int lfo_id, gboolean state)
+int patch_set_lfo_positive (int patch_id, int lfo_id, bool state)
 {
     LFO*        lfo;
     LFOParams*  lfopar;
@@ -570,7 +527,7 @@ int patch_set_lfo_shape (int patch_id, int lfo_id, LFOShape shape)
 }
 
 /* set whether to the param's lfo should sync to tempo or not */
-int patch_set_lfo_sync (int patch_id, int lfo_id, gboolean state)
+int patch_set_lfo_sync (int patch_id, int lfo_id, bool state)
 {
     LFO*        lfo;
     LFOParams*  lfopar;
@@ -591,7 +548,7 @@ int patch_set_lfo_sync (int patch_id, int lfo_id, gboolean state)
 /*************************** LFO GETTERS ********************************/
 /************************************************************************/
 
-int patch_get_lfo_on(int patch_id, int lfo_id, gboolean* val)
+int patch_get_lfo_on(int patch_id, int lfo_id, bool* val)
 {
     LFOParams*  lfopar;
     int         err;
@@ -646,7 +603,7 @@ int patch_get_lfo_freq (int patch_id, int lfo_id, float* val)
     return 0;
 }
 
-int patch_get_lfo_positive (int patch_id, int lfo_id, gboolean* val)
+int patch_get_lfo_positive (int patch_id, int lfo_id, bool* val)
 {
     LFOParams*  lfopar;
     int         err;
@@ -668,7 +625,7 @@ int patch_get_lfo_shape (int patch_id, int lfo_id, LFOShape* val)
 }
 
 /* get whether param's lfo is tempo synced or not */
-int patch_get_lfo_sync (int patch_id, int lfo_id, gboolean* val)
+int patch_get_lfo_sync (int patch_id, int lfo_id, bool* val)
 {
     LFOParams*  lfopar;
     int         err;
@@ -692,7 +649,7 @@ int patch_set_channel (int id, int channel)
     if (channel < 0 || channel > 15)
         return PATCH_CHANNEL_INVALID;
 
-    patches[id].channel = channel;
+    patches[id]->channel = channel;
     return 0;
 }
 
@@ -701,7 +658,7 @@ int patch_set_cut (int id, int cut)
 {
     if (!isok (id))
         return PATCH_ID_INVALID;
-    patches[id].cut = cut;
+    patches[id]->cut = cut;
     return 0;
 }
 
@@ -710,7 +667,7 @@ int patch_set_cut_by (int id, int cut_by)
 {
     if (!isok (id))
         return PATCH_ID_INVALID;
-    patches[id].cut_by = cut_by;
+    patches[id]->cut_by = cut_by;
     return 0;
 }
 
@@ -723,16 +680,16 @@ int patch_set_cutoff (int id, float freq)
     if (freq < 0.0 || freq > 1.0)
 	return PATCH_PARAM_INVALID;
 
-    patches[id].ffreq.val = freq;
+    patches[id]->ffreq.val = freq;
     return 0;
 }
 
 /* set whether this patch should be played legato or not */
-int patch_set_legato(int id, gboolean val)
+int patch_set_legato(int id, bool val)
 {
     if (!isok (id))
         return PATCH_ID_INVALID;
-    patches[id].legato = val;
+    patches[id]->legato = val;
     return 0;
 }
 
@@ -743,7 +700,7 @@ debug("set fade samples id:%d samples:%d\n",id,samples);
     if (!isok (id))
         return PATCH_ID_INVALID;
 
-    if (patches[id].sample->sp == NULL)
+    if (patches[id]->sample->sp == NULL)
         return 0;
 
     if (samples < 0)
@@ -752,14 +709,14 @@ debug("set fade samples id:%d samples:%d\n",id,samples);
         return PATCH_PARAM_INVALID;
     }
 
-    if (patches[id].play_start + samples * 2 >= patches[id].play_stop)
+    if (patches[id]->play_start + samples * 2 >= patches[id]->play_stop)
     {
         debug ("refusing to set fade length greater than half the "
                " number of samples between play start and play stop\n");
         return PATCH_PARAM_INVALID;
     }
 
-    patches[id].fade_samples = samples;
+    patches[id]->fade_samples = samples;
     return 0;
 }
 
@@ -768,7 +725,7 @@ int patch_set_xfade_samples(int id, int samples)
     if (!isok (id))
         return PATCH_ID_INVALID;
 
-    if (patches[id].sample->sp == NULL)
+    if (patches[id]->sample->sp == NULL)
         return 0;
 
     if (samples < 0)
@@ -777,14 +734,14 @@ int patch_set_xfade_samples(int id, int samples)
         return PATCH_PARAM_INVALID;
     }
 
-    if (patches[id].loop_start + samples > patches[id].loop_stop)
+    if (patches[id]->loop_start + samples > patches[id]->loop_stop)
     {
         debug ("refusing to set xfade length greater than samples"
                " between play start and play stop\n");
         return PATCH_PARAM_INVALID;
     }
 
-    if (patches[id].loop_stop + samples > patches[id].play_stop)
+    if (patches[id]->loop_stop + samples > patches[id]->play_stop)
     {
         debug ("refusing to set xfade length greater than samples"
                " between loop stop and play stop\n");
@@ -792,7 +749,7 @@ int patch_set_xfade_samples(int id, int samples)
     }
 
 debug("setting xfade to %d\n",samples);
-    patches[id].xfade_samples = samples;
+    patches[id]->xfade_samples = samples;
     return 0;
 }
 
@@ -806,7 +763,7 @@ int patch_set_lower_note (int id, int note)
     if (note < 0 || note > 127)
 	return PATCH_NOTE_INVALID;
 
-    patches[id].lower_note = note;
+    patches[id]->lower_note = note;
     return 0;
 }
 
@@ -816,7 +773,7 @@ int patch_set_mark_frame(int patch, int mark, int frame)
     if (!isok(patch))
         return -1;
 
-    if (patches[patch].sample->sp == NULL)
+    if (patches[patch]->sample->sp == NULL)
         return -1;
 
     if (!mark_settable(mark))
@@ -839,13 +796,14 @@ int patch_set_mark_frame_expand(int patch, int mark, int frame,
                                                      int* also_changed)
 {
     int also = 0;
-    int xfade = patches[patch].xfade_samples;
-    int fade = patches[patch].fade_samples;
+    int also_frame = -1;
+    int xfade = patches[patch]->xfade_samples;
+    int fade = patches[patch]->fade_samples;
 
     if (!isok(patch))
         return -1;
 
-    if (patches[patch].sample->sp == NULL)
+    if (patches[patch]->sample->sp == NULL)
         return -1;
 
     /*  if callee wishes not to be informed about which marks get changed
@@ -856,7 +814,6 @@ int patch_set_mark_frame_expand(int patch, int mark, int frame,
         also_changed = &also;
 
     *also_changed = -1;
-    int also_frame = -1;
 
     switch(mark)
     {
@@ -947,12 +904,12 @@ int patch_set_mark_frame_expand(int patch, int mark, int frame,
 
 
 /* set whether the patch is monophonic or not */
-int patch_set_monophonic(int id, gboolean val)
+int patch_set_monophonic(int id, bool val)
 {
     if (!isok (id))
 	return PATCH_ID_INVALID;
 
-    patches[id].mono = val;
+    patches[id]->mono = val;
     return 0;
 }
 
@@ -961,7 +918,7 @@ int patch_set_name (int id, const char *name)
 {
     if (!isok (id))
 	return PATCH_ID_INVALID;
-    strncpy (patches[id].name, name, PATCH_MAX_NAME);
+    strncpy (patches[id]->name, name, PATCH_MAX_NAME);
     return 0;
 }
 
@@ -974,7 +931,7 @@ int patch_set_note (int id, int note)
     if (note < 0 || note > 127)
 	return PATCH_NOTE_INVALID;
 
-    patches[id].note = note;
+    patches[id]->note = note;
     return 0;
 }
 
@@ -987,7 +944,7 @@ int patch_set_panning (int id, float pan)
     if (pan < -1.0 || pan > 1.0)
 	return PATCH_PAN_INVALID;
 
-    patches[id].pan.val = pan;
+    patches[id]->pan.val = pan;
     return 0;
 }
 
@@ -1000,7 +957,7 @@ int patch_set_pitch (int id, float pitch)
     if (pitch < -1.0 || pitch > 1.0)
 	return PATCH_PARAM_INVALID;
 
-    patches[id].pitch.val = pitch;
+    patches[id]->pitch.val = pitch;
     return 0;
 }
 
@@ -1014,7 +971,7 @@ int patch_set_pitch_steps (int id, int steps)
 	|| steps > PATCH_MAX_PITCH_STEPS)
 	return PATCH_PARAM_INVALID;
 
-    patches[id].pitch_steps = steps;
+    patches[id]->pitch_steps = steps;
     return 0;
 }
 
@@ -1074,17 +1031,17 @@ int patch_set_play_mode (int id, PatchPlayMode mode)
 	return PATCH_PLAY_MODE_INVALID;
     }
 
-    patches[id].play_mode = mode;
+    patches[id]->play_mode = mode;
     return 0;
 }
 
 /* set whether portamento is being used or not */
-int patch_set_portamento (int id, gboolean val)
+int patch_set_portamento (int id, bool val)
 {
     if (!isok (id))
         return PATCH_ID_INVALID;
 
-    patches[id].porta = val;
+    patches[id]->porta = val;
     return 0;
 }
 
@@ -1097,7 +1054,7 @@ int patch_set_portamento_time (int id, float secs)
     if (secs < 0.0)
 	return PATCH_PARAM_INVALID;
 
-    patches[id].porta_secs = secs;
+    patches[id]->porta_secs = secs;
     return 0;
 }
 
@@ -1111,7 +1068,7 @@ int patch_set_resonance (int id, float reso)
     if (reso < 0.0 || reso > 1.0)
 	return PATCH_PARAM_INVALID;
 
-    patches[id].freso.val = reso;
+    patches[id]->freso.val = reso;
     return 0;
 }
 
@@ -1125,7 +1082,7 @@ int patch_set_upper_note (int id, int note)
     if (note < 0 || note > 127)
 	return PATCH_NOTE_INVALID;
 
-    patches[id].upper_note = note;
+    patches[id]->upper_note = note;
     return 0;
 }
 
@@ -1139,52 +1096,57 @@ int patch_set_amplitude (int id, float vol)
     if (vol < 0 || vol > 1.0)
 	return PATCH_VOL_INVALID;
 
-    patches[id].vol.val = vol;
+    patches[id]->vol.val = vol;
     return 0;
 }
 
-/*****************************************************************************/
-/*************************** PARAMETER GETTERS********************************/
-/*****************************************************************************/
+/**************************************************************************/
+/************************* PARAMETER GETTERS*******************************/
+/**************************************************************************/
 
 /* get the channel the patch listens on */
 int patch_get_channel (int id)
 {
     if (!isok (id))
-	return PATCH_ID_INVALID;
-    return patches[id].channel;
+        return PATCH_ID_INVALID;
+
+    return patches[id]->channel;
 }
 
 /* get the cut signal */
 int patch_get_cut (int id)
 {
     if (!isok (id))
-	return PATCH_ID_INVALID;
-    return patches[id].cut;
+        return PATCH_ID_INVALID;
+
+    return patches[id]->cut;
 }
 
 /* get the cut-by signal */
 int patch_get_cut_by (int id)
 {
     if (!isok (id))
-	return PATCH_ID_INVALID;
-    return patches[id].cut_by;
+        return PATCH_ID_INVALID;
+
+    return patches[id]->cut_by;
 }
 
 /* get the filter cutoff value */
 float patch_get_cutoff (int id)
 {
     if (!isok (id))
-	return PATCH_ID_INVALID;
-    return patches[id].ffreq.val;
+        return PATCH_ID_INVALID;
+
+    return patches[id]->ffreq.val;
 }
 
 /* get the display index */
 int patch_get_display_index (int id)
 {
     if (!isok (id))
-	return PATCH_ID_INVALID;
-    return patches[id].display_index;
+        return PATCH_ID_INVALID;
+
+    return patches[id]->display_index;
 }
 
 /* get the number of frame in the sample */
@@ -1193,20 +1155,21 @@ int patch_get_frames (int id)
     if (!isok (id))
         return PATCH_ID_INVALID;
 
-    if (patches[id].sample->sp == NULL)
+    if (patches[id]->sample->sp == NULL)
         return 0;
 
-   debug("patches[%d].sample->frames:%d\n", id, patches[id].sample->frames);
+   debug("patches[%d].sample->frames:%d\n", id, patches[id]->sample->frames);
 
-    return patches[id].sample->frames;
+    return patches[id]->sample->frames;
 }
 
 /* get whether this patch is played legato or not */
-gboolean patch_get_legato(int id)
+bool patch_get_legato(int id)
 {
     if (!isok (id))
-	return PATCH_ID_INVALID;
-    return patches[id].legato;
+        return PATCH_ID_INVALID;
+
+    return patches[id]->legato;
 }
 
 
@@ -1214,8 +1177,9 @@ gboolean patch_get_legato(int id)
 int patch_get_lower_note (int id)
 {
     if (!isok (id))
-	return PATCH_ID_INVALID;
-    return patches[id].lower_note;
+        return PATCH_ID_INVALID;
+
+    return patches[id]->lower_note;
 }
 
 
@@ -1224,7 +1188,7 @@ int patch_get_mark_frame(int patch, int mark)
     if (!isok(patch))
         return -1;
 
-    if (patches[patch].sample->sp == NULL)
+    if (patches[patch]->sample->sp == NULL)
         return -1;
 
     if (!mark_ok(mark))
@@ -1244,11 +1208,12 @@ int patch_get_mark_frame_range(int patch, int mark, int* frame_min,
 }
 
 /* get whether this patch is monophonic or not */
-gboolean patch_get_monophonic(int id)
+bool patch_get_monophonic(int id)
 {
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-    return patches[id].mono;
+    if (!isok(id))
+        return PATCH_ID_INVALID;
+
+    return patches[id]->mono;
 }
 
 /* get the name */
@@ -1256,10 +1221,10 @@ char *patch_get_name (int id)
 {
     char *name;
 
-    if (id < 0 || id >= PATCH_COUNT || !patches[id].active)
-	name = strdup ("\0");
+    if (!isok(id))
+        name = strdup ("\0");
     else
-	name = strdup (patches[id].name);
+        name = strdup (patches[id]->name);
 
     return name;
 }
@@ -1267,104 +1232,110 @@ char *patch_get_name (int id)
 /* get the root note */
 int patch_get_note (int id)
 {
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-    return patches[id].note;
+    if (!isok(id))
+        return PATCH_ID_INVALID;
+
+    return patches[id]->note;
 }
 
 /* get the panorama */
 float patch_get_panning (int id)
 {
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-    return patches[id].pan.val;
+    if (!isok(id))
+        return PATCH_ID_INVALID;
+
+    return patches[id]->pan.val;
 }
 
 /* get the pitch */
 float patch_get_pitch (int id)
 {
-    if (!isok (id))
-	return PATCH_ID_INVALID;
+    if (!isok(id))
+        return PATCH_ID_INVALID;
 
-    return patches[id].pitch.val;
+    return patches[id]->pitch.val;
 }
 
 /* get the pitch range */
 int patch_get_pitch_steps (int id)
 {
-    if (!isok (id))
-	return PATCH_ID_INVALID;
+    if (!isok(id))
+        return PATCH_ID_INVALID;
 
-    return patches[id].pitch_steps;
+    return patches[id]->pitch_steps;
 }
 
 /* get the play mode */
 PatchPlayMode patch_get_play_mode (int id)
 {
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-    return patches[id].play_mode;
+    if (!isok(id))
+        return PATCH_ID_INVALID;
+
+    return patches[id]->play_mode;
 }
 
 /* get whether portamento is used or not */
-gboolean patch_get_portamento (int id)
+bool patch_get_portamento (int id)
 {
-    if (!isok (id))
-	return PATCH_ID_INVALID;
+    if (!isok(id))
+        return PATCH_ID_INVALID;
 
-    return patches[id].porta;
+    return patches[id]->porta;
 }
 
 /* get length of portamento slides in seconds */
 float patch_get_portamento_time (int id)
 {
-    if (!isok (id))
-	return PATCH_ID_INVALID;
+    if (!isok(id))
+        return PATCH_ID_INVALID;
 
-    return patches[id].porta_secs;
+    return patches[id]->porta_secs;
 }
 
 
 /* get the filter's resonance amount */
 float patch_get_resonance (int id)
 {
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-    return patches[id].freso.val;
+    if (!isok(id))
+        return PATCH_ID_INVALID;
+
+    return patches[id]->freso.val;
 }
 
 /* get a pointer to the sample data */
 const float *patch_get_sample (int id)
 {
-    if (id < 0 || id >= PATCH_COUNT || !patches[id].active)
-	return NULL;
+    if (!isok(id))
+        return NULL;
 
-    return patches[id].sample->sp;
+    return patches[id]->sample->sp;
 }
 
 /* get the name of the sample file */
 const char *patch_get_sample_name (int id)
 {
-    if (id < 0 || id >= PATCH_COUNT || !patches[id].active)
+    if (!isok(id))
         return 0;
 
-    return patches[id].sample->filename;
+    return patches[id]->sample->filename;
 }
 
 /* get the upper note */
 int patch_get_upper_note (int id)
 {
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-    return patches[id].upper_note;
+    if (!isok(id))
+        return PATCH_ID_INVALID;
+
+    return patches[id]->upper_note;
 }
 
 /* get the amplitude */
 float patch_get_amplitude (int id)
 {
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-    return patches[id].vol.val;
+    if (!isok(id))
+        return PATCH_ID_INVALID;
+
+    return patches[id]->vol.val;
 }
 
 
@@ -1372,35 +1343,38 @@ int patch_get_fade_samples(int id)
 {
     if (!isok (id))
         return PATCH_ID_INVALID;
-    return patches[id].fade_samples;
+
+    return patches[id]->fade_samples;
 }
+
 
 int patch_get_xfade_samples(int id)
 {
-    if (!isok (id))
+    if (!isok(id))
         return PATCH_ID_INVALID;
-    return patches[id].xfade_samples;
+
+    return patches[id]->xfade_samples;
 }
 
 
 int patch_get_max_fade_samples(int id)
 {
-    return (patches[id].play_stop - patches[id].play_start) / 2;
+    return (patches[id]->play_stop - patches[id]->play_start) / 2;
 }
 
 
 int patch_get_max_xfade_samples(int id)
 {
-    int min = patches[id].sample->frames;
+    int min = patches[id]->sample->frames;
     int tmp;
 
-    tmp = patches[id].loop_stop - patches[id].loop_start;
+    tmp = patches[id]->loop_stop - patches[id]->loop_start;
     min = (tmp < min) ? tmp : min;
 
-    tmp = patches[id].play_stop - patches[id].loop_stop;
+    tmp = patches[id]->play_stop - patches[id]->loop_stop;
     min = (tmp < min) ? tmp : min;
 
-    tmp = patches[id].loop_start - patches[id].play_start;
+    tmp = patches[id]->loop_start - patches[id]->play_start;
     min = (tmp < min) ? tmp : min;
 
 debug("max xfade samples:%d\n", min);
@@ -1420,11 +1394,11 @@ int patch_param_get_value(int patch_id, PatchParamType param, float* v)
 
     switch(param)
     {
-    case PATCH_PARAM_AMPLITUDE: *v = patches[patch_id].vol.val;     break;
-    case PATCH_PARAM_PANNING:   *v = patches[patch_id].pan.val;     break;
-    case PATCH_PARAM_CUTOFF:    *v = patches[patch_id].ffreq.val;   break;
-    case PATCH_PARAM_RESONANCE: *v = patches[patch_id].freso.val;   break;
-    case PATCH_PARAM_PITCH:     *v = patches[patch_id].pitch.val;   break;
+    case PATCH_PARAM_AMPLITUDE: *v = patches[patch_id]->vol.val;    break;
+    case PATCH_PARAM_PANNING:   *v = patches[patch_id]->pan.val;    break;
+    case PATCH_PARAM_CUTOFF:    *v = patches[patch_id]->ffreq.val;  break;
+    case PATCH_PARAM_RESONANCE: *v = patches[patch_id]->freso.val;  break;
+    case PATCH_PARAM_PITCH:     *v = patches[patch_id]->pitch.val;  break;
     default:
         return PATCH_PARAM_INVALID;
     }
@@ -1440,11 +1414,11 @@ int patch_param_set_value(int patch_id, PatchParamType param, float v)
 
     switch(param)
     {
-    case PATCH_PARAM_AMPLITUDE: patches[patch_id].vol.val = v;      break;
-    case PATCH_PARAM_PANNING:   patches[patch_id].pan.val = v;      break;
-    case PATCH_PARAM_CUTOFF:    patches[patch_id].ffreq.val = v;    break;
-    case PATCH_PARAM_RESONANCE: patches[patch_id].freso.val = v;    break;
-    case PATCH_PARAM_PITCH:     patches[patch_id].pitch.val = v;    break;
+    case PATCH_PARAM_AMPLITUDE: patches[patch_id]->vol.val = v;     break;
+    case PATCH_PARAM_PANNING:   patches[patch_id]->pan.val = v;     break;
+    case PATCH_PARAM_CUTOFF:    patches[patch_id]->ffreq.val = v;   break;
+    case PATCH_PARAM_RESONANCE: patches[patch_id]->freso.val = v;   break;
+    case PATCH_PARAM_PITCH:     patches[patch_id]->pitch.val = v;   break;
     default:
         return PATCH_PARAM_INVALID;
     }
@@ -1453,9 +1427,9 @@ int patch_param_set_value(int patch_id, PatchParamType param, float v)
 }
 
 
-/*****************************************************************************/
-/************************* MODULATION SETTERS ********************************/
-/*****************************************************************************/
+/**************************************************************************/
+/*********************** MODULATION SETTERS *******************************/
+/**************************************************************************/
 
 int patch_set_mod1_src(int patch_id, PatchParamType param, int modsrc_id)
 {
@@ -1472,6 +1446,7 @@ int patch_set_mod1_src(int patch_id, PatchParamType param, int modsrc_id)
     return 0;
 }
 
+
 int patch_set_mod2_src(int patch_id, PatchParamType param, int modsrc_id)
 {
     PatchParam* p;
@@ -1486,6 +1461,7 @@ int patch_set_mod2_src(int patch_id, PatchParamType param, int modsrc_id)
     p->mod2_id = modsrc_id;
     return 0;
 }
+
 
 int patch_set_mod1_amt(int patch_id, PatchParamType param, float amt)
 {
@@ -1502,14 +1478,15 @@ int patch_set_mod1_amt(int patch_id, PatchParamType param, float amt)
 
     if (param == PATCH_PARAM_PITCH)
     {
-        patches[patch_id].mod1_pitch_max =
-                        pow (2, (amt * PATCH_MAX_PITCH_STEPS) / 12.0);
-        patches[patch_id].mod1_pitch_min =
-                        pow (2, -(amt * PATCH_MAX_PITCH_STEPS) / 12.0);
+        patches[patch_id]->mod1_pitch_max =
+                        pow(2, (amt * PATCH_MAX_PITCH_STEPS) / 12.0);
+        patches[patch_id]->mod1_pitch_min =
+                        pow(2, -(amt * PATCH_MAX_PITCH_STEPS) / 12.0);
     }
 
     return 0;
 }
+
 
 int patch_set_mod2_amt(int patch_id, PatchParamType param, float amt)
 {
@@ -1526,10 +1503,10 @@ int patch_set_mod2_amt(int patch_id, PatchParamType param, float amt)
 
     if (param == PATCH_PARAM_PITCH)
     {
-        patches[patch_id].mod2_pitch_max =
-                        pow (2, (amt * PATCH_MAX_PITCH_STEPS) / 12.0);
-        patches[patch_id].mod2_pitch_min =
-                        pow (2, -(amt * PATCH_MAX_PITCH_STEPS) / 12.0);
+        patches[patch_id]->mod2_pitch_max =
+                        pow(2, (amt * PATCH_MAX_PITCH_STEPS) / 12.0);
+        patches[patch_id]->mod2_pitch_min =
+                        pow(2, -(amt * PATCH_MAX_PITCH_STEPS) / 12.0);
     }
 
     return 0;
@@ -1544,8 +1521,8 @@ int patch_set_amp_env(int patch_id, int modsrc_id)
 
     if ((err = mod_src_ok(modsrc_id)) != 0)
         return err;
-
-    patches[patch_id].vol.direct_mod_id = modsrc_id;
+debug("setting direct mod source:%d for patch:%d\n",modsrc_id, patch_id);
+    patches[patch_id]->vol.direct_mod_id = modsrc_id;
     return 0;
 }
 
@@ -1645,7 +1622,7 @@ int patch_get_amp_env(int patch_id, int* modsrc_id)
     if (!isok(patch_id))
         return PATCH_ID_INVALID;
 
-    *modsrc_id = patches[patch_id].vol.direct_mod_id;
+    *modsrc_id = patches[patch_id]->vol.direct_mod_id;
     return 0;
 }
 

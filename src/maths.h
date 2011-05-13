@@ -1,7 +1,7 @@
 #ifndef __MATHS_H__
 #define __MATHS_H__
 
-#include <glib.h>
+#include <stdint.h>
 
 /* old fashioned linear interpolator */
 inline static float lerp(float y0, float y1, float d)
@@ -21,7 +21,7 @@ inline static float delerp(float y0, float y1, float y)
    y2 = sample after current sample
    y3 = sample after y2
    x  = fractional distance between y1 and y2 in unsigned integer form */
-float cerp(float y0, float y1, float y2, float y3, guint8 d);
+float cerp(float y0, float y1, float y2, float y3, uint8_t d);
 
 /* convert a floating-point linear amplitude value to its logarithmic
  * equivalent */

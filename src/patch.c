@@ -2,7 +2,7 @@
 #include <string.h>
 #include <math.h>
 #include <pthread.h>
-#include <glib.h>
+
 #include "petri-foo.h"
 #include "maths.h"
 #include "ticks.h"
@@ -13,8 +13,10 @@
 #include "driver.h" /* for DRIVER_DEFAULT_SAMPLERATE    */
 #include "midi.h"   /* for MIDI_CHANS                   */
 
+
 #include "patch_private/patch_data.h"
 #include "patch_private/patch_defs.h"
+#include "patch_private/patch_macros.h"
 
 
 
@@ -76,7 +78,7 @@ inline static void playstate_init_x_fade(Patch* p, PatchVoice* v)
     if (!p->xfade_samples)
         return;
 
-    v->xfade = TRUE;
+    v->xfade = true;
     v->xfade_point_posi = v->posi;
     v->xfade_point_posf = v->posf;
     v->xfade_posi = 0;
@@ -117,17 +119,18 @@ inline static void playstate_init_fade_out(Patch* p, PatchVoice* v)
 inline static void patch_release_patch(Patch* p, int note, release_t mode)
 {
     int i;
-    PatchVoice* v;
 
     for (i = 0; i < PATCH_VOICE_COUNT; i++)
     {
-        if (p->voices[i].active && (p->voices[i].note == note || note < 0))
+        if (p->voices[i]->active
+        && (p->voices[i]->note == note || note < 0))
         {
-            v = &p->voices[i];
             /* we don't really release here, that's the job of
              * advance( ); we just tell it *when* to release */
-            v->relset = (p->mono && p->legato) ? patch_legato_lag : 0;
-            v->relmode = mode;
+            p->voices[i]->relmode = mode;
+            p->voices[i]->relset = (p->mono && p->legato)
+                                        ? patch_legato_lag
+                                        : 0;
         }
     }
 }
@@ -146,9 +149,11 @@ inline static void patch_cut_patch (Patch* p)
 
     for (i = 0; i < PATCH_COUNT; i++)
     {
-        if (patches[i].active && patches[i].cut_by == p->cut)
+        if (patches[i]
+         && patches[i]->active
+         && patches[i]->cut_by == p->cut)
         {
-            patch_release_patch(&patches[i], -69, RELEASE_CUTOFF);
+            patch_release_patch(patches[i], -69, RELEASE_CUTOFF);
         }
     }
 }
@@ -158,8 +163,6 @@ inline static void patch_cut_patch (Patch* p)
 inline static void prepare_pitch(Patch* p, PatchVoice* v, int note)
 {
     double scale; /* base pitch scaling factor */
-
-    float k = p->note - note;
 
     /* this applies the tuning factor */
     scale = pow(2, (p->pitch.val * p->pitch_steps) / 12.0);
@@ -211,15 +214,10 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
     PatchVoice* v;
     int index;          /* the index we ended up settling on */
     float key_track;
-    Tick oldest = ticks;/* time of the oldest running patch */
 
-    /* we don't activate voices if we don't have a sample */
     if (p->sample->sp == NULL)
         return;
 
-    /*  key track could be zero, which might mean a zero amplitude
-     *  note, but don't assume it does...
-     */
     if (p->upper_note == p->lower_note)
         key_track = 1.0;
     else
@@ -228,136 +226,91 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
 
     if (p->mono && p->legato)
     {
-        int gzr;
-        int empty = -1;
-
-        /* find a voice to retrigger */
-        for (i = 0; i < PATCH_VOICE_COUNT; ++i)
-        {
-            if (p->voices[i].ticks <= oldest)
-            {
-                oldest = p->voices[i].ticks;
-                gzr = i;
-            }
-
-            if (!p->voices[i].active)
-                empty = i;
-
-        /* don't grab a voice that is releasing, otherwise the new 
-         * will fade out instead of the old.
+        /*  half of the previous logic operating here was ignored.
+         *  removing it left only logic which could be simplified
+         *  to the following:
          */
-            else if (!p->voices[i].released)
-                break;
 
-        /* ...however, if this is a singleshot patch being
-         * released by a noteoff, the amplitude won't be dropping,
-         * and we can proceed normally */
+        v = p->voices[0];
+        index = 0;
 
-            else if (p->play_mode == PATCH_PLAY_SINGLESHOT
-                     && p->voices[i].relmode == RELEASE_NOTEOFF)
-                break;
-        }
-
-        debug("voice test break at voice %d of %d\n", i, PATCH_VOICE_COUNT);
-
-    /* if we couldn't find a voice to take over, use the first
-     * empty one we encountered; failing that, we'll take the
-     * oldest running */
-        if (i == PATCH_VOICE_COUNT)
-        {
-            debug("using voice:0\n");
-            index = (empty >= 0) ? empty : gzr;
-            /* ignore all that logic and set index to zero */
-            index = 0;
-        }
+        if (!v->active || v->released)
+            v->vel = vel;
         else
         {
-            debug("using voice:%d\n", i);
-            v = &p->voices[i];
-            v->ticks = ticks;
-            v->note = note;
-            v->vel = vel;
-            v->relset = -1;	/* cancel any pending release */
-            v->relmode = RELEASE_NONE;
-            v->released = FALSE;
-            v->to_end = FALSE;
-            v->xfade = FALSE;
-            v->loop = p->play_mode & PATCH_PLAY_LOOP;
-            v->key_track = key_track;
+            v->ticks =      ticks;
+            v->note =       note;
+            v->vel =        vel;
+            v->relset =     -1;	/* cancel any pending release */
+            v->relmode =    RELEASE_NONE;
+            v->released =   false;
+            v->to_end =     false;
+            v->xfade =      false;
+            v->loop =       p->play_mode & PATCH_PLAY_LOOP;
+            v->key_track =  key_track;
+
             prepare_pitch(p, v, note);
-            return; /* the rest of this function deals with other
-                     * voice modes so we're best off out of here...
-                     */
+
+            return;
         }
     }
     else /* mono w/o legato, or poly */
     {    
-        int gzr;
+        int oldest;
+        Tick oldestticks = ticks;
 
         /* find a free voice slot and determine the oldest running voice */
         for (i = 0; i < PATCH_VOICE_COUNT; ++i)
         {
-            if (p->voices[i].ticks <= oldest)
+            if (p->voices[i]->ticks <= oldestticks)
             {
-                oldest = p->voices[i].ticks;
-                gzr = i;
+                oldestticks = p->voices[i]->ticks;
+                oldest = i;
             }
 
-            if (!p->voices[i].active)
+            if (!p->voices[i]->active)
                 break;
         }
 
         /* take the oldest running voice's slot if we couldn't find an
          * empty one */
-        index = (i == PATCH_VOICE_COUNT) ? gzr : i;
-        debug("note on at voice:%d\n",index);
+        index = (i == PATCH_VOICE_COUNT) ? oldest : i;
     }
 
-    v = &p->voices[index];
+    v = p->voices[index];
 
     /* shutdown any running voices if monophonic */
     if (p->mono)
-    {
-        debug("releaseing the monotony\n");
         patch_release_patch(p, -69, RELEASE_CUTOFF);
-    }
 
     /* fill in our voice */
-    v->ticks = ticks;
-    v->relset = -1; /* N/A at this time */
-    v->relmode = RELEASE_NONE;
-    v->released = FALSE;
-    v->to_end = FALSE; /* TRUE after loop */
-    v->xfade = FALSE;
-    v->loop = p->play_mode & PATCH_PLAY_LOOP;
-    v->note = note;
-    v->key_track = key_track;
+    v->ticks =      ticks;
+    v->relset =     -1; /* N/A at this time */
+    v->relmode =    RELEASE_NONE;
+    v->released =   false;
+    v->to_end =     false; /* TRUE after loop */
+    v->xfade =      false;
+    v->loop =       p->play_mode & PATCH_PLAY_LOOP;
+    v->note =       note;
+    v->key_track =  key_track;
 
     if (!(p->mono && p->legato))
         v->vel = vel;
 
     if (!p->mono)
-    {
-        debug("filter reset\n");
-        v->fll = 0;
-        v->fbl = 0;
-        v->flr = 0;
-        v->fbr = 0;
-    }
+        v->fll = v->fbl = v->flr = v->fbr = 0;
 
-debug("\t\tv:vel:%f\n",v->vel);
-
-    v->vol_mod1 =   mod_id_to_pointer(p->vol.mod1_id, p, v);
-    v->vol_mod2 =   mod_id_to_pointer(p->vol.mod2_id, p, v);
-    v->vol_direct = mod_id_to_pointer(p->vol.direct_mod_id, p, v);
-    v->pan_mod1 =   mod_id_to_pointer(p->pan.mod1_id, p, v);
-    v->pan_mod2 =   mod_id_to_pointer(p->pan.mod2_id, p, v);
-    v->ffreq_mod1 = mod_id_to_pointer(p->ffreq.mod1_id, p, v);
-    v->ffreq_mod2 = mod_id_to_pointer(p->ffreq.mod2_id, p, v);
-    v->freso_mod1 = mod_id_to_pointer(p->freso.mod1_id, p, v);
-    v->freso_mod2 = mod_id_to_pointer(p->freso.mod2_id, p, v);
-    v->pitch_mod1 = mod_id_to_pointer(p->pitch.mod1_id, p, v);
-    v->pitch_mod2 = mod_id_to_pointer(p->pitch.mod2_id, p, v);
+    v->vol_mod1 =   patch_mod_id_to_pointer(p->vol.mod1_id, p, v);
+    v->vol_mod2 =   patch_mod_id_to_pointer(p->vol.mod2_id, p, v);
+    v->vol_direct = patch_mod_id_to_pointer(p->vol.direct_mod_id, p, v);
+    v->pan_mod1 =   patch_mod_id_to_pointer(p->pan.mod1_id, p, v);
+    v->pan_mod2 =   patch_mod_id_to_pointer(p->pan.mod2_id, p, v);
+    v->ffreq_mod1 = patch_mod_id_to_pointer(p->ffreq.mod1_id, p, v);
+    v->ffreq_mod2 = patch_mod_id_to_pointer(p->ffreq.mod2_id, p, v);
+    v->freso_mod1 = patch_mod_id_to_pointer(p->freso.mod1_id, p, v);
+    v->freso_mod2 = patch_mod_id_to_pointer(p->freso.mod2_id, p, v);
+    v->pitch_mod1 = patch_mod_id_to_pointer(p->pitch.mod1_id, p, v);
+    v->pitch_mod2 = patch_mod_id_to_pointer(p->pitch.mod2_id, p, v);
 
     if (!(p->mono && p->legato && v->active))
         playstate_init_fade_in(p, v);
@@ -366,26 +319,22 @@ debug("\t\tv:vel:%f\n",v->vel);
 
     for (i = 0; i < VOICE_MAX_ENVS; i++)
     {
-        adsr_set_params(&v->env[i], &p->env_params[i]);
-        adsr_trigger(&v->env[i]);
+        adsr_set_params(v->env[i], &p->env_params[i]);
+        adsr_trigger(v->env[i]);
     }
 
     for (i = 0; i < VOICE_MAX_LFOS; i++)
     {
-        v->lfo[i].freq_mod1 =
-            mod_id_to_pointer(p->vlfo_params[i].mod1_id, p, v);
-
-        v->lfo[i].freq_mod2 =
-            mod_id_to_pointer(p->vlfo_params[i].mod2_id, p, v);
-
-        v->lfo[i].mod1_amt = p->vlfo_params[i].mod1_amt;
-        v->lfo[i].mod2_amt = p->vlfo_params[i].mod2_amt;
-
-        lfo_trigger (&v->lfo[i], &p->vlfo_params[i]);
+        float const* src;
+        src = patch_mod_id_to_pointer(p->vlfo_params[i].mod1_id, p, v);
+        lfo_set_freq_mod1(v->lfo[i], src);
+        src = patch_mod_id_to_pointer(p->vlfo_params[i].mod2_id, p, v);
+        lfo_set_freq_mod2(v->lfo[i], src);
+        lfo_trigger(v->lfo[i], &p->vlfo_params[i]);
     }
 
     /* mark our territory */
-    v->active = TRUE;
+    v->active = true;
 }
 
 
@@ -468,7 +417,6 @@ pitchscale (Patch * p, PatchVoice * v, float *l, float *r)
                                             * (1.0 - v->xfade_declick);
     }
 }
-
 
 
 /* a helper routine to setup panning of two samples in a frame  */
@@ -652,10 +600,10 @@ gain (Patch* p, PatchVoice* v, int index, float* l, float* r)
 }
 
 
-inline static void advance_pos(int dir, int* posi,  guint32* posf,
-                                        int stepi,  guint32 stepf)
+inline static void advance_pos(int dir, int* posi,  uint32_t* posf,
+                                        int stepi,  uint32_t stepf)
 {
-    guint32 next_posf = *posf + stepf;
+    uint32_t next_posf = *posf + stepf;
 
     if (dir > 0)
     {
@@ -675,10 +623,11 @@ inline static void advance_pos(int dir, int* posi,  guint32* posf,
     *posf = next_posf;
 }
 
-inline static void advance_fwd(int* posi,  guint32* posf,
-                               int stepi,  guint32 stepf)
+
+inline static void advance_fwd(int* posi,  uint32_t* posf,
+                               int stepi,  uint32_t stepf)
 {
-    guint32 next_posf = *posf + stepf;
+    uint32_t next_posf = *posf + stepf;
 
     if (next_posf < *posf) /* unsigned int wraps around */
         ++(*posi);
@@ -696,13 +645,13 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
     int j;
     double pitch;
     double scale;
-    gboolean recalc = FALSE;
+    bool recalc = false;
         /* whether we need to recalculate our pos/step vars */
 
     /* portamento */
     if (p->porta && v->porta_ticks)
     {
-        recalc = TRUE;
+        recalc = true;
         v->pitch += v->pitch_step;
         --(v->porta_ticks);
     }
@@ -712,14 +661,14 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
 
     if (p->pitch_bend)
     {
-        recalc = TRUE;
+        recalc = true;
         pitch *= p->pitch_bend;
     }
 
     /* pitch lfo value */
     if (v->pitch_mod1 != NULL)
     {
-        recalc = TRUE;
+        recalc = true;
         scale = *v->pitch_mod1;
 
         /* we don't multiply against p->pitch.lfo_amount because the
@@ -735,7 +684,7 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
 
     if (v->pitch_mod2 != NULL)
     {
-        recalc = TRUE;
+        recalc = true;
         scale = *v->pitch_mod2;
 
         if (scale >= 0.0)
@@ -747,7 +696,7 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
     /* scale to velocity */
     if (p->pitch.vel_amt > ALMOST_ZERO)
     {
-        recalc = TRUE;
+        recalc = true;
         pitch = lerp (pitch, pitch * v->vel, p->pitch.vel_amt);
     }
 
@@ -852,7 +801,7 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
 
         if (v->xfade_posi >= p->xfade_samples)
         {
-            v->xfade = FALSE;
+            v->xfade = false;
             v->xfade_declick = 1.0;
         }
         else
@@ -873,12 +822,12 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
 
             if (v->relset == 0)
             {
-                debug("release mode: NOTEOFF\n");
+                /*debug("release mode: NOTEOFF\n");*/
 
                 for (j = 0; j < VOICE_MAX_ENVS; j++)
-                    adsr_release (&v->env[j]);
+                    adsr_release(v->env[j]);
 
-                v->released = TRUE;
+                v->released = true;
 
                 if (!(p->play_mode & PATCH_PLAY_SINGLESHOT))
                 {
@@ -888,9 +837,9 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
                     }
                     else if (p->play_mode & PATCH_PLAY_TO_END)
                     {
-                        v->playstate = PLAYSTATE_PLAY;
-                        v->loop = FALSE;
-                        v->to_end = TRUE;
+                        v->playstate =  PLAYSTATE_PLAY;
+                        v->loop =       false;
+                        v->to_end =     true;
 
                         if (p->play_mode & PATCH_PLAY_PINGPONG)
                         {
@@ -933,44 +882,38 @@ inline static void patch_render_patch (Patch* p, float* buf, int nframes)
     register int j;
     PatchVoice* v;
     float l, r;
-    gboolean done;
+    bool done;
     register int k;
 
 
-    /*  calculate global LFO output tables first:
-     *  due to modulation we don't calculate each buffer one by one,
-     *  we do it all simultaneously. this probably is bad for cache hits
-     *  or whatever, but fuck it, modulation is more important.
-    */
-
+    /*  calculate global LFO output tables first: */
     for (i = 0; i < nframes; ++i)
     {
         for (j = 0; j < PATCH_MAX_LFOS; ++j)
         {
             if (p->glfo_params[j].lfo_on)
-                p->glfo_table[j][i] = lfo_tick(&p->glfo[j]);
+                p->glfo_table[j][i] = lfo_tick(p->glfo[j]);
         }
     }
 
     /*  right then, let's do the voices now... */
-
     for (i = 0; i < PATCH_VOICE_COUNT; i++)
     {
-        if (p->voices[i].active == FALSE)
+        if (p->voices[i]->active == false)
             continue;
 
         /* sanity check */
-        if (p->voices[i].posi < p->sample->frames)
-            v = &p->voices[i];
+        if (p->voices[i]->posi < p->sample->frames)
+            v = p->voices[i];
         else
         {
-            p->voices[i].active = FALSE;
+            p->voices[i]->active = false;
             continue;
         }
 
-        done = FALSE;
+        done = false;
 
-        for (j = 0; j < nframes && done == FALSE; j++)
+        for (j = 0; j < nframes && !done; j++)
         {
             /* ok so we've calculated the global LFO tables already,
                 we just need to set the output of each global LFO to
@@ -978,15 +921,16 @@ inline static void patch_render_patch (Patch* p, float* buf, int nframes)
             */
             for (k = 0; k < PATCH_MAX_LFOS; ++k)
                 if (p->glfo_params[k].lfo_on)
-                    p->glfo[k].val = p->glfo_table[k][j];
+                    lfo_set_output(p->glfo[k], p->glfo_table[k][j]);
+                    /*p->glfo[k].val = p->glfo_table[k][j];*/
 
             for (k = 0; k < VOICE_MAX_ENVS; ++k)
                 if (p->env_params[k].env_on)
-                    adsr_tick(&v->env[k]);
+                    adsr_tick(v->env[k]);
 
             for (k = 0; k < VOICE_MAX_LFOS; ++k)
                 if (p->vlfo_params[k].lfo_on)
-                    lfo_tick(&v->lfo[k]);
+                    lfo_tick(v->lfo[k]);
 
             /* process samples */
             pitchscale (p, v,    &l, &r);
@@ -996,7 +940,7 @@ inline static void patch_render_patch (Patch* p, float* buf, int nframes)
             /* adjust amplitude and stop rendering if we finished
              * a release */
             if (gain   (p, v, j, &l, &r) < 0)
-                done = TRUE;
+                done = true;
 
             buf[j * 2] += l;
             buf[j * 2 + 1] += r;
@@ -1004,12 +948,12 @@ inline static void patch_render_patch (Patch* p, float* buf, int nframes)
             /* advance our position and stop rendering if we
              * run out of samples */
             if (advance (p, v, j) < 0)
-                done = TRUE;
+                done = true;
         }
 
         /* check to see if it's time to stop rendering */
         if (done)
-            v->active = FALSE;
+            v->active = false;
 
         /* overflows bad, OVERFLOWS BAD! */
         if (v->active && (v->posi < 0 || v->posi >= p->sample->frames))
@@ -1022,6 +966,7 @@ inline static void patch_render_patch (Patch* p, float* buf, int nframes)
     }
 }
 
+
 /* deactivate all active patches matching given criteria */
 void patch_release (int chan, int note)
 {
@@ -1029,28 +974,33 @@ void patch_release (int chan, int note)
 
     for (i = 0; i < PATCH_COUNT; i++)
     {
-        if (patches[i].active && patches[i].channel == chan
-            && (note >= patches[i].lower_note
-             && note <= patches[i].upper_note))
+        if (patches[i]
+         && patches[i]->active
+         && patches[i]->channel == chan
+         && (note >= patches[i]->lower_note
+         &&  note <= patches[i]->upper_note))
         {
-            patch_release_patch (&patches[i], note, RELEASE_NOTEOFF);
+            patch_release_patch(patches[i], note, RELEASE_NOTEOFF);
         }
     }
 
     return;
 }
 
+
 /* deactivate a single patch with a given id */
 void patch_release_with_id (int id, int note)
 {
     if (id < 0 || id >= PATCH_COUNT)
-	return;
-    if (!patches[id].active)
-	return;
+        return;
 
-    patch_release_patch (&patches[id], note, RELEASE_NOTEOFF);
+    if (!patches[id]->active)
+        return;
+
+    patch_release_patch(patches[id], note, RELEASE_NOTEOFF);
     return;
 }
+
 
 /* render nframes of all active patches into buf */
 void patch_render (float *buf, int nframes)
@@ -1060,24 +1010,25 @@ void patch_render (float *buf, int nframes)
     /* render potatos */
     for (i = 0; i < PATCH_COUNT; i++)
     {
-        if (patches[i].active)
+        if (patches[i] && patches[i]->active)
         {
             if (patch_trylock (i) != 0)
             {
                 continue;
             }
 
-            if (patches[i].sample->sp == NULL)
+            if (patches[i]->sample->sp == NULL)
             {
-                patch_unlock (i);
+                patch_unlock(i);
                 continue;
             }
 
-            patch_render_patch (&patches[i], buf, nframes);
-            patch_unlock (i);
+            patch_render_patch(patches[i], buf, nframes);
+            patch_unlock(i);
         }
     }
 }
+
 
 /* triggers all patches matching criteria */
 void patch_trigger (int chan, int note, float vel, Tick ticks)
@@ -1095,24 +1046,25 @@ void patch_trigger (int chan, int note, float vel, Tick ticks)
 
     for (i = j = 0; i < PATCH_COUNT; i++)
     {
-	if (patches[i].active
-	    && patches[i].channel == chan
-	    && (note >= patches[i].lower_note
-		    && note <= patches[i].upper_note))
-	{
-
-	    idp[j++] = i;
-	}
+        if (patches[i]
+         && patches[i]->active
+         && patches[i]->channel == chan
+         && (note >= patches[i]->lower_note
+         &&  note <= patches[i]->upper_note))
+        {
+            idp[j++] = i;
+        }
     }
 
     /* do cuts */
     for (i = 0; i < j; i++)
-	patch_cut_patch (&patches[idp[i]]);
+        patch_cut_patch(patches[idp[i]]);
 
     /* do triggers */
     for (i = 0; i < j; i++)
-	patch_trigger_patch (&patches[idp[i]], note, vel, ticks);
+        patch_trigger_patch(patches[idp[i]], note, vel, ticks);
 }
+
 
 /* activate a single patch with given id */
 void patch_trigger_with_id (int id, int note, float vel, Tick ticks)
@@ -1120,46 +1072,49 @@ void patch_trigger_with_id (int id, int note, float vel, Tick ticks)
     if (id < 0 || id >= PATCH_COUNT)
         return;
 
-    if (!patches[id].active)
+    if (!patches[id]->active)
         return;
 
-    if (note < patches[id].lower_note || note > patches[id].upper_note)
+    if (note < patches[id]->lower_note || note > patches[id]->upper_note)
         return;
 
-    patch_cut_patch (&patches[id]);
-    patch_trigger_patch (&patches[id], note, vel, ticks);
+    patch_cut_patch(patches[id]);
+    patch_trigger_patch(patches[id], note, vel, ticks);
     return;
 }
 
-static void patch_control_patch(Patch* p, ControlParamType param, float value)
+
+static void
+patch_control_patch(Patch* p, ControlParamType param, float value)
 {
     switch( param )
     {
     case CONTROL_PARAM_AMPLITUDE:
-	p->vol.val = value;
-	break;
+        p->vol.val = value;
+        break;
     case CONTROL_PARAM_PANNING:
-	p->pan.val = value;
-	break;
+        p->pan.val = value;
+        break;
     case CONTROL_PARAM_CUTOFF:
-	p->ffreq.val = value;
-	break;
+        p->ffreq.val = value;
+        break;
     case CONTROL_PARAM_RESONANCE:
-	p->freso.val = value;
-	break;
+        p->freso.val = value;
+        break;
     case CONTROL_PARAM_PITCH:
-	p->pitch_bend = pow(2, value);
-	break;
+        p->pitch_bend = pow(2, value);
+        break;
     case CONTROL_PARAM_PORTAMENTO:
-	p->porta = (value < 0.5) ? 0 : 1;
-	break;
+        p->porta = (value < 0.5) ? 0 : 1;
+        break;
     case CONTROL_PARAM_PORTAMENTO_TIME:
-	p->porta_secs = value;
-	break;
+        p->porta_secs = value;
+        break;
     default:
-	break;
+        break;
     }
 }
+
 
 void patch_control(int chan, ControlParamType param, float value)
 {
@@ -1167,13 +1122,14 @@ void patch_control(int chan, ControlParamType param, float value)
 
     for (i = 0; i < PATCH_COUNT; i++)
     {
-	if (patches[i].active && patches[i].channel == chan)
-	{
-	    patch_control_patch (&patches[i], param, value);
-	}
+        if (patches[i]
+         && patches[i]->active
+         && patches[i]->channel == chan)
+        {
+            patch_control_patch(patches[i], param, value);
+        }
     }
 
     return;
 }
-
 

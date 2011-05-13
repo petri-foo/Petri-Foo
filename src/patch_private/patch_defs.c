@@ -1,22 +1,27 @@
+/*
 #include "adsr.h"
-#include "driver.h"
-#include "patch.h"
 #include "sample.h"
+*/
 
-#include <glib.h>
-
-#include "patch_data.h"
 #include "patch_defs.h"
 
+#include "driver.h"
+#include "patch.h"
 
-const float  PATCH_MIN_RELEASE = 0.005;
-const float  PATCH_LEGATO_LAG = 0.005;
-const float  ALMOST_ZERO = 1e-6;
+/*#include "patch_data.h"
+#include "patch_defs.h"
+*/
+
+const float PATCH_MIN_RELEASE = 0.005;
+const float PATCH_LEGATO_LAG = 0.005;
+const float ALMOST_ZERO = 1e-6;
 
 
-float        patch_samplerate = DRIVER_DEFAULT_SAMPLERATE;
-int          patch_legato_lag = 20;     /* bogus initial value */
+int         patch_samplerate = -1;
+int         patch_buffersize = -1;
+
+int         patch_legato_lag = 20;     /* bogus initial value */
 
 
-Patch        patches[PATCH_COUNT];
+Patch*      patches[PATCH_COUNT];
 

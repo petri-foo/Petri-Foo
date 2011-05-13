@@ -1,11 +1,14 @@
+#include "dish_file.h"
+
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <libxml/parser.h>
-#include <glib.h>
+
 
 #include "mixer.h"
-#include "names.h"
+#include "mod_src.h"
 #include "petri-foo.h"
 #include "patch.h"
 #include "patch_util.h"
@@ -81,7 +84,7 @@ dish_file_write_param(xmlNodePtr nodeparent, int patch_id,
     xmlNodePtr  node2;
     char buf[BUFSIZE];
     const char** param_names;
-    char** mod_names;
+
     const char* prop1 = 0;
     const char* prop2 = 0;
 
@@ -101,7 +104,6 @@ dish_file_write_param(xmlNodePtr nodeparent, int patch_id,
         return -1;
 
     param_names = names_params_get();
-    mod_names = names_mod_srcs_get();
 
     patch_get_vel_amount(patch_id, param, &vel_amt);
 
@@ -144,7 +146,7 @@ dish_file_write_param(xmlNodePtr nodeparent, int patch_id,
     {
         patch_get_amp_env(patch_id, &envsrc);
         node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Env", NULL);
-        xmlNewProp(node2, BAD_CAST "source", BAD_CAST mod_names[envsrc]);
+        xmlNewProp(node2, BAD_CAST "source", BAD_CAST mod_src_name(envsrc));
     }
 
     patch_get_mod1_src(patch_id, param, &mod1src);
@@ -153,12 +155,12 @@ dish_file_write_param(xmlNodePtr nodeparent, int patch_id,
     patch_get_mod2_amt(patch_id, param, &mod2amt);
 
     node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Mod1", NULL);
-    xmlNewProp(node2, BAD_CAST "source", BAD_CAST mod_names[mod1src]);
+    xmlNewProp(node2, BAD_CAST "source", BAD_CAST mod_src_name(mod1src));
     snprintf(buf, BUFSIZE, "%f", mod1amt);
     xmlNewProp(node2, BAD_CAST "amount", BAD_CAST buf);
 
     node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Mod2", NULL);
-    xmlNewProp(node2, BAD_CAST "source", BAD_CAST mod_names[mod2src]);
+    xmlNewProp(node2, BAD_CAST "source", BAD_CAST mod_src_name(mod2src));
     snprintf(buf, BUFSIZE, "%f", mod2amt);
     xmlNewProp(node2, BAD_CAST "amount", BAD_CAST buf);
 
@@ -171,14 +173,14 @@ dish_file_write_eg(xmlNodePtr nodeparent, int patch_id, int eg_id)
 {
     xmlNodePtr  node1;
     char buf[BUFSIZE];
-    gboolean active;
+    bool active;
     float val;
 
     if (patch_get_env_on(patch_id, eg_id, &active) == -1)
         return -1;
 
     node1 = xmlNewTextChild(nodeparent, NULL,
-                            BAD_CAST names_egs_get()[eg_id], NULL);
+                            BAD_CAST mod_src_name(eg_id), NULL);
 
     xmlNewProp(node1,   BAD_CAST "active",
                         BAD_CAST (active ? "true" : "false"));
@@ -218,11 +220,9 @@ dish_file_write_lfo(xmlNodePtr nodeparent, int patch_id, int lfo_id)
     xmlNodePtr  node2;
     xmlNodePtr  node3;
     char buf[BUFSIZE];
-    gboolean state;
+    bool state;
     float val;
-    char** mod_names;
     const char** shapes = names_lfo_shapes_get();
-    const char** lfo_names = names_lfos_get();
     int     mod1src;
     int     mod2src;
     float   mod1amt;
@@ -232,10 +232,8 @@ dish_file_write_lfo(xmlNodePtr nodeparent, int patch_id, int lfo_id)
     if (patch_get_lfo_on(patch_id, lfo_id, &state) == -1)
         return -1;
 
-    mod_names = names_mod_srcs_get();
-
     node1 = xmlNewTextChild(nodeparent, NULL,
-                            BAD_CAST lfo_names[lfo_id], NULL);
+                            BAD_CAST mod_src_name(lfo_id), NULL);
 
     xmlNewProp(node1,   BAD_CAST "active",
                         BAD_CAST (state ? "true" : "false"));
@@ -247,7 +245,8 @@ dish_file_write_lfo(xmlNodePtr nodeparent, int patch_id, int lfo_id)
     xmlNewProp(node1,   BAD_CAST "positive",
                         BAD_CAST (state ? "true" : "false"));
 
-    if (!patch_lfo_is_global(lfo_id))
+    /* assured by caller that lfo_id IS an lfo_id */
+    if (!mod_src_is_global(lfo_id))
     {
         patch_get_lfo_delay(patch_id, lfo_id, &val);
         snprintf(buf, BUFSIZE, "%f", val);
@@ -277,12 +276,12 @@ dish_file_write_lfo(xmlNodePtr nodeparent, int patch_id, int lfo_id)
     patch_get_lfo_mod2_amt(patch_id, lfo_id, &mod2amt);
 
     node3 = xmlNewTextChild(node2, NULL, BAD_CAST "Mod1", NULL);
-    xmlNewProp(node3, BAD_CAST "source", BAD_CAST mod_names[mod1src]);
+    xmlNewProp(node3, BAD_CAST "source", BAD_CAST mod_src_name(mod1src));
     snprintf(buf, BUFSIZE, "%f", mod1amt);
     xmlNewProp(node3, BAD_CAST "amount", BAD_CAST buf);
 
     node3 = xmlNewTextChild(node2, NULL, BAD_CAST "Mod2", NULL);
-    xmlNewProp(node3, BAD_CAST "source", BAD_CAST mod_names[mod2src]);
+    xmlNewProp(node3, BAD_CAST "source", BAD_CAST mod_src_name(mod2src));
     snprintf(buf, BUFSIZE, "%f", mod2amt);
     xmlNewProp(node3, BAD_CAST "amount", BAD_CAST buf);
 
@@ -290,7 +289,7 @@ dish_file_write_lfo(xmlNodePtr nodeparent, int patch_id, int lfo_id)
 }
 
 
-int dish_file_write(char *name)
+int dish_file_write(const char *name)
 {
     int rc;
 
@@ -456,13 +455,19 @@ int dish_file_write(char *name)
             envelopes
          */
         for (j = 0; j < VOICE_MAX_ENVS; ++j)
-            dish_file_write_eg(nodepatch, patch_id[i], j);
+            dish_file_write_eg(nodepatch,   patch_id[i],
+                                            MOD_SRC_EG + j);
 
         /*  ------------------------
             lfos
          */
-        for (j = 0; j < TOTAL_LFOS; ++j)
-            dish_file_write_lfo(nodepatch, patch_id[i], j);
+        for (j = 0; j < VOICE_MAX_LFOS; ++j)
+            dish_file_write_lfo(nodepatch,  patch_id[i],
+                                            MOD_SRC_VLFO + j);
+
+        for (j = 0; j < PATCH_MAX_LFOS; ++j)
+            dish_file_write_lfo(nodepatch,  patch_id[i],
+                                            MOD_SRC_GLFO + j);
     }
 
     rc = xmlSaveFormatFile(name, doc, 1);
@@ -472,16 +477,16 @@ int dish_file_write(char *name)
 }
 
 
-static gboolean xmlstr_to_bool(xmlChar* str)
+static bool xmlstr_to_bool(xmlChar* str)
 {
     if (xmlStrcasecmp(str, BAD_CAST "true") == 0
      || xmlStrcasecmp(str, BAD_CAST "on") == 0
      || xmlStrcasecmp(str, BAD_CAST "yes") == 0)
     {
-        return TRUE;
+        return true;
     }
 
-    return FALSE;
+    return false;
 }
 
 
@@ -491,7 +496,7 @@ int dish_file_read_sample(xmlNodePtr node, int patch_id)
     xmlNodePtr node1;
     int s;
     char* filename = 0;
-    gboolean sample_loaded = FALSE;
+    bool sample_loaded = false;
 
     int mode = PATCH_PLAY_SINGLESHOT;
 
@@ -568,7 +573,7 @@ int dish_file_read_sample(xmlNodePtr node, int patch_id)
 
             free(filename);
             filename = 0;
-            sample_loaded = TRUE;
+            sample_loaded = true;
         }
 
         if (xmlStrcmp(node1->name, BAD_CAST "Play") == 0)
@@ -639,8 +644,10 @@ int dish_file_read_eg(xmlNodePtr node, int patch_id)
     xmlChar* prop;
     float n;
 
-    if ((eg_id = names_egs_id_from_str((const char*)node->name)) < 0)
+    if ((eg_id = mod_src_id((const char*)node->name, MOD_SRC_EG)) < 0)
         return -1;
+
+debug("loading eg with id:%d\n", eg_id);
 
     if ((prop = xmlGetProp(node, BAD_CAST "active")))
         patch_set_env_on(patch_id, eg_id, xmlstr_to_bool(prop));
@@ -700,7 +707,7 @@ int dish_file_read_lfo_freq_data(xmlNodePtr node, int patch_id, int lfo_id)
         {
             if ((prop = xmlGetProp(node1, BAD_CAST "source")))
                 patch_set_lfo_mod1_src(patch_id, lfo_id,
-                    names_mod_srcs_id_from_str((const char*)prop));
+                    mod_src_id((const char*)prop, MOD_SRC_ALL));
 
             if ((prop = xmlGetProp(node1, BAD_CAST "amount")))
                 if (sscanf((const char*)prop, "%f", &n) == 1)
@@ -710,7 +717,7 @@ int dish_file_read_lfo_freq_data(xmlNodePtr node, int patch_id, int lfo_id)
         {
             if ((prop = xmlGetProp(node1, BAD_CAST "source")))
                 patch_set_lfo_mod2_src(patch_id, lfo_id,
-                    names_mod_srcs_id_from_str((const char*)prop));
+                    mod_src_id((const char*)prop, MOD_SRC_ALL));
 
             if ((prop = xmlGetProp(node1, BAD_CAST "amount")))
                 if (sscanf((const char*)prop, "%f", &n) == 1)
@@ -733,7 +740,9 @@ int dish_file_read_lfo(xmlNodePtr node, int patch_id)
     float n;
     xmlNodePtr node1;
 
-    if ((lfo_id = names_lfos_id_from_str((const char*)node->name)) < 0)
+    lfo_id = mod_src_id((const char*)node->name, MOD_SRC_LFOS);
+
+    if (lfo_id < 0)
     {
         errmsg("invalid LFO:%s\n", (const char*)node->name);
         return -1;
@@ -749,7 +758,7 @@ int dish_file_read_lfo(xmlNodePtr node, int patch_id)
     if ((prop = xmlGetProp(node, BAD_CAST "positive")))
         patch_set_lfo_positive(patch_id, lfo_id, xmlstr_to_bool(prop));
 
-    if (!patch_lfo_is_global(lfo_id))
+    if (!mod_src_is_global(lfo_id)) /* already know it IS an LFO id */
     {
         if ((prop = xmlGetProp(node, BAD_CAST "delay")))
             if (sscanf((const char*)prop, "%f", &n) == 1)
@@ -832,7 +841,7 @@ int dish_file_read_param(xmlNodePtr node,   int patch_id,
         {
             if ((prop = xmlGetProp(node1, BAD_CAST "source")))
                 patch_set_mod1_src(patch_id, param,
-                    names_mod_srcs_id_from_str((const char*)prop));
+                    mod_src_id((const char*)prop, MOD_SRC_ALL));
 
             if ((prop = xmlGetProp(node1, BAD_CAST "amount")))
                 if (sscanf((const char*)prop, "%f", &n) == 1)
@@ -842,7 +851,7 @@ int dish_file_read_param(xmlNodePtr node,   int patch_id,
         {
             if ((prop = xmlGetProp(node1, BAD_CAST "source")))
                 patch_set_mod2_src(patch_id, param,
-                    names_mod_srcs_id_from_str((const char*)prop));
+                    mod_src_id((const char*)prop, MOD_SRC_ALL));
 
             if ((prop = xmlGetProp(node1, BAD_CAST "amount")))
                 if (sscanf((const char*)prop, "%f", &n) == 1)
@@ -853,7 +862,7 @@ int dish_file_read_param(xmlNodePtr node,   int patch_id,
         {
             if ((prop = xmlGetProp(node1, BAD_CAST "source")))
                     patch_set_amp_env(patch_id,
-                        names_mod_srcs_id_from_str((const char*)prop));
+                        mod_src_id((const char*)prop, MOD_SRC_ALL));
         }
         else
         {
@@ -896,7 +905,7 @@ int dish_file_read_voice(xmlNodePtr node, int patch_id)
 }
 
 
-int dish_file_read(char *path)
+int dish_file_read(const char *path)
 {
     xmlDocPtr   doc;
     xmlNodePtr  noderoot;
@@ -1020,15 +1029,11 @@ int dish_file_read(char *path)
                 }
                 else
                 {
-                    if (names_egs_maybe_eg_id((const char*)node2->name))
-                    {
-                            dish_file_read_eg(node2, patch_id);
-                    }
+                    if (mod_src_maybe_eg((const char*)node2->name))
+                        dish_file_read_eg(node2, patch_id);
                     else
-                    if (names_lfos_maybe_lfo_id((const char*)node2->name))
-                    {
+                    if (mod_src_maybe_lfo((const char*)node2->name))
                             dish_file_read_lfo(node2, patch_id);
-                    }
                     else
                     {
                         errmsg("ignoring:%s\n", (const char*)node2->name);
