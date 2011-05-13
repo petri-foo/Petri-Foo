@@ -1,5 +1,5 @@
-#ifndef MOD_SRC_H
-#define MOD_SRC_H
+#ifndef MOD_SRC_GUI_H
+#define MOD_SRC_GUI_H
 
 #include <gtk/gtk.h>
 
