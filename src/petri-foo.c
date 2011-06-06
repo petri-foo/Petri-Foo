@@ -83,8 +83,8 @@ int main(int argc, char *argv[])
 
 	/* start */
 	driver_start();
-/*	midi_start();
-*/
+	midi_start();
+
     if (optind < argc)
         dish_file_read(argv[optind]);
     else
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
     gtk_main();
 
 	/* stop */
-/*	midi_stop();*/
+	midi_stop();
 	driver_stop();
 
 	/* destructors */

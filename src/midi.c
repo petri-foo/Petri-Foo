@@ -56,13 +56,15 @@ static void map_control(unsigned char chan, int param, float value)
     }
 
     map[] = {
-        { 1, CONTROL_PARAM_MODWHEEL,        0, 1},
-        { 5, CONTROL_PARAM_PORTAMENTO_TIME, 0, 1},
-        { 7, CONTROL_PARAM_AMPLITUDE,       0, 1},
-        {10, CONTROL_PARAM_PANNING,        -1, 2},
-        {65, CONTROL_PARAM_PORTAMENTO,      0, 1},
-        {71, CONTROL_PARAM_RESONANCE,       0, 1},
-        {74, CONTROL_PARAM_CUTOFF,          0, 1}
+        { 1, CONTROL_PARAM_MODWHEEL,            0, 1},
+        { 5, CONTROL_PARAM_PORTAMENTO_TIME,     0, 1},
+        { 7, CONTROL_PARAM_AMPLITUDE,           0, 1},
+        {10, CONTROL_PARAM_PANNING,            -1, 2},
+        {65, CONTROL_PARAM_PORTAMENTO,          0, 1},
+        {71, CONTROL_PARAM_RESONANCE,           0, 1},
+        {74, CONTROL_PARAM_CUTOFF,              0, 1},
+        {77, CONTROL_PARAM_CUTOFF_MOD1_AMT,    -1, 2},
+        {78, CONTROL_PARAM_RESO_MOD1_AMT,      -1, 2}
     };
 
     unsigned i;
