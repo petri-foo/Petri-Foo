@@ -1,3 +1,34 @@
+2011-06-06  James Morris <james@jwm-art.net>
+
+	* gui/mod_section.c: refresh
+	  now calls mod_section_set_patch to blanket update entire
+	  mod section widget (ie, parameter, sources, amounts, etc).
+
+2011-06-05  James Morris <james@jwm-art.net>
+
+	* control.h: addition of new enumerations for midi cc.
+
+	* removal of LASH support.
+
+	* patch_macros.h: INLINE_PATCH_TRIGGER_GLOBAL_LFO_DEF
+	  fixed global lfo modulation settings by adding call to
+	  lfo_rigger.
+
+	* jackdriver.c: process
+	  fixed handling of pitch bend wheel data so that resting
+	  position is zero.
+
+	* jackdriver.c: map_control
+	  addition of new midi cc enumerations
+
+	* gui/mod_section.c: mod_section_set_param
+	  modified so a timeout to call refresh is added for every
+	  parameter type.
+
+	* gui/mod_section.c: refresh
+	  modified so parameter changes via midi cc are reflected
+	  in the gui.
+
 2011-05-THIRTEEN James Morris <james@jwm-art.net>
 	* simplified mono+legato voice operation
 	  after removing half the logic which was ignored, it only left

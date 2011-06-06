@@ -19,16 +19,6 @@ else
     AC_DEFINE(DEBUG, 1, [[whether to display debugging output or not]])
 fi
 
-# disable lash support?
-with_lash="no"
-AC_ARG_ENABLE([lash], 
-    [AC_HELP_STRING([--disable-lash],
-        [disable lash support (default is YES)])],
-    [if test x$enable_lash = xno; then with_lash=no ; fi])
-
-echo with_lash:$with_lash
-
-AM_CONDITIONAL(WITH_LASH, [test "$with_lash" = "yes"])
 
 # standard autoconf checks
 AC_PROG_CC
@@ -98,18 +88,6 @@ PKG_CHECK_MODULES(PHAT, phat >= 0.3.1, HAVE_PHAT="yes", config_error="yes")
 AC_SUBST(PHAT_CFLAGS)
 AC_SUBST(PHAT_LIBS)
 
-if test x$with_lash = xyes; then
-
-have_lash=no
-PKG_CHECK_MODULES(LASH, lash-1.0 >= 0.5.0, have_lash="yes", config_error="no")
-if test x$have_lash = xyes ; then
-  AC_DEFINE([HAVE_LASH], [], [Define if we have lash.])
-  AC_SUBST(LASH_CFLAGS)
-  AC_SUBST(LASH_LIBS)
-  else
-    AC_MSG_WARN([LASH not found, session support will not be built.])
-  fi
-fi
 
 CC="$PTHREAD_CC"
 
@@ -134,12 +112,6 @@ if test "x$HAVE_JACK_SESSION" = xyes ; then
     echo "yes"
 else
     echo "not found"
-fi
-echo -n "           LASH support: "
-if test "x$with_lash" = xyes; then
-    echo "yes with lash-1.0 >= 0.5.0"
-else
-    echo "disabled or not found"
 fi
 
 echo
@@ -203,18 +175,6 @@ if test "x$HAVE_LIBXML" != xyes ; then
 ])
 fi
 
-if test x$enable_lash = xyes; then
-	if test "x$HAVE_LASH" != xyes ; then
-  	AC_MSG_RESULT([
-*** LASH,  available from:
-		http://savannah.nongnu.org/projects/lash
-	Note: you may get this message if jack is not installed since lash
-    requires jack.	
-
-    To disable lash support, add --disable-lash to
-    your configure options.])
-	fi
-fi
 
 AC_MSG_RESULT([
 Please ensure that all the above software is properly installed

@@ -69,7 +69,7 @@ map_control(unsigned char chan, int param, float value, Tick tick)
         {71, CONTROL_PARAM_RESONANCE,           0, 1},
         {74, CONTROL_PARAM_CUTOFF,              0, 1},
         {77, CONTROL_PARAM_CUTOFF_MOD1_AMT,    -1, 2},
-        {84, CONTROL_PARAM_RESO_MOD1_AMT,      -1, 2}
+        {78, CONTROL_PARAM_RESO_MOD1_AMT,      -1, 2}
     };
 
     size_t i;
