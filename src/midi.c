@@ -21,7 +21,7 @@ static int midi_client_id = -1;
 /*
  * Work out the current bpm from the midi queue.
  */
-static float calc_bpm (snd_seq_t* handle, int q)
+static float calc_bpm(snd_seq_t* handle, int q)
 {
      float bpm;
      snd_seq_queue_tempo_t* tempo;
@@ -56,6 +56,7 @@ static void map_control(unsigned char chan, int param, float value)
     }
 
     map[] = {
+        { 1, CONTROL_PARAM_MODWHEEL,        0, 1},
         { 5, CONTROL_PARAM_PORTAMENTO_TIME, 0, 1},
         { 7, CONTROL_PARAM_AMPLITUDE,       0, 1},
         {10, CONTROL_PARAM_PANNING,        -1, 2},
@@ -63,88 +64,99 @@ static void map_control(unsigned char chan, int param, float value)
         {71, CONTROL_PARAM_RESONANCE,       0, 1},
         {74, CONTROL_PARAM_CUTOFF,          0, 1}
     };
-    
+
     unsigned i;
-     
+
     for (i = 0; i < sizeof(map) / sizeof(map[0]); ++i)
         if (map[i].cc == param)
             mixer_control(chan, map[i].param,
-                        value * map[i].scale + map[i].bias);
+                                value * map[i].scale + map[i].bias);
 }
 
 
 /*
  * Perform action(s) based on captured MIDI event(s).
  */
-static void action (snd_seq_t* handle)
+static void action(snd_seq_t* handle)
 {
-     snd_seq_event_t* ev;
+    snd_seq_event_t* ev;
 
-     do
-     {
-          snd_seq_event_input (handle, &ev);
-          switch (ev->type)
-          {
-          case SND_SEQ_EVENT_NOTEON:
-               if (ev->data.note.velocity == 0)
-                    mixer_note_off (ev->data.note.channel,
-                                    ev->data.note.note);
-               else
-                    mixer_note_on (ev->data.note.channel,
-                                   ev->data.note.note,
-                                   ev->data.note.velocity / 127.0);
-	       break;
-          case SND_SEQ_EVENT_NOTEOFF:
-               mixer_note_off (ev->data.note.channel, ev->data.note.note);
-               break;
-          case SND_SEQ_EVENT_START:
-               /* TODO: account for tempo changes throughout the song */
-               sync_start_midi (calc_bpm (handle, ev->data.queue.queue));
-               break;
-          case SND_SEQ_EVENT_CONTROLLER:
-               map_control(ev->data.control.channel, ev->data.control.param,
-                    ev->data.control.value / 127.0);
-		break;
-          case SND_SEQ_EVENT_CONTROL14:
-          case SND_SEQ_EVENT_NONREGPARAM:
-          case SND_SEQ_EVENT_REGPARAM:
-               map_control(ev->data.control.channel, ev->data.control.param,
-                    ev->data.control.value / 16383.0);
-		break;
-	  case SND_SEQ_EVENT_PITCHBEND:
-               mixer_control(ev->data.control.channel, CONTROL_PARAM_PITCH,
-                    ev->data.control.value / 8192.0);
-		break;
-          default:
-		break;
-	  }
-	  snd_seq_free_event (ev);
-     }
-     while (snd_seq_event_input_pending (handle, 0) > 0);
+    do
+    {
+        snd_seq_event_input (handle, &ev);
+        switch (ev->type)
+        {
+        case SND_SEQ_EVENT_NOTEON:
+            if (ev->data.note.velocity == 0)
+                mixer_note_off(ev->data.note.channel,
+                                ev->data.note.note);
+            else
+                mixer_note_on(ev->data.note.channel,
+                                ev->data.note.note,
+                                ev->data.note.velocity / 127.0);
+            break;
+
+        case SND_SEQ_EVENT_NOTEOFF:
+            mixer_note_off (ev->data.note.channel, ev->data.note.note);
+            break;
+
+        case SND_SEQ_EVENT_START:
+            /* TODO: account for tempo changes throughout the song */
+            sync_start_midi (calc_bpm (handle, ev->data.queue.queue));
+            break;
+
+        case SND_SEQ_EVENT_CONTROLLER:
+            map_control(ev->data.control.channel,
+                        ev->data.control.param,
+                        ev->data.control.value / 127.0);
+            break;
+
+        case SND_SEQ_EVENT_CONTROL14:
+        case SND_SEQ_EVENT_NONREGPARAM:
+        case SND_SEQ_EVENT_REGPARAM:
+            map_control(ev->data.control.channel,
+                        ev->data.control.param,
+                        ev->data.control.value / 16383.0);
+            break;
+
+        case SND_SEQ_EVENT_PITCHBEND:
+            mixer_control(ev->data.control.channel,
+                        CONTROL_PARAM_PITCH,
+                        ev->data.control.value / 8192.0);
+            break;
+
+        default:
+            break;
+        }
+
+        snd_seq_free_event (ev);
+
+    } while (snd_seq_event_input_pending (handle, 0) > 0);
 }
 
 
 /*
  * MIDI thread main function: Poll events and act on them.
  */
-static void* poll_events (void* arg)
+static void* poll_events(void* arg)
 {
-     snd_seq_t* handle = arg;
-     int npfd;
-     struct pollfd* pfd;
+    snd_seq_t* handle = arg;
+    int npfd;
+    struct pollfd* pfd;
 
-     npfd = snd_seq_poll_descriptors_count (handle, POLLIN);
-     pfd = alloca (sizeof(struct pollfd) * npfd);
+    npfd = snd_seq_poll_descriptors_count (handle, POLLIN);
+    pfd = alloca (sizeof(struct pollfd) * npfd);
 
-     snd_seq_poll_descriptors (handle, pfd, npfd, POLLIN);
+    snd_seq_poll_descriptors (handle, pfd, npfd, POLLIN);
 
-     while (1)
-     {
-	  if (poll (pfd, npfd, 100) > 0)
-	       action (handle);
-	  if (!running)
-	       break;
-     }
+    while (1)
+    {
+        if (poll (pfd, npfd, 100) > 0)
+            action (handle);
+
+        if (!running)
+            break;
+    }
 
      return 0;
 }
@@ -153,7 +165,7 @@ static void* poll_events (void* arg)
 /*
  * Open MIDI input port.
  */
-static int open_seq (snd_seq_t** handle)
+static int open_seq(snd_seq_t** handle)
 {
      int portid;
 
@@ -182,7 +194,7 @@ static int open_seq (snd_seq_t** handle)
 /*
  * Start MIDI: Open input port and fire up event poll thread.
  */
-int midi_start ( )
+int midi_start(void)
 {
      int err;
      snd_seq_t* handle;
@@ -208,7 +220,7 @@ int midi_start ( )
 /*
  * Return ALSA Sequencer client ID.
  */
-int midi_get_client_id ( )
+int midi_get_client_id(void)
 {
      return midi_client_id;
 }
@@ -217,7 +229,7 @@ int midi_get_client_id ( )
 /*
  * Stop MIDI: Kill event poll thread.
  */
-void midi_stop ( )
+void midi_stop(void)
 {
      if (!running)
      {

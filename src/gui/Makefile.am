@@ -28,9 +28,4 @@ INCLUDES = 			\
 	@LIBGNOMECANVAS_CFLAGS@ \
 	@PHAT_CFLAGS@
 
-if WITH_LASH
-INCLUDES += 			\
-	@LASH_CFLAGS@
-endif
-
 libgui_a_CFLAGS = $(CFLAGS) -I.. -DINSTALLDIR=\"$(datadir)\"

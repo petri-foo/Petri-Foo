@@ -61,12 +61,15 @@ map_control(unsigned char chan, int param, float value, Tick tick)
     }
 
     map[] = {
-        { 5, CONTROL_PARAM_PORTAMENTO_TIME, 0, 1},
-        { 7, CONTROL_PARAM_AMPLITUDE,       0, 1},
-        {10, CONTROL_PARAM_PANNING,        -1, 2},
-        {65, CONTROL_PARAM_PORTAMENTO,      0, 1},
-        {71, CONTROL_PARAM_RESONANCE,       0, 1},
-        {74, CONTROL_PARAM_CUTOFF,          0, 1}
+        { 1, CONTROL_PARAM_MODWHEEL,            0, 1},
+        { 5, CONTROL_PARAM_PORTAMENTO_TIME,     0, 1},
+        { 7, CONTROL_PARAM_AMPLITUDE,           0, 1},
+        {10, CONTROL_PARAM_PANNING,            -1, 2},
+        {65, CONTROL_PARAM_PORTAMENTO,          0, 1},
+        {71, CONTROL_PARAM_RESONANCE,           0, 1},
+        {74, CONTROL_PARAM_CUTOFF,              0, 1},
+        {77, CONTROL_PARAM_CUTOFF_MOD1_AMT,    -1, 2},
+        {84, CONTROL_PARAM_RESO_MOD1_AMT,      -1, 2}
     };
 
     size_t i;
@@ -153,7 +156,7 @@ static int process(jack_nframes_t frames, void* arg)
         else if ((midi_data[0] & 0xF0) == 0xE0)
         {   /* pitch bend */
             mixer_direct_control(midi_data[0] & 0x0F, CONTROL_PARAM_PITCH,
-                ((midi_data[2] << 7) | midi_data[1]) /  8192.0,
+                -1.0 + ((midi_data[2] << 7) | midi_data[1]) /  8192.0,
                     jack_midi_event.time);
         }
         event_index++;

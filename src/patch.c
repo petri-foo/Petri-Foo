@@ -589,10 +589,6 @@ gain (Patch* p, PatchVoice* v, int index, float* l, float* r)
     if (v->released && (v->fade_declick == 0.0f //< ALMOST_ZERO
                     || (v->vol_direct && *v->vol_direct < ALMOST_ZERO)))
     {
-        if (v->vol_direct)
-        {
-            debug("v->vol_direct:%1.6f\n", *v->vol_direct);
-        }
         return -1;
     }
 
@@ -922,7 +918,6 @@ inline static void patch_render_patch (Patch* p, float* buf, int nframes)
             for (k = 0; k < PATCH_MAX_LFOS; ++k)
                 if (p->glfo_params[k].lfo_on)
                     lfo_set_output(p->glfo[k], p->glfo_table[k][j]);
-                    /*p->glfo[k].val = p->glfo_table[k][j];*/
 
             for (k = 0; k < VOICE_MAX_ENVS; ++k)
                 if (p->env_params[k].env_on)
@@ -1089,6 +1084,12 @@ patch_control_patch(Patch* p, ControlParamType param, float value)
 {
     switch( param )
     {
+    case CONTROL_PARAM_MODWHEEL:
+/*
+        p->mod1_pitch_max = pow(2, (value * PATCH_MAX_PITCH_STEPS) / 12.0);
+        p->mod1_pitch_min = pow(2, -(value * PATCH_MAX_PITCH_STEPS) / 12.0);
+*/
+        break;
     case CONTROL_PARAM_AMPLITUDE:
         p->vol.val = value;
         break;
@@ -1109,6 +1110,12 @@ patch_control_patch(Patch* p, ControlParamType param, float value)
         break;
     case CONTROL_PARAM_PORTAMENTO_TIME:
         p->porta_secs = value;
+        break;
+    case CONTROL_PARAM_CUTOFF_MOD1_AMT:
+        p->ffreq.mod1_amt = value;
+        break;
+    case CONTROL_PARAM_RESO_MOD1_AMT:
+        p->freso.mod1_amt = value;
         break;
     default:
         break;

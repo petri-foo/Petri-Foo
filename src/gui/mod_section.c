@@ -199,21 +199,17 @@ unblock_mod_srcs:
 
 static gboolean refresh(gpointer data)
 {
-/*    float param1, param2;*/
-/* FIXME: we need to look into this refresh stuff I seem to recall */
+    /* reflect certain midi cc changes of parameters in the gui */
+
+    float v = 0.0;
     ModSection* self = MOD_SECTION(data);
     ModSectionPrivate* p = MOD_SECTION_GET_PRIVATE(self);
 
     if (p->patch_id < 0)
         return TRUE;
-/*
-    block(p);
 
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->amp_fan), amp);
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->pan_fan), pan);
+    mod_section_set_patch(self, p->patch_id);
 
-    unblock(p);
-*/
     return TRUE;
 }
 
@@ -364,15 +360,12 @@ create_mod_srcs:
     /* done */
     connect(p);
 
-    switch(param)
-    {
-    case PATCH_PARAM_AMPLITUDE:
-        p->refresh = g_timeout_add(GUI_REFRESH_TIMEOUT, refresh,
-                                                        (gpointer)self);
-        break;
-    default:
-        p->refresh = -1;
-    }
+    /*  add a timeout to allow the gui to reflect changes in
+        parameters which are changeable via midi cc mesages
+     */
+
+    p->refresh = g_timeout_add(GUI_REFRESH_TIMEOUT, refresh,
+                                                    (gpointer)self);
 }
 
 

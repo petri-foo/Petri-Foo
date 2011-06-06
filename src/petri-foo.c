@@ -15,11 +15,6 @@
 #include "mod_src.h"
 #include "names.h"
 #include "dish_file.h"
-
-#ifdef HAVE_LASH
-#include "lashdriver.h"
-#endif
-
 #include "jackdriver.h"
 
 void show_usage (void)
@@ -78,9 +73,7 @@ int main(int argc, char *argv[])
 
 	/* constructors */
     mod_src_create();
-#ifdef HAVE_LASH
-	lashdriver_init(lash_args);
-#endif
+
     gtk_init(&argc, &argv);
     gui_init();
     driver_init();
@@ -90,13 +83,8 @@ int main(int argc, char *argv[])
 
 	/* start */
 	driver_start();
-	midi_start();
-#ifdef HAVE_LASH
-	lashdriver_start();
-	lashdriver_set_jack_name((char*)driver_get_client_name());
-	lashdriver_set_alsa_id(midi_get_client_id());
-#endif
-
+/*	midi_start();
+*/
     if (optind < argc)
         dish_file_read(argv[optind]);
     else
@@ -110,7 +98,7 @@ int main(int argc, char *argv[])
     gtk_main();
 
 	/* stop */
-	midi_stop();
+/*	midi_stop();*/
 	driver_stop();
 
 	/* destructors */

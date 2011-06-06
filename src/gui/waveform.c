@@ -631,6 +631,8 @@ static void draw_wave(WaveformPrivate* p, int w, int h, cairo_t* cr)
         float maxy = -2;    /* max val found over interval */
         int draw_miny = 0;  /* pixel value of miny */
         int draw_maxy = 0;  /* pixel value of maxy */
+        int draw_lminy = 0;  /* pixel value of lminy */
+        int draw_lmaxy = 0;  /* pixel value of lmaxy */
         int lx = 0;	        /* last x value (prevents trouble when x == 0)*/
         int xerr = 0;       /* x error value */
         int x = 0;          /* x index */
@@ -683,12 +685,12 @@ static void draw_wave(WaveformPrivate* p, int w, int h, cairo_t* cr)
              * calculated if they aren't needed (efficiency) */
             if (maxy < lminy)
             {
-                cairo_move_to (cr, lx, (lminy+1)/2 * h);
+                cairo_move_to (cr, lx, draw_lminy);
                 cairo_line_to (cr, x, draw_maxy);
             }
             else if (miny > lmaxy)
             {
-                cairo_move_to (cr, lx, (lmaxy+1)/2 * h);
+                cairo_move_to (cr, lx, draw_lmaxy);
                 cairo_line_to (cr, x, draw_miny);
             }
 
@@ -701,6 +703,8 @@ static void draw_wave(WaveformPrivate* p, int w, int h, cairo_t* cr)
             lx = x++;
             lminy = miny;
             lmaxy = maxy;
+            draw_lminy = draw_miny;
+            draw_lmaxy = draw_maxy;
 
             /* this trick ensures that miny and maxy will be set at
             * least once */

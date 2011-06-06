@@ -24,18 +24,12 @@ petri_foo_SOURCES = 					\
 	sync.c			sync.h			\
 	ticks.c			ticks.h
                                                                                                                                                                         
-if WITH_LASH                                                                                                                                                            
-petri_foo_SOURCES += 					\
-	lashdriver.c 		lashdriver.h                                                                                                                           
-endif
-
 INCLUDES = 			\
 	@ALSA_CFLAGS@ 		\
 	@JACK_CFLAGS@ 		\
 	@LIBSAMPLERATE_CFLAGS@ 	\
 	@LIBSNDFILE_CFLAGS@ 	\
 	@LIBXML_CFLAGS@ 	\
-	@LASH_CFLAGS@ 		\
 	@GTK_CFLAGS@
 
 petri_foo_LDADD = 		\
@@ -47,7 +41,6 @@ petri_foo_LDADD = 		\
 	@LIBSAMPLERATE_LIBS@ 	\
 	@LIBSNDFILE_LIBS@ 	\
 	@LIBXML_LIBS@ 		\
-	@LASH_LIBS@ 		\
 	@GTK_LIBS@ 		\
 	@LIBGNOMECANVAS_LIBS@
 	
