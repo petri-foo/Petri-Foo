@@ -16,6 +16,7 @@
 #include "driver.h"     /* for DRIVER_DEFAULT_SAMPLERATE */
 #include "midi.h"       /* for MIDI_CHANS */
 #include "patch_set_and_get.h"
+#include "midi_control.h"
 
 
 #include "patch_private/patch_data.h"
@@ -88,12 +89,15 @@ int patch_create(const char *name)
 {
     int id;
     Patch* p;
-    bool default_patch = (strcmp("Default", name) == 0);
+    bool default_patch = (name == 0);
 
     /* find an unoccupied patch id */
     for (id = 0; patches[id] && patches[id]->active; ++id)
         if (id == PATCH_COUNT)
             return PATCH_LIMIT;
+
+    if (default_patch)
+        name = "Default";
 
     if (!(p = patch_new(name)))
     {
@@ -132,6 +136,30 @@ int patch_create(const char *name)
 
         /* use eg1 for amplitude envelope */
         p->vol.direct_mod_id = MOD_SRC_EG;
+
+        /* setup default controllers */
+
+        patch_set_mod1_src( id, PATCH_PARAM_PITCH, MOD_SRC_PITCH_WHEEL);
+        patch_set_mod1_amt( id, PATCH_PARAM_PITCH,
+                                        6.0f / PATCH_MAX_PITCH_STEPS);
+
+        patch_set_mod1_src( id, PATCH_PARAM_AMPLITUDE,
+                                MOD_SRC_MIDI_CC | CC_CHANNEL_VOLUME);
+        patch_set_mod1_amt( id, PATCH_PARAM_AMPLITUDE, 1.0f);
+
+        patch_set_mod1_src( id, PATCH_PARAM_PANNING,
+                                MOD_SRC_MIDI_CC | CC_PAN);
+        patch_set_mod1_amt( id, PATCH_PARAM_PANNING, 1.0f);
+
+        patch_param_set_value(  id, PATCH_PARAM_CUTOFF, 0.5f);
+        patch_set_mod1_src( id, PATCH_PARAM_CUTOFF,
+                                MOD_SRC_MIDI_CC | CC_SNDCTRL5_BRIGHTNESS);
+        patch_set_mod1_amt( id, PATCH_PARAM_CUTOFF, 1.0f);
+
+        patch_param_set_value(  id, PATCH_PARAM_RESONANCE, 0.5f);
+        patch_set_mod1_src( id, PATCH_PARAM_RESONANCE,
+                                MOD_SRC_MIDI_CC | CC_SNDCTRL2_TIMBRE);
+        patch_set_mod1_amt( id, PATCH_PARAM_RESONANCE, 0.999f);
 
         patch_unlock(id);
 
@@ -471,8 +499,8 @@ int patch_sample_load(int id, const char *name,
 
     if (defsample)
     {
-        patches[id]->loop_start = 294;
-        patches[id]->loop_stop = 5181;
+        patches[id]->loop_start = 296;
+        patches[id]->loop_stop = 5203;
         patches[id]->fade_samples = 100;
         patches[id]->xfade_samples = 0;
     }

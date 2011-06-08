@@ -3,6 +3,7 @@
 #include "maths.h"
 #include "petri-foo.h"
 #include "driver.h"
+#include "patch.h"
 #include "sync.h"
 #include "ticks.h"
 
@@ -27,7 +28,12 @@ struct _LFO
     float const*    freq_mod2;
     float           mod1_amt;
     float           mod2_amt;
-
+/*
+    float const*    am1;
+    float const*    am2;
+    float           am1_amt;
+    float           am2_amt;
+*/
 };
 
 
@@ -52,6 +58,29 @@ inline static void lfo_phase_inc_from_freq (LFO* lfo, float freq)
 inline static void lfo_phase_inc_from_beats (LFO* lfo, float beats)
 {
      lfo_phase_inc_from_freq(lfo, (sync_tempo / 60.0) / beats);
+}
+
+
+void lfo_params_init(LFOParams* lfopar, float freq, LFOShape shape)
+{
+    lfopar->lfo_on = true;
+    lfopar->shape = shape;
+    lfopar->freq = freq;
+    lfopar->sync_beats = 0.0;
+    lfopar->sync = false;
+    lfopar->positive = false;
+    lfopar->delay = 0.0;
+    lfopar->attack = 0.0;
+    lfopar->mod1_id = MOD_SRC_NONE;
+    lfopar->mod1_amt = 0.0;
+    lfopar->mod2_id = MOD_SRC_NONE;
+    lfopar->mod2_amt = 0.0;
+/*
+    lfopar->am1_id = MOD_SRC_NONE;
+    lfopar->am1_amt = 0.0;
+    lfopar->am2_id = MOD_SRC_NONE;
+    lfopar->am2_amt = 0.0;
+*/
 }
 
 
@@ -88,6 +117,12 @@ void lfo_init(LFO* lfo)
     lfo->freq_mod2 = NULL;
     lfo->mod1_amt = 0.0;
     lfo->mod2_amt = 0.0;
+/*
+    lfo->am1 = NULL;
+    lfo->am2 = NULL;
+    lfo->am1_amt = 0.0;
+    lfo->am2_amt = 0.0;
+*/
 }
 
 
@@ -153,7 +188,7 @@ void lfo_rigger (LFO* lfo, LFOParams* params)
     case LFO_SHAPE_SQUARE:
         lfo->tab = squ_tab;
         break;
-    case LFO_SHAPE_SINE:		/* fallthrough is intentional */
+    case LFO_SHAPE_SINE:
     default:
         lfo->tab = sin_tab;
         break;
@@ -172,6 +207,10 @@ void lfo_rigger (LFO* lfo, LFOParams* params)
 
     lfo->mod1_amt = params->mod1_amt;
     lfo->mod2_amt = params->mod2_amt;
+/*
+    lfo->am1_amt = params->am1_amt;
+    lfo->am2_amt = params->am2_amt;
+*/
 }
 
 

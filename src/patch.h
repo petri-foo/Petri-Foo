@@ -7,7 +7,6 @@
 
 #include "ticks.h"
 #include "lfo.h"
-#include "control.h"
 
 
 typedef struct _Patch Patch;
@@ -42,29 +41,34 @@ typedef enum _MOD_SRC_ID_BITMASK
 {
     MOD_SRC_NONE,
 
-    MOD_SRC_MISC =          0x10,
+    MOD_SRC_MISC =          0x0100,
 
     /* specific enumerations for the miscellaneous mod sources */
 
-    MOD_SRC_ONE =           0x10,
+    MOD_SRC_ONE =           0x0100,
     MOD_SRC_KEY,
     MOD_SRC_VELOCITY,
+    MOD_SRC_PITCH_WHEEL,
+
 /*  MOD_SRC_NOISE, */
 
     MOD_SRC__LAST_MISC__,   /* used to gain a count of misc mod srcs */
 
     /* no enumerations are created for specific EGs or specific LFOs */
+    /* counts of EGs and LFOs are provided top of this file...       */
 
-    MOD_SRC_EG =            0x20,
+    MOD_SRC_EG =            0x0200,
 
-    MOD_SRC_VLFO =          0x40, /* glfos not immediately following
-                                   * vlfos will cause breakage! -ru sure? */
-    MOD_SRC_GLFO =          0x80,
+    MOD_SRC_VLFO =          0x0400,
 
-    /* counts of EGs and LFOs are provided top of this file */
+    MOD_SRC_GLFO =          0x0800,
+
+    /* MIDI Controllers */
+
+    MOD_SRC_MIDI_CC =       0x1000,
 
     /* helpful bitmasks: */
-    MOD_SRC_GLOBALS =       MOD_SRC_GLFO,
+    MOD_SRC_GLOBALS =       MOD_SRC_GLFO | MOD_SRC_MIDI_CC,
 
     MOD_SRC_LFOS =          MOD_SRC_VLFO | MOD_SRC_GLFO,
 
@@ -72,6 +76,7 @@ typedef enum _MOD_SRC_ID_BITMASK
                           | MOD_SRC_EG
                           | MOD_SRC_VLFO
                           | MOD_SRC_GLFO
+                          | MOD_SRC_MIDI_CC
 } mod_src_id_bitmask;
 
 
@@ -152,7 +157,11 @@ typedef enum
 
 
 /* playback and rendering functions  */
+
+/* obsolete
 void patch_control         (int chan, ControlParamType param, float value);
+ */
+
 void patch_release         (int chan, int note);
 void patch_release_with_id (int id, int note);
 void patch_render          (float* buf, int nframes);

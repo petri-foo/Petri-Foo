@@ -5,7 +5,6 @@ bin_PROGRAMS = petri-foo
 petri_foo_SOURCES = 					\
 	adsr.c			adsr.h			\
 				config.h		\
-				control.h		\
 	dish_file.c		dish_file.h		\
 	driver.c		driver.h		\
 	instance.c		instance.h		\
@@ -13,6 +12,7 @@ petri_foo_SOURCES = 					\
 	lfo.c			lfo.h			\
 	maths.c			maths.h			\
 	midi.c			midi.h			\
+				midi_control.h		\
 	mixer.c			mixer.h			\
 	mod_src.c		mod_src.h		\
 	names.c			names.h			\

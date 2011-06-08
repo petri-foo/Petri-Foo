@@ -14,37 +14,41 @@
 #include "sync.h"
 #include "control.h"
 
-static Atomic    running = 0;
-static pthread_t midi_thread;
-static int midi_client_id = -1;
+
+static Atomic       running = 0;
+static pthread_t    midi_thread;
+static int          midi_client_id = -1;
+
 
 /*
- * Work out the current bpm from the midi queue.
+ * Work out bpm from midi queue.
  */
 static float calc_bpm(snd_seq_t* handle, int q)
 {
-     float bpm;
-     snd_seq_queue_tempo_t* tempo;
+    float bpm;
+    snd_seq_queue_tempo_t* tempo;
 
-     snd_seq_queue_tempo_alloca (&tempo);
+    snd_seq_queue_tempo_alloca(&tempo);
 
-     /* convert microsec per quarter to bpm */
-     snd_seq_get_queue_tempo (handle, q, tempo);
-     if (snd_seq_queue_tempo_get_tempo (tempo) == 0)
-     {
-	  errmsg ("about to encounter a floating point exception\n");
-	  errmsg ("bailing out and providing an arbitrary tempo of 120.0\n");
-	  return 120.0;
-     }
-     bpm = 60000000 / snd_seq_queue_tempo_get_tempo (tempo);
+    /* convert microsec per quarter to bpm */
+    snd_seq_get_queue_tempo(handle, q, tempo);
 
-     return bpm;
+    if (snd_seq_queue_tempo_get_tempo(tempo) == 0)
+    {
+        errmsg ("about to encounter a floating point exception\n");
+        errmsg ("bailing out and providing an arbitrary tempo of 120.0\n");
+        return 120.0;
+    }
+
+    bpm = 60000000 / snd_seq_queue_tempo_get_tempo(tempo);
+
+    return bpm;
 }
 
 
 /*
  * Map MIDI controller to control parameter.
- */
+
 static void map_control(unsigned char chan, int param, float value)
 {
     static struct
@@ -74,11 +78,9 @@ static void map_control(unsigned char chan, int param, float value)
             mixer_control(chan, map[i].param,
                                 value * map[i].scale + map[i].bias);
 }
-
-
-/*
- * Perform action(s) based on captured MIDI event(s).
  */
+
+
 static void action(snd_seq_t* handle)
 {
     snd_seq_event_t* ev;
@@ -108,22 +110,22 @@ static void action(snd_seq_t* handle)
             break;
 
         case SND_SEQ_EVENT_CONTROLLER:
-            map_control(ev->data.control.channel,
-                        ev->data.control.param,
-                        ev->data.control.value / 127.0);
+            mixer_control(  ev->data.control.channel,
+                            ev->data.control.param,
+                            (ev->data.control.value - 64.0) / 127.0);
             break;
 
         case SND_SEQ_EVENT_CONTROL14:
         case SND_SEQ_EVENT_NONREGPARAM:
         case SND_SEQ_EVENT_REGPARAM:
-            map_control(ev->data.control.channel,
-                        ev->data.control.param,
-                        ev->data.control.value / 16383.0);
+            mixer_control(  ev->data.control.channel,
+                            ev->data.control.param,
+                            ev->data.control.value / 16383.0);
             break;
 
         case SND_SEQ_EVENT_PITCHBEND:
             mixer_control(ev->data.control.channel,
-                        CONTROL_PARAM_PITCH,
+                        MIXER_CC_PITCH_BEND,
                         ev->data.control.value / 8192.0);
             break;
 
@@ -137,9 +139,6 @@ static void action(snd_seq_t* handle)
 }
 
 
-/*
- * MIDI thread main function: Poll events and act on them.
- */
 static void* poll_events(void* arg)
 {
     snd_seq_t* handle = arg;
@@ -164,83 +163,75 @@ static void* poll_events(void* arg)
 }
 
 
-/*
- * Open MIDI input port.
- */
 static int open_seq(snd_seq_t** handle)
 {
-     int portid;
+    int portid;
 
-     if (snd_seq_open (handle, "default", SND_SEQ_OPEN_INPUT, 0) < 0)
-     {
-	  debug ("Failed to open ALSA sequencer\n");
-	  return MIDI_ERR_SEQ;
-     }
+    if (snd_seq_open(handle, "default", SND_SEQ_OPEN_INPUT, 0) < 0)
+    {
+        debug ("Failed to open ALSA sequencer\n");
+        return MIDI_ERR_SEQ;
+    }
 
-     snd_seq_set_client_name (*handle, get_instance_name ( ));
-     if ((portid = snd_seq_create_simple_port (*handle,
-                           driver_get_client_name(),
-					       SND_SEQ_PORT_CAP_WRITE |
-					       SND_SEQ_PORT_CAP_SUBS_WRITE,
-					       SND_SEQ_PORT_TYPE_APPLICATION))
-	 < 0)
-     {
-	  debug ("Failed to create ALSA sequencer port\n");
-	  return MIDI_ERR_PORT;
-     }
+    snd_seq_set_client_name(*handle, get_instance_name());
 
-     return 0;
+    if ((portid = snd_seq_create_simple_port(   *handle,
+                                                driver_get_client_name(),
+                                SND_SEQ_PORT_CAP_WRITE |
+                                SND_SEQ_PORT_CAP_SUBS_WRITE,
+                                SND_SEQ_PORT_TYPE_APPLICATION)) < 0)
+    {
+        debug ("Failed to create ALSA sequencer port\n");
+        return MIDI_ERR_PORT;
+    }
+
+    return 0;
 }
 
 
-/*
- * Start MIDI: Open input port and fire up event poll thread.
- */
 int midi_start(void)
 {
-     int err;
-     snd_seq_t* handle;
+    int err;
+    snd_seq_t* handle;
 
-     if (running)
-     {
-	  debug ("MIDI already running, so not starting\n");
-	  return 0;
-     }
+    if (running)
+    {
+        debug ("MIDI already running, so not starting\n");
+        return 0;
+    }
 
-     debug ("Starting MIDI\n");
-     if ((err = open_seq (&handle)) < 0)
-	  return err;
+    debug ("Starting MIDI\n");
 
-     running = 1;
-     midi_client_id = snd_seq_client_id (handle);
-     pthread_create (&midi_thread, NULL, poll_events, (void*) handle);
-     debug ("MIDI started\n");
-     return 0;
+    if ((err = open_seq(&handle)) < 0)
+        return err;
+
+    running = 1;
+    midi_client_id = snd_seq_client_id(handle);
+    pthread_create(&midi_thread, NULL, poll_events, (void*)handle);
+    debug ("MIDI started\n");
+
+    return 0;
 }
 
 
-/*
- * Return ALSA Sequencer client ID.
- */
 int midi_get_client_id(void)
 {
-     return midi_client_id;
+    return midi_client_id;
 }
 
 
-/*
- * Stop MIDI: Kill event poll thread.
- */
 void midi_stop(void)
 {
-     if (!running)
-     {
-	  debug ("MIDI not running, so not stopping\n");
-	  return;
-     }
+    if (!running)
+    {
+        debug ("MIDI not running, so not stopping\n");
+        return;
+    }
 
-     debug ("Stopping MIDI\n");
-     running = 0;
-     pthread_join (midi_thread, NULL);
-     debug ("MIDI stopped\n");
+    debug ("Stopping MIDI\n");
+
+    running = 0;
+    pthread_join(midi_thread, NULL);
+
+    debug ("MIDI stopped\n");
 }

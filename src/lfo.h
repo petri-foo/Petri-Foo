@@ -47,7 +47,12 @@ typedef struct _LFOParams
     float   mod1_amt;   /* amount of modulation we add [-1.0, 1.0]  */
     int     mod2_id;
     float   mod2_amt;
-
+/*
+    int     am1_id;
+    float   am1_amt;
+    int     am2_id;
+    int     am2_amt;
+*/
 } LFOParams;
 
 
@@ -65,13 +70,13 @@ void    lfo_set_samplerate(int rate);
 void    lfo_set_tempo(float bpm);
 
 
+void    lfo_params_init(LFOParams*, float freq, LFOShape);
+
+
 LFO*    lfo_new(void);
 void    lfo_free(LFO*);
 void    lfo_init(LFO*);
 
-
-/* prepare an LFO for use (must be first function called on an LFO) */
-void    lfo_prepare(LFO*);
 
 /* activate an LFO using the given params; an LFO must be re-activated
  * after the samplerate/tempo changes in order for those changes to
@@ -88,7 +93,10 @@ float   lfo_tick(LFO*);
 float const*    lfo_output(LFO*);
 void            lfo_set_freq_mod1(LFO*, float const*);
 void            lfo_set_freq_mod2(LFO*, float const*);
-
+/*
+void            lfo_set_amp_mod1(LFO*,  float const*);
+void            lfo_set_amp_mod2(LFO*,  float const*);
+*/
 /* use to get pre-calculated lfo table values into global lfo */
 void            lfo_set_output(LFO*, float);
 

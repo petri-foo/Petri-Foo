@@ -1,6 +1,7 @@
 #include "mod_src.h"
 
 
+#include "midi_control.h"
 #include "patch.h"
 #include "petri-foo.h"
 
@@ -15,7 +16,112 @@ static id_name* mod_src_misc = 0;
 static id_name* mod_src_egs = 0;
 static id_name* mod_src_vlfos = 0;
 static id_name* mod_src_glfos = 0;
+static id_name* mod_src_midi_cc = 0;
 
+
+static void make_midi_cc(id_name* ids, int id, const char* name)
+{
+    char buf[80];
+
+    if (snprintf(buf, 80, "CC %d - %s", id, name) > 80)
+        buf[80] = '\0';
+
+    id_name_init(ids, MOD_SRC_MIDI_CC + id, buf);
+}
+
+static id_name* get_midi_cc(id_name* start)
+{
+    id_name* ids = start;
+    const char* undefined = "Undefined";
+    const char* unimplemented = "Unimplemented";
+    int id = 0;
+
+    make_midi_cc(ids++, id++,   "Bank Select");
+    make_midi_cc(ids++, id++,   "Mod Wheel");
+    make_midi_cc(ids++, id++,   "Breath");
+
+    make_midi_cc(ids++, id++,   undefined);
+
+    make_midi_cc(ids++, id++,   "Foot");
+    make_midi_cc(ids++, id++,   "Portamento Time");
+    make_midi_cc(ids++, id++,   "Data Entry MSB");
+    make_midi_cc(ids++, id++,   "Channel Volume");
+    make_midi_cc(ids++, id++,   "Balance");
+
+    make_midi_cc(ids++, id++,   undefined);
+
+    make_midi_cc(ids++, id++,   "Pan");
+    make_midi_cc(ids++, id++,   "Expression");
+    make_midi_cc(ids++, id++,   "Effect Control 1");
+    make_midi_cc(ids++, id++,   "Effect Control 2");
+
+    make_midi_cc(ids++, id++,   undefined);
+    make_midi_cc(ids++, id++,   undefined);
+
+    make_midi_cc(ids++, id++,   "General Purpose 1");
+    make_midi_cc(ids++, id++,   "General Purpose 2");
+    make_midi_cc(ids++, id++,   "General Purpose 3");
+    make_midi_cc(ids++, id++,   "General Purpose 4");
+
+    for (; id < 32;)
+        make_midi_cc(ids++, id++, undefined);
+
+    for (; id < 64;)
+        make_midi_cc(ids++, id++, unimplemented);
+
+    make_midi_cc(ids++, id++,   "Sustain On/Off");
+    make_midi_cc(ids++, id++,   "Portamento On/Off");
+    make_midi_cc(ids++, id++,   "Sostenuto On/Off");
+    make_midi_cc(ids++, id++,   "Soft On/Off");
+    make_midi_cc(ids++, id++,   "Legato On/Off");
+    make_midi_cc(ids++, id++,   "Hold 2 On/Off");
+
+    make_midi_cc(ids++, id++,   "Variation");
+    make_midi_cc(ids++, id++,   "Timbre");
+    make_midi_cc(ids++, id++,   "Release Time");
+    make_midi_cc(ids++, id++,   "Attack Time");
+    make_midi_cc(ids++, id++,   "Brightness");
+    make_midi_cc(ids++, id++,   "Decay Time");
+    make_midi_cc(ids++, id++,   "Vibrato Rate");
+    make_midi_cc(ids++, id++,   "Vibrato Depth");
+    make_midi_cc(ids++, id++,   "Vibrato Delay");
+    make_midi_cc(ids++, id++,   "Sound Controller 10");
+
+    make_midi_cc(ids++, id++,   "General Purpose 5");
+    make_midi_cc(ids++, id++,   "General Purpose 6");
+    make_midi_cc(ids++, id++,   "General Purpose 7");
+    make_midi_cc(ids++, id++,   "General Purpose 8");
+
+    make_midi_cc(ids++, id++,   "Portamento Control");
+
+    make_midi_cc(ids++, id++,   undefined);
+    make_midi_cc(ids++, id++,   undefined);
+    make_midi_cc(ids++, id++,   undefined);
+
+    make_midi_cc(ids++, id++,   "Hi-Res Velocity Prefix");
+
+    make_midi_cc(ids++, id++,   undefined);
+    make_midi_cc(ids++, id++,   undefined);
+
+    make_midi_cc(ids++, id++,   "Effects 1 Depth");
+    make_midi_cc(ids++, id++,   "Effects 2 Depth");
+    make_midi_cc(ids++, id++,   "Effects 3 Depth");
+    make_midi_cc(ids++, id++,   "Effects 4 Depth");
+    make_midi_cc(ids++, id++,   "Effects 5 Depth");
+
+    make_midi_cc(ids++, id++,   "Data Increment");
+    make_midi_cc(ids++, id++,   "Data Decrement");
+
+    make_midi_cc(ids++, id++,   "NRPN - LSB");
+    make_midi_cc(ids++, id++,   "NRPN - MSB");
+    make_midi_cc(ids++, id++,   "RPN - LSB");
+    make_midi_cc(ids++, id++,   "RPN - MSB");
+
+    for (; id < CC__CONTROLLER__LAST;)
+        make_midi_cc(ids++, id++, undefined);
+
+    return ids;
+}
 
 void mod_src_create(void)
 {
@@ -40,6 +146,9 @@ void mod_src_create(void)
 
     for(; !(ids->id & MOD_SRC_GLFO); ++ids);
     mod_src_glfos = ids;
+
+    for(; !(ids->id & MOD_SRC_MIDI_CC); ++ ids);
+    mod_src_midi_cc = ids;
 }
 
 
@@ -73,6 +182,9 @@ id_name* mod_src_get(int id_bitmask)
     if (bitmask & MOD_SRC_GLFO)
         count += PATCH_MAX_LFOS;
 
+    if (bitmask & MOD_SRC_MIDI_CC)
+        count += CC__CONTROLLER__LAST;
+
     ids = idnames = malloc(sizeof(*idnames) * (count + 1));
 
     if (!idnames)
@@ -88,6 +200,7 @@ id_name* mod_src_get(int id_bitmask)
         id_name_init(ids++, MOD_SRC_ONE,        "1.0");
         id_name_init(ids++, MOD_SRC_KEY,        "Key");
         id_name_init(ids++, MOD_SRC_VELOCITY,   "Velocity");
+        id_name_init(ids++, MOD_SRC_PITCH_WHEEL,"Pitch Wheel");
     }
 
     if (bitmask & MOD_SRC_EG)
@@ -98,6 +211,11 @@ id_name* mod_src_get(int id_bitmask)
 
     if (bitmask & MOD_SRC_GLFO)
         ids = id_name_sequence(ids, MOD_SRC_GLFO, PATCH_MAX_LFOS, "GLFO%d");
+
+    if (bitmask & MOD_SRC_MIDI_CC)
+    {
+        ids = get_midi_cc(ids);
+    }
 
     /* terminate */
     id_name_init(ids, 0, 0);
@@ -153,6 +271,13 @@ int mod_src_id(const char* name, int mask)
     if (mask & MOD_SRC_GLFO)
     {
         for (ids = mod_src_glfos; (ids->id & MOD_SRC_GLFO); ++ids)
+            if (strcmp(ids->name, name) == 0)
+                return ids->id;
+    }
+
+    if (mask & MOD_SRC_MIDI_CC)
+    {
+        for (ids = mod_src_midi_cc; (ids->id & MOD_SRC_MIDI_CC); ++ids)
             if (strcmp(ids->name, name) == 0)
                 return ids->id;
     }

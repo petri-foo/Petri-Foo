@@ -2,7 +2,7 @@
 
 
 #include "patch_defs.h"
-
+#include "mixer.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -147,7 +147,7 @@ Patch* patch_new(const char* name)
     defadsr.hold =      0.0;
     defadsr.decay =     0.0;
     defadsr.sustain =   1.0;
-    defadsr.release =   0.150;
+    defadsr.release =   0.025;
 
     for (i = 0; i < VOICE_MAX_ENVS; i++)
         p->env_params[i] = defadsr;
@@ -203,6 +203,8 @@ float const* patch_mod_id_to_pointer(int id, Patch* p, PatchVoice* v)
     case MOD_SRC_ONE:       return &one;
     case MOD_SRC_VELOCITY:  return &v->vel;
     case MOD_SRC_KEY:       return &v->key_track;
+    case MOD_SRC_PITCH_WHEEL:
+        return mixer_get_control_output(p->channel, MIXER_CC_PITCH_BEND);
     }
 
     if (id & MOD_SRC_EG)
@@ -227,6 +229,13 @@ float const* patch_mod_id_to_pointer(int id, Patch* p, PatchVoice* v)
 
         if (id < PATCH_MAX_LFOS)
             return lfo_output(p->glfo[id]);
+    }
+
+    if (id & MOD_SRC_MIDI_CC)
+    {
+        id &= ~MOD_SRC_MIDI_CC;
+
+        return mixer_get_control_output(p->channel, id);
     }
 
     debug("unknown modulation source:%d\n", id);

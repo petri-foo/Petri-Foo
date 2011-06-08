@@ -1078,17 +1078,13 @@ void patch_trigger_with_id (int id, int note, float vel, Tick ticks)
     return;
 }
 
-
+/* obsolete
 static void
 patch_control_patch(Patch* p, ControlParamType param, float value)
 {
     switch( param )
     {
     case CONTROL_PARAM_MODWHEEL:
-/*
-        p->mod1_pitch_max = pow(2, (value * PATCH_MAX_PITCH_STEPS) / 12.0);
-        p->mod1_pitch_min = pow(2, -(value * PATCH_MAX_PITCH_STEPS) / 12.0);
-*/
         break;
     case CONTROL_PARAM_AMPLITUDE:
         p->vol.val = value;
@@ -1121,8 +1117,9 @@ patch_control_patch(Patch* p, ControlParamType param, float value)
         break;
     }
 }
+*/
 
-
+/*
 void patch_control(int chan, ControlParamType param, float value)
 {
     int i;
@@ -1139,4 +1136,4 @@ void patch_control(int chan, ControlParamType param, float value)
 
     return;
 }
-
+*/

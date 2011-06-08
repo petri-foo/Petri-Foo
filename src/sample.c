@@ -5,6 +5,7 @@
 #include <samplerate.h>
 #include "petri-foo.h"
 #include "sample.h"
+#include "lfo.h"
 
 
 #include <stdbool.h>
@@ -49,13 +50,15 @@ void sample_shallow_copy(Sample* dest, const Sample* src)
 
 int sample_default(Sample* sample, int rate)
 {
-    int frames = rate / 8;
-    float freq_st = M_PI * 2.0 / (rate / 523.251);
-    float rad = 0;
-    int i;
-    float* tmp = malloc(frames * 2 * sizeof(float));
+    int         frames = rate / 8;
+    float*      tmp;
+    LFO*        lfo;
+    LFOParams   lfopar;
+    int         i;
 
-    if (!tmp)
+    float const*    lfo_out;
+
+    if (!(tmp = malloc(frames * 2 * sizeof(*tmp))))
     {
         errmsg("Unable to allocate space for (default) samples!\n");
         return -1;
@@ -64,13 +67,26 @@ int sample_default(Sample* sample, int rate)
     sample->frames = frames;
     sample->sp = tmp;
 
+    lfo = lfo_new();
+    lfo_init(lfo);
+    lfo_params_init(&lfopar, 523.251, LFO_SHAPE_TRIANGLE);
+    lfo_trigger(lfo, &lfopar);
+
+    lfo_out = lfo_output(lfo);
+
     for (i = 0; i < frames; ++i)
     {
-        float s = sin(rad);
-        *tmp++ = s;
-        *tmp++ = s;
-        rad += freq_st;
+        lfo_tick(lfo);
+        *tmp++ = *lfo_out;
+        *tmp++ = *lfo_out;
+
+        if (*lfo_out < -1.0 || *lfo_out > 1.0)
+        {
+            debug("lfo output %1.3f clips -1.0 || 1.0\n", *lfo_out);
+        }
     }
+
+    lfo_free(lfo);
 
     sample->filename = strdup("Default");
     return 0;

@@ -36,8 +36,9 @@ static void mod_src_create_models(void)
 
     for (msp = mod_src_ids; msp->name; ++msp)
     {
+/*
         debug("mod_src:%d %s\n", msp->id, msp->name);
-
+ */
         gtk_list_store_append ( mod_src_list_all,   &iter);
         gtk_list_store_set(     mod_src_list_all,   &iter,
                                 COLUMN_STRING,      msp->name,

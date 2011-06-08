@@ -49,6 +49,8 @@ static char*           session_uuid = NULL;
 /* working together to stop CTS */
 typedef jack_default_audio_sample_t jack_sample_t;
 
+
+/*
 static void
 map_control(unsigned char chan, int param, float value, Tick tick)
 {
@@ -80,6 +82,7 @@ map_control(unsigned char chan, int param, float value, Tick tick)
                                        value * map[i].scale + map[i].bias,
                                        tick);
 }
+*/
 
 
 static int process(jack_nframes_t frames, void* arg)
@@ -137,7 +140,7 @@ static int process(jack_nframes_t frames, void* arg)
 
         /* TODO: handle 14-bit controllers and RPNs and NRPNs */
 
-        if (((midi_data[0] & 0xF0) == 0x80) || 
+        if (((midi_data[0] & 0xF0) == 0x80) ||
             ((midi_data[0] & 0x90) == 0x90 && midi_data[2] == 0))
         {   /* note-off */
             mixer_direct_note_off(midi_data[0] & 0x0F, midi_data[1],
@@ -150,15 +153,19 @@ static int process(jack_nframes_t frames, void* arg)
         }
         else if ((midi_data[0] & 0xF0) == 0xB0)
         {   /* controller */
-            map_control(midi_data[0] & 0x0F, midi_data[1],
-                                midi_data[2] / 127.0, jack_midi_event.time);
+            mixer_direct_control(   midi_data[0] & 0x0F,    /* channel */
+                                    midi_data[1],           /* param */
+                                    (midi_data[2] - 64.0) / 127.0,
+                                    jack_midi_event.time);
         }
         else if ((midi_data[0] & 0xF0) == 0xE0)
         {   /* pitch bend */
-            mixer_direct_control(midi_data[0] & 0x0F, CONTROL_PARAM_PITCH,
+            mixer_direct_control(   midi_data[0] & 0x0F,    /* channel */
+                                    MIXER_CC_PITCH_BEND,    /* param */
                 -1.0 + ((midi_data[2] << 7) | midi_data[1]) /  8192.0,
-                    jack_midi_event.time);
+                                    jack_midi_event.time);
         }
+
         event_index++;
     }
 
@@ -172,6 +179,7 @@ static int process(jack_nframes_t frames, void* arg)
     return 0;
 }
 
+
 static int sample_rate_change(jack_nframes_t r, void* arg)
 {
     (void)arg;
@@ -179,29 +187,33 @@ static int sample_rate_change(jack_nframes_t r, void* arg)
     return 0;
 }
 
+
 static int buffer_size_change(jack_nframes_t b, void* arg)
 {
     (void)arg;
     float* new;
     float* old;
 
-     if ((new = malloc (sizeof (float) * b * 2)) == NULL)
-     {
-	  errmsg ("Failed to change buffer size\n");
-	  stop ( );
-     }
+    if ((new = malloc(sizeof(float) * b * 2)) == NULL)
+    {
+        errmsg("Failed to change buffer size\n");
+        stop();
+    }
 
-     old = buffer;
-     buffer = new;
-     if (old != NULL)
-	  free (old);
+    old = buffer;
+    buffer = new;
 
-     periodsize = b;
+    if (old != NULL)
+        free (old);
 
-     /* let the rest of the world know the good news */
-     driver_set_buffersize (b);
+    periodsize = b;
+
+    /* let the rest of the world know the good news */
+    driver_set_buffersize (b);
+
      return 0;
 }
+
 
 static void shutdown(void* arg)
 {
@@ -343,25 +355,30 @@ static int start(void)
 
 static int stop(void)
 {
-     pthread_mutex_lock (&running_mutex);
-     if (running)
-     {
-	  debug ("Shutting down...\n");
-	  jack_deactivate (client);
-	  jack_client_close (client);
-	  if (buffer != NULL)
-	       free (buffer);
-	  debug ("Shutdown complete\n");
-     }
-     else
-     {
-	  debug ("Not running, so not shutting down\n");
-     }
+    pthread_mutex_lock (&running_mutex);
 
-     running = 0;
-     pthread_mutex_unlock (&running_mutex);
-     return 0;
+    if (running)
+    {
+        debug ("Shutting down...\n");
+        jack_deactivate (client);
+        jack_client_close (client);
+
+        if (buffer != NULL)
+            free (buffer);
+
+        debug ("Shutdown complete\n");
+    }
+    else
+    {
+        debug ("Not running, so not shutting down\n");
+    }
+
+    running = 0;
+    pthread_mutex_unlock (&running_mutex);
+
+    return 0;
 }
+
 
 static int getrate(void)
 {

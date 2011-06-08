@@ -50,7 +50,9 @@ void id_name_init(id_name* idname, int id, const char* name)
         idname->name = malloc(strlen(name) + 1);
         strcpy(idname->name, name);
     }
+/*
     debug("initialized id_name %p %d %s\n", idname, id, name);
+ */
 }
 
 

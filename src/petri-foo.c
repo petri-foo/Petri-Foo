@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
     if (optind < argc)
         dish_file_read(argv[optind]);
     else
-        patch_create("Default");
+        patch_create(0 /* Default Patch */);
 
     gui_refresh();
 
