@@ -326,10 +326,16 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
     for (i = 0; i < VOICE_MAX_LFOS; i++)
     {
         float const* src;
-        src = patch_mod_id_to_pointer(p->vlfo_params[i].mod1_id, p, v);
-        lfo_set_freq_mod1(v->lfo[i], src);
-        src = patch_mod_id_to_pointer(p->vlfo_params[i].mod2_id, p, v);
-        lfo_set_freq_mod2(v->lfo[i], src);
+
+        src = patch_mod_id_to_pointer(p->vlfo_params[i].fm1_id, p, v);
+        lfo_set_fm1(v->lfo[i], src);
+        src = patch_mod_id_to_pointer(p->vlfo_params[i].fm2_id, p, v);
+        lfo_set_fm2(v->lfo[i], src);
+
+        src = patch_mod_id_to_pointer(p->vlfo_params[i].am1_id, p, v);
+        lfo_set_am1(v->lfo[i], src);
+        src = patch_mod_id_to_pointer(p->vlfo_params[i].am2_id, p, v);
+        lfo_set_am2(v->lfo[i], src);
         lfo_trigger(v->lfo[i], &p->vlfo_params[i]);
     }
 

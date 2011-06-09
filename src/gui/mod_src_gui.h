@@ -8,7 +8,9 @@
 enum {
     MOD_ENV = 0,
     MOD_IN1,
-    MOD_IN2
+    MOD_IN2,
+    /* LFO inputs */
+    FM1, FM2, AM1, AM2
 };
 
 

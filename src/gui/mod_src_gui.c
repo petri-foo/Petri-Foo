@@ -144,8 +144,10 @@ gboolean mod_src_callback_helper_lfo(int patch_id,
 
         switch(input_no)
         {
-        case MOD_IN1: patch_set_lfo_mod1_src(patch_id, lfo_id, id); break;
-        case MOD_IN2: patch_set_lfo_mod2_src(patch_id, lfo_id, id); break;
+        case FM1:   patch_set_lfo_fm1_src(patch_id, lfo_id, id); break;
+        case FM2:   patch_set_lfo_fm2_src(patch_id, lfo_id, id); break;
+        case AM1:   patch_set_lfo_am1_src(patch_id, lfo_id, id); break;
+        case AM2:   patch_set_lfo_am2_src(patch_id, lfo_id, id); break;
         default:
             debug("attempt to set mod src for out of range input %d.\n",
                     input_no);

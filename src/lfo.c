@@ -24,16 +24,15 @@ struct _LFO
     Tick        attack;
     Tick        attack_ticks; /* how far along we are in the attack phase */
 
-    float const*    freq_mod1;
-    float const*    freq_mod2;
-    float           mod1_amt;
-    float           mod2_amt;
-/*
+    float const*    fm1;
+    float const*    fm2;
+    float           fm1_amt;
+    float           fm2_amt;
+
     float const*    am1;
     float const*    am2;
     float           am1_amt;
     float           am2_amt;
-*/
 };
 
 
@@ -63,24 +62,22 @@ inline static void lfo_phase_inc_from_beats (LFO* lfo, float beats)
 
 void lfo_params_init(LFOParams* lfopar, float freq, LFOShape shape)
 {
-    lfopar->lfo_on = true;
-    lfopar->shape = shape;
-    lfopar->freq = freq;
-    lfopar->sync_beats = 0.0;
-    lfopar->sync = false;
-    lfopar->positive = false;
-    lfopar->delay = 0.0;
-    lfopar->attack = 0.0;
-    lfopar->mod1_id = MOD_SRC_NONE;
-    lfopar->mod1_amt = 0.0;
-    lfopar->mod2_id = MOD_SRC_NONE;
-    lfopar->mod2_amt = 0.0;
-/*
-    lfopar->am1_id = MOD_SRC_NONE;
-    lfopar->am1_amt = 0.0;
-    lfopar->am2_id = MOD_SRC_NONE;
-    lfopar->am2_amt = 0.0;
-*/
+    lfopar->lfo_on =        false;
+    lfopar->shape =         shape;
+    lfopar->freq =          freq;
+    lfopar->sync_beats =    1.0;
+    lfopar->sync =          false;
+    lfopar->positive =      false;
+    lfopar->delay =         0.0;
+    lfopar->attack =        0.0;
+    lfopar->fm1_id =        MOD_SRC_NONE;
+    lfopar->fm1_amt =       0.0;
+    lfopar->fm2_id =        MOD_SRC_NONE;
+    lfopar->fm2_amt =       0.0;
+    lfopar->am1_id =        MOD_SRC_NONE;
+    lfopar->am1_amt =       0.0;
+    lfopar->am2_id =        MOD_SRC_NONE;
+    lfopar->am2_amt =       0.0;
 }
 
 
@@ -106,23 +103,25 @@ void lfo_free(LFO* lfo)
 void lfo_init(LFO* lfo)
 {
     lfo->positive = false;
-    lfo->val = 0.0;
-    lfo->phase = 0;
+    lfo->val =      0.0;
+    lfo->phase =    0;
+
     lfo_phase_inc_from_freq(lfo, 1.0);
+
     lfo->tab = sin_tab;
-    lfo->delay = 0;
-    lfo->attack = 0;
+
+    lfo->delay =        0;
+    lfo->attack =       0;
     lfo->attack_ticks = 0;
-    lfo->freq_mod1 = NULL;
-    lfo->freq_mod2 = NULL;
-    lfo->mod1_amt = 0.0;
-    lfo->mod2_amt = 0.0;
-/*
-    lfo->am1 = NULL;
-    lfo->am2 = NULL;
-    lfo->am1_amt = 0.0;
-    lfo->am2_amt = 0.0;
-*/
+
+    lfo->fm1 =      NULL;
+    lfo->fm2 =      NULL;
+    lfo->fm1_amt =  0.0;
+    lfo->fm2_amt =  0.0;
+    lfo->am1 =      NULL;
+    lfo->am2 =      NULL;
+    lfo->am1_amt =  0.0;
+    lfo->am2_amt =  0.0;
 }
 
 
@@ -205,12 +204,10 @@ void lfo_rigger (LFO* lfo, LFOParams* params)
     lfo->attack = ticks_secs_to_ticks(params->attack);
     lfo->attack_ticks = 0;
 
-    lfo->mod1_amt = params->mod1_amt;
-    lfo->mod2_amt = params->mod2_amt;
-/*
+    lfo->fm1_amt = params->fm1_amt;
+    lfo->fm2_amt = params->fm2_amt;
     lfo->am1_amt = params->am1_amt;
     lfo->am2_amt = params->am2_amt;
-*/
 }
 
 
@@ -236,8 +233,8 @@ float lfo_tick(LFO* lfo)
 
     lfo->phase
         += lfo->inc
-            * (lfo->freq_mod1 ? (1 + *lfo->freq_mod1 * lfo->mod1_amt) : 1)
-            * (lfo->freq_mod2 ? (1 + *lfo->freq_mod2 * lfo->mod2_amt) : 1);
+            * (lfo->fm1 ? (1 + *lfo->fm1 * lfo->fm1_amt) : 1)
+            * (lfo->fm2 ? (1 + *lfo->fm2 * lfo->fm2_amt) : 1);
 
     /* calculate new value */
     index = lfo->phase >> 24;
@@ -268,6 +265,18 @@ float lfo_tick(LFO* lfo)
             lfo->attack = 0;
     }
 
+    if (lfo->am1)
+    {
+        lfo->val = lfo->val * (1.0 - lfo->am1_amt)
+                 + lfo->val * *lfo->am1 * lfo->am1_amt;
+    }
+
+    if (lfo->am2)
+    {
+        lfo->val = lfo->val * (1.0 - lfo->am2_amt)
+                 + lfo->val * *lfo->am2 * lfo->am2_amt;
+    }
+
     return lfo->val;
 }
 
@@ -277,16 +286,26 @@ float const* lfo_output(LFO* lfo)
     return &lfo->val;
 }
 
-
-void lfo_set_freq_mod1(LFO* lfo, float const* src)
+void lfo_set_fm1(LFO* lfo, float const* src)
 {
-    lfo->freq_mod1 = src;
+    lfo->fm1 = src;
 }
 
 
-void lfo_set_freq_mod2(LFO* lfo, float const* src)
+void lfo_set_fm2(LFO* lfo, float const* src)
 {
-    lfo->freq_mod2 = src;
+    lfo->fm2 = src;
+}
+
+void lfo_set_am1(LFO* lfo, float const* src)
+{
+    lfo->am1 = src;
+}
+
+
+void lfo_set_am2(LFO* lfo, float const* src)
+{
+    lfo->am2 = src;
 }
 
 

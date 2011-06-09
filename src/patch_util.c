@@ -143,6 +143,10 @@ int patch_create(const char *name)
         patch_set_mod1_amt( id, PATCH_PARAM_PITCH,
                                         6.0f / PATCH_MAX_PITCH_STEPS);
 
+        patch_set_mod2_src( id, PATCH_PARAM_PITCH, MOD_SRC_VLFO);
+        patch_set_mod2_amt( id, PATCH_PARAM_PITCH,
+                                        2.0f / PATCH_MAX_PITCH_STEPS);
+
         patch_set_mod1_src( id, PATCH_PARAM_AMPLITUDE,
                                 MOD_SRC_MIDI_CC | CC_CHANNEL_VOLUME);
         patch_set_mod1_amt( id, PATCH_PARAM_AMPLITUDE, 1.0f);
@@ -160,6 +164,13 @@ int patch_create(const char *name)
         patch_set_mod1_src( id, PATCH_PARAM_RESONANCE,
                                 MOD_SRC_MIDI_CC | CC_SNDCTRL2_TIMBRE);
         patch_set_mod1_amt( id, PATCH_PARAM_RESONANCE, 0.975f);
+
+
+        patch_set_lfo_on(       id, MOD_SRC_VLFO, true);
+        patch_set_lfo_freq(     id, MOD_SRC_VLFO, 9);
+        patch_set_lfo_am1_src(  id, MOD_SRC_VLFO,
+                                MOD_SRC_MIDI_CC | CC_MOD_WHEEL);
+        patch_set_lfo_am1_amt(  id, MOD_SRC_VLFO, 1.0);
 
         patch_unlock(id);
 

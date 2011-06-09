@@ -35,7 +35,6 @@ int patch_set_lfo_attack   (int patch_id, int lfo_id, float secs);
 int patch_set_lfo_beats    (int patch_id, int lfo_id, float beats);
 int patch_set_lfo_delay    (int patch_id, int lfo_id, float secs);
 int patch_set_lfo_freq     (int patch_id, int lfo_id, float freq);
-int patch_set_lfo_global   (int patch_id, int lfo_id, bool state);
 int patch_set_lfo_positive (int patch_id, int lfo_id, bool state);
 int patch_set_lfo_shape    (int patch_id, int lfo_id, LFOShape shape);
 int patch_set_lfo_sync     (int patch_id, int lfo_id, bool state);
@@ -155,18 +154,29 @@ int patch_get_amp_env(int patch_id, int* modsrc_id);
 int patch_get_vel_amount(int id, PatchParamType param, float* val);
 int patch_get_key_amount(int id, PatchParamType param, float* val);
 
-/* lfo modulation setters */
-int patch_set_lfo_mod1_src(int patch_id, int lfo_id, int modsrc_id);
-int patch_set_lfo_mod2_src(int patch_id, int lfo_id, int modsrc_id);
-int patch_set_lfo_mod1_amt(int patch_id, int lfo_id, float amount);
-int patch_set_lfo_mod2_amt(int patch_id, int lfo_id, float amount);
+/* lfo freq modulation setters */
+int patch_set_lfo_fm1_src(int patch_id, int lfo_id, int modsrc_id);
+int patch_set_lfo_fm2_src(int patch_id, int lfo_id, int modsrc_id);
+int patch_set_lfo_fm1_amt(int patch_id, int lfo_id, float amount);
+int patch_set_lfo_fm2_amt(int patch_id, int lfo_id, float amount);
 
-/* lfo modulation getters */
-int patch_get_lfo_mod1_src(int patch_id, int lfo_id, int* modsrc_id);
-int patch_get_lfo_mod2_src(int patch_id, int lfo_id, int* modsrc_id);
-int patch_get_lfo_mod1_amt(int patch_id, int lfo_id, float* amount);
-int patch_get_lfo_mod2_amt(int patch_id, int lfo_id, float* amount);
+/* lfo freq modulation getters */
+int patch_get_lfo_fm1_src(int patch_id, int lfo_id, int* modsrc_id);
+int patch_get_lfo_fm2_src(int patch_id, int lfo_id, int* modsrc_id);
+int patch_get_lfo_fm1_amt(int patch_id, int lfo_id, float* amount);
+int patch_get_lfo_fm2_amt(int patch_id, int lfo_id, float* amount);
 
+/* lfo amp modulation setters */
+int patch_set_lfo_am1_src(int patch_id, int lfo_id, int modsrc_id);
+int patch_set_lfo_am2_src(int patch_id, int lfo_id, int modsrc_id);
+int patch_set_lfo_am1_amt(int patch_id, int lfo_id, float amount);
+int patch_set_lfo_am2_amt(int patch_id, int lfo_id, float amount);
+
+/* lfo amp modulation getters */
+int patch_get_lfo_am1_src(int patch_id, int lfo_id, int* modsrc_id);
+int patch_get_lfo_am2_src(int patch_id, int lfo_id, int* modsrc_id);
+int patch_get_lfo_am1_amt(int patch_id, int lfo_id, float* amount);
+int patch_get_lfo_am2_amt(int patch_id, int lfo_id, float* amount);
 
 
 

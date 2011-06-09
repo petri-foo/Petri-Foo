@@ -270,10 +270,10 @@ dish_file_write_lfo(xmlNodePtr nodeparent, int patch_id, int lfo_id)
     xmlNewProp(node2,   BAD_CAST "sync",
                         BAD_CAST (state ? "true" : "false"));
 
-    patch_get_lfo_mod1_src(patch_id, lfo_id, &mod1src);
-    patch_get_lfo_mod1_amt(patch_id, lfo_id, &mod1amt);
-    patch_get_lfo_mod2_src(patch_id, lfo_id, &mod2src);
-    patch_get_lfo_mod2_amt(patch_id, lfo_id, &mod2amt);
+    patch_get_lfo_fm1_src(patch_id, lfo_id, &mod1src);
+    patch_get_lfo_fm1_amt(patch_id, lfo_id, &mod1amt);
+    patch_get_lfo_fm2_src(patch_id, lfo_id, &mod2src);
+    patch_get_lfo_fm2_amt(patch_id, lfo_id, &mod2amt);
 
     node3 = xmlNewTextChild(node2, NULL, BAD_CAST "Mod1", NULL);
     xmlNewProp(node3, BAD_CAST "source", BAD_CAST mod_src_name(mod1src));
@@ -706,22 +706,22 @@ int dish_file_read_lfo_freq_data(xmlNodePtr node, int patch_id, int lfo_id)
         if (xmlStrcmp(node1->name, BAD_CAST "Mod1") == 0)
         {
             if ((prop = xmlGetProp(node1, BAD_CAST "source")))
-                patch_set_lfo_mod1_src(patch_id, lfo_id,
+                patch_set_lfo_fm1_src(patch_id, lfo_id,
                     mod_src_id((const char*)prop, MOD_SRC_ALL));
 
             if ((prop = xmlGetProp(node1, BAD_CAST "amount")))
                 if (sscanf((const char*)prop, "%f", &n) == 1)
-                    patch_set_lfo_mod1_amt(patch_id, lfo_id, n);
+                    patch_set_lfo_fm1_amt(patch_id, lfo_id, n);
         }
         else if (xmlStrcmp(node1->name, BAD_CAST "Mod2") == 0)
         {
             if ((prop = xmlGetProp(node1, BAD_CAST "source")))
-                patch_set_lfo_mod2_src(patch_id, lfo_id,
+                patch_set_lfo_fm2_src(patch_id, lfo_id,
                     mod_src_id((const char*)prop, MOD_SRC_ALL));
 
             if ((prop = xmlGetProp(node1, BAD_CAST "amount")))
                 if (sscanf((const char*)prop, "%f", &n) == 1)
-                    patch_set_lfo_mod2_amt(patch_id, lfo_id, n);
+                    patch_set_lfo_fm2_amt(patch_id, lfo_id, n);
         }
         else
         {

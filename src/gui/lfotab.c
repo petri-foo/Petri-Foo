@@ -50,10 +50,16 @@ struct _LfoTabPrivate
     GtkWidget* delay_label;
     GtkWidget* attack_fan;
     GtkWidget* attack_label;
-    GtkWidget* mod1_combo;
-    GtkWidget* mod2_combo;
-    GtkWidget* mod1_amount;
-    GtkWidget* mod2_amount;
+
+    GtkWidget* fm1_combo;
+    GtkWidget* fm2_combo;
+    GtkWidget* fm1_amount;
+    GtkWidget* fm2_amount;
+
+    GtkWidget* am1_combo;
+    GtkWidget* am2_combo;
+    GtkWidget* am1_amount;
+    GtkWidget* am2_amount;
 };
 
 
@@ -81,10 +87,16 @@ static void set_sensitive(LfoTabPrivate* p, gboolean val)
     gtk_widget_set_sensitive(p->pos_check, val);
     gtk_widget_set_sensitive(p->delay_fan, val);
     gtk_widget_set_sensitive(p->attack_fan, val);
-    gtk_widget_set_sensitive(p->mod1_combo, val);
-    gtk_widget_set_sensitive(p->mod2_combo, val);
-    gtk_widget_set_sensitive(p->mod1_amount, val);
-    gtk_widget_set_sensitive(p->mod2_amount, val);
+
+    gtk_widget_set_sensitive(p->fm1_combo, val);
+    gtk_widget_set_sensitive(p->fm2_combo, val);
+    gtk_widget_set_sensitive(p->fm1_amount, val);
+    gtk_widget_set_sensitive(p->fm2_amount, val);
+
+    gtk_widget_set_sensitive(p->am1_combo, val);
+    gtk_widget_set_sensitive(p->am2_combo, val);
+    gtk_widget_set_sensitive(p->am1_amount, val);
+    gtk_widget_set_sensitive(p->am2_amount, val);
 
     active  = gtk_toggle_button_get_active(
                                 GTK_TOGGLE_BUTTON(p->sync_radio));
@@ -184,11 +196,16 @@ static void mod_src_cb(GtkComboBox* combo, LfoTabPrivate* p)
 {
     int input_id;
 
-    if (combo == GTK_COMBO_BOX(p->mod1_combo))
-        input_id = MOD_IN1;
-    else if (combo == GTK_COMBO_BOX(p->mod2_combo))
-        input_id = MOD_IN2;
+    if (combo == GTK_COMBO_BOX(p->fm1_combo))
+        input_id = FM1;
+    else if (combo == GTK_COMBO_BOX(p->fm2_combo))
+        input_id = FM2;
+    else if (combo == GTK_COMBO_BOX(p->am1_combo))
+        input_id = AM1;
+    else if (combo == GTK_COMBO_BOX(p->am2_combo))
+        input_id = AM2;
     else
+
     {
         debug ("mod_src_cb called from unrecognised combo box\n");
         return;
@@ -201,10 +218,10 @@ static void mod_amount_cb(GtkWidget* w, LfoTabPrivate* p)
 {
     float val = phat_fan_slider_get_value(PHAT_FAN_SLIDER(w));
 
-    if (w == p->mod1_amount)
-        patch_set_lfo_mod1_amt(p->patch_id, p->lfo_id, val);
-    else if (w == p->mod2_amount)
-        patch_set_lfo_mod2_amt(p->patch_id, p->lfo_id, val);
+    if (w == p->fm1_amount)
+        patch_set_lfo_fm1_amt(p->patch_id, p->lfo_id, val);
+    else if (w == p->fm2_amount)
+        patch_set_lfo_fm2_amt(p->patch_id, p->lfo_id, val);
     else
     {
         debug ("mod_amount_cb called from unrecognised widget\n");
@@ -236,16 +253,28 @@ static void connect(LfoTabPrivate* p)
     g_signal_connect(G_OBJECT(p->attack_fan), "value-changed",
                     G_CALLBACK(attack_cb), (gpointer)p);
 
-    g_signal_connect(G_OBJECT(p->mod1_combo),    "changed",
+    g_signal_connect(G_OBJECT(p->fm1_combo),    "changed",
                         G_CALLBACK(mod_src_cb),    (gpointer)p);
 
-    g_signal_connect(G_OBJECT(p->mod1_amount),   "value-changed",
+    g_signal_connect(G_OBJECT(p->fm1_amount),   "value-changed",
                         G_CALLBACK(mod_amount_cb), (gpointer)p);
 
-    g_signal_connect(G_OBJECT(p->mod2_combo),    "changed",
+    g_signal_connect(G_OBJECT(p->fm2_combo),    "changed",
                         G_CALLBACK(mod_src_cb),    (gpointer)p);
 
-    g_signal_connect(G_OBJECT(p->mod2_amount),   "value-changed",
+    g_signal_connect(G_OBJECT(p->fm2_amount),   "value-changed",
+                        G_CALLBACK(mod_amount_cb), (gpointer)p);
+
+    g_signal_connect(G_OBJECT(p->am1_combo),    "changed",
+                        G_CALLBACK(mod_src_cb),    (gpointer)p);
+
+    g_signal_connect(G_OBJECT(p->am1_amount),   "value-changed",
+                        G_CALLBACK(mod_amount_cb), (gpointer)p);
+
+    g_signal_connect(G_OBJECT(p->am2_combo),    "changed",
+                        G_CALLBACK(mod_src_cb),    (gpointer)p);
+
+    g_signal_connect(G_OBJECT(p->am2_amount),   "value-changed",
                         G_CALLBACK(mod_amount_cb), (gpointer)p);
 }
 
@@ -336,12 +365,6 @@ static void lfo_tab_init(LfoTab* self)
     gtk_widget_show(p->lfo_check);
     ++y;
 
-    /* shape */
-    gui_label_attach("Shape:", t, a1, a2, y, y + 1);
-    p->shape_combo = basic_combo_create(shapes);
-    gui_attach(t, p->shape_combo, c1, c2, y, y + 1);
-    ++y;
-
     /* freq */
     gui_label_attach("Frequency:", t, a1, a2, y, y + 1);
     p->free_radio = gtk_radio_button_new(NULL);
@@ -365,30 +388,62 @@ static void lfo_tab_init(LfoTab* self)
 
     /* mod1 input source */
     gui_label_attach("Freq.Mod1:", t, a1, a2, y, y + 1);
-    p->mod1_combo = mod_src_new_combo_with_cell();
-    gui_attach(t, p->mod1_combo, c1, c2, y, y + 1);
+    p->fm1_combo = mod_src_new_combo_with_cell();
+    gui_attach(t, p->fm1_combo, c1, c2, y, y + 1);
     ++y;
 
     gui_label_attach("Amount:", t, a1, a2, y, y + 1);
-    p->mod1_amount = phat_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
-    gui_attach(t, p->mod1_amount, c1, c2, y, y + 1);
+    p->fm1_amount = phat_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
+    gui_attach(t, p->fm1_amount, c1, c2, y, y + 1);
     ++y;
 
     /* mod2 input source */
     gui_label_attach("Freq.Mod2:", t, a1, a2, y, y + 1);
-    p->mod2_combo = mod_src_new_combo_with_cell();
-    gui_attach(t, p->mod2_combo, c1, c2, y, y + 1);
+    p->fm2_combo = mod_src_new_combo_with_cell();
+    gui_attach(t, p->fm2_combo, c1, c2, y, y + 1);
     ++y;
 
     gui_label_attach("Amount:", t, a1, a2, y, y + 1);
-    p->mod2_amount = phat_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
-    gui_attach(t, p->mod2_amount, c1, c2, y, y + 1);
+    p->fm2_amount = phat_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
+    gui_attach(t, p->fm2_amount, c1, c2, y, y + 1);
+    ++y;
+
+    /* selector padding */
+    pad = gui_vpad_new(GUI_SECSPACE);
+    gui_attach(t, pad, a1, c2, y, y + 1);
+    ++y;
+
+    /* shape */
+    gui_label_attach("Shape:", t, a1, a2, y, y + 1);
+    p->shape_combo = basic_combo_create(shapes);
+    gui_attach(t, p->shape_combo, c1, c2, y, y + 1);
     ++y;
 
     /* positive */
     p->pos_check = gtk_check_button_new_with_label("Positive");
     gui_attach(t, p->pos_check, a1, a2, y, y + 1);
+    ++y;
 
+    /* mod1 input source */
+    gui_label_attach("Amp.Mod1:", t, a1, a2, y, y + 1);
+    p->am1_combo = mod_src_new_combo_with_cell();
+    gui_attach(t, p->am1_combo, c1, c2, y, y + 1);
+    ++y;
+
+    gui_label_attach("Amount:", t, a1, a2, y, y + 1);
+    p->am1_amount = phat_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
+    gui_attach(t, p->am1_amount, c1, c2, y, y + 1);
+    ++y;
+
+    /* mod2 input source */
+    gui_label_attach("Amp.Mod2:", t, a1, a2, y, y + 1);
+    p->am2_combo = mod_src_new_combo_with_cell();
+    gui_attach(t, p->am2_combo, c1, c2, y, y + 1);
+    ++y;
+
+    gui_label_attach("Amount:", t, a1, a2, y, y + 1);
+    p->am2_amount = phat_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
+    gui_attach(t, p->am2_amount, c1, c2, y, y + 1);
     ++y;
 
     /* delay fan */
@@ -401,6 +456,7 @@ static void lfo_tab_init(LfoTab* self)
     p->attack_label = label = gui_label_attach("Attack:", t, a1, a2, y,y+1);
     p->attack_fan = phat_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
     gui_attach(t, p->attack_fan, c1, c2, y, y + 1);
+    ++y;
 
     /* done */
     set_sensitive(p, FALSE);
@@ -417,10 +473,13 @@ static void update_lfo(LfoTabPrivate* p)
     bool on;
     GtkTreeIter iter;
 
-    int   mod1src, mod2src;
-    float mod1amt, mod2amt;
+    int   fm1src, fm2src;
+    float fm1amt, fm2amt;
+    int   am1src, am2src;
+    float am1amt, am2amt;
 
-    GtkTreeIter m1iter, m2iter;
+    GtkTreeIter fm1iter, fm2iter;
+    GtkTreeIter am1iter, am2iter;
 
     p->lfo_id = id_selector_get_id(ID_SELECTOR(p->idsel));
 
@@ -434,8 +493,10 @@ static void update_lfo(LfoTabPrivate* p)
     debug("setting combo model\n");
 
     block(p);
-    mod_src_combo_set_model(GTK_COMBO_BOX(p->mod1_combo), mod_srcs);
-    mod_src_combo_set_model(GTK_COMBO_BOX(p->mod2_combo), mod_srcs);
+    mod_src_combo_set_model(GTK_COMBO_BOX(p->fm1_combo), mod_srcs);
+    mod_src_combo_set_model(GTK_COMBO_BOX(p->fm2_combo), mod_srcs);
+    mod_src_combo_set_model(GTK_COMBO_BOX(p->am1_combo), mod_srcs);
+    mod_src_combo_set_model(GTK_COMBO_BOX(p->am2_combo), mod_srcs);
     unblock(p);
 
     debug("getting lfo (id:%d) data from patch\n", p->lfo_id);
@@ -454,26 +515,40 @@ static void update_lfo(LfoTabPrivate* p)
     patch_get_lfo_positive( p->patch_id, p->lfo_id, &positive);
     patch_get_lfo_on(       p->patch_id, p->lfo_id, &on);
 
-    patch_get_lfo_mod1_src( p->patch_id, p->lfo_id, &mod1src);
-    patch_get_lfo_mod1_amt( p->patch_id, p->lfo_id, &mod1amt);
-    patch_get_lfo_mod2_src( p->patch_id, p->lfo_id, &mod2src);
-    patch_get_lfo_mod2_amt( p->patch_id, p->lfo_id, &mod2amt);
+    patch_get_lfo_fm1_src(  p->patch_id, p->lfo_id, &fm1src);
+    patch_get_lfo_fm1_amt(  p->patch_id, p->lfo_id, &fm1amt);
+    patch_get_lfo_fm2_src(  p->patch_id, p->lfo_id, &fm2src);
+    patch_get_lfo_fm2_amt(  p->patch_id, p->lfo_id, &fm2amt);
 
-    debug("mod1src:%d\n", mod1src);
-    debug("mod2src:%d\n", mod2src);
+    patch_get_lfo_am1_src(  p->patch_id, p->lfo_id, &am1src);
+    patch_get_lfo_am1_amt(  p->patch_id, p->lfo_id, &am1amt);
+    patch_get_lfo_am2_src(  p->patch_id, p->lfo_id, &am2src);
+    patch_get_lfo_am2_amt(  p->patch_id, p->lfo_id, &am2amt);
 
     debug("getting mod src combo iter with id\n");
 
-    if (!mod_src_combo_get_iter_with_id(GTK_COMBO_BOX(p->mod1_combo),
-                                                        mod1src, &m1iter))
+    if (!mod_src_combo_get_iter_with_id(GTK_COMBO_BOX(p->fm1_combo),
+                                                        fm1src, &fm1iter))
     {
-        debug("failed to get lfo mod1 source id from combo box\n");
+        debug("failed to get lfo fm1 source id from combo box\n");
     }
 
-    if (!mod_src_combo_get_iter_with_id(GTK_COMBO_BOX(p->mod2_combo),
-                                                        mod2src, &m2iter))
+    if (!mod_src_combo_get_iter_with_id(GTK_COMBO_BOX(p->fm2_combo),
+                                                        fm2src, &fm2iter))
     {
-        debug("failed to get lfo mod2 source id from combo box\n");
+        debug("failed to get lfo fm2 source id from combo box\n");
+    }
+
+    if (!mod_src_combo_get_iter_with_id(GTK_COMBO_BOX(p->am1_combo),
+                                                        am1src, &am1iter))
+    {
+        debug("failed to get lfo fm1 source id from combo box\n");
+    }
+
+    if (!mod_src_combo_get_iter_with_id(GTK_COMBO_BOX(p->am2_combo),
+                                                        am2src, &am2iter))
+    {
+        debug("failed to get lfo fm2 source id from combo box\n");
     }
 
 
@@ -527,11 +602,15 @@ static void update_lfo(LfoTabPrivate* p)
                                                                 &iter); 
     }
 
-    gtk_combo_box_set_active_iter(GTK_COMBO_BOX(p->mod1_combo), &m1iter);
-    gtk_combo_box_set_active_iter(GTK_COMBO_BOX(p->mod2_combo), &m2iter);
+    gtk_combo_box_set_active_iter(GTK_COMBO_BOX(p->fm1_combo), &fm1iter);
+    gtk_combo_box_set_active_iter(GTK_COMBO_BOX(p->fm2_combo), &fm2iter);
+    gtk_combo_box_set_active_iter(GTK_COMBO_BOX(p->am1_combo), &am1iter);
+    gtk_combo_box_set_active_iter(GTK_COMBO_BOX(p->am2_combo), &am2iter);
 
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->mod1_amount), mod1amt);
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->mod2_amount), mod2amt);
+    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->fm1_amount), fm1amt);
+    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->fm2_amount), fm2amt);
+    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->am1_amount), am1amt);
+    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->am2_amount), am2amt);
 
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(p->lfo_check), on);
 

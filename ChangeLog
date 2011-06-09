@@ -1,3 +1,12 @@
+2011-06-09  James Morris <james@jwm-art.net>
+
+	* lfo.[ch], gui/lfotab.c, patch_set_and_get.[ch], etc
+	  Changes to add two amplitude modulation sources to
+	  the LFOs. This was necessary for functionality such
+	  as using the modwheel controller to adjust the amount
+	  of modulation an lfo gives. See ML for notes.
+
+
 2011-06-08  James Morris <james@jwm-art.net>
 
 	* * * * * * * * * * * * * * * * * * * * * * * * * * * *

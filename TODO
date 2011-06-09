@@ -1,5 +1,3 @@
--Engine: eg/lfo
-    +lfo/eg should output zero when off
 
 -Engine: Voice modes
     +polyphonic re-trigger mode (new note repetition cuts old note).

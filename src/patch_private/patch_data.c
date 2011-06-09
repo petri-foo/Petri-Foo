@@ -113,23 +113,9 @@ Patch* patch_new(const char* name)
     p->mod2_pitch_max = 1.0;
     p->mod2_pitch_min = 1.0;
 
-    /* default lfo params */
-    deflfo.lfo_on =     false;
-    deflfo.positive =   false;
-    deflfo.shape =      LFO_SHAPE_SINE;
-    deflfo.freq =       1.0;
-    deflfo.sync_beats = 1.0;
-    deflfo.sync =       false;
-    deflfo.delay =      0.0;
-    deflfo.attack =     0.0;
-    deflfo.mod1_id =    MOD_SRC_NONE;
-    deflfo.mod2_id =    MOD_SRC_NONE;
-    deflfo.mod1_amt =   0.0;
-    deflfo.mod2_amt =   0.0;
-
     for (i = 0; i < PATCH_MAX_LFOS; ++i)
     {
-        p->glfo_params[i] = deflfo;
+        lfo_params_init(&p->glfo_params[i], 1.0, LFO_SHAPE_SINE);
         p->glfo[i] = lfo_new();
         /* init tables to NULL */
         p->glfo_table[i] = 0;
@@ -139,7 +125,7 @@ Patch* patch_new(const char* name)
 
     /* only the params for the voice lfo can be set at this stage */
     for (i = 0; i < VOICE_MAX_LFOS; ++i)
-        p->vlfo_params[i] = deflfo;
+        lfo_params_init(&p->vlfo_params[i], 1.0, LFO_SHAPE_SINE);
 
     defadsr.env_on =    false;
     defadsr.delay =     0.0;

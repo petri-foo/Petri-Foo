@@ -43,16 +43,16 @@ typedef struct _LFOParams
     float       delay;       /* in seconds */
     float       attack;      /* in seconds */
 
-    int     mod1_id;    /* ID of modulation source */
-    float   mod1_amt;   /* amount of modulation we add [-1.0, 1.0]  */
-    int     mod2_id;
-    float   mod2_amt;
-/*
+    int     fm1_id;    /* ID of modulation source */
+    float   fm1_amt;   /* amount of modulation we add [-1.0, 1.0]  */
+    int     fm2_id;
+    float   fm2_amt;
+
     int     am1_id;
     float   am1_amt;
     int     am2_id;
     int     am2_amt;
-*/
+
 } LFOParams;
 
 
@@ -91,12 +91,12 @@ float   lfo_tick(LFO*);
 
 
 float const*    lfo_output(LFO*);
-void            lfo_set_freq_mod1(LFO*, float const*);
-void            lfo_set_freq_mod2(LFO*, float const*);
-/*
-void            lfo_set_amp_mod1(LFO*,  float const*);
-void            lfo_set_amp_mod2(LFO*,  float const*);
-*/
+void            lfo_set_fm1(LFO*, float const*);
+void            lfo_set_fm2(LFO*, float const*);
+
+void            lfo_set_am1(LFO*,  float const*);
+void            lfo_set_am2(LFO*,  float const*);
+
 /* use to get pre-calculated lfo table values into global lfo */
 void            lfo_set_output(LFO*, float);
 

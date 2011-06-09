@@ -18,10 +18,14 @@ patch_trigger_global_lfo(int patch_id, LFO* lfo, LFOParams* lfopar)     \
 {                                                                       \
     Patch* p = patches[patch_id];                                       \
     float const* src;                                                   \
-    src = patch_mod_id_to_pointer(lfopar->mod1_id, p, NULL);            \
-    lfo_set_freq_mod1(lfo, src);                                        \
-    src = patch_mod_id_to_pointer(lfopar->mod2_id, p, NULL);            \
-    lfo_set_freq_mod2(lfo, src);                                        \
+    src = patch_mod_id_to_pointer(lfopar->fm1_id, p, NULL);             \
+    lfo_set_fm1(lfo, src);                                              \
+    src = patch_mod_id_to_pointer(lfopar->fm2_id, p, NULL);             \
+    lfo_set_fm2(lfo, src);                                              \
+    src = patch_mod_id_to_pointer(lfopar->am1_id, p, NULL);             \
+    lfo_set_am1(lfo, src);                                              \
+    src = patch_mod_id_to_pointer(lfopar->am2_id, p, NULL);             \
+    lfo_set_am2(lfo, src);                                              \
     lfo_rigger(lfo, lfopar);                                            \
 }
 
