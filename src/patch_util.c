@@ -159,7 +159,7 @@ int patch_create(const char *name)
         patch_param_set_value(  id, PATCH_PARAM_RESONANCE, 0.5f);
         patch_set_mod1_src( id, PATCH_PARAM_RESONANCE,
                                 MOD_SRC_MIDI_CC | CC_SNDCTRL2_TIMBRE);
-        patch_set_mod1_amt( id, PATCH_PARAM_RESONANCE, 0.999f);
+        patch_set_mod1_amt( id, PATCH_PARAM_RESONANCE, 0.975f);
 
         patch_unlock(id);
 

@@ -46,41 +46,6 @@ static float calc_bpm(snd_seq_t* handle, int q)
 }
 
 
-/*
- * Map MIDI controller to control parameter.
-
-static void map_control(unsigned char chan, int param, float value)
-{
-    static struct
-    {
-        int cc;
-        ControlParamType param;
-        float bias;
-        float scale;
-    }
-
-    map[] = {
-        { 1, CONTROL_PARAM_MODWHEEL,            0, 1},
-        { 5, CONTROL_PARAM_PORTAMENTO_TIME,     0, 1},
-        { 7, CONTROL_PARAM_AMPLITUDE,           0, 1},
-        {10, CONTROL_PARAM_PANNING,            -1, 2},
-        {65, CONTROL_PARAM_PORTAMENTO,          0, 1},
-        {71, CONTROL_PARAM_RESONANCE,           0, 1},
-        {74, CONTROL_PARAM_CUTOFF,              0, 1},
-        {77, CONTROL_PARAM_CUTOFF_MOD1_AMT,    -1, 2},
-        {78, CONTROL_PARAM_RESO_MOD1_AMT,      -1, 2}
-    };
-
-    unsigned i;
-
-    for (i = 0; i < sizeof(map) / sizeof(map[0]); ++i)
-        if (map[i].cc == param)
-            mixer_control(chan, map[i].param,
-                                value * map[i].scale + map[i].bias);
-}
- */
-
-
 static void action(snd_seq_t* handle)
 {
     snd_seq_event_t* ev;
@@ -112,7 +77,7 @@ static void action(snd_seq_t* handle)
         case SND_SEQ_EVENT_CONTROLLER:
             mixer_control(  ev->data.control.channel,
                             ev->data.control.param,
-                            (ev->data.control.value - 64.0) / 127.0);
+                            (ev->data.control.value - 64.0) / 64.0);
             break;
 
         case SND_SEQ_EVENT_CONTROL14:

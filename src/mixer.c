@@ -276,6 +276,10 @@ void mixer_mixdown(float *buf, int frames)
             break;
 
         case MIXER_CONTROL:
+
+            debug("mixer control %d cc:%f\n",   event->control.param,
+                                                event->control.value);
+
             cc[event->control.chan][event->control.param]
                                                 = event->control.value;
             break;
