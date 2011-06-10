@@ -23,11 +23,16 @@
 #include "mixer.h"
 #include "sync.h"
 #include "lfo.h"
+#include "midi_control.h"
 
 
 /* prototypes */
 static int start(void);
 static int stop(void);
+
+
+MIDI_CONTROL_H__CC_MAP_DEF
+
 
 /* file-global variables */
 static jack_port_t*    lport;
@@ -120,7 +125,7 @@ static int process(jack_nframes_t frames, void* arg)
         {   /* controller */
             mixer_direct_control(   midi_data[0] & 0x0F,    /* channel */
                                     midi_data[1],           /* param */
-                                    (midi_data[2] - 64.0) / 64.0,
+                                    cc_map(midi_data[1], midi_data[2]),
                                     jack_midi_event.time);
         }
         else if ((midi_data[0] & 0xF0) == 0xE0)

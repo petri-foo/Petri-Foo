@@ -12,12 +12,15 @@
 #include "mixer.h"
 #include "midi.h"
 #include "sync.h"
-#include "control.h"
+#include "midi_control.h"
 
 
 static Atomic       running = 0;
 static pthread_t    midi_thread;
 static int          midi_client_id = -1;
+
+
+MIDI_CONTROL_H__CC_MAP_DEF
 
 
 /*
@@ -77,7 +80,8 @@ static void action(snd_seq_t* handle)
         case SND_SEQ_EVENT_CONTROLLER:
             mixer_control(  ev->data.control.channel,
                             ev->data.control.param,
-                            (ev->data.control.value - 64.0) / 64.0);
+                            cc_map( ev->data.control.param,
+                                    ev->data.control.value));
             break;
 
         case SND_SEQ_EVENT_CONTROL14:

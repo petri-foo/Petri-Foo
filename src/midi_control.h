@@ -85,4 +85,15 @@ enum
 };
 
 
+#define MIDI_CONTROL_H__CC_MAP_DEF                              \
+static inline float cc_map(int param, int value)                \
+{                                                               \
+    switch(param) {                                             \
+    case CC_PAN: case CC_BALANCE: return (value - 64.0) / 64.0; \
+    default: return value / 127.0;                              \
+    }                                                           \
+}
+
+
+
 #endif

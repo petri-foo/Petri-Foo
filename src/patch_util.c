@@ -155,12 +155,12 @@ int patch_create(const char *name)
                                 MOD_SRC_MIDI_CC | CC_PAN);
         patch_set_mod1_amt( id, PATCH_PARAM_PANNING, 1.0f);
 
-        patch_param_set_value(  id, PATCH_PARAM_CUTOFF, 0.5f);
+        patch_param_set_value(  id, PATCH_PARAM_CUTOFF, 0.1f);
         patch_set_mod1_src( id, PATCH_PARAM_CUTOFF,
                                 MOD_SRC_MIDI_CC | CC_SNDCTRL5_BRIGHTNESS);
         patch_set_mod1_amt( id, PATCH_PARAM_CUTOFF, 1.0f);
 
-        patch_param_set_value(  id, PATCH_PARAM_RESONANCE, 0.5f);
+        patch_param_set_value(  id, PATCH_PARAM_RESONANCE, 0.0f);
         patch_set_mod1_src( id, PATCH_PARAM_RESONANCE,
                                 MOD_SRC_MIDI_CC | CC_SNDCTRL2_TIMBRE);
         patch_set_mod1_amt( id, PATCH_PARAM_RESONANCE, 0.975f);

@@ -9,6 +9,7 @@
 #include "patch_set_and_get.h"
 #include "basic_combos.h"
 #include "mod_src.h"
+#include "maths.h"
 
 
 enum
@@ -205,7 +206,6 @@ static void mod_src_cb(GtkComboBox* combo, LfoTabPrivate* p)
     else if (combo == GTK_COMBO_BOX(p->am2_combo))
         input_id = AM2;
     else
-
     {
         debug ("mod_src_cb called from unrecognised combo box\n");
         return;
@@ -222,6 +222,10 @@ static void mod_amount_cb(GtkWidget* w, LfoTabPrivate* p)
         patch_set_lfo_fm1_amt(p->patch_id, p->lfo_id, val);
     else if (w == p->fm2_amount)
         patch_set_lfo_fm2_amt(p->patch_id, p->lfo_id, val);
+    else if (w == p->am1_amount)
+        patch_set_lfo_am1_amt(p->patch_id, p->lfo_id, val);
+    else if (w == p->am2_amount)
+        patch_set_lfo_am2_amt(p->patch_id, p->lfo_id, val);
     else
     {
         debug ("mod_amount_cb called from unrecognised widget\n");
@@ -368,7 +372,7 @@ static void lfo_tab_init(LfoTab* self)
     /* freq */
     gui_label_attach("Frequency:", t, a1, a2, y, y + 1);
     p->free_radio = gtk_radio_button_new(NULL);
-    p->freq_fan = phat_hfan_slider_new_with_range(5.0, 0.0, 250.0, 0.1);
+    p->freq_fan = phat_hfan_slider_new_with_range(5.0, 0.0, 50.0, 0.1);
     gui_attach(t, p->free_radio, b1, b2, y, y + 1);
     gui_attach(t, p->freq_fan, c1, c2, y, y + 1);
     ++y;
