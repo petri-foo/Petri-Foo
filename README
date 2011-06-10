@@ -5,61 +5,63 @@ Petri-Foo is a fork of the Specimen Sampler project. Specimen was
 originally developed by Pete Bessman. See the AUTHORS file for
 the list of other authors who've made contributions.
 
-Petri-Foo is forked and developed by James Morris <james@jwm-art.net>
+Petri-Foo is forked and developed by James Morris.
 
 
-GOALS
------
+STAGE I GOALS
+-------------
 
-The primary goal of forking Specimen to create Petri-Foo is to allow 
-frequency modulation of the LFOs.
+The primary goal of forking Specimen to create Petri-Foo was to allow 
+frequency modulation of the LFOs, and to allow user selection of 
+modulation sources throughout the program.
 
-The secondary goal is to make the LFOs and ADSRs independant from
-their current functions instead of dedicated to a particular function.
-
-The primary and secondary goals are really as one. Adapting the user 
-interface alongside the development of these goals is a given (as is
-broken patch save/load/duplicate).
+This has been accomplished.
 
 
-STAGE II
---------
+STAGE II GOALS
+--------------
 
-Once the primary and secondary goals are complete there is a whole 
-raft of ideas of which it will be the choice of my whims as to which I 
-tackle next:
+Once stage 1 was complete, these were ideas I originally planned upon 
+implementing:
 
-  * Sample position retrigger by LFO.
-  * Sample start position modulation.
-  * Sample loop position modulation.
-  * X-fades for loops/retriggers.
+  * Sample position retrigger by LFO.  TODO.
+  * Sample start position modulation.  TODO.
+  * Sample loop position modulation.   TODO.
+  * X-fades for loops/retriggers.      Basic implementation..
 
-  * Replace existing filter implementation.
-  * Visual display of ADSRs and LFOs.
-  * Noise modulation source.
-  * Sample and Hold -- if you're going to have a noise source... ?
+  * Replace existing filter implementation. TODO.
+  * Visual display of ADSRs and LFOs.       FORGOTTEN.
+  * Noise modulation source.                TODO.
+  * Sample and Hold.                        TODO.
 
-  * Effects via LADSPA (and LV2 if I'm feeling *really* brave).
+  * Effects via LADSPA/LV2                  UNNECESSARY
 
-  * Fork the fork.
 
-The sample retriggering and sample position modulation features are all 
-features I implemented in my non-real-time modular synth "wcnt - Wav
-Composer Not Toilet"* and are features which I happen to desire in a
-sampler, which is justification enough for me to implement them.
+WHAT HAPPENED INSTEAD
+---------------------
 
-* http://wcnt.sf.net
+  * Removal of deprecated GTK/GDK code
+  * Default auto-generated patch/sample
+  * Many code re-arrangements
+  * Mark navigation in waveform display
+  * Opening of raw audio formats
+  * Complete rewrite of bank file I/O code and XML file layout.
+  * MIDI Controllers subsumed as modulation sources.
+  * Amplitude modulation added to LFOs.
 
-The existing filter in Specimen is poor. I propose replacing it with the 
-LPF2 filter from ZynAddSubFX. In addition I also plan to add the HPF2 
-filter.
 
-Both of these features will depend heavily upon the ability of my coding 
-skills as to whether they will come to fruition. Though I am forever 
-doubting my coding skills, my track record in proving my doubts wrong is 
-good. But in this case, my DSP skills are basic in the least.
+STAGE III GOALS
+---------------
 
-Enough rambling...
+  * Obtain a stable feature set
+  * Sort out value mapping of MIDI controllers
+  * Figure out how to best handle state/switchable items that are
+    often controlled by MIDI controllers (ie portamento on/off)
+  + Sample point modulation as listed in stage 2 goals
+  + Figure out how to best handle things that are triggered
+  - Random/noise source
+  - Sample and hold
+   
 
 DEVELOPMENT
 -----------
@@ -72,9 +74,6 @@ WHY HAVE I FORKED SPECIMEN?
 ---------------------------
 
 1) I think my changes are too much of a departure.
-2) Development of Specimen is dead.
-3) It is so.
-
-
-
+2) Development of Specimen was dead.
+3) I had ideas for which I wanted the freedom to follow.
 
