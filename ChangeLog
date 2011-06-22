@@ -8,6 +8,22 @@
 	  similar process to envtab.c, but required an additional
 	  box for packing (lfotab has different orientation).
 
+	* dishfile.c: add envelope key tracking.
+
+
+2011-06-??  James Morris <james@jwm-art.net>
+
+	* adsr.[ch]: added key tracking, added params init.
+
+	* dish_file.c: load/save of LFO amplitude modulation
+
+	* envtab.c: added key tracking
+
+	* patch.c: handles MIDI CC again, but in the better way.
+
+	* patch_set_and_get.[ch]: added envelope key tracking.
+
+
 2011-06-10  James Morris <james@jwm-art.net>
 
 	* lfotab.c: add statements to handle modification of

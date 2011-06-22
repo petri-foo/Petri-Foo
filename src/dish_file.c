@@ -140,7 +140,7 @@ dish_file_write_param(xmlNodePtr nodeparent, int patch_id,
     /* keyboard tracking */
     patch_get_key_amount(patch_id, param, &keytrack);
     snprintf(buf, BUFSIZE, "%f", keytrack);
-    xmlNewProp(node1, BAD_CAST "keyboard_tracking", BAD_CAST buf);
+    xmlNewProp(node1, BAD_CAST "key_tracking", BAD_CAST buf);
 
     if (param == PATCH_PARAM_AMPLITUDE)
     {
@@ -208,6 +208,10 @@ dish_file_write_eg(xmlNodePtr nodeparent, int patch_id, int eg_id)
     patch_get_env_release(patch_id, eg_id, &val);
     snprintf(buf, BUFSIZE, "%f", val);
     xmlNewProp(node1,   BAD_CAST "release",   BAD_CAST buf);
+
+    patch_get_env_key_amt(patch_id, eg_id, &val);
+    snprintf(buf, BUFSIZE, "%f", val);
+    xmlNewProp(node1,   BAD_CAST "key_tracking",   BAD_CAST buf);
 
     return 0;
 }
@@ -694,6 +698,10 @@ debug("loading eg with id:%d\n", eg_id);
         if (sscanf((const char*)prop, "%f", &n) == 1)
             patch_set_env_release(patch_id, eg_id, n);
 
+    if ((prop = xmlGetProp(node, BAD_CAST "key_tracking")))
+        if (sscanf((const char*)prop, "%f", &n) == 1)
+            patch_set_env_key_amt(patch_id, eg_id, n);
+
     return 0;
 }
 
@@ -890,7 +898,7 @@ int dish_file_read_param(xmlNodePtr node,   int patch_id,
         if (sscanf((const char*)prop, "%f", &n) == 1)
             patch_set_vel_amount(patch_id, param, n);
 
-    if ((prop = xmlGetProp(node, BAD_CAST "keyboard_tracking")))
+    if ((prop = xmlGetProp(node, BAD_CAST "key_tracking")))
         if (sscanf((const char*)prop, "%f", &n) == 1)
             patch_set_key_amount(patch_id, param, n);
 
