@@ -14,16 +14,10 @@ typedef struct _PatchParam
 {
     float   val;        /* value of this parameter */
 
-    /* general purpose modulation sources */
-
-    int     mod1_id;    /* ID of modulation source */
-    float   mod1_amt;   /* amount of modulation we add [-1.0, 1.0]  */
-
-    int     mod2_id;
-    float   mod2_amt;
-
-    /* direct effect modulation source */
-    int     direct_mod_id;
+    /* modulation sources */
+    int     mod_id[3];
+    int     mod_amt[3];
+    bool    mod0_direct;
 
     /* velocity sensitivity and keyboard tracking */
     float   vel_amt;
