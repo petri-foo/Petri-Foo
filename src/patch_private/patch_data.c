@@ -2,6 +2,7 @@
 
 
 #include "patch_defs.h"
+#include "midi_control.h"
 #include "mixer.h"
 
 #include <stdlib.h>
@@ -10,13 +11,13 @@
 
 static int      start_frame = 0;
 static float    one = 1.0;
+static float    (*cc_arr)[16][CC_ARR_SIZE];
 
 
 Patch* patch_new(const char* name)
 {
     Patch* p;
     ADSRParams  defadsr;
-    LFOParams   deflfo;
     bool default_patch = (strcmp("Default", name) == 0);
     int i;
 
@@ -127,16 +128,8 @@ Patch* patch_new(const char* name)
     for (i = 0; i < VOICE_MAX_LFOS; ++i)
         lfo_params_init(&p->vlfo_params[i], 1.0, LFO_SHAPE_SINE);
 
-    defadsr.env_on =    false;
-    defadsr.delay =     0.0;
-    defadsr.attack =    0.005;
-    defadsr.hold =      0.0;
-    defadsr.decay =     0.0;
-    defadsr.sustain =   1.0;
-    defadsr.release =   0.025;
-
     for (i = 0; i < VOICE_MAX_ENVS; i++)
-        p->env_params[i] = defadsr;
+        adsr_params_init(&p->env_params[i], 0.005, 0.025);
 
     for (i = 0; i < PATCH_VOICE_COUNT; ++i)
     {
@@ -181,6 +174,31 @@ void patch_free(Patch* p)
 }
 
 
+void patch_set_control_array(float (*ccs)[16][CC_ARR_SIZE])
+{
+    cc_arr = ccs;
+}
+
+
+void patch_set_global_lfo_buffers(Patch* p, int buffersize)
+{
+    int i;
+
+    debug("setting global LFO buffers (patch:%p bufsize:%d)\n",
+                                                p, buffersize);
+
+    if (buffersize <= 0)
+        return;
+
+    for (i = 0; i < PATCH_MAX_LFOS; ++i)
+    {
+        free(p->glfo_table[i]);
+        p->glfo_table[i] =
+            malloc(sizeof(*p->glfo_table[i]) * patch_buffersize);
+    }
+}
+
+
 float const* patch_mod_id_to_pointer(int id, Patch* p, PatchVoice* v)
 {
     switch(id)
@@ -190,7 +208,7 @@ float const* patch_mod_id_to_pointer(int id, Patch* p, PatchVoice* v)
     case MOD_SRC_VELOCITY:  return &v->vel;
     case MOD_SRC_KEY:       return &v->key_track;
     case MOD_SRC_PITCH_WHEEL:
-        return mixer_get_control_output(p->channel, MIXER_CC_PITCH_BEND);
+        return &((*cc_arr)[p->channel][0]);
     }
 
     if (id & MOD_SRC_EG)
@@ -220,30 +238,10 @@ float const* patch_mod_id_to_pointer(int id, Patch* p, PatchVoice* v)
     if (id & MOD_SRC_MIDI_CC)
     {
         id &= ~MOD_SRC_MIDI_CC;
-
-        return mixer_get_control_output(p->channel, id);
+        return &((*cc_arr)[p->channel][id + 1]);
     }
 
     debug("unknown modulation source:%d\n", id);
 
     return 0;
-}
-
-
-void patch_set_global_lfo_buffers(Patch* p, int buffersize)
-{
-    int i;
-
-    debug("setting global LFO buffers (patch:%p bufsize:%d)\n",
-                                                p, buffersize);
-
-    if (buffersize <= 0)
-        return;
-
-    for (i = 0; i < PATCH_MAX_LFOS; ++i)
-    {
-        free(p->glfo_table[i]);
-        p->glfo_table[i] =
-            malloc(sizeof(*p->glfo_table[i]) * patch_buffersize);
-    }
 }

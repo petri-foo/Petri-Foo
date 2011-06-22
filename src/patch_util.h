@@ -15,7 +15,6 @@ int         patch_dump            (int** dump);
 int         patch_duplicate       (int id);
 int         patch_flush           (int id);
 void        patch_flush_all       (void);
-void        patch_init            (void);
 const char* patch_strerror        (int error);
 
 int         patch_sample_load     (int id, const char* file,

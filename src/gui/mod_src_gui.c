@@ -87,7 +87,8 @@ GtkWidget* mod_src_new_pitch_adjustment(void)
                                                     0.1, 1.0);
 
     phat_slider_button_set_format(PHAT_SLIDER_BUTTON(amt),
-                                                    -1, NULL, "Semitones");
+                                                    -1, NULL, NULL);
+    gtk_widget_set_tooltip_text(amt, "Semitones");
     phat_slider_button_set_threshold(PHAT_SLIDER_BUTTON(amt),
                                                             GUI_THRESHOLD);
     return amt;

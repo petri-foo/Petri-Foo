@@ -19,6 +19,8 @@ int patch_set_env_hold    (int patch_id, int env_id, float secs);
 int patch_set_env_decay   (int patch_id, int env_id, float secs);
 int patch_set_env_sustain (int patch_id, int env_id, float level);
 int patch_set_env_release (int patch_id, int env_id, float secs);
+int patch_set_env_key_amt (int patch_id, int env_id, float val);
+int patch_set_env_vel_amt (int patch_id, int env_id, float val);
 
 /* envelope getters */
 int patch_get_env_on      (int patch_id, int env_id, bool* val);
@@ -28,6 +30,8 @@ int patch_get_env_hold    (int patch_id, int env_id, float* val);
 int patch_get_env_decay   (int patch_id, int env_id, float* val);
 int patch_get_env_sustain (int patch_id, int env_id, float* val);
 int patch_get_env_release (int patch_id, int env_id, float* val);
+int patch_get_env_key_amt (int patch_id, int env_id, float* val);
+int patch_get_env_vel_amt (int patch_id, int env_id, float* val);
 
 /* lfo setters */
 int patch_set_lfo_on       (int patch_id, int lfo_id, bool state);

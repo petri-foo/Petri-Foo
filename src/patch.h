@@ -156,12 +156,11 @@ typedef enum
 } PatchParamType;
 
 
+void patch_control_init    (void);
+
 /* playback and rendering functions  */
 
-/* obsolete
-void patch_control         (int chan, ControlParamType param, float value);
- */
-
+void patch_control         (int chan, int param, float value);
 void patch_release         (int chan, int note);
 void patch_release_with_id (int id, int note);
 void patch_render          (float* buf, int nframes);

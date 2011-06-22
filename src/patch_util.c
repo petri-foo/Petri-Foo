@@ -127,12 +127,9 @@ int patch_create(const char *name)
 
         /* default adsr params */
         eg1->env_on  = true;
-        eg1->delay   = 0.0;
         eg1->attack  = 0.005;
-        eg1->hold    = 0.0;
-        eg1->decay   = 0.0;
-        eg1->sustain = 1.0;
         eg1->release = 0.375;
+        eg1->key_amt = -0.99;
 
         /* use eg1 for amplitude envelope */
         p->vol.direct_mod_id = MOD_SRC_EG;
@@ -155,7 +152,7 @@ int patch_create(const char *name)
                                 MOD_SRC_MIDI_CC | CC_PAN);
         patch_set_mod1_amt( id, PATCH_PARAM_PANNING, 1.0f);
 
-        patch_param_set_value(  id, PATCH_PARAM_CUTOFF, 0.1f);
+        patch_param_set_value(  id, PATCH_PARAM_CUTOFF, 0.5f);
         patch_set_mod1_src( id, PATCH_PARAM_CUTOFF,
                                 MOD_SRC_MIDI_CC | CC_SNDCTRL5_BRIGHTNESS);
         patch_set_mod1_amt( id, PATCH_PARAM_CUTOFF, 1.0f);
@@ -420,11 +417,6 @@ void patch_flush_all ( )
         patch_flush (i);
 }
 
-/* constructor */
-void patch_init()
-{
-    debug("this init functions is now redundant aswell as badly named.\n");
-}
 
 /* returns error message associated with error code */
 const char *patch_strerror (int error)

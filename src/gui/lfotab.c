@@ -39,9 +39,12 @@ struct _LfoTabPrivate
 {
     int patch_id;
     int lfo_id;
+
     GtkWidget* idsel;
-    GtkWidget* shape_combo;
     GtkWidget* lfo_check;
+    GtkWidget* lfo_table;
+
+    GtkWidget* shape_combo;
     GtkWidget* free_radio;
     GtkWidget* sync_radio;
     GtkWidget* beats_sb;
@@ -79,31 +82,34 @@ static void lfo_tab_class_init(LfoTabClass* klass)
 
 static void set_sensitive(LfoTabPrivate* p, gboolean val)
 {
-    gboolean active;
+    gboolean active = gtk_toggle_button_get_active(
+                                GTK_TOGGLE_BUTTON(p->sync_radio));
 
-    gtk_widget_set_sensitive(p->shape_combo, val);
+    /*  setting the table itself takes care of the labels,
+     *  but still need to set the phat widgets...
+     */
+    gtk_widget_set_sensitive(p->lfo_table,  val);
+
+    gtk_widget_set_sensitive(p->shape_combo,val);
     gtk_widget_set_sensitive(p->free_radio, val);
     gtk_widget_set_sensitive(p->sync_radio, val);
-    gtk_widget_set_sensitive(p->beats_sb, val);
-    gtk_widget_set_sensitive(p->pos_check, val);
-    gtk_widget_set_sensitive(p->delay_fan, val);
+    gtk_widget_set_sensitive(p->beats_sb,   val);
+    gtk_widget_set_sensitive(p->pos_check,  val);
+    gtk_widget_set_sensitive(p->delay_fan,  val);
     gtk_widget_set_sensitive(p->attack_fan, val);
 
-    gtk_widget_set_sensitive(p->fm1_combo, val);
-    gtk_widget_set_sensitive(p->fm2_combo, val);
+    gtk_widget_set_sensitive(p->fm1_combo,  val);
+    gtk_widget_set_sensitive(p->fm2_combo,  val);
     gtk_widget_set_sensitive(p->fm1_amount, val);
     gtk_widget_set_sensitive(p->fm2_amount, val);
 
-    gtk_widget_set_sensitive(p->am1_combo, val);
-    gtk_widget_set_sensitive(p->am2_combo, val);
+    gtk_widget_set_sensitive(p->am1_combo,  val);
+    gtk_widget_set_sensitive(p->am2_combo,  val);
     gtk_widget_set_sensitive(p->am1_amount, val);
     gtk_widget_set_sensitive(p->am2_amount, val);
 
-    active  = gtk_toggle_button_get_active(
-                                GTK_TOGGLE_BUTTON(p->sync_radio));
-
     gtk_widget_set_sensitive(p->freq_fan, !active && val);
-    gtk_widget_set_sensitive(p->beats_sb, active && val);
+    gtk_widget_set_sensitive(p->beats_sb,  active && val);
 }
 
 
@@ -317,12 +323,12 @@ static void lfo_tab_init(LfoTab* self)
         "Sine", "Triangle", "Saw", "Square", 0
     };
 
-    GtkBox* box = GTK_BOX(self);
-    GtkWidget* title;
-    GtkWidget* table;
-    GtkTable* t;
-    GtkWidget* pad;
-    GtkWidget* label;
+    GtkBox*     selfbox = GTK_BOX(self);
+    GtkWidget*  title;
+    GtkTable*   t;
+    GtkWidget*  pad;
+    GtkWidget*  label;
+    GtkBox*     box = gtk_vbox_new(FALSE, 0);
 
     id_name* lfo_ids = mod_src_get(MOD_SRC_LFOS);
 
@@ -347,30 +353,33 @@ static void lfo_tab_init(LfoTab* self)
 
     mod_src_free(lfo_ids);
 
-    gtk_box_pack_start(box, p->idsel, FALSE, FALSE, 0);
-    gtk_widget_show(p->idsel);
-
-    /* selector padding */
-    pad = gui_hpad_new(GUI_SECSPACE);
-    gtk_box_pack_start(box, pad, FALSE, FALSE, 0);
-    gtk_widget_show(pad);
-
-    table = gtk_table_new(9, 3, FALSE);
-    t = (GtkTable*) table;
-    gtk_box_pack_start(box, table, FALSE, FALSE, 0);
-    gtk_widget_show(table);
+    gui_pack(selfbox, p->idsel);
+    gui_pack(selfbox, gui_hpad_new(GUI_SECSPACE));
+    gui_pack(selfbox, box);
 
     /* lfo title */
     title = gui_title_new("Low Frequency Oscillator");
     p->lfo_check = gtk_check_button_new();
     gtk_container_add(GTK_CONTAINER(p->lfo_check), title);
-    gui_attach(t, p->lfo_check, a1, c2, y, y + 1);
+    gui_pack(box, p->lfo_check);
+    gtk_widget_show(title); /* title requires additional showing */
+
+    /* title padding */
+    gui_pack(box, gui_vpad_new(GUI_SECSPACE));
+
+    /* table */
+    p->lfo_table = gtk_table_new(9, 3, FALSE);
+    t = (GtkTable*) p->lfo_table;
+    gui_pack(box, p->lfo_table);
+
+    /* Frequency title */
+    title = gui_title_new("Frequency");
+    gui_attach(t, title, a1, c2, y, y + 1);
     gtk_widget_show(title);
-    gtk_widget_show(p->lfo_check);
     ++y;
 
     /* freq */
-    gui_label_attach("Frequency:", t, a1, a2, y, y + 1);
+    gui_label_attach("Hrtz:", t, a1, a2, y, y + 1);
     p->free_radio = gtk_radio_button_new(NULL);
     p->freq_fan = phat_hfan_slider_new_with_range(5.0, 0.0, 50.0, 0.1);
     gui_attach(t, p->free_radio, b1, b2, y, y + 1);
@@ -391,7 +400,7 @@ static void lfo_tab_init(LfoTab* self)
     ++y;
 
     /* mod1 input source */
-    gui_label_attach("Freq.Mod1:", t, a1, a2, y, y + 1);
+    gui_label_attach("Mod1:", t, a1, a2, y, y + 1);
     p->fm1_combo = mod_src_new_combo_with_cell();
     gui_attach(t, p->fm1_combo, c1, c2, y, y + 1);
     ++y;
@@ -402,7 +411,7 @@ static void lfo_tab_init(LfoTab* self)
     ++y;
 
     /* mod2 input source */
-    gui_label_attach("Freq.Mod2:", t, a1, a2, y, y + 1);
+    gui_label_attach("Mod2:", t, a1, a2, y, y + 1);
     p->fm2_combo = mod_src_new_combo_with_cell();
     gui_attach(t, p->fm2_combo, c1, c2, y, y + 1);
     ++y;
@@ -417,6 +426,12 @@ static void lfo_tab_init(LfoTab* self)
     gui_attach(t, pad, a1, c2, y, y + 1);
     ++y;
 
+    /* Frequency title */
+    title = gui_title_new("Amplitude");
+    gui_attach(t, title, a1, c2, y, y + 1);
+    gtk_widget_show(title);
+    ++y;
+
     /* shape */
     gui_label_attach("Shape:", t, a1, a2, y, y + 1);
     p->shape_combo = basic_combo_create(shapes);
@@ -426,28 +441,6 @@ static void lfo_tab_init(LfoTab* self)
     /* positive */
     p->pos_check = gtk_check_button_new_with_label("Positive");
     gui_attach(t, p->pos_check, a1, a2, y, y + 1);
-    ++y;
-
-    /* mod1 input source */
-    gui_label_attach("Amp.Mod1:", t, a1, a2, y, y + 1);
-    p->am1_combo = mod_src_new_combo_with_cell();
-    gui_attach(t, p->am1_combo, c1, c2, y, y + 1);
-    ++y;
-
-    gui_label_attach("Amount:", t, a1, a2, y, y + 1);
-    p->am1_amount = phat_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
-    gui_attach(t, p->am1_amount, c1, c2, y, y + 1);
-    ++y;
-
-    /* mod2 input source */
-    gui_label_attach("Amp.Mod2:", t, a1, a2, y, y + 1);
-    p->am2_combo = mod_src_new_combo_with_cell();
-    gui_attach(t, p->am2_combo, c1, c2, y, y + 1);
-    ++y;
-
-    gui_label_attach("Amount:", t, a1, a2, y, y + 1);
-    p->am2_amount = phat_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
-    gui_attach(t, p->am2_amount, c1, c2, y, y + 1);
     ++y;
 
     /* delay fan */
@@ -460,6 +453,28 @@ static void lfo_tab_init(LfoTab* self)
     p->attack_label = label = gui_label_attach("Attack:", t, a1, a2, y,y+1);
     p->attack_fan = phat_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
     gui_attach(t, p->attack_fan, c1, c2, y, y + 1);
+    ++y;
+
+    /* mod1 input source */
+    gui_label_attach("Mod1:", t, a1, a2, y, y + 1);
+    p->am1_combo = mod_src_new_combo_with_cell();
+    gui_attach(t, p->am1_combo, c1, c2, y, y + 1);
+    ++y;
+
+    gui_label_attach("Amount:", t, a1, a2, y, y + 1);
+    p->am1_amount = phat_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
+    gui_attach(t, p->am1_amount, c1, c2, y, y + 1);
+    ++y;
+
+    /* mod2 input source */
+    gui_label_attach("Mod2:", t, a1, a2, y, y + 1);
+    p->am2_combo = mod_src_new_combo_with_cell();
+    gui_attach(t, p->am2_combo, c1, c2, y, y + 1);
+    ++y;
+
+    gui_label_attach("Amount:", t, a1, a2, y, y + 1);
+    p->am2_amount = phat_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
+    gui_attach(t, p->am2_amount, c1, c2, y, y + 1);
     ++y;
 
     /* done */

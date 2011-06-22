@@ -117,7 +117,7 @@ static id_name* get_midi_cc(id_name* start)
     make_midi_cc(ids++, id++,   "RPN - LSB");
     make_midi_cc(ids++, id++,   "RPN - MSB");
 
-    for (; id < CC__CONTROLLER__LAST;)
+    for (; id < CC___MSG___LAST;)
         make_midi_cc(ids++, id++, undefined);
 
     return ids;
@@ -183,7 +183,7 @@ id_name* mod_src_get(int id_bitmask)
         count += PATCH_MAX_LFOS;
 
     if (bitmask & MOD_SRC_MIDI_CC)
-        count += CC__CONTROLLER__LAST;
+        count += CC___MSG___LAST;
 
     ids = idnames = malloc(sizeof(*idnames) * (count + 1));
 

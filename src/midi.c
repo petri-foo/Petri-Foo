@@ -93,9 +93,9 @@ static void action(snd_seq_t* handle)
             break;
 
         case SND_SEQ_EVENT_PITCHBEND:
-            mixer_control(ev->data.control.channel,
-                        MIXER_CC_PITCH_BEND,
-                        ev->data.control.value / 8192.0);
+            mixer_control(  ev->data.control.channel,
+                            CC_PITCH_WHEEL,
+                            ev->data.control.value / 8192.0);
             break;
 
         default:

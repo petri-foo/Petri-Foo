@@ -70,7 +70,7 @@ enum
 
     /* ---- */
     /* used to gain count of controllers with regard to mod sources: */
-    CC__CONTROLLER__LAST =      0x78, 
+    CC___MSG___LAST =             0x78,
     /* ---- */
 
     CC_CHMODE_ALL_SOUND_OFF =   0x78,
@@ -83,6 +83,9 @@ enum
     CC_CHMODE_POLY_ON
 
 };
+
+
+enum { CC_ARR_SIZE = CC___MSG___LAST + 2 };
 
 
 #define MIDI_CONTROL_H__CC_MAP_DEF                              \

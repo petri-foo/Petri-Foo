@@ -243,6 +243,37 @@ int patch_set_env_release (int patch_id, int eg, float secs)
     return 0;
 }
 
+/* sets key tracking amount */
+int patch_set_env_key_amt(int patch_id, int eg, float val)
+{
+    eg = mod_src_to_eg_index(patch_id, eg);
+
+    if (eg < 0)
+        return eg; /* as error code */
+
+    if (val < -1.0 || val > 1.0)
+        return PATCH_PARAM_INVALID;
+
+    patches[patch_id]->env_params[eg].key_amt = val;
+    return 0;
+}
+
+/*
+int patch_set_env_vel_amt(int patch_id, int eg, float val)
+{
+    eg = mod_src_to_eg_index(patch_id, eg);
+
+    if (eg < 0)
+        return eg;
+
+    if (val < -1.0 || val > 1.0)
+        return PATCH_PARAM_INVALID;
+
+    patches[patch_id]->env_params[eg].vel_amt = val;
+    return 0;
+}
+*/
+
 /**************************************************************************/
 /************************* ENVELOPE GETTERS *******************************/
 /**************************************************************************/
@@ -342,6 +373,30 @@ int patch_get_env_release (int patch_id, int eg, float* val)
     return 0;
 }
 
+
+int patch_get_env_key_amt (int patch_id, int eg, float* val)
+{
+    eg = mod_src_to_eg_index(patch_id, eg);
+
+    if (eg < 0)
+        return eg; /* as error code */
+
+    *val = patches[patch_id]->env_params[eg].key_amt;
+    return 0;
+}
+
+/*
+int patch_get_env_vel_amt (int patch_id, int eg, float* val)
+{
+    eg = mod_src_to_eg_index(patch_id, eg);
+
+    if (eg < 0)
+        return eg;
+
+    *val = patches[patch_id]->env_params[eg].vel_amt;
+    return 0;
+}
+*/
 /************************************************************************/
 /*************************** LFO SETTERS ********************************/
 /************************************************************************/

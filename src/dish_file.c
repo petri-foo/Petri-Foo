@@ -238,25 +238,6 @@ dish_file_write_lfo(xmlNodePtr nodeparent, int patch_id, int lfo_id)
     xmlNewProp(node1,   BAD_CAST "active",
                         BAD_CAST (state ? "true" : "false"));
 
-    patch_get_lfo_shape(patch_id, lfo_id, &shape);
-    xmlNewProp(node1,   BAD_CAST "shape", BAD_CAST shapes[shape]);
-
-    patch_get_lfo_positive(patch_id, lfo_id, &state);
-    xmlNewProp(node1,   BAD_CAST "positive",
-                        BAD_CAST (state ? "true" : "false"));
-
-    /* assured by caller that lfo_id IS an lfo_id */
-    if (!mod_src_is_global(lfo_id))
-    {
-        patch_get_lfo_delay(patch_id, lfo_id, &val);
-        snprintf(buf, BUFSIZE, "%f", val);
-        xmlNewProp(node1,   BAD_CAST "delay",   BAD_CAST buf);
-
-        patch_get_lfo_attack(patch_id, lfo_id, &val);
-        snprintf(buf, BUFSIZE, "%f", val);
-        xmlNewProp(node1,   BAD_CAST "attack",  BAD_CAST buf);
-    }
-
     node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Frequency", NULL);
     patch_get_lfo_freq(patch_id, lfo_id, &val);
     snprintf(buf, BUFSIZE, "%f", val);
@@ -274,6 +255,43 @@ dish_file_write_lfo(xmlNodePtr nodeparent, int patch_id, int lfo_id)
     patch_get_lfo_fm1_amt(patch_id, lfo_id, &mod1amt);
     patch_get_lfo_fm2_src(patch_id, lfo_id, &mod2src);
     patch_get_lfo_fm2_amt(patch_id, lfo_id, &mod2amt);
+
+    node3 = xmlNewTextChild(node2, NULL, BAD_CAST "Mod1", NULL);
+    xmlNewProp(node3, BAD_CAST "source", BAD_CAST mod_src_name(mod1src));
+    snprintf(buf, BUFSIZE, "%f", mod1amt);
+    xmlNewProp(node3, BAD_CAST "amount", BAD_CAST buf);
+
+    node3 = xmlNewTextChild(node2, NULL, BAD_CAST "Mod2", NULL);
+    xmlNewProp(node3, BAD_CAST "source", BAD_CAST mod_src_name(mod2src));
+    snprintf(buf, BUFSIZE, "%f", mod2amt);
+    xmlNewProp(node3, BAD_CAST "amount", BAD_CAST buf);
+
+
+    node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Amplitude", NULL);
+
+    patch_get_lfo_shape(patch_id, lfo_id, &shape);
+    xmlNewProp(node2,   BAD_CAST "shape", BAD_CAST shapes[shape]);
+
+    patch_get_lfo_positive(patch_id, lfo_id, &state);
+    xmlNewProp(node2,   BAD_CAST "positive",
+                        BAD_CAST (state ? "true" : "false"));
+
+    /* assured by caller that lfo_id IS an lfo_id */
+    if (!mod_src_is_global(lfo_id))
+    {
+        patch_get_lfo_delay(patch_id, lfo_id, &val);
+        snprintf(buf, BUFSIZE, "%f", val);
+        xmlNewProp(node2,   BAD_CAST "delay",   BAD_CAST buf);
+
+        patch_get_lfo_attack(patch_id, lfo_id, &val);
+        snprintf(buf, BUFSIZE, "%f", val);
+        xmlNewProp(node2,   BAD_CAST "attack",  BAD_CAST buf);
+    }
+
+    patch_get_lfo_am1_src(patch_id, lfo_id, &mod1src);
+    patch_get_lfo_am1_amt(patch_id, lfo_id, &mod1amt);
+    patch_get_lfo_am2_src(patch_id, lfo_id, &mod2src);
+    patch_get_lfo_am2_amt(patch_id, lfo_id, &mod2amt);
 
     node3 = xmlNewTextChild(node2, NULL, BAD_CAST "Mod1", NULL);
     xmlNewProp(node3, BAD_CAST "source", BAD_CAST mod_src_name(mod1src));
@@ -733,23 +751,11 @@ int dish_file_read_lfo_freq_data(xmlNodePtr node, int patch_id, int lfo_id)
 }
 
 
-int dish_file_read_lfo(xmlNodePtr node, int patch_id)
+int dish_file_read_lfo_amp_data(xmlNodePtr node, int patch_id, int lfo_id)
 {
-    int lfo_id;
+    xmlNodePtr node1;
     xmlChar* prop;
     float n;
-    xmlNodePtr node1;
-
-    lfo_id = mod_src_id((const char*)node->name, MOD_SRC_LFOS);
-
-    if (lfo_id < 0)
-    {
-        errmsg("invalid LFO:%s\n", (const char*)node->name);
-        return -1;
-    }
-
-    if ((prop = xmlGetProp(node, BAD_CAST "active")))
-        patch_set_lfo_on(patch_id, lfo_id, xmlstr_to_bool(prop));
 
     if ((prop = xmlGetProp(node, BAD_CAST "shape")))
         patch_set_lfo_shape(patch_id, lfo_id,
@@ -776,9 +782,67 @@ int dish_file_read_lfo(xmlNodePtr node, int patch_id)
         if (node1->type != XML_ELEMENT_NODE)
             continue;
 
+        if (xmlStrcmp(node1->name, BAD_CAST "Mod1") == 0)
+        {
+            if ((prop = xmlGetProp(node1, BAD_CAST "source")))
+                patch_set_lfo_am1_src(patch_id, lfo_id,
+                    mod_src_id((const char*)prop, MOD_SRC_ALL));
+
+            if ((prop = xmlGetProp(node1, BAD_CAST "amount")))
+                if (sscanf((const char*)prop, "%f", &n) == 1)
+                    patch_set_lfo_am1_amt(patch_id, lfo_id, n);
+        }
+        else if (xmlStrcmp(node1->name, BAD_CAST "Mod2") == 0)
+        {
+            if ((prop = xmlGetProp(node1, BAD_CAST "source")))
+                patch_set_lfo_am2_src(patch_id, lfo_id,
+                    mod_src_id((const char*)prop, MOD_SRC_ALL));
+
+            if ((prop = xmlGetProp(node1, BAD_CAST "amount")))
+                if (sscanf((const char*)prop, "%f", &n) == 1)
+                    patch_set_lfo_am2_amt(patch_id, lfo_id, n);
+        }
+        else
+        {
+            errmsg("ignoring:%s\n", (const char*)node1->name);
+        }
+    }
+
+    return 0;
+}
+
+
+int dish_file_read_lfo(xmlNodePtr node, int patch_id)
+{
+    int lfo_id;
+    xmlChar* prop;
+    xmlNodePtr node1;
+
+    lfo_id = mod_src_id((const char*)node->name, MOD_SRC_LFOS);
+
+    if (lfo_id < 0)
+    {
+        errmsg("invalid LFO:%s\n", (const char*)node->name);
+        return -1;
+    }
+
+    if ((prop = xmlGetProp(node, BAD_CAST "active")))
+        patch_set_lfo_on(patch_id, lfo_id, xmlstr_to_bool(prop));
+
+    for (   node1 = node->children;
+            node1 != NULL;
+            node1 = node1->next)
+    {
+        if (node1->type != XML_ELEMENT_NODE)
+            continue;
+
         if (xmlStrcmp(node1->name, BAD_CAST "Frequency") == 0)
         {
             dish_file_read_lfo_freq_data(node1, patch_id, lfo_id);
+        }
+        else if (xmlStrcmp(node1->name, BAD_CAST "Amplitude") == 0)
+        {
+            dish_file_read_lfo_amp_data(node1, patch_id, lfo_id);
         }
         else
         {

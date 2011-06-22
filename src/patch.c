@@ -19,6 +19,12 @@
 #include "patch_private/patch_macros.h"
 
 
+/*  MIDI controller outputs 
+ *      pitch wheel =           index 0
+ *      CC x =                  index x + 1
+ */
+static float cc[16][CC_ARR_SIZE];
+
 
 /**************************************************************************/
 /********************** PRIVATE GENERAL HELPER FUNCTIONS*******************/
@@ -319,24 +325,30 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
 
     for (i = 0; i < VOICE_MAX_ENVS; i++)
     {
-        adsr_set_params(v->env[i], &p->env_params[i]);
-        adsr_trigger(v->env[i]);
+        if (p->env_params[i].env_on)
+        {
+            adsr_set_params(v->env[i], &p->env_params[i]);
+            adsr_trigger(v->env[i], key_track, vel);
+        }
     }
 
     for (i = 0; i < VOICE_MAX_LFOS; i++)
     {
-        float const* src;
+        if (p->vlfo_params[i].lfo_on)
+        {
+            float const* src;
 
-        src = patch_mod_id_to_pointer(p->vlfo_params[i].fm1_id, p, v);
-        lfo_set_fm1(v->lfo[i], src);
-        src = patch_mod_id_to_pointer(p->vlfo_params[i].fm2_id, p, v);
-        lfo_set_fm2(v->lfo[i], src);
+            src = patch_mod_id_to_pointer(p->vlfo_params[i].fm1_id, p, v);
+            lfo_set_fm1(v->lfo[i], src);
+            src = patch_mod_id_to_pointer(p->vlfo_params[i].fm2_id, p, v);
+            lfo_set_fm2(v->lfo[i], src);
 
-        src = patch_mod_id_to_pointer(p->vlfo_params[i].am1_id, p, v);
-        lfo_set_am1(v->lfo[i], src);
-        src = patch_mod_id_to_pointer(p->vlfo_params[i].am2_id, p, v);
-        lfo_set_am2(v->lfo[i], src);
-        lfo_trigger(v->lfo[i], &p->vlfo_params[i]);
+            src = patch_mod_id_to_pointer(p->vlfo_params[i].am1_id, p, v);
+            lfo_set_am1(v->lfo[i], src);
+            src = patch_mod_id_to_pointer(p->vlfo_params[i].am2_id, p, v);
+            lfo_set_am2(v->lfo[i], src);
+            lfo_trigger(v->lfo[i], &p->vlfo_params[i]);
+        }
     }
 
     /* mark our territory */
@@ -1084,10 +1096,10 @@ void patch_trigger_with_id (int id, int note, float vel, Tick ticks)
     return;
 }
 
-/* obsolete
-static void
-patch_control_patch(Patch* p, ControlParamType param, float value)
+
+static void patch_control_patch(Patch* p, int param, float value)
 {
+/*
     switch( param )
     {
     case CONTROL_PARAM_MODWHEEL:
@@ -1122,13 +1134,33 @@ patch_control_patch(Patch* p, ControlParamType param, float value)
     default:
         break;
     }
-}
 */
+}
 
-/*
-void patch_control(int chan, ControlParamType param, float value)
+
+void patch_control_init(void)
+{
+    int c, p;
+
+    debug("initializing control change array\n");
+
+    patch_set_control_array(&cc);
+
+    for (c = 0; c < 16; ++c)
+    {
+        for (p = 0; p < CC_ARR_SIZE + 1; ++p)
+            cc[c][p] = 0.0f;
+    }
+
+    debug("done\n");
+}
+
+
+void patch_control(int chan, int param, float value)
 {
     int i;
+
+    cc[chan][1 + param] = value;
 
     for (i = 0; i < PATCH_COUNT; i++)
     {
@@ -1142,4 +1174,4 @@ void patch_control(int chan, ControlParamType param, float value)
 
     return;
 }
-*/
+

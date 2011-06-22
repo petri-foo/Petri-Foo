@@ -104,9 +104,6 @@ static int              samplerate = -1;
 
 static jack_client_t*   jc;
 
-/* MIDI controller outputs */
-static float            cc[16][CC__CONTROLLER__LAST];
-static float            pitch_wheel[16];
 
 
 inline static void advance_reader(void)
@@ -182,14 +179,6 @@ void mixer_init(void)
     amplitude = DEFAULT_AMPLITUDE;
     pthread_mutex_init (&preview.mutex, NULL);
     preview.sample = sample_new ( );
-
-    for (c = 0; c < 16; ++c)
-    {
-        pitch_wheel[c] = 0.0f;
-
-        for (p = 0; p < CC__CONTROLLER__LAST; ++p)
-            cc[c][p] = 0.0f;
-    }
 
     debug ("done\n");
 }
@@ -276,16 +265,15 @@ void mixer_mixdown(float *buf, int frames)
             break;
 
         case MIXER_CONTROL:
-
-            debug("mixer control %d cc:%f\n",   event->control.param,
-                                                event->control.value);
-
-            cc[event->control.chan][event->control.param]
-                                                = event->control.value;
+            patch_control(  event->control.chan,
+                            event->control.param,
+                            event->control.value);
             break;
 
         case MIXER_PITCH_BEND:
-            pitch_wheel[event->control.chan] = event->control.value;
+            patch_control(  event->control.chan,
+                            CC_PITCH_WHEEL,
+                            event->control.value);
             break;
 
         default:
@@ -377,9 +365,7 @@ void mixer_note_on_with_id(int id, int note, float vel)
 /* queue control change event */
 void mixer_control(int chan, int param, float value)
 {
-    writer->type = (param == MIXER_CC_PITCH_BEND)
-                    ? MIXER_PITCH_BEND
-                    : MIXER_CONTROL;
+    writer->type = MIXER_CONTROL;
     writer->ticks = jack_last_frame_time(jc);
     writer->control.chan = chan;
     writer->control.param = param;
@@ -422,10 +408,7 @@ void mixer_direct_control(int chan, int param, float value, Tick tick)
 {
     if (direct_events_end < EVENTMAX)
     {
-        direct_events[direct_events_end].type =
-                        (param == MIXER_CC_PITCH_BEND)
-                                ? MIXER_PITCH_BEND
-                                : MIXER_CONTROL;
+        direct_events[direct_events_end].type = MIXER_CONTROL;
         direct_events[direct_events_end].ticks = tick;
         direct_events[direct_events_end].control.chan = chan;
         direct_events[direct_events_end].control.param = param;
@@ -485,16 +468,3 @@ void mixer_shutdown(void)
     debug ("done\n");
 }
 
-
-float* mixer_get_control_output(int chan, int param)
-{
-    if (chan < 0 || chan > 15)
-        return 0;
-
-    if (param == MIXER_CC_PITCH_BEND)
-        return &pitch_wheel[chan];
-
-    return (chan < 0 || chan > 15 || param < 0 || param > 119)
-                ? 0
-                : &cc[chan][param];
-}

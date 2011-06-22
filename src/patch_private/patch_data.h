@@ -2,6 +2,7 @@
 #define PRIVATE_PATCH_DATA_H
 
 
+#include "midi_control.h"
 #include "patch.h"
 
 #include "patch_voice.h"
@@ -121,6 +122,8 @@ typedef struct _Patch
 
 Patch*          patch_new(const char* name);
 void            patch_free(Patch*);
+
+void            patch_set_control_array(float (*ccs)[16][CC_ARR_SIZE]);
 
 void            patch_set_global_lfo_buffers(Patch*, int buffersize);
 

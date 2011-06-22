@@ -1,3 +1,28 @@
+2011-06-22  James Morris <james@jwm-art.net>
+
+	* envtab.c: cleaner GUI labels when EGs turned on/off.
+	  title is packed into main box rather than the table
+	  and the table is sensitized to take care of labels.
+
+	* lfotab.c: cleaner GUI labels when LFOs turned on/off.
+	  similar process to envtab.c, but required an additional
+	  box for packing (lfotab has different orientation).
+
+2011-06-10  James Morris <james@jwm-art.net>
+
+	* lfotab.c: add statements to handle modification of
+	  amplitude modulation amounts.
+
+	* lfotab.c: reduce highest rate of LFO from 250 hrtz
+	  down to 50.0 hrtz.
+
+	* midi_control.h: add macro to define a static inline
+	  function to be used by jackdriver.c and midi.c for
+	  mapping MIDI CC values where balance and pan are mapped
+	  between -1.0 and +1.0 while all else mapped between
+	  0.0 and +1.0 (pitch wheel is handled separately).
+	  
+
 2011-06-09  James Morris <james@jwm-art.net>
 
 	* lfo.[ch], gui/lfotab.c, patch_set_and_get.[ch], etc

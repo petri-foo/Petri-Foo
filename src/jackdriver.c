@@ -130,8 +130,8 @@ static int process(jack_nframes_t frames, void* arg)
         }
         else if ((midi_data[0] & 0xF0) == 0xE0)
         {   /* pitch bend */
-            mixer_direct_control(   midi_data[0] & 0x0F,    /* channel */
-                                    MIXER_CC_PITCH_BEND,    /* param */
+            mixer_direct_control(   midi_data[0] & 0x0F,
+                                    CC_PITCH_WHEEL,
                 -1.0 + ((midi_data[2] << 7) | midi_data[1]) /  8192.0,
                                     jack_midi_event.time);
         }

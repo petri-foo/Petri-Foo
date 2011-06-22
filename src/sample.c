@@ -69,7 +69,7 @@ int sample_default(Sample* sample, int rate)
 
     lfo = lfo_new();
     lfo_init(lfo);
-    lfo_params_init(&lfopar, 523.251, LFO_SHAPE_TRIANGLE);
+    lfo_params_init(&lfopar, 523.251, LFO_SHAPE_SAW);
     lfo_trigger(lfo, &lfopar);
 
     lfo_out = lfo_output(lfo);

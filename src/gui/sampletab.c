@@ -35,6 +35,9 @@ struct _SampleTabPrivate
 };
 
 
+enum { WAVEFORM_WIDTH = 256, WAVEFORM_HEIGHT = 96 };
+
+
 G_DEFINE_TYPE(SampleTab, sample_tab, GTK_TYPE_VBOX);
 
 
@@ -270,7 +273,10 @@ static void sample_tab_init(SampleTab* self)
     /* waveform preview */
     p->waveform = waveform_new();
     waveform_set_patch(         WAVEFORM(p->waveform), p->patch);
-    waveform_set_size(          WAVEFORM(p->waveform), 256, 64);
+
+    waveform_set_size(          WAVEFORM(p->waveform), WAVEFORM_WIDTH,
+                                                       WAVEFORM_HEIGHT);
+
     waveform_set_interactive(   WAVEFORM(p->waveform), FALSE);
     gtk_box_pack_start(GTK_BOX(vbox),    p->waveform,  TRUE, TRUE, 0);
     gtk_widget_show(p->waveform);

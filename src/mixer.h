@@ -7,10 +7,6 @@
 #include <jack/jack.h>
 
 
-/* Pitch Bend is treated as a special case of MIDI Controller */
-enum { MIXER_CC_PITCH_BEND = 1024 };
-
-
 void    mixer_flush             (void);
 void    mixer_init              (void);
 
@@ -34,9 +30,6 @@ int     mixer_set_amplitude     (float amplitude);
 float   mixer_get_amplitude     (void);
 void    mixer_set_samplerate    (int rate);
 void    mixer_shutdown          (void);
-
-
-float*  mixer_get_control_output(int chan, int param);
 
 
 #endif /* __MIXER_H__ */

@@ -258,8 +258,7 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
     /* table */
     table = gtk_table_new(8, 3, FALSE);
     t = (GtkTable*)table;
-    gtk_box_pack_start(box, table, FALSE, FALSE, 0);
-    gtk_widget_show(table);
+    gui_pack(box, table);
 
     /* title */
     gui_attach(t, gui_title_new(param_names[param]), a1, c2, y, y + 1);

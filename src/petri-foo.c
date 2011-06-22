@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
     driver_init();
     lfo_tables_init();
     mixer_init();
-    patch_init();
+    patch_control_init();
 
 	/* start */
 	driver_start();
