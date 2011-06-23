@@ -306,17 +306,14 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
     if (!p->mono)
         v->fll = v->fbl = v->flr = v->fbr = 0;
 
-    v->vol_mod1 =   patch_mod_id_to_pointer(p->vol.mod1_id, p, v);
-    v->vol_mod2 =   patch_mod_id_to_pointer(p->vol.mod2_id, p, v);
-    v->vol_direct = patch_mod_id_to_pointer(p->vol.direct_mod_id, p, v);
-    v->pan_mod1 =   patch_mod_id_to_pointer(p->pan.mod1_id, p, v);
-    v->pan_mod2 =   patch_mod_id_to_pointer(p->pan.mod2_id, p, v);
-    v->ffreq_mod1 = patch_mod_id_to_pointer(p->ffreq.mod1_id, p, v);
-    v->ffreq_mod2 = patch_mod_id_to_pointer(p->ffreq.mod2_id, p, v);
-    v->freso_mod1 = patch_mod_id_to_pointer(p->freso.mod1_id, p, v);
-    v->freso_mod2 = patch_mod_id_to_pointer(p->freso.mod2_id, p, v);
-    v->pitch_mod1 = patch_mod_id_to_pointer(p->pitch.mod1_id, p, v);
-    v->pitch_mod2 = patch_mod_id_to_pointer(p->pitch.mod2_id, p, v);
+    for (i = 0; i < MAX_MOD_SLOTS; ++i)
+    {
+        v->vol_mod[i] = patch_mod_id_to_pointer(p->vol.mod_id[i], p, v);
+        v->pan_mod[i] = patch_mod_id_to_pointer(p->pan.mod_id[i], p, v);
+        v->ffreq_mod[i] = patch_mod_id_to_pointer(p->ffreq.mod_id[i], p, v);
+        v->freso_mod[i] = patch_mod_id_to_pointer(p->freso.mod_id[i], p, v);
+        v->pitch_mod[i] = patch_mod_id_to_pointer(p->pitch.mod_id[i], p, v);
+    }
 
     if (!(p->mono && p->legato && v->active))
         playstate_init_fade_in(p, v);
@@ -441,19 +438,18 @@ pitchscale (Patch * p, PatchVoice * v, float *l, float *r)
 inline static void
 pan (Patch * p, PatchVoice * v, int index, float *l, float *r)
 {
+    int i;
     float pan;
 
     /* get pan value */
     pan = p->pan.val;
 
-    if (v->pan_mod1 != NULL)
-        pan += *v->pan_mod1 * p->pan.mod1_amt;
+    for (i = 0; i < MAX_MOD_SLOTS; ++i)
+        if (v->pan_mod[i] != NULL)
+            pan += *v->pan_mod[i] * p->pan.mod_amt[i];
 
-    if (v->pan_mod2 != NULL)
-        pan += *v->pan_mod2 * p->pan.mod2_amt;
-
-    /* scale to velocity */
-    pan = lerp (pan, pan * v->vel, p->pan.vel_amt);
+    /* scale for velocity tracking */
+    pan = lerp(pan, pan * v->vel, p->pan.vel_amt);
 
     /* scale for key tracking */
     if (p->pan.key_amt < 0)
@@ -483,16 +479,15 @@ pan (Patch * p, PatchVoice * v, int index, float *l, float *r)
 inline static void
 filter (Patch* p, PatchVoice* v, int index,  float* l, float* r)
 {
+    int i;
     float ffreq, freso, logreso;
 
     /* get filter cutoff frequency */
     ffreq = p->ffreq.val;
 
-    if (v->ffreq_mod1 != NULL)
-        ffreq += *v->ffreq_mod1 * p->ffreq.mod1_amt;
-
-    if (v->ffreq_mod2 != NULL)
-        ffreq += *v->ffreq_mod2 * p->ffreq.mod2_amt;
+    for (i = 0; i < MAX_MOD_SLOTS; ++i)
+        if (v->ffreq_mod[i] != NULL)
+            ffreq += *v->ffreq_mod[i] * p->ffreq.mod_amt[i];
 
     /* scale to velocity */
     ffreq = lerp (ffreq, ffreq * v->vel, p->ffreq.vel_amt);
@@ -514,14 +509,12 @@ filter (Patch* p, PatchVoice* v, int index,  float* l, float* r)
     /* get filter resonant frequency */
     freso = p->freso.val;
 
-    if (v->freso_mod1 != NULL)
-        freso += *v->freso_mod1 * p->freso.mod1_amt;
-
-    if (v->freso_mod2 != NULL)
-        freso += *v->freso_mod2 * p->freso.mod2_amt;
+    for (i = 0; i < MAX_MOD_SLOTS; ++i)
+        if (v->freso_mod[i] != NULL)
+            freso += *v->freso_mod[i] * p->freso.mod_amt[i];
 
     /* scale to velocity */
-    freso = lerp (freso, freso * v->vel, p->freso.vel_amt);
+    freso = lerp(freso, freso * v->vel, p->freso.vel_amt);
 
     /* scale for key tracking */
     if (p->freso.key_amt < 0)
@@ -556,20 +549,20 @@ filter (Patch* p, PatchVoice* v, int index,  float* l, float* r)
 inline static int
 gain (Patch* p, PatchVoice* v, int index, float* l, float* r)
 {
+    int i;
     float vol = 0.0;
     float logvol = 0.0;
 
     /* first, we use our set value as a base */
     vol = p->vol.val;
 
-    if (v->vol_mod1 != NULL)
-        vol += *v->vol_mod1 * p->vol.mod1_amt;
+    for (i = 0; i < EG_MOD_SLOT; ++i)
+        if (v->vol_mod[i] != NULL)
+            vol += *v->vol_mod[i] * p->vol.mod_amt[i];
 
-    if (v->vol_mod2 != NULL)
-        vol += *v->vol_mod2 * p->vol.mod2_amt;
-
-    if (v->vol_direct)
-        vol *= *v->vol_direct;
+    /* direct modulation source (ie no amount) */
+    if (v->vol_mod[EG_MOD_SLOT])
+        vol *= *v->vol_mod[EG_MOD_SLOT];
 
     /* scale for key tracking */
     if (p->vol.key_amt < 0)
@@ -579,7 +572,7 @@ gain (Patch* p, PatchVoice* v, int index, float* l, float* r)
 
     /* velocity should be the last parameter considered because it
      * has the most "importance" */
-    vol = lerp (vol, vol * v->vel, p->vol.vel_amt);
+    vol = lerp(vol, vol * v->vel, p->vol.vel_amt);
 
     /* apply fade in/out */
     vol *= v->fade_declick;
@@ -605,7 +598,8 @@ gain (Patch* p, PatchVoice* v, int index, float* l, float* r)
 */
     /* check to see if we've finished a release */
     if (v->released && (v->fade_declick == 0.0f //< ALMOST_ZERO
-                    || (v->vol_direct && *v->vol_direct < ALMOST_ZERO)))
+                    || (v->vol_mod[EG_MOD_SLOT] 
+                    && *v->vol_mod[EG_MOD_SLOT] < ALMOST_ZERO)))
     {
         return -1;
     }
@@ -656,7 +650,7 @@ inline static void advance_fwd(int* posi,  uint32_t* posf,
  * returned if we are out of samples after doing our work) */
 inline static int advance (Patch* p, PatchVoice* v, int index)
 {
-    int j;
+    int i,j;
     double pitch;
     double scale;
     bool recalc = false;
@@ -679,32 +673,24 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
         pitch *= p->pitch_bend;
     }
 
-    /* pitch lfo value */
-    if (v->pitch_mod1 != NULL)
+    for (i = 0; i < MAX_MOD_SLOTS; ++i)
     {
-        recalc = true;
-        scale = *v->pitch_mod1;
+        if (v->pitch_mod[i] != NULL)
+        {
+            recalc = true;
+            scale = *v->pitch_mod[i];
 
-        /* we don't multiply against p->pitch.lfo_amount because the
-         * "amount" variable has already been expressed in the
-         * values of lfo_pitch_max and lfo_pitch_min (the same logic
-         * applies when handling the envelopes below)
-         */
-        if (scale >= 0.0)
-            pitch *= lerp (1.0, p->mod1_pitch_max, scale);
-        else
-            pitch *= lerp (1.0, p->mod1_pitch_min, -scale);
-    }
+            /*  don't multiply against p->pitch.lfo_amount because the
+             *  "amount" variable has already been expressed in the
+             *  values of lfo_pitch_max and lfo_pitch_min (the same logic
+             *  applies when handling the envelopes below)
+             */
 
-    if (v->pitch_mod2 != NULL)
-    {
-        recalc = true;
-        scale = *v->pitch_mod2;
-
-        if (scale >= 0.0)
-            pitch *= lerp (1.0, p->mod2_pitch_max, scale);
-        else
-            pitch *= lerp (1.0, p->mod2_pitch_min, -scale);
+            if (scale >= 0.0)
+                pitch *= lerp(1.0, p->mod_pitch_max[i], scale);
+            else
+                pitch *= lerp(1.0, p->mod_pitch_min[i], -scale);
+        }
     }
 
     /* scale to velocity */
@@ -845,7 +831,7 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
 
                 if (!(p->play_mode & PATCH_PLAY_SINGLESHOT))
                 {
-                    if (!v->vol_direct)
+                    if (!v->vol_mod[EG_MOD_SLOT]) /* direct mod source */
                     {
                         playstate_init_fade_out(p, v);
                     }

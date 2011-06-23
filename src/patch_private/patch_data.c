@@ -16,10 +16,10 @@ static float    (*cc_arr)[16][CC_ARR_SIZE];
 
 Patch* patch_new(const char* name)
 {
-    Patch* p;
-    ADSRParams  defadsr;
-    bool default_patch = (strcmp("Default", name) == 0);
     int i;
+    Patch* p;
+
+    bool default_patch = (strcmp("Default", name) == 0);
 
     p = malloc(sizeof(*p));
 
@@ -63,56 +63,50 @@ Patch* patch_new(const char* name)
     p->mono =           false;
     p->legato =         false;
 
-    p->play_mode = (default_patch   ? PATCH_PLAY_LOOP
-                                    : PATCH_PLAY_SINGLESHOT)
-                                    | PATCH_PLAY_FORWARD;
+    p->play_mode =      (default_patch  ? PATCH_PLAY_LOOP
+                                        : PATCH_PLAY_SINGLESHOT)
+                                        | PATCH_PLAY_FORWARD;
+
+    for (i = 0; i < MAX_MOD_SLOTS; ++i)
+    {
+        p->vol.mod_id[i] = MOD_SRC_NONE;
+        p->vol.mod_amt[i] = 0.0;
+
+        p->pan.mod_id[i] = MOD_SRC_NONE;
+        p->pan.mod_amt[i] = 0.0;
+
+        p->ffreq.mod_id[i] = MOD_SRC_NONE;
+        p->ffreq.mod_amt[i] = 0.0;
+
+        p->freso.mod_id[i] = MOD_SRC_NONE;
+        p->freso.mod_amt[i] = 0.0;
+
+        p->pitch.mod_id[i] = MOD_SRC_NONE;
+        p->pitch.mod_amt[i] = 0.0;
+
+        p->mod_pitch_min[i] = 1.0;
+        p->mod_pitch_max[i] = 1.0;
+    }
+
     p->vol.val =        DEFAULT_AMPLITUDE;
-    p->vol.mod1_id =    MOD_SRC_NONE;
-    p->vol.mod2_id =    MOD_SRC_NONE;
-    p->vol.mod1_amt =   0;
-    p->vol.mod2_amt =   0;
-    p->vol.direct_mod_id = (default_patch
-                                ? MOD_SRC_EG
-                                : MOD_SRC_NONE);
     p->vol.vel_amt =    1.0;
     p->vol.key_amt =    0.0;
 
     p->pan.val =        0.0;
-    p->pan.mod1_id =    MOD_SRC_NONE;
-    p->pan.mod2_id =    MOD_SRC_NONE;
-    p->pan.mod1_amt =   0;
-    p->pan.mod2_amt =   0;
     p->pan.vel_amt =    0;
     p->pan.key_amt =    0.0;
 
     p->ffreq.val =      1.0;
-    p->ffreq.mod1_id =  MOD_SRC_NONE;
-    p->ffreq.mod2_id =  MOD_SRC_NONE;
-    p->ffreq.mod1_amt = 0;
-    p->ffreq.mod2_amt = 0;
     p->ffreq.vel_amt =  0;
     p->ffreq.key_amt =  0;
 
     p->freso.val =      0.0;
-    p->freso.mod1_id =  MOD_SRC_NONE;
-    p->freso.mod2_id =  MOD_SRC_NONE;
-    p->freso.mod1_amt = 0;
-    p->freso.mod2_amt = 0;
     p->freso.vel_amt =  0;
     p->freso.key_amt =  0;
 
     p->pitch.val =      0.0;
-    p->pitch.mod1_id =  MOD_SRC_NONE;
-    p->pitch.mod2_id =  MOD_SRC_NONE;
-    p->pitch.mod1_amt = 0;
-    p->pitch.mod2_amt = 0;
     p->pitch.vel_amt =  0;
     p->pitch.key_amt =  1.0;
-
-    p->mod1_pitch_max = 1.0;
-    p->mod1_pitch_min = 1.0;
-    p->mod2_pitch_max = 1.0;
-    p->mod2_pitch_min = 1.0;
 
     for (i = 0; i < PATCH_MAX_LFOS; ++i)
     {

@@ -23,13 +23,11 @@ struct _ModSectionPrivate
     PatchParamType  param;
     GtkWidget*      param1;
     GtkWidget*      param2;
-    GtkWidget*      env_combo;
     GtkWidget*      vel_sens;
     GtkWidget*      key_track;
-    GtkWidget*      mod1_combo;
-    GtkWidget*      mod1_amount;
-    GtkWidget*      mod2_combo;
-    GtkWidget*      mod2_amount;
+
+    GtkWidget*      mod_combo[MAX_MOD_SLOTS];
+    GtkWidget*      mod_amount[MAX_MOD_SLOTS];
 };
 
 
@@ -74,43 +72,63 @@ static void key_track_cb(GtkWidget* w, ModSectionPrivate* p)
 
 static void mod_src_cb(GtkComboBox* combo, ModSectionPrivate* p)
 {
-    int input_id;
+    int i;
 
-    if (combo == GTK_COMBO_BOX(p->env_combo))
-        input_id = MOD_ENV;
-    else if (combo == GTK_COMBO_BOX(p->mod1_combo))
-        input_id = MOD_IN1;
-    else if (combo == GTK_COMBO_BOX(p->mod2_combo))
-        input_id = MOD_IN2;
-    else
+    for (i = 0; i < MAX_MOD_SLOTS; ++i)
+        if (combo == GTK_COMBO_BOX(p->mod_combo[i]))
+            break;
+
+    if (i == MAX_MOD_SLOTS)
     {
         debug ("mod_src_cb called from unrecognised combo box\n");
         return;
     }
 
-    mod_src_callback_helper(p->patch_id, input_id, combo, p->param );
+    mod_src_callback_helper(p->patch_id, i, combo, p->param );
 }
 
 static void mod_amount_cb(GtkWidget* w, ModSectionPrivate* p)
 {
-    float val = (p->param == PATCH_PARAM_PITCH
-                    ? phat_slider_button_get_value(PHAT_SLIDER_BUTTON(w))
-                        / PATCH_MAX_PITCH_STEPS
-                    : phat_fan_slider_get_value(PHAT_FAN_SLIDER(w)));
+    int i;
+    float val;
+    int last_slot = MAX_MOD_SLOTS;
 
-    if (w == p->mod1_amount)
-        patch_set_mod1_amt(p->patch_id, p->param, val);
-    else if (w == p->mod2_amount)
-        patch_set_mod2_amt(p->patch_id, p->param, val);
+    if (p->param == PATCH_PARAM_AMPLITUDE)
+        --last_slot;
     else
     {
-        debug ("mod_amount_cb called from unrecognised widget\n");
+        if (p->param == PATCH_PARAM_PITCH)
+            val = phat_slider_button_get_value(PHAT_SLIDER_BUTTON(w))
+                                                / PATCH_MAX_PITCH_STEPS;
+        else
+            val = phat_fan_slider_get_value(PHAT_FAN_SLIDER(w));
     }
+
+    debug("amount val:%f\n",val);
+
+    for (i = 0; i < last_slot; ++i)
+        if (w == p->mod_amount[i])
+            break;
+
+    if (i == last_slot)
+    {
+        debug ("mod_amount_cb called from unrecognised widget\n");
+        return;
+    }
+
+    patch_set_mod_amt(p->patch_id, p->param, i, val);
 }
 
 
 static void connect(ModSectionPrivate* p)
 {
+    int i;
+
+    int last_slot = MAX_MOD_SLOTS;
+
+    if (p->param == PATCH_PARAM_AMPLITUDE)
+        --last_slot;
+
     if (p->mod_only)
         goto connect_mod_srcs;
 
@@ -127,28 +145,33 @@ static void connect(ModSectionPrivate* p)
     g_signal_connect(G_OBJECT(p->key_track),    "value-changed",
                         G_CALLBACK(key_track_cb),   (gpointer)p);
 
-    if (p->param == PATCH_PARAM_AMPLITUDE)
-        g_signal_connect(G_OBJECT(p->env_combo),"changed",
-                        G_CALLBACK(mod_src_cb),     (gpointer)p);
-
 connect_mod_srcs:
 
-    g_signal_connect(G_OBJECT(p->mod1_combo),    "changed",
-                        G_CALLBACK(mod_src_cb),    (gpointer)p);
+    for (i = 0; i < MAX_MOD_SLOTS; ++i)
+    {
+        debug("param:%d, connecting slot source:%d\n",p->param, i);
+        g_signal_connect(G_OBJECT(p->mod_combo[i]), "changed",
+                            G_CALLBACK(mod_src_cb), (gpointer)p);
 
-    g_signal_connect(G_OBJECT(p->mod1_amount),   "value-changed",
-                        G_CALLBACK(mod_amount_cb), (gpointer)p);
-
-    g_signal_connect(G_OBJECT(p->mod2_combo),    "changed",
-                        G_CALLBACK(mod_src_cb),    (gpointer)p);
-
-    g_signal_connect(G_OBJECT(p->mod2_amount),   "value-changed",
-                        G_CALLBACK(mod_amount_cb), (gpointer)p);
+        if (i < last_slot) /* prevent 'ENV' slot amount connecting */
+        {
+            debug("param:%d, connecting slot amount:%d\n",p->param, i);
+            g_signal_connect(G_OBJECT(p->mod_amount[i]),    "value-changed",
+                                G_CALLBACK(mod_amount_cb),  (gpointer)p);
+        }
+    }
 }
 
 
 static void block(ModSectionPrivate* p)
 {
+    int i;
+
+    int last_slot = MAX_MOD_SLOTS;
+
+    if (p->param == PATCH_PARAM_AMPLITUDE)
+        --last_slot;
+
     if (p->mod_only)
         goto block_mod_srcs;
 
@@ -160,20 +183,27 @@ static void block(ModSectionPrivate* p)
     g_signal_handlers_block_by_func(p->key_track, key_track_cb, p);
     g_signal_handlers_block_by_func(p->vel_sens, vel_sens_cb, p);
 
-    if (p->param == PATCH_PARAM_AMPLITUDE)
-        g_signal_handlers_block_by_func(p->env_combo,mod_src_cb, p);
-
 block_mod_srcs:
 
-    g_signal_handlers_block_by_func(p->mod1_combo,   mod_src_cb,    p);
-    g_signal_handlers_block_by_func(p->mod1_amount,  mod_amount_cb, p);
-    g_signal_handlers_block_by_func(p->mod2_combo,   mod_src_cb,    p);
-    g_signal_handlers_block_by_func(p->mod2_amount,  mod_amount_cb, p);
+    for (i = 0; i < MAX_MOD_SLOTS; ++i)
+    {
+        g_signal_handlers_block_by_func(p->mod_combo[i],  mod_src_cb, p);
+
+        if (i < last_slot)
+            g_signal_handlers_block_by_func(p->mod_amount[i], mod_amount_cb,                                                                       p);
+    }
 }
 
 
 static void unblock(ModSectionPrivate* p)
 {
+    int i;
+
+    int last_slot = MAX_MOD_SLOTS;
+
+    if (p->param == PATCH_PARAM_AMPLITUDE)
+        --last_slot;
+
     if (p->mod_only)
         goto unblock_mod_srcs;
 
@@ -185,23 +215,25 @@ static void unblock(ModSectionPrivate* p)
     g_signal_handlers_unblock_by_func(p->key_track, key_track_cb, p);
     g_signal_handlers_unblock_by_func(p->vel_sens, vel_sens_cb, p);
 
-    if (p->param == PATCH_PARAM_AMPLITUDE)
-        g_signal_handlers_unblock_by_func(p->env_combo, mod_src_cb, p);
-
 unblock_mod_srcs:
 
-    g_signal_handlers_unblock_by_func(p->mod1_combo, mod_src_cb,    p);
-    g_signal_handlers_unblock_by_func(p->mod1_amount,mod_amount_cb, p);
-    g_signal_handlers_unblock_by_func(p->mod2_combo, mod_src_cb,    p);
-    g_signal_handlers_unblock_by_func(p->mod2_amount,mod_amount_cb, p);
+    for (i = 0; i < MAX_MOD_SLOTS; ++i)
+    {
+        g_signal_handlers_unblock_by_func(p->mod_combo[i],  mod_src_cb, p);
+
+        if (i < last_slot)
+            g_signal_handlers_unblock_by_func(p->mod_amount[i],
+                                                 mod_amount_cb, p);
+    }
 }
 
 
+
+/*  reflect certain midi cc changes of parameters in the gui
+    no longer required
+
 static gboolean refresh(gpointer data)
 {
-    /* reflect certain midi cc changes of parameters in the gui */
-
-    float v = 0.0;
     ModSection* self = MOD_SECTION(data);
     ModSectionPrivate* p = MOD_SECTION_GET_PRIVATE(self);
 
@@ -212,6 +244,7 @@ static gboolean refresh(gpointer data)
 
     return TRUE;
 }
+ */
 
 
 static void mod_section_init(ModSection* self)
@@ -244,7 +277,10 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
     const char* lstr;
     const char** param_names = names_params_get();
 
+    int i;
     int y = 0;
+    int env_slot = -1;
+    int last_mod_slot = MAX_MOD_SLOTS;
 
     int a1 = 0, a2 = 1;
     int b1 = 1, b2 = 2;
@@ -281,7 +317,11 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
 
     switch(param)
     {
-    case PATCH_PARAM_AMPLITUDE: lstr = "Level:";    break;
+    case PATCH_PARAM_AMPLITUDE:
+        lstr = "Level:";
+        env_slot = --last_mod_slot;
+        break;
+
     case PATCH_PARAM_PANNING:   lstr = "Position:"; break;
     case PATCH_PARAM_PITCH:     lstr = "Tuning:";   break;
                                                     break;
@@ -322,62 +362,54 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
     {
         /* env input source */
         gui_label_attach("Env:", t, a1, a2, y, y + 1);
-        p->env_combo = mod_src_new_combo_with_cell();
-        gui_attach(t, p->env_combo, b1, b2, y, y + 1);
+        p->mod_combo[env_slot] = mod_src_new_combo_with_cell();
+        gui_attach(t, p->mod_combo[env_slot], b1, b2, y, y + 1);
         ++y;
     }
 
 
 create_mod_srcs:
 
+    for (i = 0; i < last_mod_slot; ++i)
+    {
+        char buf[10];
+        snprintf(buf, 10, "Mod%d:", i + 1);
+        buf[9] = '\0'; /* paranoiac critical method */
 
-    /* mod1 input source */
-    gui_label_attach("Mod1:", t, a1, a2, y, y + 1);
-    p->mod1_combo = mod_src_new_combo_with_cell();
-    gui_attach(t, p->mod1_combo, b1, b2, y, y + 1);
+        gui_label_attach(buf, t, a1, a2, y, y + 1);
+        p->mod_combo[i] = mod_src_new_combo_with_cell();
+        gui_attach(t, p->mod_combo[i], b1, b2, y, y + 1);
 
-    if (param == PATCH_PARAM_PITCH)
-        p->mod1_amount = mod_src_new_pitch_adjustment();
-    else
-        p->mod1_amount = phat_hfan_slider_new_with_range(0.0, -1.0,
+        if (param == PATCH_PARAM_PITCH)
+            p->mod_amount[i] = mod_src_new_pitch_adjustment();
+        else
+            p->mod_amount[i] = phat_hfan_slider_new_with_range(0.0, -1.0,
                                                             1.0, 0.1);
-    gui_attach(t, p->mod1_amount, c1, c2, y, y + 1);
-    ++y;
-
-    /* mod2 input source */
-    gui_label_attach("Mod2:", t, a1, a2, y, y + 1);
-    p->mod2_combo = mod_src_new_combo_with_cell();
-    gui_attach(t, p->mod2_combo, b1, b2, y, y + 1);
-
-    if (param == PATCH_PARAM_PITCH)
-        p->mod2_amount = mod_src_new_pitch_adjustment();
-    else
-        p->mod2_amount = phat_hfan_slider_new_with_range(0.0, -1.0,
-                                                            1.0, 0.1);
-    gui_attach(t, p->mod2_amount, c1, c2, y, y + 1);
+        gui_attach(t, p->mod_amount[i], c1, c2, y, y + 1);
+        ++y;
+    }
 
     /* done */
     connect(p);
 
     /*  add a timeout to allow the gui to reflect changes in
         parameters which are changeable via midi cc mesages
-     */
+
+        nb: no longer required...
 
     p->refresh = g_timeout_add(GUI_REFRESH_TIMEOUT, refresh,
                                                     (gpointer)self);
+     */
 }
 
 
 void mod_section_set_list_global(ModSection* self)
 {
     ModSectionPrivate* p = MOD_SECTION_GET_PRIVATE(self);
-    mod_src_combo_set_model(GTK_COMBO_BOX(p->env_combo),
-                                    MOD_SRC_GLOBALS);
+    int i;
 
-    mod_src_combo_set_model(GTK_COMBO_BOX(p->mod1_combo),
-                                    MOD_SRC_GLOBALS);
-
-    mod_src_combo_set_model(GTK_COMBO_BOX(p->mod2_combo),
+    for (i = 0; i < MAX_MOD_SLOTS; ++i)
+        mod_src_combo_set_model(GTK_COMBO_BOX(p->mod_combo[i]),
                                     MOD_SRC_GLOBALS);
 }
 
@@ -385,13 +417,11 @@ void mod_section_set_list_global(ModSection* self)
 void mod_section_set_list_all(ModSection* self)
 {
     ModSectionPrivate* p = MOD_SECTION_GET_PRIVATE(self);
-    mod_src_combo_set_model(GTK_COMBO_BOX(p->env_combo),
-                                    MOD_SRC_ALL);
 
-    mod_src_combo_set_model(GTK_COMBO_BOX(p->mod1_combo),
-                                    MOD_SRC_ALL);
+    int i;
 
-    mod_src_combo_set_model(GTK_COMBO_BOX(p->mod2_combo),
+    for (i = 0; i < MAX_MOD_SLOTS; ++i)
+        mod_src_combo_set_model(GTK_COMBO_BOX(p->mod_combo[i]),
                                     MOD_SRC_ALL);
 }
 
@@ -409,12 +439,13 @@ void mod_section_set_patch(ModSection* self, int patch_id)
     float param2 = PATCH_PARAM_INVALID;
     float vsens;
     float ktrack;
-    int envsrc, m1src, m2src;
-    float m1amt, m2amt;
 
-    GtkTreeIter enviter;
-    GtkTreeIter m1iter;
-    GtkTreeIter m2iter;
+    int     i;
+    int     last_slot = MAX_MOD_SLOTS;
+    int     modsrc[MAX_MOD_SLOTS];
+    float   modamt[MAX_MOD_SLOTS];
+
+    GtkTreeIter moditer[MAX_MOD_SLOTS];
 
     p->patch_id = patch_id;
 
@@ -428,39 +459,26 @@ void mod_section_set_patch(ModSection* self, int patch_id)
 
     if (p->param == PATCH_PARAM_PITCH)
         param2 = patch_get_pitch_steps(p->patch_id);
+    else if (p->param == PATCH_PARAM_AMPLITUDE)
+        --last_slot;
 
     patch_get_vel_amount(patch_id, p->param, &vsens);
     patch_get_key_amount(patch_id, p->param, &ktrack);
 
 get_mod_srcs:
 
-    if (p->param == PATCH_PARAM_AMPLITUDE)
+    for (i = 0; i < MAX_MOD_SLOTS; ++i)
     {
-        patch_get_amp_env(patch_id, &envsrc);
+        patch_get_mod_src(patch_id, p->param, i, &modsrc[i]);
 
-        if (!mod_src_combo_get_iter_with_id(GTK_COMBO_BOX(p->env_combo),
-                                                envsrc, &enviter))
+        if (i < last_slot)
+            patch_get_mod_amt(patch_id, p->param, i, &modamt[i]);
+
+        if (!mod_src_combo_get_iter_with_id(GTK_COMBO_BOX(p->mod_combo[i]),
+                                                    modsrc[i], &moditer[i]))
         {
-            debug("failed to get env source id from combo box\n");
+            debug("failed to get mod%d source id from combo box\n", i);
         }
-    }
-
-    patch_get_mod1_src(patch_id, p->param, &m1src);
-    patch_get_mod2_src(patch_id, p->param, &m2src);
-
-    patch_get_mod1_amt(patch_id, p->param, &m1amt);
-    patch_get_mod2_amt(patch_id, p->param, &m2amt);
-
-    if (!mod_src_combo_get_iter_with_id(GTK_COMBO_BOX(p->mod1_combo),
-                                                        m1src, &m1iter))
-    {
-        debug("failed to get mod1 source id from combo box\n");
-    }
-
-    if (!mod_src_combo_get_iter_with_id(GTK_COMBO_BOX(p->mod2_combo),
-                                                        m2src, &m2iter))
-    {
-        debug("failed to get mod2 source id from combo box\n");
     }
 
     block(p);
@@ -476,27 +494,23 @@ get_mod_srcs:
     phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->key_track), ktrack);
     phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->vel_sens), vsens);
 
-    if (p->param == PATCH_PARAM_AMPLITUDE)
-        gtk_combo_box_set_active_iter(GTK_COMBO_BOX(p->env_combo),
-                                                                &enviter);
-
 set_mod_srcs:
 
-    gtk_combo_box_set_active_iter(GTK_COMBO_BOX(p->mod1_combo), &m1iter);
-    gtk_combo_box_set_active_iter(GTK_COMBO_BOX(p->mod2_combo), &m2iter);
-
-
-    if (p->param == PATCH_PARAM_PITCH)
+    for (i = 0; i < MAX_MOD_SLOTS; ++i)
     {
-        phat_slider_button_set_value(PHAT_SLIDER_BUTTON(p->mod1_amount),
-                                            m1amt * PATCH_MAX_PITCH_STEPS);
-        phat_slider_button_set_value(PHAT_SLIDER_BUTTON(p->mod2_amount),
-                                            m2amt * PATCH_MAX_PITCH_STEPS);
-    }
-    else
-    {
-        phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->mod1_amount), m1amt);
-        phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->mod2_amount), m2amt);
+        gtk_combo_box_set_active_iter(GTK_COMBO_BOX(p->mod_combo[i]),
+                                                        &moditer[i]);
+        if (p->param == PATCH_PARAM_PITCH)
+        {
+            phat_slider_button_set_value(
+                                PHAT_SLIDER_BUTTON(p->mod_amount[i]),
+                                modamt[i] * PATCH_MAX_PITCH_STEPS);
+        }
+        else if (i < last_slot)
+        {
+            phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->mod_amount[i]),
+                                                            modamt[i]);
+        }
     }
 
     unblock(p);

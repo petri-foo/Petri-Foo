@@ -15,9 +15,8 @@ typedef struct _PatchParam
     float   val;        /* value of this parameter */
 
     /* modulation sources */
-    int     mod_id[3];
-    int     mod_amt[3];
-    bool    mod0_direct;
+    int     mod_id[MAX_MOD_SLOTS];
+    float   mod_amt[MAX_MOD_SLOTS];
 
     /* velocity sensitivity and keyboard tracking */
     float   vel_amt;
@@ -67,10 +66,8 @@ typedef struct _Patch
     PatchParam      freso;      /* filter resonance:        [0.0, 1.0] */
     PatchParam      pitch;      /* pitch scaling:           [0.0, 1.0] */
 
-    double mod1_pitch_max;
-    double mod1_pitch_min;
-    double mod2_pitch_max;
-    double mod2_pitch_min;
+    double mod_pitch_min[MAX_MOD_SLOTS];
+    double mod_pitch_max[MAX_MOD_SLOTS];
 
     LFO*        glfo[PATCH_MAX_LFOS];
     LFOParams   glfo_params[PATCH_MAX_LFOS];

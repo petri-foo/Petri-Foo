@@ -91,13 +91,13 @@ dish_file_write_param(xmlNodePtr nodeparent, int patch_id,
     float   val1;
     float   val2;
     float   vel_amt;
-    int     envsrc;
-    int     mod1src;
-    int     mod2src;
-    float   mod1amt;
-    float   mod2amt;
+    int     modsrc;
+    float   modamt;
     float   velsens;
     float   keytrack;
+
+    int     last_mod_slot = MAX_MOD_SLOTS;
+    int     i;
 
     if (patch_param_get_value(patch_id, param, &val1)
                                                 == PATCH_PARAM_INVALID)
@@ -109,10 +109,11 @@ dish_file_write_param(xmlNodePtr nodeparent, int patch_id,
 
     switch(param)
     {
-    case PATCH_PARAM_AMPLITUDE: prop1 = "level";     prop2 = 0; break;
-    case PATCH_PARAM_PANNING:   prop1 = "position";  prop2 = 0; break;
-    case PATCH_PARAM_CUTOFF:    prop1 = "value";     prop2 = 0; break;
-    case PATCH_PARAM_RESONANCE: prop1 = "amount";    prop2 = 0; break;
+    case PATCH_PARAM_AMPLITUDE: prop1 = "level";    prop2 = 0;
+                                --last_mod_slot;                break;
+    case PATCH_PARAM_PANNING:   prop1 = "position"; prop2 = 0;  break;
+    case PATCH_PARAM_CUTOFF:    prop1 = "value";    prop2 = 0;  break;
+    case PATCH_PARAM_RESONANCE: prop1 = "amount";   prop2 = 0;  break;
     case PATCH_PARAM_PITCH:     val2 = patch_get_pitch_steps(patch_id);
                                 prop1 = "tuning";
                                 prop2 = "tuning_range";         break;
@@ -142,27 +143,26 @@ dish_file_write_param(xmlNodePtr nodeparent, int patch_id,
     snprintf(buf, BUFSIZE, "%f", keytrack);
     xmlNewProp(node1, BAD_CAST "key_tracking", BAD_CAST buf);
 
-    if (param == PATCH_PARAM_AMPLITUDE)
+    for (i = 0; i < last_mod_slot; ++i)
     {
-        patch_get_amp_env(patch_id, &envsrc);
-        node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Env", NULL);
-        xmlNewProp(node2, BAD_CAST "source", BAD_CAST mod_src_name(envsrc));
+        snprintf(buf, BUFSIZE, "Mod%d", i + 1);
+
+        patch_get_mod_src(patch_id, param, i, &modsrc);
+        patch_get_mod_amt(patch_id, param, i, &modamt);
+
+        node2 = xmlNewTextChild(node1, NULL, BAD_CAST buf, NULL);
+        xmlNewProp(node2, BAD_CAST "source", BAD_CAST mod_src_name(modsrc));
+        snprintf(buf, BUFSIZE, "%f", modamt);
+        xmlNewProp(node2, BAD_CAST "amount", BAD_CAST buf);
     }
 
-    patch_get_mod1_src(patch_id, param, &mod1src);
-    patch_get_mod1_amt(patch_id, param, &mod1amt);
-    patch_get_mod2_src(patch_id, param, &mod2src);
-    patch_get_mod2_amt(patch_id, param, &mod2amt);
-
-    node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Mod1", NULL);
-    xmlNewProp(node2, BAD_CAST "source", BAD_CAST mod_src_name(mod1src));
-    snprintf(buf, BUFSIZE, "%f", mod1amt);
-    xmlNewProp(node2, BAD_CAST "amount", BAD_CAST buf);
-
-    node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Mod2", NULL);
-    xmlNewProp(node2, BAD_CAST "source", BAD_CAST mod_src_name(mod2src));
-    snprintf(buf, BUFSIZE, "%f", mod2amt);
-    xmlNewProp(node2, BAD_CAST "amount", BAD_CAST buf);
+    if (param == PATCH_PARAM_AMPLITUDE)
+    {
+        patch_get_mod_src(patch_id, PATCH_PARAM_AMPLITUDE,
+                                    EG_MOD_SLOT, &modsrc);
+        node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Env", NULL);
+        xmlNewProp(node2, BAD_CAST "source", BAD_CAST mod_src_name(modsrc));
+    }
 
     return 0;
 }
@@ -909,32 +909,25 @@ int dish_file_read_param(xmlNodePtr node,   int patch_id,
         if (node1->type != XML_ELEMENT_NODE)
             continue;
 
-        if (xmlStrcmp(node1->name, BAD_CAST "Mod1") == 0)
+        int slot = -1;
+
+        if (sscanf((const char*)node1->name, "Mod%d", &slot) == 1
+            && slot > 0 && slot <= MAX_MOD_SLOTS)
         {
             if ((prop = xmlGetProp(node1, BAD_CAST "source")))
-                patch_set_mod1_src(patch_id, param,
+                patch_set_mod_src(patch_id, param, slot,
                     mod_src_id((const char*)prop, MOD_SRC_ALL));
 
             if ((prop = xmlGetProp(node1, BAD_CAST "amount")))
                 if (sscanf((const char*)prop, "%f", &n) == 1)
-                    patch_set_mod1_amt(patch_id, param, n);
+                    patch_set_mod_amt(patch_id, param, slot, n);
         }
-        else if (xmlStrcmp(node1->name, BAD_CAST "Mod2") == 0)
+        else if ((param == PATCH_PARAM_AMPLITUDE
+                && xmlStrcmp(node1->name, BAD_CAST "Env") == 0))
         {
             if ((prop = xmlGetProp(node1, BAD_CAST "source")))
-                patch_set_mod2_src(patch_id, param,
+                patch_set_mod_src(patch_id, param, EG_MOD_SLOT,
                     mod_src_id((const char*)prop, MOD_SRC_ALL));
-
-            if ((prop = xmlGetProp(node1, BAD_CAST "amount")))
-                if (sscanf((const char*)prop, "%f", &n) == 1)
-                    patch_set_mod2_amt(patch_id, param, n);
-        }
-        else if (param == PATCH_PARAM_AMPLITUDE
-              && xmlStrcmp(node1->name, BAD_CAST "Env") == 0)
-        {
-            if ((prop = xmlGetProp(node1, BAD_CAST "source")))
-                    patch_set_amp_env(patch_id,
-                        mod_src_id((const char*)prop, MOD_SRC_ALL));
         }
         else
         {
