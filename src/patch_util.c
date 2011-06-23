@@ -143,12 +143,12 @@ int patch_create(const char *name)
         patch_set_mod_amt(  id, PATCH_PARAM_PITCH, 1,
                                         2.0f / PATCH_MAX_PITCH_STEPS);
 
-        /* amplitude mod source 0 has full effect, no need to set amount */
+        /* AMPLITUDE EG_MOD_SLOT has full effect, no need to set amount */
         patch_set_mod_src(  id, PATCH_PARAM_AMPLITUDE,  EG_MOD_SLOT,
                                                         MOD_SRC_EG);
-        patch_set_mod_src(  id, PATCH_PARAM_AMPLITUDE, 1,
+        patch_set_mod_src(  id, PATCH_PARAM_AMPLITUDE, 0,
                                 MOD_SRC_MIDI_CC | CC_CHANNEL_VOLUME);
-        patch_set_mod_amt(  id, PATCH_PARAM_AMPLITUDE, 1, 1.0f);
+        patch_set_mod_amt(  id, PATCH_PARAM_AMPLITUDE, 0, 1.0f);
 
         /* pan */
         patch_set_mod_src(  id, PATCH_PARAM_PANNING, 0,

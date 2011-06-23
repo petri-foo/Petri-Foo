@@ -83,14 +83,14 @@ void adsr_init(ADSR* env)
     env->_attack = 0;
     env->_hold   = 0;
     env->_decay  = 0;
-    env->_sustain= 1.0;
+    env->_sustain= 0.0;
     env->_release= 0;
 
     env->delay   = 0;
     env->attack  = 0;
     env->hold    = 0;
     env->decay   = 0;
-    env->sustain = 1.0;
+    env->sustain = 0.0;
     env->release = 0;
 
     env->key_amt = 0.0;
@@ -141,6 +141,7 @@ void adsr_trigger(ADSR* env, float key, float vel)
 /*
     env->sustain = lerp(env->_sustain, env->_sustain * vel, env->vel_amt);
 */
+    env->sustain = env->_sustain;
 }
 
 

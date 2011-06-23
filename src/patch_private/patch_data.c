@@ -111,7 +111,10 @@ Patch* patch_new(const char* name)
     for (i = 0; i < PATCH_MAX_LFOS; ++i)
     {
         lfo_params_init(&p->glfo_params[i], 1.0, LFO_SHAPE_SINE);
-        p->glfo[i] = lfo_new();
+        if (!(p->glfo[i] = lfo_new()))
+        {
+            debug("Failed to create global lfo:%d\n", i);
+        }
         /* init tables to NULL */
         p->glfo_table[i] = 0;
     }
@@ -139,7 +142,9 @@ Patch* patch_new(const char* name)
 
     pthread_mutex_init(&p->mutex, NULL);
 
-    debug("crreated patch:%s [%p]\n", p->name, p);
+    debug("********************************\n");
+    debug("created patch:%s [%p]\n", p->name, p);
+    debug("********************************\n");
 
     return p;
 }
@@ -152,7 +157,9 @@ void patch_free(Patch* p)
     if (!p)
         return;
 
+    debug("********************************\n");
     debug("freeing patch:'%s'\n", p->name);
+    debug("********************************\n");
 
     sample_free_data(p->sample);
 
