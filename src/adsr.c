@@ -83,14 +83,14 @@ void adsr_init(ADSR* env)
     env->_attack = 0;
     env->_hold   = 0;
     env->_decay  = 0;
-    env->_sustain= 1.0;
+    env->_sustain= 0.0;
     env->_release= 0;
 
     env->delay   = 0;
     env->attack  = 0;
     env->hold    = 0;
     env->decay   = 0;
-    env->sustain = 1.0;
+    env->sustain = 0.0;
     env->release = 0;
 
     env->key_amt = 0.0;
@@ -141,6 +141,8 @@ void adsr_trigger(ADSR* env, float key, float vel)
 /*
     env->sustain = lerp(env->_sustain, env->_sustain * vel, env->vel_amt);
 */
+
+    env->sustain = env->_sustain;
 }
 
 
@@ -256,14 +258,14 @@ float adsr_tick(ADSR* e)
 
 void adsr_set_params (ADSR* env, ADSRParams* params)
 {
-     env->_delay   = ticks_secs_to_ticks (params->delay);
-     env->_attack  = ticks_secs_to_ticks (params->attack);
-     env->_hold    = ticks_secs_to_ticks (params->hold);
-     env->_decay   = ticks_secs_to_ticks (params->decay);
-     env->_sustain = params->sustain;
-     env->_release = ticks_secs_to_ticks (params->release);
-     env->key_amt  = params->key_amt;
-/*   env->vel_amt  = params->vel_amt; */
+    env->_delay   = ticks_secs_to_ticks (params->delay);
+    env->_attack  = ticks_secs_to_ticks (params->attack);
+    env->_hold    = ticks_secs_to_ticks (params->hold);
+    env->_decay   = ticks_secs_to_ticks (params->decay);
+    env->_sustain = params->sustain;
+    env->_release = ticks_secs_to_ticks (params->release);
+    env->key_amt  = params->key_amt;
+/*  env->vel_amt  = params->vel_amt; */
 }
 
 
