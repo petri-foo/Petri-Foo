@@ -828,6 +828,8 @@ int dish_file_read_lfo(xmlNodePtr node, int patch_id)
 
     lfo_id = mod_src_id((const char*)node->name, MOD_SRC_LFOS);
 
+debug("lfo id:%d\n", lfo_id);
+
     if (lfo_id < 0)
     {
         errmsg("invalid LFO:%s\n", (const char*)node->name);
@@ -914,6 +916,8 @@ int dish_file_read_param(xmlNodePtr node,   int patch_id,
         if (sscanf((const char*)node1->name, "Mod%d", &slot) == 1
             && slot > 0 && slot <= MAX_MOD_SLOTS)
         {
+            --slot; /* slot 0 is named as MOD1 */
+
             if ((prop = xmlGetProp(node1, BAD_CAST "source")))
                 patch_set_mod_src(patch_id, param, slot,
                     mod_src_id((const char*)prop, MOD_SRC_ALL));
@@ -1023,7 +1027,7 @@ int dish_file_read(const char *path)
         }
         else if (xmlStrcmp(node1->name, BAD_CAST "Patch") == 0)
         {
-            int patch_id = patch_create("Loading...");
+            int patch_id = patch_create();
 
             nodepatch = node1;
 

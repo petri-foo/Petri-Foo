@@ -71,24 +71,20 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	/* constructors */
     mod_src_create();
-
     gtk_init(&argc, &argv);
     gui_init();
     driver_init();
     lfo_tables_init();
     mixer_init();
     patch_control_init();
-
-	/* start */
-	driver_start();
-	midi_start();
+    driver_start();
+    midi_start();
 
     if (optind < argc)
         dish_file_read(argv[optind]);
     else
-        patch_create(0 /* Default Patch */);
+        patch_create_default();
 
     gui_refresh();
 
@@ -97,15 +93,15 @@ int main(int argc, char *argv[])
 
     gtk_main();
 
-	/* stop */
-	midi_stop();
-	driver_stop();
-
-	/* destructors */
-	patch_shutdown();
-	mixer_shutdown();
+    /* shutdown... */
+    midi_stop();
+    driver_stop();
+    patch_shutdown();
+    mixer_shutdown();
     free_instance_name();
     mod_src_destroy();
-	debug("Goodbye.\n");
-	return 0;
+
+    debug("Goodbye.\n");
+
+    return 0;
 }

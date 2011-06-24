@@ -210,7 +210,6 @@ cb_menu_patch_add (GtkWidget * menu_item, GtkWidget * main_window)
     (void)menu_item;
     static int patch_no = 1;
     char buf[80];
-    int val;
 
     GtkWidget *dialog;
     GtkWidget *entry;
@@ -253,19 +252,22 @@ cb_menu_patch_add (GtkWidget * menu_item, GtkWidget * main_window)
      * due to sensitivity callback */
     if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
     {
-        val = patch_create((char *)gtk_entry_get_text(GTK_ENTRY(entry)));
-        if (val < 0)
+        int id = patch_create();
+
+        if (id < 0)
         {
-            errmsg ("Failed to create a new patch (%s).\n",
-            patch_strerror (val));
+            errmsg("Failed to create a new patch (%s).\n",
+                                        patch_strerror(id));
             return;
         }
 
-        patch_set_channel(val,
+        patch_set_name(id, (char *)gtk_entry_get_text(GTK_ENTRY(entry)));
+
+        patch_set_channel(id,
                 channel_section_get_channel(
                         CHANNEL_SECTION(channel_section)));
 
-        patch_list_update (PATCH_LIST(patch_list), val, PATCH_LIST_PATCH);
+        patch_list_update(PATCH_LIST(patch_list), id, PATCH_LIST_PATCH);
     }
 
     gtk_widget_destroy (dialog);

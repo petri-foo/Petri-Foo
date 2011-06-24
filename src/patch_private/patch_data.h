@@ -111,7 +111,7 @@ typedef struct _Patch
 } Patch;
 
 
-Patch*          patch_new(const char* name);
+Patch*          patch_new(void);
 void            patch_free(Patch*);
 
 void            patch_set_control_array(float (*ccs)[16][CC_ARR_SIZE]);

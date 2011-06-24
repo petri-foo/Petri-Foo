@@ -8,6 +8,7 @@
 #include "midi.h"
 #include "mixer.h"
 #include "patch_set_and_get.h"
+#include "driver.h"
 
 
 /* magic numbers */
@@ -52,20 +53,26 @@ static void midi_section_class_init(MidiSectionClass* klass)
 static void pressed_cb(GtkWidget* widget, int key, MidiSectionPrivate* p)
 {
     (void)widget;
+
     /* a ghetto form of set-insensitive */
     if (p->patch < 0)
         return;
-    mixer_note_on_with_id(p->patch, key, 1.0);
+
+    if (driver_running())
+        mixer_note_on_with_id(p->patch, key, 1.0);
 }
 
 
 static void released_cb(GtkWidget* widget, int key, MidiSectionPrivate* p)
 {
     (void)widget;
+
     /* a ghetto form of set-insensitive */
     if (p->patch < 0)
         return;
-    mixer_note_off_with_id(p->patch, key);
+
+    if (driver_running())
+        mixer_note_off_with_id(p->patch, key);
 }
 
 

@@ -6,11 +6,17 @@
 #include "sample.h"
 
 
+enum { USER_PATCH, DEFAULT_PATCH };
+
+
 /* utility functions */
-int         patch_count           (void);
-int         patch_create          (const char* name);
+int         patch_create          (void);
+int         patch_create_default  (void);
+
 int         patch_destroy         (int id);
 void        patch_destroy_all     (void);
+
+int         patch_count           (void);
 int         patch_dump            (int** dump);
 int         patch_duplicate       (int id);
 int         patch_flush           (int id);

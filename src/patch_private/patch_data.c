@@ -14,23 +14,18 @@ static float    one = 1.0;
 static float    (*cc_arr)[16][CC_ARR_SIZE];
 
 
-Patch* patch_new(const char* name)
+Patch* patch_new(void)
 {
     int i;
     Patch* p;
-
-    bool default_patch = (strcmp("Default", name) == 0);
 
     p = malloc(sizeof(*p));
 
     if (!p)
         return 0;
 
-    /* name */
-    strncpy(p->name, name, PATCH_MAX_NAME);
-    p->name[PATCH_MAX_NAME - 1] = '\0';
+    p->name[0] = '\0';
 
-    /* default values */
     p->active =         true;
     p->sample =         sample_new();
     p->display_index =  -1;
@@ -63,9 +58,7 @@ Patch* patch_new(const char* name)
     p->mono =           false;
     p->legato =         false;
 
-    p->play_mode =      (default_patch  ? PATCH_PLAY_LOOP
-                                        : PATCH_PLAY_SINGLESHOT)
-                                        | PATCH_PLAY_FORWARD;
+    p->play_mode =      PATCH_PLAY_SINGLESHOT | PATCH_PLAY_FORWARD;
 
     for (i = 0; i < MAX_MOD_SLOTS; ++i)
     {
@@ -111,10 +104,11 @@ Patch* patch_new(const char* name)
     for (i = 0; i < PATCH_MAX_LFOS; ++i)
     {
         lfo_params_init(&p->glfo_params[i], 1.0, LFO_SHAPE_SINE);
-        if (!(p->glfo[i] = lfo_new()))
-        {
-            debug("Failed to create global lfo:%d\n", i);
-        }
+
+        p->glfo[i] = lfo_new();
+
+        debug("creating global lfo:%d %p\n", i, p->glfo[i]);
+
         /* init tables to NULL */
         p->glfo_table[i] = 0;
     }

@@ -408,8 +408,6 @@ static int lfo_from_id(int patch_id, int id, LFO** lfo, LFOParams** lfopar)
 
     *lfopar = 0;
 
-debug("patch id:%d lfo id:%d\n", patch_id, id);
-
     if (!isok(patch_id))
         return PATCH_ID_INVALID;
 
@@ -419,7 +417,6 @@ debug("patch id:%d lfo id:%d\n", patch_id, id);
     if (id & MOD_SRC_VLFO)
     {
         id -= MOD_SRC_VLFO;
-        debug("identified VLFO: %d\n", id);
 
         if (id < VOICE_MAX_LFOS)
             *lfopar = &patches[patch_id]->vlfo_params[id];
@@ -430,7 +427,6 @@ debug("patch id:%d lfo id:%d\n", patch_id, id);
     if (id & MOD_SRC_GLFO)
     {
         id -= MOD_SRC_GLFO;
-        debug("identified GLFO: %d\n", id);
 
         if (id < PATCH_MAX_LFOS)
         {

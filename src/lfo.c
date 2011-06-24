@@ -160,19 +160,19 @@ void lfo_tables_init(void)
 }
 
 
-void lfo_set_samplerate (int rate)
+void lfo_set_samplerate(int rate)
 {
      samplerate = rate;
 }
 
 
-void lfo_set_tempo (float bpm)
+void lfo_set_tempo(float bpm)
 {
      sync_tempo = bpm;
 }
 
 
-void lfo_rigger (LFO* lfo, LFOParams* params)
+void lfo_rigger(LFO* lfo, LFOParams* params)
 {
     lfo->positive = params->positive;
 
@@ -211,7 +211,7 @@ void lfo_rigger (LFO* lfo, LFOParams* params)
 }
 
 
-void lfo_trigger (LFO* lfo, LFOParams* params)
+void lfo_trigger(LFO* lfo, LFOParams* params)
 {
     lfo_rigger(lfo, params);
     lfo->phase = 0;
