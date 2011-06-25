@@ -12,7 +12,6 @@
 #include <stdbool.h>
 
 
-
 /* release modes */
 typedef enum
 {
@@ -61,21 +60,11 @@ typedef struct _PatchVoice
     float   vel;            /* velocity; volume of this voice */
     float   key_track;      /* = (note - lower) / (upper - lower) */
 
-    float const*    vol_mod1;
-    float const*    vol_mod2;
-    float const*    vol_direct;
-
-    float const*    pan_mod1;
-    float const*    pan_mod2;
-
-    float const*    ffreq_mod1;
-    float const*    ffreq_mod2;
-
-    float const*    freso_mod1;
-    float const*    freso_mod2;
-
-    float const*    pitch_mod1;
-    float const*    pitch_mod2;
+    float const* vol_mod[MAX_MOD_SLOTS];
+    float const* pan_mod[MAX_MOD_SLOTS];
+    float const* ffreq_mod[MAX_MOD_SLOTS];
+    float const* freso_mod[MAX_MOD_SLOTS];
+    float const* pitch_mod[MAX_MOD_SLOTS];
 
     ADSR*       env[VOICE_MAX_ENVS];
     LFO*        lfo[VOICE_MAX_LFOS];

@@ -141,20 +141,14 @@ int patch_param_get_value(int patch_id, PatchParamType, float* val);
 int patch_param_set_value(int patch_id, PatchParamType, float  val);
 
 /* modulation setters */
-int patch_set_mod1_src(int patch_id, PatchParamType, int modsrc_id);
-int patch_set_mod2_src(int patch_id, PatchParamType, int modsrc_id);
-int patch_set_mod1_amt(int patch_id, PatchParamType, float amount);
-int patch_set_mod2_amt(int patch_id, PatchParamType, float amount);
-int patch_set_amp_env(int patch_id, int modsrc_id);
+int patch_set_mod_src(int patch_id, PatchParamType, int slot, int src_id);
+int patch_set_mod_amt(int patch_id, PatchParamType, int slot, float amt);
 int patch_set_vel_amount(int id, PatchParamType param, float amt);
 int patch_set_key_amount(int id, PatchParamType param, float amt);
 
 /* modulation getters */
-int patch_get_mod1_src(int patch_id, PatchParamType, int* modsrc_id);
-int patch_get_mod2_src(int patch_id, PatchParamType, int* modsrc_id);
-int patch_get_mod1_amt(int patch_id, PatchParamType, float* amount);
-int patch_get_mod2_amt(int patch_id, PatchParamType, float* amount);
-int patch_get_amp_env(int patch_id, int* modsrc_id);
+int patch_get_mod_src(int patch_id, PatchParamType, int slot, int* src_id);
+int patch_get_mod_amt(int patch_id, PatchParamType, int slot, float* amt);
 int patch_get_vel_amount(int id, PatchParamType param, float* val);
 int patch_get_key_amount(int id, PatchParamType param, float* val);
 

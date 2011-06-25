@@ -85,98 +85,109 @@ int patch_count()
 }
 
 
-int patch_create(const char *name)
+int patch_create(void)
 {
     int id;
     Patch* p;
-    bool default_patch = (name == 0);
 
-    /* find an unoccupied patch id */
+    /* find unoccupied patch id */
     for (id = 0; patches[id] && patches[id]->active; ++id)
         if (id == PATCH_COUNT)
             return PATCH_LIMIT;
 
-    if (default_patch)
-        name = "Default";
-
-    if (!(p = patch_new(name)))
+    if (!(p = patch_new()))
     {
         errmsg("Failed to create new patch\n");
         return PATCH_ALLOC_FAIL;
     }
 
-    debug ("Creating patch %s (%d) [%p].\n", name, id, p);
+    debug("Creating patch %d [%p]\n", id, p);
 
     patches[id] = p;
+    patch_lock(id);
+    p->active = true;
+    patch_unlock(id);
+
+    return id;
+}
+
+
+int patch_create_default(void)
+{
+    int id;
+    Patch* p;
+    ADSRParams* eg1;
+
+    if ((id = patch_create()) < 0)
+        return id;
+
+    p = patches[id];
 
     patch_lock(id);
 
-    p->active = true;
+    p->play_mode = PATCH_PLAY_LOOP | PATCH_PLAY_FORWARD;
+    p->fade_samples =  DEFAULT_FADE_SAMPLES;
+    p->xfade_samples = DEFAULT_FADE_SAMPLES;
 
-    if (default_patch)
-    {
-        /* "Default" values */
-        ADSRParams* eg1 = &p->env_params[0];
+    /* adsr */
+    eg1 = &p->env_params[0];
+    eg1->env_on  = true;
+    eg1->attack  = 0.005;
+    eg1->release = 0.375;
+    eg1->key_amt = -0.99;
 
-        p->play_mode = (default_patch
-                            ? PATCH_PLAY_LOOP
-                            : PATCH_PLAY_SINGLESHOT) | PATCH_PLAY_FORWARD;
+    /* controllers... */
 
-        p->fade_samples =  DEFAULT_FADE_SAMPLES;
-        p->xfade_samples = DEFAULT_FADE_SAMPLES;
-
-        /* default adsr params */
-        eg1->env_on  = true;
-        eg1->attack  = 0.005;
-        eg1->release = 0.375;
-        eg1->key_amt = -0.99;
-
-        /* use eg1 for amplitude envelope */
-        p->vol.direct_mod_id = MOD_SRC_EG;
-
-        /* setup default controllers */
-
-        patch_set_mod1_src( id, PATCH_PARAM_PITCH, MOD_SRC_PITCH_WHEEL);
-        patch_set_mod1_amt( id, PATCH_PARAM_PITCH,
+    /* pitch */
+    patch_set_mod_src(  id, PATCH_PARAM_PITCH, 0, MOD_SRC_PITCH_WHEEL);
+    patch_set_mod_amt(  id, PATCH_PARAM_PITCH, 0,
                                         6.0f / PATCH_MAX_PITCH_STEPS);
 
-        patch_set_mod2_src( id, PATCH_PARAM_PITCH, MOD_SRC_VLFO);
-        patch_set_mod2_amt( id, PATCH_PARAM_PITCH,
+    patch_set_mod_src(  id, PATCH_PARAM_PITCH, 1, MOD_SRC_VLFO);
+    patch_set_mod_amt(  id, PATCH_PARAM_PITCH, 1,
                                         2.0f / PATCH_MAX_PITCH_STEPS);
 
-        patch_set_mod1_src( id, PATCH_PARAM_AMPLITUDE,
+    /* AMPLITUDE EG_MOD_SLOT has full effect, no need to set amount */
+    patch_set_mod_src(  id, PATCH_PARAM_AMPLITUDE,  EG_MOD_SLOT,
+                                                        MOD_SRC_EG);
+    patch_set_mod_src(  id, PATCH_PARAM_AMPLITUDE, 0,
                                 MOD_SRC_MIDI_CC | CC_CHANNEL_VOLUME);
-        patch_set_mod1_amt( id, PATCH_PARAM_AMPLITUDE, 1.0f);
+    patch_set_mod_amt(  id, PATCH_PARAM_AMPLITUDE, 0, 1.0f);
 
-        patch_set_mod1_src( id, PATCH_PARAM_PANNING,
+    /* pan */
+    patch_set_mod_src(  id, PATCH_PARAM_PANNING, 0,
                                 MOD_SRC_MIDI_CC | CC_PAN);
-        patch_set_mod1_amt( id, PATCH_PARAM_PANNING, 1.0f);
+    patch_set_mod_amt(  id, PATCH_PARAM_PANNING, 0, 1.0f);
 
-        patch_param_set_value(  id, PATCH_PARAM_CUTOFF, 0.5f);
-        patch_set_mod1_src( id, PATCH_PARAM_CUTOFF,
+    /* filter cutoff */
+    patch_param_set_value(  id, PATCH_PARAM_CUTOFF, 0.5f);
+    patch_set_mod_src(  id, PATCH_PARAM_CUTOFF, 0,
                                 MOD_SRC_MIDI_CC | CC_SNDCTRL5_BRIGHTNESS);
-        patch_set_mod1_amt( id, PATCH_PARAM_CUTOFF, 1.0f);
+    patch_set_mod_amt(  id, PATCH_PARAM_CUTOFF, 0, 1.0f);
 
-        patch_param_set_value(  id, PATCH_PARAM_RESONANCE, 0.0f);
-        patch_set_mod1_src( id, PATCH_PARAM_RESONANCE,
+    /* filter resonance */
+    patch_param_set_value(  id, PATCH_PARAM_RESONANCE, 0.0f);
+    patch_set_mod_src(  id, PATCH_PARAM_RESONANCE, 0,
                                 MOD_SRC_MIDI_CC | CC_SNDCTRL2_TIMBRE);
-        patch_set_mod1_amt( id, PATCH_PARAM_RESONANCE, 0.975f);
+    patch_set_mod_amt(  id, PATCH_PARAM_RESONANCE, 0, 0.975f);
 
 
-        patch_set_lfo_on(       id, MOD_SRC_VLFO, true);
-        patch_set_lfo_freq(     id, MOD_SRC_VLFO, 9);
-        patch_set_lfo_am1_src(  id, MOD_SRC_VLFO,
+    /* setup VLFO0 to provide the pitch modulation */
+    patch_set_lfo_on(       id, MOD_SRC_VLFO, true);
+    patch_set_lfo_freq(     id, MOD_SRC_VLFO, 9);
+
+    /* and the MOD WHEEL to modulate VLFO0 amplitude */
+    patch_set_lfo_am1_src(  id, MOD_SRC_VLFO,
                                 MOD_SRC_MIDI_CC | CC_MOD_WHEEL);
-        patch_set_lfo_am1_amt(  id, MOD_SRC_VLFO, 1.0);
-
-        patch_unlock(id);
-
-        patch_sample_load(id, "Default", 0, 0, 0);
-        p->lower_note = 36;
-        p->upper_note = 83;
-    }
+    patch_set_lfo_am1_amt(  id, MOD_SRC_VLFO, 1.0);
 
     patch_unlock(id);
+
+    patch_sample_load(id, "Default", 0, 0, 0);
+    p->lower_note = 36;
+    p->upper_note = 83;
+
+    patch_set_name(id, "Default");
 
     return id;
 }
@@ -234,7 +245,7 @@ void patch_destroy_all(void)
 
 /* place all patch ids, sorted in ascending order by channels and then
    notes, into array 'id' and return number of patches */
-int patch_dump (int **dump)
+int patch_dump(int **dump)
 {
     int i, j, k, id, count, tmp;
 

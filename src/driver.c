@@ -14,7 +14,7 @@
 extern Driver  jack_driver;
 static Driver* drivers[] = { &jack_driver, NULL };
 static int ndrivers = 0;
-static int curdriver = 0;
+static int curdriver = -1;
 
 
 void driver_init(void)
@@ -56,14 +56,24 @@ void driver_stop(void)
     curdriver = -1;
 }
 
+
+bool driver_running(void)
+{
+    return (curdriver >= 0);
+}
+
+
 int driver_get_count(void)
 {
-     return ndrivers;
+    return ndrivers;
 }
 
 const char* driver_get_name(void)
 {
-     return drivers[curdriver]->getname();
+    if (curdriver < 0)
+        return 0;
+
+    return drivers[curdriver]->getname();
 }
 
 

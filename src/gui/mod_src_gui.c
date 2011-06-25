@@ -95,7 +95,7 @@ GtkWidget* mod_src_new_pitch_adjustment(void)
 }
 
 
-gboolean mod_src_callback_helper(int patch_id,          int input_no,
+gboolean mod_src_callback_helper(int patch_id,          int slot,
                                     GtkComboBox* combo, PatchParamType par)
 {
     GtkTreeIter iter;
@@ -109,19 +109,11 @@ gboolean mod_src_callback_helper(int patch_id,          int input_no,
 
         gtk_tree_model_get(model, &iter, 0,  &string, 1,  &id, -1);
 
-        debug("patch id:%d input:%d mod src:%s (%d)\n",
-               patch_id,   input_no, mod_src_name(id), id);
+        debug("patch id:%d slot:%d mod src:%s (%d)\n",
+               patch_id,   slot, mod_src_name(id), id);
 
-        switch(input_no)
-        {
-        case MOD_ENV: patch_set_amp_env(patch_id, id);          break;
-        case MOD_IN1: patch_set_mod1_src(patch_id, par, id);    break;
-        case MOD_IN2: patch_set_mod2_src(patch_id, par, id);    break;
-        default:
-            debug("attempt to set mod src for out of range input %d.\n",
-                    input_no);
-            return FALSE;
-        }
+        /* FIXME: probably should check return value */
+        patch_set_mod_src(patch_id, par, slot, id);
     }
 
     return TRUE;

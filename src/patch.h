@@ -14,6 +14,13 @@ typedef struct _Patch Patch;
 
 enum
 {
+    MAX_MOD_SLOTS = 3,
+    EG_MOD_SLOT = MAX_MOD_SLOTS - 1 /* EG_MOD_SLOT *MUST* BE LAST SLOT */
+};
+
+
+enum
+{
     /* magic numbers */
     VOICE_MAX_LFOS =        5,
     VOICE_MAX_ENVS =        5,
@@ -96,7 +103,8 @@ enum
      PATCH_ENV_ID_INVALID =         -12,
      PATCH_LFO_ID_INVALID =         -13,
      PATCH_MOD_SRC_INVALID =        -14,
-     PATCH_MOD_AMOUNT_INVALID =     -15
+     PATCH_MOD_AMOUNT_INVALID =     -15,
+     PATCH_MOD_SLOT_INVALID
 };
 
 

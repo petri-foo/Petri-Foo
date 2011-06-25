@@ -1486,7 +1486,7 @@ int patch_param_set_value(int patch_id, PatchParamType param, float v)
 /*********************** MODULATION SETTERS *******************************/
 /**************************************************************************/
 
-int patch_set_mod1_src(int patch_id, PatchParamType param, int modsrc_id)
+int patch_set_mod_src(int patch_id, PatchParamType param, int slot, int id)
 {
     PatchParam* p;
     int err; 
@@ -1494,15 +1494,19 @@ int patch_set_mod1_src(int patch_id, PatchParamType param, int modsrc_id)
     if ((err = get_patch_param(patch_id, param, &p)) != 0)
         return err;
 
-    if ((err = mod_src_ok(modsrc_id)) != 0)
+    if (slot < 0 || slot > MAX_MOD_SLOTS)
+        return PATCH_MOD_SLOT_INVALID;
+
+    if ((err = mod_src_ok(id)) != 0)
         return err;
 
-    p->mod1_id = modsrc_id;
+    p->mod_id[slot] = id;
     return 0;
 }
 
 
-int patch_set_mod2_src(int patch_id, PatchParamType param, int modsrc_id)
+int
+patch_set_mod_amt(int patch_id, PatchParamType param, int slot, float amt)
 {
     PatchParam* p;
     int err; 
@@ -1510,74 +1514,22 @@ int patch_set_mod2_src(int patch_id, PatchParamType param, int modsrc_id)
     if ((err = get_patch_param(patch_id, param, &p)) != 0)
         return err;
 
-    if ((err = mod_src_ok(modsrc_id)) != 0)
-        return err;
-
-    p->mod2_id = modsrc_id;
-    return 0;
-}
-
-
-int patch_set_mod1_amt(int patch_id, PatchParamType param, float amt)
-{
-    PatchParam* p;
-    int err; 
-
-    if ((err = get_patch_param(patch_id, param, &p)) != 0)
-        return err;
+    if (slot < 0 || slot > MAX_MOD_SLOTS)
+        return PATCH_MOD_SLOT_INVALID;
 
     if (amt < -1.0 || amt > 1.0)
         return PATCH_MOD_AMOUNT_INVALID;
 
-    p->mod1_amt = amt;
+    p->mod_amt[slot] = amt;
 
     if (param == PATCH_PARAM_PITCH)
     {
-        patches[patch_id]->mod1_pitch_max =
+        patches[patch_id]->mod_pitch_max[slot] =
                         pow(2, (amt * PATCH_MAX_PITCH_STEPS) / 12.0);
-        patches[patch_id]->mod1_pitch_min =
+        patches[patch_id]->mod_pitch_min[slot] =
                         pow(2, -(amt * PATCH_MAX_PITCH_STEPS) / 12.0);
     }
 
-    return 0;
-}
-
-
-int patch_set_mod2_amt(int patch_id, PatchParamType param, float amt)
-{
-    PatchParam* p;
-    int err; 
-
-    if ((err = get_patch_param(patch_id, param, &p)) != 0)
-        return err;
-
-    if (amt < -1.0 || amt > 1.0)
-        return PATCH_MOD_AMOUNT_INVALID;
-
-    p->mod2_amt = amt;
-
-    if (param == PATCH_PARAM_PITCH)
-    {
-        patches[patch_id]->mod2_pitch_max =
-                        pow(2, (amt * PATCH_MAX_PITCH_STEPS) / 12.0);
-        patches[patch_id]->mod2_pitch_min =
-                        pow(2, -(amt * PATCH_MAX_PITCH_STEPS) / 12.0);
-    }
-
-    return 0;
-}
-
-int patch_set_amp_env(int patch_id, int modsrc_id)
-{
-    int err;
-
-    if (!isok(patch_id))
-        return PATCH_ID_INVALID;
-
-    if ((err = mod_src_ok(modsrc_id)) != 0)
-        return err;
-debug("setting direct mod source:%d for patch:%d\n",modsrc_id, patch_id);
-    patches[patch_id]->vol.direct_mod_id = modsrc_id;
     return 0;
 }
 
@@ -1624,7 +1576,8 @@ int patch_set_key_amount(int patch_id, PatchParamType param, float amt)
 /********************** MODULATION GETTERS ********************************/
 /**************************************************************************/
 
-int patch_get_mod1_src(int patch_id, PatchParamType param, int* modsrc_id)
+int
+patch_get_mod_src(int patch_id, PatchParamType param, int slot, int* src_id)
 {
     PatchParam* p;
     int err; 
@@ -1632,11 +1585,17 @@ int patch_get_mod1_src(int patch_id, PatchParamType param, int* modsrc_id)
     if ((err = get_patch_param(patch_id, param, &p)) != 0)
         return err;
 
-    *modsrc_id = p->mod1_id;
+    if (slot < 0 || slot > MAX_MOD_SLOTS)
+        return PATCH_MOD_SLOT_INVALID;
+
+    *src_id = p->mod_id[slot];
+
     return 0;
 }
 
-int patch_get_mod2_src(int patch_id, PatchParamType param, int* modsrc_id)
+
+int
+patch_get_mod_amt(int patch_id, PatchParamType param, int slot, float* amt)
 {
     PatchParam* p;
     int err; 
@@ -1644,40 +1603,10 @@ int patch_get_mod2_src(int patch_id, PatchParamType param, int* modsrc_id)
     if ((err = get_patch_param(patch_id, param, &p)) != 0)
         return err;
 
-    *modsrc_id = p->mod2_id;
-    return 0;
-}
+    if (slot < 0 || slot > MAX_MOD_SLOTS)
+        return PATCH_MOD_SLOT_INVALID;
 
-int patch_get_mod1_amt(int patch_id, PatchParamType param, float* amount)
-{
-    PatchParam* p;
-    int err; 
-
-    if ((err = get_patch_param(patch_id, param, &p)) != 0)
-        return err;
-
-    *amount = p->mod1_amt;
-    return 0;
-}
-
-int patch_get_mod2_amt(int patch_id, PatchParamType param, float* amount)
-{
-    PatchParam* p;
-    int err; 
-
-    if ((err = get_patch_param(patch_id, param, &p)) != 0)
-        return err;
-
-    *amount = p->mod2_amt;
-    return 0;
-}
-
-int patch_get_amp_env(int patch_id, int* modsrc_id)
-{
-    if (!isok(patch_id))
-        return PATCH_ID_INVALID;
-
-    *modsrc_id = patches[patch_id]->vol.direct_mod_id;
+    *amt = p->mod_amt[slot];
     return 0;
 }
 

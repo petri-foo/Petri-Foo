@@ -2,6 +2,9 @@
 #define __DRIVER_H__
 
 
+#include <stdbool.h>
+
+
 /*  driver has been fixed to only handle JACK
     more work should be done to clear the debris scattered
     from when there was a choice between JACK and ALSA, but
@@ -31,11 +34,11 @@ typedef struct _Driver
 
 } Driver;
 
-
 void        driver_init           (void);
 int         driver_restart        (void);
 int         driver_start          (void);
 void        driver_stop           (void);
+bool        driver_running        (void);
 int         driver_get_count      (void);
 const char* driver_get_name       (void);
 const char* driver_get_client_name(void);

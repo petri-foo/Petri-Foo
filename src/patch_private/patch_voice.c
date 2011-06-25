@@ -27,17 +27,15 @@ PatchVoice* patch_voice_new(void)
     pv->stepf =         0;
     pv->vel =           0;
     pv->key_track =     0;
-    pv->vol_mod1 =      0;
-    pv->vol_mod2 =      0;
-    pv->vol_direct =    0;
-    pv->pan_mod1 =      0;
-    pv->pan_mod2 =      0;
-    pv->ffreq_mod1 =    0;
-    pv->ffreq_mod2 =    0;
-    pv->freso_mod1 =    0;
-    pv->freso_mod2 =    0;
-    pv->pitch_mod1 =    0;
-    pv->pitch_mod2 =    0;
+
+    for (i = 0; i < MAX_MOD_SLOTS; ++i)
+    {
+        pv->vol_mod[i] = NULL;
+        pv->pan_mod[i] = NULL;
+        pv->ffreq_mod[i] = NULL;
+        pv->freso_mod[i] = NULL;
+        pv->pitch_mod[i] = NULL;
+    }
 
     for (i = 0; i < VOICE_MAX_ENVS; i++)
         pv->env[i] = adsr_new();

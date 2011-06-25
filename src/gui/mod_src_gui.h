@@ -6,9 +6,6 @@
 #include "patch.h"
 
 enum {
-    MOD_ENV = 0,
-    MOD_IN1,
-    MOD_IN2,
     /* LFO inputs */
     FM1, FM2, AM1, AM2
 };
@@ -27,16 +24,15 @@ GtkWidget*      mod_src_new_pitch_adjustment(void);
 
         for use in the mod src combo box callback, it reads the
         combo box value and sets the patch accordingly.
-
-        valid values for input_no are 1 or 2 (ie mod1 and mod2).
 */
+
 gboolean        mod_src_callback_helper(int patch_id,
-                                        int input,
+                                        int slot,
                                         GtkComboBox* combo,
                                         PatchParamType par);
 
 gboolean        mod_src_callback_helper_lfo(int patch_id,
-                                            int input,
+                                            int lfo_input,
                                             GtkComboBox* combo,
                                             int lfo_id);
 

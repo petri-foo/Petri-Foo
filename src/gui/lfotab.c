@@ -328,7 +328,7 @@ static void lfo_tab_init(LfoTab* self)
     GtkTable*   t;
     GtkWidget*  pad;
     GtkWidget*  label;
-    GtkBox*     box = gtk_vbox_new(FALSE, 0);
+    GtkBox*     box = GTK_BOX(gtk_vbox_new(FALSE, 0));
 
     id_name* lfo_ids = mod_src_get(MOD_SRC_LFOS);
 
@@ -355,7 +355,7 @@ static void lfo_tab_init(LfoTab* self)
 
     gui_pack(selfbox, p->idsel);
     gui_pack(selfbox, gui_hpad_new(GUI_SECSPACE));
-    gui_pack(selfbox, box);
+    gui_pack(selfbox, GTK_WIDGET(box));
 
     /* lfo title */
     title = gui_title_new("Low Frequency Oscillator");
