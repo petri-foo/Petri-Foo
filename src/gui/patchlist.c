@@ -5,6 +5,10 @@
 #include "patch_set_and_get.h"
 #include "patch_util.h"
 
+
+#include <string.h>
+
+
 /* magic numbers */
 enum
 {
@@ -79,13 +83,113 @@ static void select_cb(GtkTreeSelection* selection, PatchListPrivate* p)
     g_signal_emit_by_name(G_OBJECT(p->self), "changed");
 }
 
+/*  this is disabled despite me liking the functionality. but,
+    activating this functionality via the menus is far far far too
+    much hard work for barely any gain so i'd rather disable it.
+
+static void edited_cb(GtkCellRendererText *cell, gchar *path_string,
+                                                 gchar *new_text,
+                                                 gpointer data)
+{
+    (void)cell;
+
+    PatchListPrivate* p = (PatchListPrivate*)data;
+    GtkTreeIter iter;
+
+    if (!strlen(new_text))
+        return;
+
+    gtk_tree_model_get_iter_from_string(
+                GTK_TREE_MODEL(p->patch_store), &iter, path_string);
+    gtk_list_store_set(p->patch_store, &iter, PATCH_NAME, new_text, -1);
+    patch_set_name(p->patch, new_text);
+}
+*/
+
+void popup_add(GtkWidget* menu, const char* label, GCallback menu_cb)
+{
+    GtkWidget* item = gtk_menu_item_new_with_label(label);
+    g_signal_connect(item, "activate", menu_cb, NULL);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+}
+
+
+void popup_menu(GdkEventButton *event, gboolean full_menu, gpointer data)
+{
+    (void)data;
+
+    GtkWidget *menu = gtk_menu_new();
+
+    popup_add(menu, "Add Patch", G_CALLBACK(cb_menu_patch_add));
+
+    if (full_menu)
+    {
+        popup_add(menu, "Duplicate Patch",
+                                    G_CALLBACK(cb_menu_patch_duplicate));
+        popup_add(menu, "Rename Patch", G_CALLBACK(cb_menu_patch_rename));
+        popup_add(menu, "Remove Patch", G_CALLBACK(cb_menu_patch_remove));
+    }
+
+    gtk_widget_show_all(menu);
+
+    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL,
+                   (event != NULL) ? event->button : 0,
+                   gdk_event_get_time((GdkEvent*)event));
+}
+
+
+static gboolean
+pressed_cb(GtkWidget *treeview, GdkEventButton *event, gpointer data)
+{
+    (void)data;
+
+    if (event->type == GDK_BUTTON_PRESS && event->button == 3)
+    {
+        GtkTreePath* path;
+        GtkTreeSelection* selection;
+        gboolean full_menu = FALSE;
+
+        /* select row the click happened in */
+
+        selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
+
+        if (gtk_tree_selection_count_selected_rows(selection) <= 1)
+        {
+            if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(treeview),
+                                                    (gint)event->x, 
+                                                    (gint)event->y,
+                                                    &path,
+                                                    NULL, NULL, NULL))
+            {
+                gtk_tree_selection_unselect_all(selection);
+                gtk_tree_selection_select_path(selection, path);
+                full_menu = TRUE;
+            }
+        }
+
+        popup_menu(event, full_menu, data);
+        gtk_tree_path_free(path);
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+static gboolean popup_cb(GtkWidget *treeview, gpointer data)
+{
+    (void)treeview;(void)data;
+    popup_menu(NULL, TRUE, data);
+    return TRUE;
+}
+
 
 static void patch_list_init(PatchList* self)
 {
     PatchListPrivate* p = PATCH_LIST_GET_PRIVATE(self);
     GtkBox* box = GTK_BOX(self);
-    GtkCellRenderer* renderer;
     GtkTreeViewColumn* column;
+    GtkCellRenderer* renderer;
 
     p->self = GTK_WIDGET(self);
 
@@ -100,7 +204,8 @@ static void patch_list_init(PatchList* self)
 
     p->vscroll = gtk_vscrollbar_new(NULL);
     renderer = gtk_cell_renderer_text_new();
-    column = gtk_tree_view_column_new_with_attributes(  "Patch", renderer,
+    column = gtk_tree_view_column_new_with_attributes(  "Patch",
+                                                        renderer,
                                                         "text", PATCH_NAME,
                                                         NULL);
 
@@ -119,8 +224,24 @@ static void patch_list_init(PatchList* self)
     /* connect up */
     p->select = gtk_tree_view_get_selection(GTK_TREE_VIEW(p->patch_tree));
     gtk_tree_selection_set_mode(p->select, GTK_SELECTION_SINGLE);
-    g_signal_connect(G_OBJECT(p->select), "changed",
+    g_signal_connect(p->select, "changed",
                                 G_CALLBACK(select_cb), (gpointer)p);
+
+    g_signal_connect(p->patch_tree, "button-press-event",
+                                G_CALLBACK(pressed_cb), (gpointer)p);
+
+    g_signal_connect(p->patch_tree, "popup-menu",
+                                G_CALLBACK(popup_cb), (gpointer)p);
+
+
+    /*  this functionality conflicts with the popup rename dialog
+        activated by the menu. i thought this would be preferable,
+        but activating this via the menu is far, far, far, far
+        too much hard work so i'm disabling this instead.
+    g_object_set(renderer, "editable", TRUE, NULL);
+    g_signal_connect(renderer,  "edited",
+                                G_CALLBACK(edited_cb), (gpointer)p);
+     */
 }
 
 

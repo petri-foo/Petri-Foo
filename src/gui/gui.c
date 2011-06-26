@@ -204,8 +204,7 @@ cb_menu_patch_name_verify (GtkWidget * entry, GdkEventKey * event,
 }
 
 
-static void
-cb_menu_patch_add (GtkWidget * menu_item, GtkWidget * main_window)
+void cb_menu_patch_add(GtkWidget* menu_item, gpointer data)
 {
     (void)menu_item;
     static int patch_no = 1;
@@ -217,7 +216,7 @@ cb_menu_patch_add (GtkWidget * menu_item, GtkWidget * main_window)
 
     /* dialog box */
     dialog = gtk_dialog_new_with_buttons("Add Patch",
-                            GTK_WINDOW (main_window),
+                            GTK_WINDOW(window),
                             GTK_DIALOG_MODAL |
                             GTK_DIALOG_DESTROY_WITH_PARENT,
                             GTK_STOCK_OK,
@@ -274,10 +273,9 @@ cb_menu_patch_add (GtkWidget * menu_item, GtkWidget * main_window)
 }
 
 
-static void
-cb_menu_patch_duplicate(GtkWidget* menu_item, GtkWidget* main_window)
+void cb_menu_patch_duplicate(GtkWidget* menu_item, gpointer data)
 {
-    (void)menu_item;(void)main_window;
+    (void)menu_item;(void)data;
     int val;
     int cp;
 
@@ -294,12 +292,11 @@ cb_menu_patch_duplicate(GtkWidget* menu_item, GtkWidget* main_window)
         return;
     }
 
-    patch_list_update (PATCH_LIST(patch_list), val, PATCH_LIST_PATCH);
+    patch_list_update(PATCH_LIST(patch_list), val, PATCH_LIST_PATCH);
 }
 
 
-static void
-cb_menu_patch_rename (GtkWidget * menu_item, GtkWidget * main_window)
+void cb_menu_patch_rename(GtkWidget* menu_item, gpointer data)
 {
     (void)menu_item;
 
@@ -318,7 +315,7 @@ cb_menu_patch_rename (GtkWidget * menu_item, GtkWidget * main_window)
 
     /* dialog box */
     dialog = gtk_dialog_new_with_buttons("Rename Patch",
-                            GTK_WINDOW(main_window),
+                            GTK_WINDOW(window),
                             GTK_DIALOG_MODAL |
                             GTK_DIALOG_DESTROY_WITH_PARENT,
                             GTK_STOCK_OK,
@@ -369,7 +366,7 @@ cb_menu_patch_rename (GtkWidget * menu_item, GtkWidget * main_window)
 }
 
 
-static void cb_menu_patch_remove (GtkWidget * menu_item, gpointer data)
+void cb_menu_patch_remove(GtkWidget* menu_item, gpointer data)
 {
     (void)menu_item;(void)data;
 
@@ -379,26 +376,24 @@ static void cb_menu_patch_remove (GtkWidget * menu_item, gpointer data)
 
     if ((cp = patch_list_get_current_patch(PATCH_LIST(patch_list))) < 0)
     {
-	debug ("No patches to remove, you dolt.\n");
-	return;
+        debug ("No patches to remove\n");
+        return;
     }
 
     index = patch_list_get_current_index (PATCH_LIST(patch_list));
     if ((val = patch_destroy (cp)) < 0)
     {
-	errmsg ("Error removing patch %d (%s).\n", cp,
-		patch_strerror (val));
-	return;
+        errmsg ("Error removing patch %d (%s).\n", cp,
+        patch_strerror (val));
+        return;
     }
 
     if (index == 0)
-    {
-	patch_list_update (PATCH_LIST(patch_list), index, PATCH_LIST_INDEX);
-    }
+        patch_list_update(PATCH_LIST(patch_list), index,
+                                                    PATCH_LIST_INDEX);
     else
-    {
-	patch_list_update (PATCH_LIST(patch_list), index - 1, PATCH_LIST_INDEX);
-    }
+        patch_list_update(PATCH_LIST(patch_list), index - 1,
+                                                    PATCH_LIST_INDEX);
 }
 
 

@@ -1,3 +1,14 @@
+2011-06-26  James Morris <james@jwm-art.net>
+
+	* patchlist.c: my beloved context menu is back.
+
+	* gui.[ch]: made the patch list menu callbacks
+	  non-static and declared them in the header so
+	  patchlist.c's context menu can use them.
+
+	* <<<< MOD3 branch merged yesterday >>>>
+
+
 2011-06-22  James Morris <james@jwm-art.net>
 
 	* envtab.c: cleaner GUI labels when EGs turned on/off.

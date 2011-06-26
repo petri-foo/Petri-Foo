@@ -4,10 +4,9 @@
 
 -Engine: Keyboard tracking
     +add to lfo's for frequency modulation
-    +add to eg's for time modulation
 
 -Engine: Velocity sensitivity
-    +add to eg's for amplitude modulation
+    +add to eg's for amplitude modulation (i'm not convinced by this)
 
 -Engine: Logarithmic Amplitudes
     +Fix and remove artefacts arising from use of LAT for log_amplitude
@@ -20,8 +19,9 @@
 
 
 -GUI: Patch List:
-    +add context menu
-    +make patch names editable
+    +use an editible widget: note this has been tried, but getting
+     menu->rename to use the functionality of the editible cell
+     is just far far far too much hard work for little gain.
 
 
 -GUI: Sample Editor

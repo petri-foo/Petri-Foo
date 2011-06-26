@@ -56,5 +56,11 @@ PatchList* gui_get_patch_list(void);
 /* set petri-foo window title */
 void gui_set_window_title(const char* title);
 
+/* callbacks for use by context menu ( see patchlist.[ch] ) */
+void cb_menu_patch_add(         GtkWidget* menu_item, gpointer data);
+void cb_menu_patch_duplicate(   GtkWidget* menu_item, gpointer data);
+void cb_menu_patch_rename(      GtkWidget* menu_item, gpointer data);
+void cb_menu_patch_remove(      GtkWidget* menu_item, gpointer data);
+
 
 #endif /* __GUI_H__ */
