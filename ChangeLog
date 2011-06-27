@@ -1,3 +1,16 @@
+2011-06-27  James Morris <james@jwm-art.net>
+
+	* gui.c: menu item generalization function
+	* gui.c, patchlist.c: add default patch menu item.
+	* patch_util.c, patch_private/patch_data.c:
+	  duplication of patches working, i claim with
+	  93.76% certainty.
+	* sample.[ch]: addition of sample_deep_copy function.
+    ********
+	probably still very much mostly likely:
+		some testing required.
+
+
 2011-06-26  James Morris <james@jwm-art.net>
 
 	* patchlist.c: my beloved context menu is back.

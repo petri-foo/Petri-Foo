@@ -240,3 +240,60 @@ float const* patch_mod_id_to_pointer(int id, Patch* p, PatchVoice* v)
 
     return 0;
 }
+
+
+void patch_copy(Patch* dest, Patch* src)
+{
+    int i;
+
+    dest->active = true;
+
+    sample_deep_copy(dest->sample, src->sample);
+
+    strcpy(dest->name, src->name);
+
+    dest->channel =         src->channel;
+    dest->note =            src->note;
+    dest->lower_note =      src->lower_note;
+    dest->upper_note =      src->upper_note;
+    dest->cut =             src->cut;
+    dest->cut_by =          src->cut_by;
+    dest->cut =             src->cut;
+    dest->play_start =      src->play_start;
+    dest->play_stop =       src->play_stop;
+    dest->loop_start =      src->loop_start;
+    dest->loop_stop =       src->loop_stop;
+    dest->sample_stop =     src->sample_stop;
+    dest->fade_samples =    src->fade_samples;
+    dest->xfade_samples =   src->xfade_samples;
+    dest->porta =           src->porta;
+    dest->porta_secs =      src->porta_secs;
+    dest->pitch_steps =     src->pitch_steps;
+    dest->pitch_bend =      src->pitch_bend;
+    dest->mono =            src->mono;
+    dest->legato =          src->legato;
+    dest->play_mode =       src->play_mode;
+
+    dest->vol =             src->vol;
+    dest->pan =             src->pan;
+    dest->ffreq =           src->ffreq;
+    dest->freso =           src->freso;
+    dest->pitch =           src->pitch;
+
+    for (i = 0; i < MAX_MOD_SLOTS; ++i)
+    {
+        dest->mod_pitch_min[i] = src->mod_pitch_min[i];
+        dest->mod_pitch_max[i] = src->mod_pitch_max[i];
+    }
+
+    for (i = 0; i < PATCH_MAX_LFOS; ++i)
+        dest->glfo_params[i] = src->glfo_params[i];
+
+    for (i = 0; i < VOICE_MAX_LFOS; ++i)
+        dest->vlfo_params[i] = src->vlfo_params[i];
+
+    for (i = 0; i < VOICE_MAX_ENVS; ++i)
+        dest->env_params[i] = src->env_params[i];
+
+
+}

@@ -28,7 +28,7 @@ typedef struct _PatchParam
 /* type for array of instruments (called patches) */
 typedef struct _Patch
 {
-    int      active;        /* whether patch is in use or not */
+    bool     active;        /* whether patch is in use or not */
     Sample*  sample;        /* sample data */
     int      display_index; /* order in which this Patch to be displayed */
 
@@ -113,6 +113,7 @@ typedef struct _Patch
 
 Patch*          patch_new(void);
 void            patch_free(Patch*);
+void            patch_copy(Patch* dest, Patch* src);
 
 void            patch_set_control_array(float (*ccs)[16][CC_ARR_SIZE]);
 

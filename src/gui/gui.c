@@ -24,6 +24,7 @@
 #include "patch_set_and_get.h"
 #include "patch_util.h"
 
+
 /* windows */
 static GtkWidget* window;
 static GtkWidget* patch_section;
@@ -32,28 +33,12 @@ static GtkWidget* midi_section;
 static GtkWidget* channel_section;
 static GtkWidget* patch_list;
 
+
 /* main menu */
-static GtkWidget* menu_file;
-static GtkWidget* menu_file_item;
-static GtkWidget* menu_file_new_bank;
-static GtkWidget* menu_file_open_bank;
-static GtkWidget* menu_file_save_bank;
-static GtkWidget* menu_file_save_bank_as;
-static GtkWidget* menu_file_quit;
-static GtkWidget* menu_file_vsep;
-static GtkWidget* menu_settings;
-static GtkWidget* menu_settings_item;
-static GtkWidget* menu_settings_audio;
-static GtkWidget* menu_patch;
-static GtkWidget* menu_patch_item;
-static GtkWidget* menu_patch_add;
-static GtkWidget* menu_patch_duplicate;
-static GtkWidget* menu_patch_rename;
-static GtkWidget* menu_patch_remove;
-static GtkWidget* menu_help;
-static GtkWidget* menu_help_item;
-static GtkWidget* menu_help_stfu;
-static GtkWidget* menu_help_about;
+static GtkWidget* menu_file = 0;
+static GtkWidget* menu_settings = 0;
+static GtkWidget* menu_patch = 0;
+static GtkWidget* menu_help = 0;
 
 
 GtkWidget* gui_title_new(const char* msg)
@@ -206,7 +191,7 @@ cb_menu_patch_name_verify (GtkWidget * entry, GdkEventKey * event,
 
 void cb_menu_patch_add(GtkWidget* menu_item, gpointer data)
 {
-    (void)menu_item;
+    (void)menu_item;(void)data;
     static int patch_no = 1;
     char buf[80];
 
@@ -273,6 +258,26 @@ void cb_menu_patch_add(GtkWidget* menu_item, gpointer data)
 }
 
 
+void cb_menu_patch_add_default(GtkWidget* menu_item, gpointer data)
+{
+    (void)menu_item;(void)data;
+    int id = patch_create_default();
+
+    if (id < 0)
+    {
+        errmsg("Failed to create a new patch (%s).\n",
+                                        patch_strerror(id));
+        return;
+    }
+
+    patch_set_channel(id,
+            channel_section_get_channel(
+                        CHANNEL_SECTION(channel_section)));
+
+    patch_list_update(PATCH_LIST(patch_list), id, PATCH_LIST_PATCH);
+}
+
+
 void cb_menu_patch_duplicate(GtkWidget* menu_item, gpointer data)
 {
     (void)menu_item;(void)data;
@@ -298,7 +303,7 @@ void cb_menu_patch_duplicate(GtkWidget* menu_item, gpointer data)
 
 void cb_menu_patch_rename(GtkWidget* menu_item, gpointer data)
 {
-    (void)menu_item;
+    (void)menu_item;(void)data;
 
     GtkWidget *dialog;
     GtkWidget *entry;
@@ -490,157 +495,70 @@ int gui_init(void)
     GtkWidget* menubar;
     GtkWidget* vbox;
 
-
     debug ("Initializing GUI\n");
 
     /* main window */
     window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 
-/*
-    if (instance_name)
-    {
-        size_t len = strlen(instance_name);
-        char title[12 + len];
+    g_signal_connect(G_OBJECT(window), "delete-event",
+                            G_CALLBACK (cb_delete), NULL);
 
-        strncpy (title, "Petri-Foo - ", 11);
-        strncpy (&title[11], instance_name, len);
-        title[11 + len] = '\0';
-
-        gtk_window_set_title (GTK_WINDOW (window), title);
-    }
-    else
-      gtk_window_set_title (GTK_WINDOW (window), "Petri-Foo");
-*/
-    g_signal_connect (G_OBJECT (window), "delete-event",
-		      G_CALLBACK (cb_delete), NULL);
-    g_signal_connect (G_OBJECT (window), "destroy", G_CALLBACK (cb_quit),
-		      NULL);
+    g_signal_connect(G_OBJECT(window), "destroy",
+                            G_CALLBACK(cb_quit), NULL);
 
     /* setup the window's main vbox */
     window_vbox = gtk_vbox_new (FALSE, 0);
     gtk_container_add (GTK_CONTAINER (window), window_vbox);
 
     /* the menubar */
-    menubar = gtk_menu_bar_new ( );
-    gtk_box_pack_start (GTK_BOX (window_vbox), menubar, FALSE, FALSE, 0);
-    gtk_widget_show (menubar);
+    menubar = gtk_menu_bar_new();
+    gtk_box_pack_start(GTK_BOX(window_vbox), menubar, FALSE, FALSE, 0);
 
-    /* file menu */
-    menu_file = gtk_menu_new ( );
-    menu_file_item = gtk_menu_item_new_with_label ("File");
-    gtk_menu_item_set_submenu (GTK_MENU_ITEM (menu_file_item), menu_file);
-    gtk_menu_shell_append(GTK_MENU_SHELL(menubar), menu_file_item);
-    gtk_widget_show (menu_file_item);
+    menu_file = gui_menu_add(menubar, "File", NULL, NULL);
 
-    menu_file_new_bank = gtk_menu_item_new_with_label ("New Bank");
-    gtk_menu_shell_append (GTK_MENU_SHELL (menu_file), menu_file_new_bank);
-    g_signal_connect (G_OBJECT (menu_file_new_bank), "activate",
-		      G_CALLBACK (cb_menu_file_new_bank), NULL);
-    gtk_widget_show (menu_file_new_bank);
-
-    menu_file_open_bank = gtk_menu_item_new_with_label ("Open Bank...");
-    gtk_menu_shell_append (GTK_MENU_SHELL (menu_file),
-			   menu_file_open_bank);
-    g_signal_connect (G_OBJECT (menu_file_open_bank), "activate",
-		      G_CALLBACK (cb_menu_file_open_bank), NULL);
-    gtk_widget_show (menu_file_open_bank);
-
-    menu_file_save_bank = gtk_menu_item_new_with_label ("Save Bank");
-    gtk_menu_shell_append (GTK_MENU_SHELL (menu_file),
-			   menu_file_save_bank);
-    g_signal_connect (G_OBJECT (menu_file_save_bank), "activate",
-		      G_CALLBACK (cb_menu_file_save_bank), NULL);
-    gtk_widget_show (menu_file_save_bank);
-
-    menu_file_save_bank_as =
-	gtk_menu_item_new_with_label ("Save Bank As...");
-    gtk_menu_shell_append (GTK_MENU_SHELL (menu_file),
-			   menu_file_save_bank_as);
-    g_signal_connect (G_OBJECT (menu_file_save_bank_as), "activate",
-		      G_CALLBACK (cb_menu_file_save_bank_as), NULL);
-    gtk_widget_show (menu_file_save_bank_as);
-
-    menu_file_vsep = gtk_menu_item_new ( );
-    gtk_menu_shell_append (GTK_MENU_SHELL (menu_file), menu_file_vsep);
-    gtk_widget_show (menu_file_vsep);
-
-    menu_file_quit = gtk_menu_item_new_with_label ("Quit");
-    gtk_menu_shell_append (GTK_MENU_SHELL (menu_file), menu_file_quit);
-    g_signal_connect (G_OBJECT (menu_file_quit), "activate",
-		      G_CALLBACK (cb_quit), NULL);
-    gtk_widget_show (menu_file_quit);
+    gui_menu_add(menu_file, "New Bank",
+            G_CALLBACK(cb_menu_file_new_bank),      window);
+    gui_menu_add(menu_file, "Open Bank...",
+            G_CALLBACK(cb_menu_file_open_bank),     window);
+    gui_menu_add(menu_file, "Save Bank",
+            G_CALLBACK(cb_menu_file_save_bank),     window);
+    gui_menu_add(menu_file, "Save Bank As...",
+            G_CALLBACK(cb_menu_file_save_bank_as),  window);
+    /* seperator */
+    gui_menu_add(menu_file, NULL, NULL, NULL);
+    gui_menu_add(menu_file, "Quit", G_CALLBACK(cb_quit), NULL);
 
     /* patch menu */
-    menu_patch = gtk_menu_new ( );
-    menu_patch_item = gtk_menu_item_new_with_label ("Patch");
-    gtk_menu_item_set_submenu (GTK_MENU_ITEM (menu_patch_item), menu_patch);
-    gtk_menu_shell_append(GTK_MENU_SHELL(menubar), menu_patch_item);
-    gtk_widget_show (menu_patch_item);
-
-    menu_patch_add = gtk_menu_item_new_with_label ("Add...");
-    gtk_menu_shell_append (GTK_MENU_SHELL (menu_patch), menu_patch_add);
-    g_signal_connect (G_OBJECT (menu_patch_add), "activate",
-		      G_CALLBACK (cb_menu_patch_add), (gpointer) window);
-    gtk_widget_show (menu_patch_add);
-
-    menu_patch_duplicate = gtk_menu_item_new_with_label ("Duplicate");
-    gtk_menu_shell_append (GTK_MENU_SHELL (menu_patch), menu_patch_duplicate);
-    g_signal_connect (G_OBJECT (menu_patch_duplicate), "activate",
-		      G_CALLBACK (cb_menu_patch_duplicate), (gpointer) window);
-    gtk_widget_show (menu_patch_duplicate);
-
-    menu_patch_rename = gtk_menu_item_new_with_label ("Rename...");
-    gtk_menu_shell_append (GTK_MENU_SHELL (menu_patch), menu_patch_rename);
-    g_signal_connect (G_OBJECT (menu_patch_rename), "activate",
-		      G_CALLBACK (cb_menu_patch_rename), (gpointer) window);
-    gtk_widget_show (menu_patch_rename);
-
-    menu_patch_remove = gtk_menu_item_new_with_label ("Remove");
-    gtk_menu_shell_append (GTK_MENU_SHELL (menu_patch), menu_patch_remove);
-    g_signal_connect (G_OBJECT (menu_patch_remove), "activate",
-		      G_CALLBACK (cb_menu_patch_remove), (gpointer) NULL);
-    gtk_widget_show (menu_patch_remove);
+    menu_patch = gui_menu_add(menubar, "Patch", NULL, NULL);
+    gui_menu_add(menu_patch, "Add...",
+            G_CALLBACK(cb_menu_patch_add),          window);
+    gui_menu_add(menu_patch, "Add Default",
+            G_CALLBACK(cb_menu_patch_add_default),  window);
+    gui_menu_add(menu_patch, "Duplicate",
+            G_CALLBACK(cb_menu_patch_duplicate),    window);
+    gui_menu_add(menu_patch, "Rename...",
+            G_CALLBACK(cb_menu_patch_rename),       window);
+    gui_menu_add(menu_patch, "Remove",
+            G_CALLBACK(cb_menu_patch_remove),       NULL);
 
     /* settings menu */
-    menu_settings = gtk_menu_new ( );
-    menu_settings_item = gtk_menu_item_new_with_label ("Settings");
-    gtk_menu_item_set_submenu (GTK_MENU_ITEM (menu_settings_item),
-			       menu_settings);
-    gtk_menu_shell_append (GTK_MENU_SHELL (menubar), menu_settings_item);
-    gtk_widget_show (menu_settings_item);
-
-    menu_settings_audio = gtk_menu_item_new_with_label ("Audio...");
-    gtk_menu_shell_append (GTK_MENU_SHELL (menu_settings),
-			   menu_settings_audio);
-    g_signal_connect (G_OBJECT (menu_settings_audio), "activate",
-		      G_CALLBACK (cb_menu_settings_audio), NULL);
-    gtk_widget_show (menu_settings_audio);
+    menu_settings = gui_menu_add(menubar, "Settings", NULL, NULL);
+    gui_menu_add(menu_settings, "Audio...",
+            G_CALLBACK(cb_menu_settings_audio),     NULL);
 
     /* help menu */
-    menu_help = gtk_menu_new ( );
-    menu_help_item = gtk_menu_item_new_with_label ("Help");
-    gtk_menu_item_set_submenu (GTK_MENU_ITEM (menu_help_item),
-			       menu_help);
-    gtk_menu_shell_append (GTK_MENU_SHELL(menubar), menu_help_item);
-    gtk_widget_show (menu_help_item);
+    menu_help = gui_menu_add(menubar, "Help", NULL, NULL);
+    gui_menu_add(menu_help, "Stuff You!",
+            G_CALLBACK(cb_menu_help_stfu),          NULL);
+    gui_menu_add(menu_help, "About...",
+            G_CALLBACK(cb_menu_help_about),         window);
 
-    menu_help_stfu = gtk_menu_item_new_with_label ("STFU!");
-    gtk_menu_shell_append (GTK_MENU_SHELL (menu_help),
-			   menu_help_stfu);
-    g_signal_connect (G_OBJECT (menu_help_stfu), "activate",
-		      G_CALLBACK (cb_menu_help_stfu), NULL);
-    gtk_widget_show (menu_help_stfu);
-
-    menu_help_about = gtk_menu_item_new_with_label ("About...");
-    gtk_menu_shell_append (GTK_MENU_SHELL (menu_help),
-			   menu_help_about);
-    g_signal_connect (G_OBJECT (menu_help_about), "activate",
-		      G_CALLBACK (cb_menu_help_about), window);
-    gtk_widget_show (menu_help_about);
+    gtk_widget_show_all(menubar);
 
     /* setup the main window's master hbox, and left and right boxes */
     master_hbox = gtk_hbox_new(FALSE, GUI_SECSPACE);
-    gtk_container_set_border_width(GTK_CONTAINER(master_hbox), GUI_BORDERSPACE);
+    gtk_container_set_border_width(GTK_CONTAINER(master_hbox),
+                                        GUI_BORDERSPACE);
     gtk_box_pack_start(GTK_BOX(window_vbox), master_hbox, TRUE, TRUE, 0);
 
     /* left vbox */
@@ -657,9 +575,10 @@ int gui_init(void)
     patch_list = patch_list_new();
     gtk_box_pack_start(GTK_BOX(vbox), patch_list, TRUE, TRUE, 0);
     g_signal_connect(G_OBJECT(patch_list), "changed",
-		     G_CALLBACK(cb_patch_list_changed), NULL);
+                                    G_CALLBACK(cb_patch_list_changed),
+                                    NULL);
     gtk_widget_show(patch_list);
-    
+
     /* channel section */
     channel_section = channel_section_new();
     gtk_box_pack_start(GTK_BOX(vbox), channel_section, FALSE, FALSE, 0);
@@ -726,4 +645,31 @@ void gui_set_window_title(const char* title)
     else
         gtk_window_set_title (GTK_WINDOW (window), PACKAGE);
 
+}
+
+
+GtkWidget* gui_menu_add(GtkWidget* menu, const char* label, GCallback cb,
+                                                            gpointer data)
+{
+    GtkWidget* item = 0;
+    GtkWidget* submenu = 0;
+
+    if (label)
+    {
+        item = gtk_menu_item_new_with_label(label);
+
+        if (cb)
+            g_signal_connect(item, "activate", cb, data);
+        else
+        {
+            submenu = gtk_menu_new();
+            gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), submenu);
+        }
+    }
+    else
+        item = gtk_menu_item_new();
+
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+
+    return (submenu) ? submenu : item;
 }

@@ -243,6 +243,7 @@ void patch_destroy_all(void)
     return;
 }
 
+
 /* place all patch ids, sorted in ascending order by channels and then
    notes, into array 'id' and return number of patches */
 int patch_dump(int **dump)
@@ -312,10 +313,8 @@ int patch_dump(int **dump)
 
 int patch_duplicate(int src_id)
 {
-    int dest_id;
     int i;
-    Sample* oldsample;
-    float* glfo_tables[PATCH_MAX_LFOS];
+    int dest_id;
 
     if (!isok(src_id))
         return PATCH_ID_INVALID;
@@ -323,50 +322,20 @@ int patch_duplicate(int src_id)
     if (!patches[src_id]->active)
         return PATCH_ID_INVALID;
 
-    /* find an empty patch and set id to its id */
+    dest_id = patch_create();
 
-    for (dest_id = 0; patches[dest_id]
-                   && patches[dest_id]->active; dest_id++)
+    if (dest_id < 0)
     {
-        if (dest_id == PATCH_COUNT)
-            return PATCH_LIMIT;
+        debug("couldn't duplicate\n");
+        return dest_id;
     }
 
-    debug ("Creating patch (%d) from patch %s (%d).\n", dest_id,
+    debug("Creating patch (%d) from patch %s (%d).\n", dest_id,
            patches[src_id]->name, src_id);
 
     patch_lock(dest_id);
 
-    /* store pointers in destination patch:
-     */
-    oldsample = patches[dest_id]->sample;
-
-    for (i = 0; i < PATCH_MAX_LFOS; ++i)
-        glfo_tables[i] = patches[dest_id]->glfo_table[i];
-
-    /* copy the patch:
-     */
-    patches[dest_id] = patches[src_id];
-
-    /* restore pointers in destination patch:
-     */
-    patches[dest_id]->sample = oldsample;
-
-    for (i = 0; i < PATCH_MAX_LFOS; ++i)
-        patches[dest_id]->glfo_table[i] = glfo_tables[i];
-
-    /* dest and src currently share pointers to sample data.
-       set dest's pointer to NULL...
-     */
-    patches[dest_id]->sample->sp = NULL;
-
-    /* ...so src's data is not free'd when the sample is loaded.
-     */
-
-    if (patches[src_id]->sample->sp != NULL)
-        patch_sample_load_from(dest_id, src_id);
-
-    /* set display_index to next unique value */
+    patch_copy(patches[dest_id], patches[src_id]);
 
     patches[dest_id]->display_index = 0;
 
@@ -375,14 +344,15 @@ int patch_duplicate(int src_id)
         if (i == dest_id)
             continue;
 
-        if (patches[i]->active
+        if (patches[i] && patches[i]->active
          && patches[i]->display_index >= patches[dest_id]->display_index)
         {
             patches[dest_id]->display_index = patches[i]->display_index + 1;
         }
     }
 
-    debug ("chosen display: %d\n", patches[dest_id]->display_index);
+    debug("chosen display: %d\n", patches[dest_id]->display_index);
+
     patch_unlock(dest_id);
 
     return dest_id;

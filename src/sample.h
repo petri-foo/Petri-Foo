@@ -2,6 +2,8 @@
 #define __SAMPLE_H__
 
 
+#include <stdbool.h>
+
 
 typedef struct _RAW_FORMAT
 {
@@ -28,7 +30,9 @@ struct _Sample
     int raw_channels;   /* with a header, then these fields will be  */
     int sndfile_format; /* zero. if raw, they will be non-zero       */
 
-    char* filename;
+    char*   filename;
+
+    bool    default_sample;
 };
 
 
@@ -38,11 +42,15 @@ void        sample_free     (Sample*);
 /* sample_shallow_copy does copy filename */
 void        sample_shallow_copy(Sample* dest, const Sample* src);
 
+/*  sample_deep_copy, ie copy (possibly resampled) audio data aswell */
+int         sample_deep_copy(Sample* dest, const Sample* src);
+
 
 int         sample_load_file(Sample*, const char* name, int rate,
     /* zero for non-raw data */         int raw_samplerate,
     /* zero for non-raw data */         int raw_channels,
     /* zero for non-raw data */         int sndfile_format);
+
 
 void        sample_free_data(Sample*); /* free's samples and filename */
 int         sample_default  (Sample*, int rate);

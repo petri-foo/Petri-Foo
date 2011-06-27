@@ -26,6 +26,8 @@ Sample* sample_new(void)
     sample->raw_channels = 0;
     sample->sndfile_format = 0;
 
+    sample->default_sample = false;
+
     return sample;
 }
 
@@ -44,7 +46,11 @@ void sample_shallow_copy(Sample* dest, const Sample* src)
     dest->raw_samplerate =  src->raw_samplerate;
     dest->raw_channels =    src->raw_channels;
     dest->sndfile_format =  src->sndfile_format;
+
+    debug("src->filename:[%p] \n", src->filename);
+
     dest->filename =        (!src->filename) ? 0 : strdup(src->filename);
+    dest->default_sample =  src->default_sample;
 }
 
 
@@ -89,6 +95,8 @@ int sample_default(Sample* sample, int rate)
     lfo_free(lfo);
 
     sample->filename = strdup("Default");
+    sample->default_sample = true;
+
     return 0;
 }
 
@@ -297,6 +305,8 @@ debug("setting new sample data\n");
         sample->sndfile_format = 0;
     }
 
+    sample->default_sample = false;
+
 debug("sample loaded\n");
 
     return 0;
@@ -309,4 +319,25 @@ void sample_free_data(Sample* sample)
     free(sample->filename);
     sample->sp = 0;
     sample->filename = 0;
+    sample->default_sample = false;
+}
+
+
+int sample_deep_copy(Sample* dest, const Sample* src)
+{
+    size_t bytes = sizeof(float) * src->frames * 2 /* channels */;
+
+    sample_shallow_copy(dest, src);
+
+    dest->sp = malloc(bytes);
+
+    if (!dest->sp)
+    {
+        debug("Failed to allocate memory for sample data copy\n");
+        return -1;
+    }
+
+    memcpy(dest->sp, src->sp, bytes);
+
+    return 0;
 }

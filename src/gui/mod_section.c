@@ -149,13 +149,11 @@ connect_mod_srcs:
 
     for (i = 0; i < MAX_MOD_SLOTS; ++i)
     {
-        debug("param:%d, connecting slot source:%d\n",p->param, i);
         g_signal_connect(G_OBJECT(p->mod_combo[i]), "changed",
                             G_CALLBACK(mod_src_cb), (gpointer)p);
 
         if (i < last_slot) /* prevent 'ENV' slot amount connecting */
         {
-            debug("param:%d, connecting slot amount:%d\n",p->param, i);
             g_signal_connect(G_OBJECT(p->mod_amount[i]),    "value-changed",
                                 G_CALLBACK(mod_amount_cb),  (gpointer)p);
         }
