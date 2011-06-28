@@ -101,9 +101,7 @@ int sample_default(Sample* sample, int rate)
 }
 
 
-static float* resample(float* samples,  int rate,
-                                        SF_INFO* sfinfo,
-                                        int* output_frames)
+static float* resample(float* samples, int rate, SF_INFO* sfinfo)
 {
     double ratio;
     int frames;
@@ -111,7 +109,7 @@ static float* resample(float* samples,  int rate,
     ratio = rate / (sfinfo->samplerate * 1.0);
     frames = (int)sfinfo->frames;
 
-    debug ("Resampling...\n");
+    debug("Resampling...\n");
 
     int err;
     SRC_DATA src;
@@ -147,7 +145,8 @@ static float* resample(float* samples,  int rate,
         return 0;
     }
 
-    *output_frames = frames;
+    sfinfo->frames = frames;
+
     return tmp;
 }
 
@@ -221,7 +220,6 @@ int sample_load_file(Sample* sample, const char* name,
     SNDFILE* sfp;
     SF_INFO sfinfo = { 0, 0, 0, 0, 0, 0 };
     float* tmp;
-    int frames;
     bool raw = (raw_samplerate || raw_channels || sndfile_format);
 
     if (raw)
@@ -237,7 +235,7 @@ int sample_load_file(Sample* sample, const char* name,
         }
     }
 
-    if ((sfp = sf_open (name, SFM_READ, &sfinfo)) == NULL)
+    if ((sfp = sf_open(name, SFM_READ, &sfinfo)) == NULL)
     {
         debug ("libsndfile doesn't like %s\n", name);
         return -1;
@@ -250,7 +248,7 @@ int sample_load_file(Sample* sample, const char* name,
 
     if (sfinfo.samplerate != rate)
     {
-        float* tmp2 = resample(tmp, rate, &sfinfo, &frames);
+        float* tmp2 = resample(tmp, rate, &sfinfo);
 
         if (!tmp2)
         {
@@ -262,8 +260,6 @@ int sample_load_file(Sample* sample, const char* name,
         free(tmp);
         tmp = tmp2;
     }
-    else
-        frames = sfinfo.frames;
 
     if (sfinfo.channels == 1)
     {
@@ -290,7 +286,7 @@ debug("setting new sample data\n");
     sample->filename = strdup(name);
 
     sample->sp = tmp;
-    sample->frames = frames;
+    sample->frames = sfinfo.frames;
 
     if (raw)
     {
