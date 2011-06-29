@@ -26,7 +26,7 @@ typedef struct _PatchParam
 
 
 /* type for array of instruments (called patches) */
-typedef struct _Patch
+struct _Patch
 {
     bool     active;        /* whether patch is in use or not */
     Sample*  sample;        /* sample data */
@@ -108,7 +108,7 @@ typedef struct _Patch
      * patch_render ignores this patch */
     pthread_mutex_t mutex;
 
-} Patch;
+};
 
 
 Patch*          patch_new(void);
