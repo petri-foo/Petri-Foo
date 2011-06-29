@@ -40,7 +40,7 @@ inline static char* strconcat(const char* str1, const char* str2)
     return str;
 }
 
-
+/* unused... reason/purpose ???
 static char* get_file_filter(void)
 {
     char* filter = 0;
@@ -48,7 +48,7 @@ static char* get_file_filter(void)
     if (!filter)
     {
         const char* ext = dish_file_extension();
-        size_t l = strlen(ext) + 1; /* additional char to store * */
+        size_t l = strlen(ext) + 1;
         filter = malloc(l + 1);
         filter[0] = '*';
         strcat(filter, ext);
@@ -56,7 +56,7 @@ static char* get_file_filter(void)
 
     return filter;
 }
-
+*/
 
 static void file_chooser_add_filter(GtkWidget* chooser, const char* name,
                                                  const char* pattern)

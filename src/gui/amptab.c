@@ -33,6 +33,7 @@ GType amp_tab_get_type(void)
             sizeof (AmpTab),
             0,
             (GInstanceInitFunc) amp_tab_init,
+            NULL
         };
         type = g_type_register_static(GTK_TYPE_VBOX, "AmpTab", &info, 0);
     }

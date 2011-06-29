@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 
-typedef struct _ADSR
+struct _ADSR
 {
     ADSRState state;    /* what phase of the envelope we are in         */
 
@@ -35,7 +35,7 @@ typedef struct _ADSR
     float key_amt;
 /*  float vel_amt; */
 
-} ADSR;
+};
 
 
 void adsr_params_init(ADSRParams* params, float attack, float release)

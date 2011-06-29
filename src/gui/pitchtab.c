@@ -31,6 +31,7 @@ GType pitch_tab_get_type(void)
             sizeof (PitchTab),
             0,
             (GInstanceInitFunc) pitch_tab_init,
+            NULL
         };
         type = g_type_register_static(GTK_TYPE_VBOX, "PitchTab", &info, 0);
     }
