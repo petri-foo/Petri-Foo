@@ -1,3 +1,17 @@
+2011-06-30  James Morris <james@jwm-art.net>
+
+	* added gpl header to all source files
+
+	* PETRI-FOO_ORIGINAL_FILES
+	  new file listing files i consider to be original
+	  to petri-foo and my own work.
+
+	* removed gui/amptab.[ch]
+	* removed gui/pitchtab.[ch]
+	  both pairs of files were not used and had been
+	  obsoleted by gui/paramtab.[ch].
+
+
 2011-06-28  James Morris <james@jwm-art.net>
 
 	* sample.c: fix bug caused by neglecting to set correct

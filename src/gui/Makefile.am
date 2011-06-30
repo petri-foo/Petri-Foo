@@ -1,7 +1,6 @@
 noinst_LIBRARIES = libgui.a
 
 libgui_a_SOURCES = 					\
-	amptab.c		amptab.h		\
 	audio-settings.c	audio-settings.h	\
 	bank-ops.c		bank-ops.h		\
 	basic_combos.c		basic_combos.h		\
@@ -17,7 +16,6 @@ libgui_a_SOURCES = 					\
 	paramtab.c		paramtab.h		\
 	patchlist.c		patchlist.h		\
 	patchsection.c		patchsection.h		\
-	pitchtab.c		pitchtab.h		\
 	sample-editor.c		sample-editor.h		\
 	sample-selector.c	sample-selector.h	\
 	sampletab.c		sampletab.h		\

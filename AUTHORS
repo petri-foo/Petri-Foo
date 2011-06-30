@@ -4,8 +4,6 @@
 
   Founder, primary developer untill 2005-09-14
 
-
-
 * Alexander <aharvey@ij.net> 
 
   modified midi.c to treat note-on events with velocity of 0x00 as
@@ -57,9 +55,13 @@
   pointed out that it needed to be done in the first place).
 
 
-
-
-
 * Eric Dantan Rzewnicki <eric@zhevny.com>
 
   maintainer
+
+
+* James W. Morris <james@jwm-art.net>
+
+  forker of Specimen to Petri-Foo, primary developer of Petri-Foo
+  added modulation routing, midi-cc as modulation sources, remover
+  of deprecated GUI code, etc, etc, etc.

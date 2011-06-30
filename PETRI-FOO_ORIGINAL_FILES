@@ -1,0 +1,40 @@
+PETRI-FOO ORIGINAL FILES
+
+* src/dish_file.[ch]
+	these replace beef.[ch] and are so substantially different
+	i consider them to be my own original work.
+
+* src/midi_control.h
+	so very loosely based on control.h that again i consider it
+	to be substantially different enough to be my own work.
+
+* src/mod_src.[ch]
+	routines for handling modulation sources. implemented
+	specifically for petri-foo.
+
+* src/names.[ch]
+	routines for getting names of things. implemented
+	specifically for petri-foo.
+
+* src/gui/mod_src_gui.[ch]
+	routines for generating GUI elements specifically with
+	modulation routing in mind. implemented specifcally
+	for petri-foo.
+
+* src/gui/mod_section.[ch]
+	routines for generating the modulation section widgets.
+	implemented specifically for petri-foo.
+
+* src/gui/basic_combos.[ch]
+	routines for generating combo boxes. implemented for
+	petri-foo.
+
+* src/gui/param_tab.[ch]
+	generic replacement for specimens filtertab also
+	handling the amp and pitch tabs. the most tenuous
+	of links with specimen make me consider it my
+	origin work.
+
+
+last edited: 30th June 2011
+
