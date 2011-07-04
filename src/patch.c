@@ -158,7 +158,7 @@ inline static void patch_release_patch(Patch* p, int note, release_t mode)
             /* we don't really release here, that's the job of
              * advance( ); we just tell it *when* to release */
             p->voices[i]->relmode = mode;
-            p->voices[i]->relset = (p->mono && p->legato)
+            p->voices[i]->relset = (p->mono && p->legato.active)
                                         ? patch_legato_lag
                                         : 0;
         }
@@ -197,14 +197,16 @@ inline static void prepare_pitch(Patch* p, PatchVoice* v, int note)
     /* this applies the tuning factor */
     scale = pow(2, (p->pitch.val * p->pitch_steps) / 12.0);
 
-    if (p->porta && (p->porta_secs > 0.0) && (p->last_note != note))
+    if (p->porta.active
+    && (p->porta_secs.value > 0.0)
+    && (p->last_note != note))
     {
         /* we calculate the pitch here because we can't be certain
          * what the current value of the last voice's pitch is */
         v->pitch =
             pow(2, (p->last_note - p->note) * p->pitch.key_amt / 12.0);
         v->pitch *= scale;
-        v->porta_ticks = ticks_secs_to_ticks (p->porta_secs);
+        v->porta_ticks = ticks_secs_to_ticks (p->porta_secs.value);
 
         /* calculate the value to be added to pitch each tick by
          * subtracting the target pitch from the initial pitch and
@@ -232,6 +234,46 @@ inline static void prepare_pitch(Patch* p, PatchVoice* v, int note)
 }
 
 
+/*
+inline static void patch_bool_mod(PatchBool* pb, Patch* p)
+{
+    pb->val = (pb->set && pb->mod_id)
+        ? (*(patch_mod_id_to_pointer(pb->mod_id, p, NULL)) > pb->thresh)
+        : pb->set;
+}
+
+inline static void patch_float_mod(PatchFloat* pp, Patch* p)
+{
+    pp->val = pp->set;
+
+    if (pp->mod_id)
+    {
+        const float* mod = patch_mod_id_to_pointer(pp->mod_id, p, NULL);
+        pp->val += *mod * pp->mod_amt;
+    }
+}
+*/
+
+inline static void patch_bool_mod(PatchBool* pb, Patch* p)
+{
+    const float* mod = patch_mod_id_to_pointer(pb->mod_id, p, NULL);
+    pb->active = (pb->on && pb->mod_id)
+                        ? (*mod > pb->thresh)
+                        : pb->on;
+}
+
+inline static void patch_float_mod(PatchFloat* pf, Patch* p)
+{
+    pf->value = pf->assign;
+
+    if (pf->mod_id)
+    {
+        const float* mod = patch_mod_id_to_pointer(pf->mod_id, p, NULL);
+        pf->value += *mod * pf->mod_amt;
+    }
+}
+
+
 /**************************************************************************
  *********************     PATCH TRIGGER PATCH      ***********************
  **************************************************************************/
@@ -254,7 +296,12 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
         key_track = (float)(note - p->lower_note)
                                 / (p->upper_note - p->lower_note);
 
-    if (p->mono && p->legato)
+    /* boolean modulation */
+    patch_bool_mod(&p->porta, p);
+    patch_bool_mod(&p->legato, p);
+    patch_float_mod(&p->porta_secs, p);
+
+    if (p->mono && p->legato.active)
     {
         /*  half of the previous logic operating here was ignored.
          *  removing it left only logic which could be simplified
@@ -324,7 +371,7 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
     v->note =       note;
     v->key_track =  key_track;
 
-    if (!(p->mono && p->legato))
+    if (!(p->mono && p->legato.active))
         v->vel = vel;
 
     if (!p->mono)
@@ -339,7 +386,7 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
         v->pitch_mod[i] = patch_mod_id_to_pointer(p->pitch.mod_id[i], p, v);
     }
 
-    if (!(p->mono && p->legato && v->active))
+    if (!(p->mono && p->legato.active && v->active))
         playstate_init_fade_in(p, v);
 
     prepare_pitch(p, v, note);
@@ -681,7 +728,7 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
         /* whether we need to recalculate our pos/step vars */
 
     /* portamento */
-    if (p->porta && v->porta_ticks)
+    if (p->porta.active && v->porta_ticks)
     {
         recalc = true;
         v->pitch += v->pitch_step;
@@ -1107,47 +1154,6 @@ void patch_trigger_with_id (int id, int note, float vel, Tick ticks)
 }
 
 
-static void patch_control_patch(Patch* p, int param, float value)
-{
-/*
-    switch( param )
-    {
-    case CONTROL_PARAM_MODWHEEL:
-        break;
-    case CONTROL_PARAM_AMPLITUDE:
-        p->vol.val = value;
-        break;
-    case CONTROL_PARAM_PANNING:
-        p->pan.val = value;
-        break;
-    case CONTROL_PARAM_CUTOFF:
-        p->ffreq.val = value;
-        break;
-    case CONTROL_PARAM_RESONANCE:
-        p->freso.val = value;
-        break;
-    case CONTROL_PARAM_PITCH:
-        p->pitch_bend = pow(2, value);
-        break;
-    case CONTROL_PARAM_PORTAMENTO:
-        p->porta = (value < 0.5) ? 0 : 1;
-        break;
-    case CONTROL_PARAM_PORTAMENTO_TIME:
-        p->porta_secs = value;
-        break;
-    case CONTROL_PARAM_CUTOFF_MOD1_AMT:
-        p->ffreq.mod1_amt = value;
-        break;
-    case CONTROL_PARAM_RESO_MOD1_AMT:
-        p->freso.mod1_amt = value;
-        break;
-    default:
-        break;
-    }
-*/
-}
-
-
 void patch_control_init(void)
 {
     int c, p;
@@ -1168,20 +1174,9 @@ void patch_control_init(void)
 
 void patch_control(int chan, int param, float value)
 {
-    int i;
-
+    /* FIXME: this could probably be put back into mixer and
+                a function call could be saved ?
+     */
     cc[chan][1 + param] = value;
-
-    for (i = 0; i < PATCH_COUNT; i++)
-    {
-        if (patches[i]
-         && patches[i]->active
-         && patches[i]->channel == chan)
-        {
-            patch_control_patch(patches[i], param, value);
-        }
-    }
-
-    return;
 }
 

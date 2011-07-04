@@ -119,6 +119,24 @@ GtkWidget* mod_src_new_pitch_adjustment(void)
 }
 
 
+int mod_src_combo_get_mod_src_id(GtkComboBox* combo)
+{
+    GtkTreeIter iter;
+
+    if (gtk_combo_box_get_active_iter(combo, &iter))
+    {
+        int     id;
+
+        gtk_tree_model_get( gtk_combo_box_get_model(combo),
+                            &iter, COLUMN_INT, &id, -1);
+
+        return id;
+    }
+
+    return MOD_SRC_NONE;
+}
+
+
 gboolean mod_src_callback_helper(int patch_id,          int slot,
                                     GtkComboBox* combo, PatchParamType par)
 {
@@ -137,10 +155,12 @@ gboolean mod_src_callback_helper(int patch_id,          int slot,
                patch_id,   slot, mod_src_name(id), id);
 
         /* FIXME: probably should check return value */
-        patch_set_mod_src(patch_id, par, slot, id);
+        patch_param_set_mod_src(patch_id, par, slot, id);
+
+        return id != MOD_SRC_NONE;
     }
 
-    return TRUE;
+    return FALSE;
 }
 
 
@@ -170,9 +190,11 @@ gboolean mod_src_callback_helper_lfo(int patch_id,
                     input_no);
             return FALSE;
         }
+
+        return id != MOD_SRC_NONE;
     }
 
-    return TRUE;
+    return FALSE;
 }
 
 

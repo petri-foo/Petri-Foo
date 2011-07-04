@@ -75,12 +75,27 @@ Patch* patch_new(void)
 
     p->fade_samples =   0;
     p->xfade_samples =  0;
-    p->porta =          false;
-    p->porta_secs =     0.05;
+
+    p->porta.on =       true;
+    p->porta.thresh =   0.5;
+    p->porta.mod_id =   MOD_SRC_MIDI_CC + CC_PORTAMENTO;
+
+    p->porta_secs.assign =  0.05;
+    p->porta_secs.mod_amt = 1.0;
+    p->porta_secs.mod_id =  MOD_SRC_MIDI_CC + CC_PORTAMENTO_TIME;
+
     p->pitch_steps =    2;
     p->pitch_bend =     0;
-    p->mono =           false;
-    p->legato =         false;
+
+    p->mono = false;
+/*
+    p->mono.on =        true;
+    p->mono.thresh =    0.5;
+    p->mono.mod_id =    MOD_SRC_MIDI_CC + CC_
+*/
+    p->legato.on =      true;
+    p->legato.thresh =  0.5;
+    p->legato.mod_id =  MOD_SRC_MIDI_CC + CC_LEGATO;
 
     p->play_mode =      PATCH_PLAY_SINGLESHOT | PATCH_PLAY_FORWARD;
 
@@ -222,15 +237,15 @@ float const* patch_mod_id_to_pointer(int id, Patch* p, PatchVoice* v)
 {
     switch(id)
     {
-    case MOD_SRC_NONE:      return 0;
+    case MOD_SRC_NONE:      return NULL;
     case MOD_SRC_ONE:       return &one;
-    case MOD_SRC_VELOCITY:  return &v->vel;
-    case MOD_SRC_KEY:       return &v->key_track;
+    case MOD_SRC_VELOCITY:  return (v) ? &v->vel :          NULL;
+    case MOD_SRC_KEY:       return (v) ? &v->key_track :    NULL;
     case MOD_SRC_PITCH_WHEEL:
         return &((*cc_arr)[p->channel][0]);
     }
 
-    if (id & MOD_SRC_EG)
+    if (id & MOD_SRC_EG && v)
     {
         id &= ~MOD_SRC_EG;
 
@@ -238,7 +253,7 @@ float const* patch_mod_id_to_pointer(int id, Patch* p, PatchVoice* v)
             return adsr_output(v->env[id]);
     }
 
-    if (id & MOD_SRC_VLFO)
+    if (id & MOD_SRC_VLFO && v)
     {
         id &= ~MOD_SRC_VLFO;
 

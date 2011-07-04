@@ -28,15 +28,17 @@
 
 #include "midi_control.h"
 #include "patch.h"
-
 #include "patch_voice.h"
-
 #include "sample.h"
 
 
+/*  PatchParam
+        a structure used for sound parameters which can be modulated
+        continually as the voice plays.
+ */
 typedef struct _PatchParam
 {
-    float   val;        /* value of this parameter */
+    float   val;
 
     /* modulation sources */
     int     mod_id[MAX_MOD_SLOTS];
@@ -47,6 +49,37 @@ typedef struct _PatchParam
     float   key_amt;
 
 } PatchParam;
+
+
+/*  PatchBool
+        a structure used for storing boolean settings which can be turned
+        on and off by a modulation source.
+
+        *usually* these settings will not be continually modified by the
+        modulation source; their value will usually only be taken each
+        time a voice is triggered.
+
+        modulation values below the threshold turn the feature off, while
+        those above turn it on.
+ */
+ typedef struct _PatchBool
+{
+    bool    on;     /* set value */
+    bool    active; /* actual value after modulation */
+    int     mod_id;
+    float   thresh;
+
+} PatchBool;
+
+
+typedef struct _PatchFloat
+{
+    float   assign; /* set value */
+    float   value;  /* actual value after modulation */
+    int     mod_id;
+    float   mod_amt;
+
+} PatchFloat;
 
 
 /* type for array of instruments (called patches) */
@@ -76,12 +109,13 @@ struct _Patch
     int     fade_samples;
     int     xfade_samples;
 
-    bool    porta;          /* whether portamento is being used or not */
-    float   porta_secs;     /* length of portamento slides in seconds */
-    int     pitch_steps;    /* range of pitch.val in halfsteps */
-    float   pitch_bend;     /* pitch bending factor */
-    bool    mono;           /* whether patch is monophonic or not */
-    bool    legato;         /* whether patch is played legato or not */
+    PatchBool   porta;
+    PatchFloat  porta_secs;
+
+    int         pitch_steps;    /* range of pitch.val in halfsteps */
+    float       pitch_bend;     /* pitch bending factor */
+    bool        mono;           /* whether patch is monophonic or not */
+    PatchBool   legato;         /* whether patch is played legato or not */
 
     PatchPlayMode   play_mode;  /* how this patch is to be played */
     PatchParam      vol;        /* volume:                  [0.0, 1.0] */

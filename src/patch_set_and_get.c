@@ -144,12 +144,52 @@ static int get_patch_param(int patch_id, PatchParamType param,
     case PATCH_PARAM_RESONANCE: *p = &patches[patch_id]->freso;    break;
     case PATCH_PARAM_PITCH:     *p = &patches[patch_id]->pitch;    break;
     default:
-        debug ("Invalid request for address of param\n");
+        debug ("Invalid request for address of patch param\n");
         return PATCH_PARAM_INVALID;
     }
 
     return 0;
 }
+
+
+static int get_patch_bool(int patch_id, PatchBoolType booltype,
+                                                            PatchBool** b)
+{
+    if (!isok(patch_id))
+        return PATCH_ID_INVALID;
+
+    switch(booltype)
+    {
+    case PATCH_BOOL_PORTAMENTO: *b = &patches[patch_id]->porta;     break;
+    case PATCH_BOOL_LEGATO:     *b = &patches[patch_id]->legato;    break;
+    default:
+        debug("Invalid request for address of patch bool\n");
+        return PATCH_BOOL_INVALID;
+    }
+
+    return 0;
+}
+
+
+static int get_patch_float(int patch_id, PatchFloatType floattype,
+                                                            PatchFloat** f)
+{
+    if (!isok(patch_id))
+        return PATCH_ID_INVALID;
+
+    switch(floattype)
+    {
+    case PATCH_FLOAT_PORTAMENTO_TIME:
+        *f = &patches[patch_id]->porta_secs;
+        break;
+    default:
+        debug("Invalid request for address of patch float\n");
+        return PATCH_FLOAT_INVALID;
+    }
+
+    return 0;
+}
+
 
 
 /* inline static function def macro, see private/patch_data.h */
@@ -768,7 +808,7 @@ int patch_set_legato(int id, bool val)
 {
     if (!isok (id))
         return PATCH_ID_INVALID;
-    patches[id]->legato = val;
+    patches[id]->legato.on = val;
     return 0;
 }
 
@@ -1120,7 +1160,7 @@ int patch_set_portamento (int id, bool val)
     if (!isok (id))
         return PATCH_ID_INVALID;
 
-    patches[id]->porta = val;
+    patches[id]->porta.on = val;
     return 0;
 }
 
@@ -1128,12 +1168,12 @@ int patch_set_portamento (int id, bool val)
 int patch_set_portamento_time (int id, float secs)
 {
     if (!isok (id))
-	return PATCH_ID_INVALID;
+        return PATCH_ID_INVALID;
 
     if (secs < 0.0)
-	return PATCH_PARAM_INVALID;
+        return PATCH_PARAM_INVALID;
 
-    patches[id]->porta_secs = secs;
+    patches[id]->porta_secs.assign = secs;
     return 0;
 }
 
@@ -1248,7 +1288,7 @@ bool patch_get_legato(int id)
     if (!isok (id))
         return PATCH_ID_INVALID;
 
-    return patches[id]->legato;
+    return patches[id]->legato.on;
 }
 
 
@@ -1345,7 +1385,7 @@ int patch_get_pitch_steps (int id)
 }
 
 /* get the play mode */
-PatchPlayMode patch_get_play_mode (int id)
+PatchPlayMode patch_get_play_mode(int id)
 {
     if (!isok(id))
         return PATCH_ID_INVALID;
@@ -1354,26 +1394,26 @@ PatchPlayMode patch_get_play_mode (int id)
 }
 
 /* get whether portamento is used or not */
-bool patch_get_portamento (int id)
+bool patch_get_portamento(int id)
 {
     if (!isok(id))
         return PATCH_ID_INVALID;
 
-    return patches[id]->porta;
+    return patches[id]->porta.on;
 }
 
 /* get length of portamento slides in seconds */
-float patch_get_portamento_time (int id)
+float patch_get_portamento_time(int id)
 {
     if (!isok(id))
         return PATCH_ID_INVALID;
 
-    return patches[id]->porta_secs;
+    return patches[id]->porta_secs.assign;
 }
 
 
 /* get the filter's resonance amount */
-float patch_get_resonance (int id)
+float patch_get_resonance(int id)
 {
     if (!isok(id))
         return PATCH_ID_INVALID;
@@ -1510,36 +1550,36 @@ int patch_param_set_value(int patch_id, PatchParamType param, float v)
 /*********************** MODULATION SETTERS *******************************/
 /**************************************************************************/
 
-int patch_set_mod_src(int patch_id, PatchParamType param, int slot, int id)
+#define PATCH_PARAM_CHECKS                                  \
+    PatchParam* p;                                          \
+    int err;                                                \
+    if (!isok(patch_id))                                    \
+        return PATCH_ID_INVALID;                            \
+    if ((err = get_patch_param(patch_id, param, &p)) < 0)   \
+        return err;
+
+#define PATCH_SLOT_CHECKS                         \
+    if (slot < 0 || slot > MAX_MOD_SLOTS)   \
+        return PATCH_MOD_SLOT_INVALID;      \
+
+
+int
+patch_param_set_mod_src(int patch_id, PatchParamType param, int slot,
+                                                            int id)
 {
-    PatchParam* p;
-    int err; 
-
-    if ((err = get_patch_param(patch_id, param, &p)) != 0)
-        return err;
-
-    if (slot < 0 || slot > MAX_MOD_SLOTS)
-        return PATCH_MOD_SLOT_INVALID;
-
-    if ((err = mod_src_ok(id)) != 0)
-        return err;
-
+    PATCH_PARAM_CHECKS
+    PATCH_SLOT_CHECKS
     p->mod_id[slot] = id;
     return 0;
 }
 
 
 int
-patch_set_mod_amt(int patch_id, PatchParamType param, int slot, float amt)
+patch_param_set_mod_amt(int patch_id, PatchParamType param, int slot,
+                                                            float amt)
 {
-    PatchParam* p;
-    int err; 
-
-    if ((err = get_patch_param(patch_id, param, &p)) != 0)
-        return err;
-
-    if (slot < 0 || slot > MAX_MOD_SLOTS)
-        return PATCH_MOD_SLOT_INVALID;
+    PATCH_PARAM_CHECKS
+    PATCH_SLOT_CHECKS
 
     if (amt < -1.0 || amt > 1.0)
         return PATCH_MOD_AMOUNT_INVALID;
@@ -1558,16 +1598,10 @@ patch_set_mod_amt(int patch_id, PatchParamType param, int slot, float amt)
 }
 
 
-int patch_set_vel_amount(int patch_id, PatchParamType param, float amt)
+int
+patch_param_set_vel_amount(int patch_id, PatchParamType param, float amt)
 {
-    PatchParam* p;
-    int err;
-
-    if (!isok (patch_id))
-        return PATCH_ID_INVALID;
-
-    if ((err = get_patch_param(patch_id, param, &p)) < 0)
-        return err;
+    PATCH_PARAM_CHECKS
 
     if (amt < 0.0 || amt > 1.0)
         return PATCH_PARAM_INVALID;
@@ -1577,16 +1611,10 @@ int patch_set_vel_amount(int patch_id, PatchParamType param, float amt)
 }
 
 
-int patch_set_key_amount(int patch_id, PatchParamType param, float amt)
+int
+patch_param_set_key_amount(int patch_id, PatchParamType param, float amt)
 {
-    PatchParam* p;
-    int err;
-
-    if (!isok (patch_id))
-        return PATCH_ID_INVALID;
-
-    if ((err = get_patch_param(patch_id, param, &p)) < 0)
-        return err;
+    PATCH_PARAM_CHECKS
 
     if (amt < -1.0 || amt > 1.0)
         return PATCH_PARAM_INVALID;
@@ -1601,83 +1629,211 @@ int patch_set_key_amount(int patch_id, PatchParamType param, float amt)
 /**************************************************************************/
 
 int
-patch_get_mod_src(int patch_id, PatchParamType param, int slot, int* src_id)
+patch_param_get_mod_src(int patch_id, PatchParamType param, int slot,
+                                                            int* src_id)
 {
-    PatchParam* p;
-    int err; 
-
-    if ((err = get_patch_param(patch_id, param, &p)) != 0)
-        return err;
-
-    if (slot < 0 || slot > MAX_MOD_SLOTS)
-        return PATCH_MOD_SLOT_INVALID;
-
+    PATCH_PARAM_CHECKS
+    PATCH_SLOT_CHECKS
     *src_id = p->mod_id[slot];
-
     return 0;
 }
 
 
 int
-patch_get_mod_amt(int patch_id, PatchParamType param, int slot, float* amt)
+patch_param_get_mod_amt(int patch_id, PatchParamType param, int slot,
+                                                            float* amt)
 {
-    PatchParam* p;
-    int err; 
-
-    if ((err = get_patch_param(patch_id, param, &p)) != 0)
-        return err;
-
-    if (slot < 0 || slot > MAX_MOD_SLOTS)
-        return PATCH_MOD_SLOT_INVALID;
-
+    PATCH_PARAM_CHECKS
+    PATCH_SLOT_CHECKS
     *amt = p->mod_amt[slot];
     return 0;
 }
 
 
-int patch_get_vel_amount (int patch_id, PatchParamType param, float* val)
+int patch_param_get_vel_amount(int patch_id, PatchParamType param,
+                                                            float* val)
 {
-    PatchParam* p;
-    int err;
-     
-    if (!isok (patch_id))
-        return PATCH_ID_INVALID;
-
-    if ((err = get_patch_param(patch_id, param, &p)) < 0)
-        return err;
-
+    PATCH_PARAM_CHECKS
     *val = p->vel_amt;
     return 0;
 }
 
 
-int patch_get_key_amount (int patch_id, PatchParamType param, float* val)
+int patch_param_get_key_amount(int patch_id, PatchParamType param,
+                                                            float* val)
 {
-    PatchParam* p;
-    int err;
-     
-    if (!isok (patch_id))
-        return PATCH_ID_INVALID;
-
-    if ((err = get_patch_param(patch_id, param, &p)) < 0)
-        return err;
-
+    PATCH_PARAM_CHECKS
     *val = p->key_amt;
     return 0;
 }
+
+
+#define PATCH_BOOL_CHECKS                                   \
+    PatchBool* b;                                           \
+    int err;                                                \
+    if (!isok(patch_id))                                    \
+        return PATCH_ID_INVALID;                            \
+    if ((err = get_patch_bool(patch_id, booltype, &b)) < 0) \
+        return err;
+
+
+
+/* PatchBool set/get */
+int patch_bool_set_on(int patch_id, PatchBoolType booltype, bool val)
+{
+    PATCH_BOOL_CHECKS
+    b->on = val;
+    return 0;
+}
+
+
+int patch_bool_set_thresh(int patch_id, PatchBoolType booltype, float val)
+{
+    PATCH_BOOL_CHECKS
+    b->thresh = val;
+    return 0;
+}
+
+
+int patch_bool_set_mod_src(int patch_id, PatchBoolType booltype, int mod_id)
+{
+    PATCH_BOOL_CHECKS
+    b->mod_id = mod_id;
+    return 0;
+}
+
+
+int patch_bool_get_all(int patch_id, PatchBoolType booltype,
+                        bool* on, float* thresh, int* mod_id)
+{
+    PATCH_BOOL_CHECKS
+    *on =       b->on;
+    *thresh =   b->thresh;
+    *mod_id =   b->mod_id;
+    return 0;
+}
+
+
+int patch_bool_get_on(int patch_id, PatchBoolType booltype, bool* on)
+{
+    PATCH_BOOL_CHECKS;
+    *on = b->on;
+    return 0;
+}
+
+int
+patch_bool_get_thresh(int patch_id, PatchBoolType booltype, float* thresh)
+{
+    PATCH_BOOL_CHECKS
+    *thresh =   b->thresh;
+    return 0;
+}
+
+int
+patch_bool_get_mod_src(int patch_id, PatchBoolType booltype, int* mod_id)
+{
+    PATCH_BOOL_CHECKS
+    *mod_id =   b->mod_id;
+    return 0;
+}
+
+#define PATCH_FLOAT_CHECKS                                      \
+    PatchFloat* f;                                              \
+    int err;                                                    \
+    if (!isok(patch_id))                                        \
+        return PATCH_ID_INVALID;                                \
+    if ((err = get_patch_float(patch_id, floattype, &f)) < 0)   \
+        return err;
+
+
+/* PatchFloat set/get */
+int
+patch_float_set_assign(int patch_id, PatchFloatType floattype, float val)
+{
+    PATCH_FLOAT_CHECKS
+    f->assign = val;
+    return 0;
+}
+
+
+int
+patch_float_set_mod_amt(int patch_id, PatchFloatType floattype, float val)
+{
+    PATCH_FLOAT_CHECKS
+    f->mod_amt = val;
+    return 0;
+}
+
+
+int
+patch_float_set_mod_src(int patch_id, PatchFloatType floattype, int mod_id)
+{
+    PATCH_FLOAT_CHECKS
+    f->mod_id = mod_id;
+    return 0;
+}
+
+
+int patch_float_get_all(int patch_id, PatchFloatType floattype,
+                        float* assign, float* mod_amt, int* mod_id)
+{
+    PATCH_FLOAT_CHECKS
+    *assign =   f->assign;
+    *mod_amt =  f->mod_amt;
+    *mod_id =   f->mod_id;
+    return 0;
+}
+
+
+int
+patch_float_get_assign(int patch_id, PatchFloatType floattype,
+                                                float* assign)
+{
+    PATCH_FLOAT_CHECKS;
+    *assign = f->assign;
+    return 0;
+}
+
+int
+patch_float_get_mod_amt(int patch_id, PatchFloatType floattype,
+                                                float* mod_amt)
+{
+    PATCH_FLOAT_CHECKS
+    *mod_amt =   f->mod_amt;
+    return 0;
+}
+
+int
+patch_float_get_mod_src(int patch_id, PatchFloatType floattype, int* mod_id)
+{
+    PATCH_FLOAT_CHECKS
+    *mod_id =   f->mod_id;
+    return 0;
+}
+
 
 
 /**************************************************************************/
 /****************** LFO FREQ MODULATION SETTERS ***************************/
 /**************************************************************************/
 
+#define PATCH_LFO_CHECKS                                        \
+    LFO* lfo;                                                   \
+    LFOParams* lfopar;                                          \
+    int err;                                                    \
+    if ((err = lfo_from_id(patch_id, lfo_id, &lfo, &lfopar)))   \
+        return err;
+
+#define PATCH_NULL_LFO_CHECKS                                   \
+    LFOParams* lfopar;                                          \
+    int err;                                                    \
+    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))   \
+        return err;
+
+
 int patch_set_lfo_fm1_src(int patch_id, int lfo_id, int modsrc_id)
 {
-    LFO* lfo;
-    LFOParams* lfopar;
-    int err; 
-    if ((err = lfo_from_id(patch_id, lfo_id, &lfo, &lfopar)))
-        return err;
+    PATCH_LFO_CHECKS
     lfopar->fm1_id = modsrc_id;
 
     if (lfo)
@@ -1688,11 +1844,7 @@ int patch_set_lfo_fm1_src(int patch_id, int lfo_id, int modsrc_id)
 
 int patch_set_lfo_fm2_src(int patch_id, int lfo_id, int modsrc_id)
 {
-    LFO* lfo;
-    LFOParams* lfopar;
-    int err; 
-    if ((err = lfo_from_id(patch_id, lfo_id, &lfo, &lfopar)))
-        return err;
+    PATCH_LFO_CHECKS
     lfopar->fm2_id = modsrc_id;
 
     if (lfo)
@@ -1703,11 +1855,7 @@ int patch_set_lfo_fm2_src(int patch_id, int lfo_id, int modsrc_id)
 
 int patch_set_lfo_fm1_amt(int patch_id, int lfo_id, float amount)
 {
-    LFO* lfo;
-    LFOParams* lfopar;
-    int err; 
-    if ((err = lfo_from_id(patch_id, lfo_id, &lfo, &lfopar)))
-        return err;
+    PATCH_LFO_CHECKS
     lfopar->fm1_amt = amount;
 
     if (lfo)
@@ -1718,11 +1866,7 @@ int patch_set_lfo_fm1_amt(int patch_id, int lfo_id, float amount)
 
 int patch_set_lfo_fm2_amt(int patch_id, int lfo_id, float amount)
 {
-    LFO* lfo;
-    LFOParams* lfopar;
-    int err; 
-    if ((err = lfo_from_id(patch_id, lfo_id, &lfo, &lfopar)))
-        return err;
+    PATCH_LFO_CHECKS
     lfopar->fm2_amt = amount;
 
     if (lfo)
@@ -1739,40 +1883,28 @@ int patch_set_lfo_fm2_amt(int patch_id, int lfo_id, float amount)
 
 int patch_get_lfo_fm1_src(int patch_id, int lfo_id, int* modsrc_id)
 {
-    LFOParams* lfopar;
-    int err; 
-    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))
-        return err;
+    PATCH_NULL_LFO_CHECKS
     *modsrc_id = lfopar->fm1_id;
     return 0;
 }
 
 int patch_get_lfo_fm2_src(int patch_id, int lfo_id, int* modsrc_id)
 {
-    LFOParams* lfopar;
-    int err; 
-    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))
-        return err;
+    PATCH_NULL_LFO_CHECKS
     *modsrc_id = lfopar->fm2_id;
     return 0;
 }
 
 int patch_get_lfo_fm1_amt(int patch_id, int lfo_id, float* amount)
 {
-    LFOParams* lfopar;
-    int err; 
-    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))
-        return err;
+    PATCH_NULL_LFO_CHECKS
     *amount = lfopar->fm1_amt;
     return 0;
 }
 
 int patch_get_lfo_fm2_amt(int patch_id, int lfo_id, float* amount)
 {
-    LFOParams* lfopar;
-    int err; 
-    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))
-        return err;
+    PATCH_NULL_LFO_CHECKS
     *amount = lfopar->fm2_amt;
     return 0;
 }
@@ -1784,11 +1916,7 @@ int patch_get_lfo_fm2_amt(int patch_id, int lfo_id, float* amount)
 
 int patch_set_lfo_am1_src(int patch_id, int lfo_id, int modsrc_id)
 {
-    LFO* lfo;
-    LFOParams* lfopar;
-    int err; 
-    if ((err = lfo_from_id(patch_id, lfo_id, &lfo, &lfopar)))
-        return err;
+    PATCH_LFO_CHECKS
     lfopar->am1_id = modsrc_id;
 
     if (lfo)
@@ -1799,11 +1927,7 @@ int patch_set_lfo_am1_src(int patch_id, int lfo_id, int modsrc_id)
 
 int patch_set_lfo_am2_src(int patch_id, int lfo_id, int modsrc_id)
 {
-    LFO* lfo;
-    LFOParams* lfopar;
-    int err; 
-    if ((err = lfo_from_id(patch_id, lfo_id, &lfo, &lfopar)))
-        return err;
+    PATCH_LFO_CHECKS
     lfopar->am2_id = modsrc_id;
 
     if (lfo)
@@ -1814,11 +1938,7 @@ int patch_set_lfo_am2_src(int patch_id, int lfo_id, int modsrc_id)
 
 int patch_set_lfo_am1_amt(int patch_id, int lfo_id, float amount)
 {
-    LFO* lfo;
-    LFOParams* lfopar;
-    int err; 
-    if ((err = lfo_from_id(patch_id, lfo_id, &lfo, &lfopar)))
-        return err;
+    PATCH_LFO_CHECKS
     lfopar->am1_amt = amount;
 
     if (lfo)
@@ -1829,11 +1949,7 @@ int patch_set_lfo_am1_amt(int patch_id, int lfo_id, float amount)
 
 int patch_set_lfo_am2_amt(int patch_id, int lfo_id, float amount)
 {
-    LFO* lfo;
-    LFOParams* lfopar;
-    int err; 
-    if ((err = lfo_from_id(patch_id, lfo_id, &lfo, &lfopar)))
-        return err;
+    PATCH_LFO_CHECKS
     lfopar->am2_amt = amount;
 
     if (lfo)
@@ -1850,40 +1966,28 @@ int patch_set_lfo_am2_amt(int patch_id, int lfo_id, float amount)
 
 int patch_get_lfo_am1_src(int patch_id, int lfo_id, int* modsrc_id)
 {
-    LFOParams* lfopar;
-    int err; 
-    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))
-        return err;
+    PATCH_NULL_LFO_CHECKS
     *modsrc_id = lfopar->am1_id;
     return 0;
 }
 
 int patch_get_lfo_am2_src(int patch_id, int lfo_id, int* modsrc_id)
 {
-    LFOParams* lfopar;
-    int err; 
-    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))
-        return err;
+    PATCH_NULL_LFO_CHECKS
     *modsrc_id = lfopar->am2_id;
     return 0;
 }
 
 int patch_get_lfo_am1_amt(int patch_id, int lfo_id, float* amount)
 {
-    LFOParams* lfopar;
-    int err; 
-    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))
-        return err;
+    PATCH_NULL_LFO_CHECKS
     *amount = lfopar->am1_amt;
     return 0;
 }
 
 int patch_get_lfo_am2_amt(int patch_id, int lfo_id, float* amount)
 {
-    LFOParams* lfopar;
-    int err; 
-    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))
-        return err;
+    PATCH_NULL_LFO_CHECKS
     *amount = lfopar->am2_amt;
     return 0;
 }

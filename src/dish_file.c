@@ -113,7 +113,6 @@ dish_file_write_param(xmlNodePtr nodeparent, int patch_id,
     float   vel_amt;
     int     modsrc;
     float   modamt;
-    float   velsens;
     float   keytrack;
 
     int     last_mod_slot = MAX_MOD_SLOTS;
@@ -124,8 +123,6 @@ dish_file_write_param(xmlNodePtr nodeparent, int patch_id,
         return -1;
 
     param_names = names_params_get();
-
-    patch_get_vel_amount(patch_id, param, &vel_amt);
 
     switch(param)
     {
@@ -154,12 +151,12 @@ dish_file_write_param(xmlNodePtr nodeparent, int patch_id,
     }
 
     /* velocity sensing */
-    patch_get_vel_amount(patch_id, param, &velsens);
-    snprintf(buf, BUFSIZE, "%f", velsens);
+    patch_param_get_vel_amount(patch_id, param, &vel_amt);
+    snprintf(buf, BUFSIZE, "%f", vel_amt);
     xmlNewProp(node1, BAD_CAST "velocity_sensing", BAD_CAST buf);
 
     /* keyboard tracking */
-    patch_get_key_amount(patch_id, param, &keytrack);
+    patch_param_get_key_amount(patch_id, param, &keytrack);
     snprintf(buf, BUFSIZE, "%f", keytrack);
     xmlNewProp(node1, BAD_CAST "key_tracking", BAD_CAST buf);
 
@@ -167,8 +164,8 @@ dish_file_write_param(xmlNodePtr nodeparent, int patch_id,
     {
         snprintf(buf, BUFSIZE, "Mod%d", i + 1);
 
-        patch_get_mod_src(patch_id, param, i, &modsrc);
-        patch_get_mod_amt(patch_id, param, i, &modamt);
+        patch_param_get_mod_src(patch_id, param, i, &modsrc);
+        patch_param_get_mod_amt(patch_id, param, i, &modamt);
 
         node2 = xmlNewTextChild(node1, NULL, BAD_CAST buf, NULL);
         xmlNewProp(node2, BAD_CAST "source", BAD_CAST mod_src_name(modsrc));
@@ -178,11 +175,57 @@ dish_file_write_param(xmlNodePtr nodeparent, int patch_id,
 
     if (param == PATCH_PARAM_AMPLITUDE)
     {
-        patch_get_mod_src(patch_id, PATCH_PARAM_AMPLITUDE,
-                                    EG_MOD_SLOT, &modsrc);
+        patch_param_get_mod_src(patch_id, PATCH_PARAM_AMPLITUDE,
+                                          EG_MOD_SLOT, &modsrc);
         node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Env", NULL);
         xmlNewProp(node2, BAD_CAST "source", BAD_CAST mod_src_name(modsrc));
     }
+
+    return 0;
+}
+
+
+static int
+dish_file_write_bool(xmlNodePtr nodeparent, int patch_id,
+                                                PatchBoolType bool_type)
+{
+    xmlNodePtr  node1;
+    xmlNodePtr  node2;
+    char buf[BUFSIZE];
+    const char* nodestr;
+
+    bool    set;
+    float   thresh;
+    int     modsrc;
+
+    switch(bool_type)
+    {
+    case PATCH_BOOL_PORTAMENTO:
+        nodestr = "Portamento";
+        break;
+    case PATCH_BOOL_MONO:
+        nodestr = "Mono";
+        break;
+    case PATCH_BOOL_LEGATO:
+        nodestr = "Legato";
+        break;
+    default:
+        return -1;
+    }
+
+    patch_bool_get_all(patch_id, bool_type, &set, &thresh, &modsrc);
+
+    node1 = xmlNewTextChild(nodeparent, NULL, BAD_CAST nodestr, NULL);
+
+    xmlNewProp(node1, BAD_CAST "active",
+                        BAD_CAST ((set) ? "true" : "false"));
+
+    node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Mod", NULL);
+
+    xmlNewProp(node2, BAD_CAST "source", BAD_CAST mod_src_name(modsrc));
+
+    snprintf(buf, BUFSIZE, "%f", thresh);
+    xmlNewProp(node2, BAD_CAST "threshold", BAD_CAST buf);
 
     return 0;
 }
@@ -471,10 +514,7 @@ int dish_file_write(const char *name)
         xmlNewProp(node1,   BAD_CAST "cut_by", BAD_CAST buf);
 
         /* voice portamento */
-        xmlNewProp(node1,   BAD_CAST "portamento",
-                            BAD_CAST (patch_get_portamento(patch_id[i])
-                                        ? "true"
-                                        : "false"));
+        dish_file_write_bool(node1, patch_id[i], PATCH_BOOL_PORTAMENTO);
 
         /* voice portamento_time */
         snprintf(buf, BUFSIZE, "%f",
@@ -918,11 +958,11 @@ int dish_file_read_param(xmlNodePtr node,   int patch_id,
 
     if ((prop = xmlGetProp(node, BAD_CAST "velocity_sensing")))
         if (sscanf((const char*)prop, "%f", &n) == 1)
-            patch_set_vel_amount(patch_id, param, n);
+            patch_param_set_vel_amount(patch_id, param, n);
 
     if ((prop = xmlGetProp(node, BAD_CAST "key_tracking")))
         if (sscanf((const char*)prop, "%f", &n) == 1)
-            patch_set_key_amount(patch_id, param, n);
+            patch_param_set_key_amount(patch_id, param, n);
 
     for (   node1 = node->children;
             node1 != NULL;
@@ -939,19 +979,57 @@ int dish_file_read_param(xmlNodePtr node,   int patch_id,
             --slot; /* slot 0 is named as MOD1 */
 
             if ((prop = xmlGetProp(node1, BAD_CAST "source")))
-                patch_set_mod_src(patch_id, param, slot,
-                    mod_src_id((const char*)prop, MOD_SRC_ALL));
+                patch_param_set_mod_src(patch_id, param, slot,
+                            mod_src_id((const char*)prop, MOD_SRC_ALL));
 
             if ((prop = xmlGetProp(node1, BAD_CAST "amount")))
                 if (sscanf((const char*)prop, "%f", &n) == 1)
-                    patch_set_mod_amt(patch_id, param, slot, n);
+                    patch_param_set_mod_amt(patch_id, param, slot, n);
         }
         else if ((param == PATCH_PARAM_AMPLITUDE
                 && xmlStrcmp(node1->name, BAD_CAST "Env") == 0))
         {
             if ((prop = xmlGetProp(node1, BAD_CAST "source")))
-                patch_set_mod_src(patch_id, param, EG_MOD_SLOT,
-                    mod_src_id((const char*)prop, MOD_SRC_ALL));
+                patch_param_set_mod_src(patch_id, param, EG_MOD_SLOT,
+                            mod_src_id((const char*)prop, MOD_SRC_ALL));
+        }
+        else
+        {
+            errmsg("ignoring:%s\n", (const char*)node1->name);
+        }
+    }
+
+    return 0;
+}
+
+
+int dish_file_read_bool(xmlNodePtr node, int patch_id,
+                                            PatchBoolType bool_type)
+{
+    const char* pname = 0;
+    float       n;
+    xmlChar*    prop;
+    xmlNodePtr  node1;
+
+    if ((prop = xmlGetProp(node, BAD_CAST "active")))
+        patch_bool_set_on(patch_id, bool_type, xmlstr_to_bool(prop));
+
+    for (   node1 = node->children;
+            node1 != NULL;
+            node1 = node1->next)
+    {
+        if (node1->type != XML_ELEMENT_NODE)
+            continue;
+
+        if (xmlStrcmp(node1->name, BAD_CAST "Mod") == 0)
+        {
+            if ((prop = xmlGetProp(node1, BAD_CAST "source")))
+                patch_bool_set_mod_src(patch_id, bool_type,
+                            mod_src_id((const char*)prop, MOD_SRC_GLOBALS));
+
+            if ((prop = xmlGetProp(node1, BAD_CAST "threshold")))
+                if (sscanf((const char*)prop, "%f", &n) == 1)
+                    patch_bool_set_thresh(patch_id, bool_type, n);
         }
         else
         {
@@ -966,6 +1044,8 @@ int dish_file_read_param(xmlNodePtr node,   int patch_id,
 int dish_file_read_voice(xmlNodePtr node, int patch_id)
 {
     xmlChar*    prop;
+    xmlNodePtr  node1;
+
     float n;
     int i;
 
@@ -977,9 +1057,6 @@ int dish_file_read_voice(xmlNodePtr node, int patch_id)
         if (sscanf((const char*)prop, "%d", &i))
             patch_set_cut_by(patch_id, i);
 
-    if ((prop = xmlGetProp(node, BAD_CAST "portamento")))
-        patch_set_portamento(patch_id, xmlstr_to_bool(prop));
-
     if ((prop = xmlGetProp(node, BAD_CAST "portamento_time")))
         if (sscanf((const char*)prop, "%f", &n))
             patch_set_portamento_time(patch_id, n);
@@ -989,6 +1066,24 @@ int dish_file_read_voice(xmlNodePtr node, int patch_id)
 
     if ((prop = xmlGetProp(node, BAD_CAST "legato")))
         patch_set_legato(patch_id, xmlstr_to_bool(prop));
+
+
+    for (   node1 = node->children;
+            node1 != NULL;
+            node1 = node1->next)
+    {
+        if (node1->type != XML_ELEMENT_NODE)
+            continue;
+
+        if (xmlStrcmp(node1->name, BAD_CAST "Portamento") == 0)
+        {
+            dish_file_read_bool(node1, patch_id, PATCH_BOOL_PORTAMENTO);
+        }
+        else
+        {
+            errmsg("ignoring:%s\n", (const char*)node1->name);
+        }
+    }
 
     return 0;
 }

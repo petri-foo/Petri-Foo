@@ -165,16 +165,46 @@ int patch_param_get_value(int patch_id, PatchParamType, float* val);
 int patch_param_set_value(int patch_id, PatchParamType, float  val);
 
 /* modulation setters */
-int patch_set_mod_src(int patch_id, PatchParamType, int slot, int src_id);
-int patch_set_mod_amt(int patch_id, PatchParamType, int slot, float amt);
-int patch_set_vel_amount(int id, PatchParamType param, float amt);
-int patch_set_key_amount(int id, PatchParamType param, float amt);
+int patch_param_set_mod_src(int patch_id, PatchParamType,   int slot,
+                                                            int src_id);
+int patch_param_set_mod_amt(int patch_id, PatchParamType,   int slot,
+                                                            float amt);
+int patch_param_set_vel_amount(int id, PatchParamType param,float amt);
+int patch_param_set_key_amount(int id, PatchParamType param,float amt);
 
 /* modulation getters */
-int patch_get_mod_src(int patch_id, PatchParamType, int slot, int* src_id);
-int patch_get_mod_amt(int patch_id, PatchParamType, int slot, float* amt);
-int patch_get_vel_amount(int id, PatchParamType param, float* val);
-int patch_get_key_amount(int id, PatchParamType param, float* val);
+int patch_param_get_mod_src(int patch_id, PatchParamType,   int slot,
+                                                            int* src_id);
+int patch_param_get_mod_amt(int patch_id, PatchParamType,   int slot,
+                                                            float* amt);
+int patch_param_get_vel_amount(int id, PatchParamType param,float* val);
+int patch_param_get_key_amount(int id, PatchParamType param,float* val);
+
+
+/* PatchBool set/get */
+int patch_bool_set_on(      int patch_id, PatchBoolType, bool);
+int patch_bool_set_thresh(  int patch_id, PatchBoolType, float);
+int patch_bool_set_mod_src( int patch_id, PatchBoolType, int mod_id);
+
+int patch_bool_get_all(     int patch_id, PatchBoolType, bool*  on,
+                                                         float* thresh,
+                                                         int*   mod_id);
+
+int patch_bool_get_on(      int patch_id, PatchBoolType, bool*);
+int patch_bool_get_thresh(  int patch_id, PatchBoolType, float*);
+int patch_bool_get_mod_src( int patch_id, PatchBoolType, int* mod_id);
+
+/* PatchFloat set/get */
+int patch_float_set_assign( int patch_id, PatchFloatType, float);
+int patch_float_set_mod_src(int patch_id, PatchFloatType, int mod_id);
+int patch_float_set_mod_amt(int patch_id, PatchFloatType, float);
+
+int patch_float_get_assign( int patch_id, PatchFloatType, float*);
+int patch_float_get_mod_src(int patch_id, PatchFloatType, int* mod_id);
+int patch_float_get_mod_amt(int patch_id, PatchFloatType, float*);
+int patch_float_get_all(    int patch_id, PatchFloatType, float* assign,
+                                                          float* mod_amt,
+                                                          int*   mod_id);
 
 /* lfo freq modulation setters */
 int patch_set_lfo_fm1_src(int patch_id, int lfo_id, int modsrc_id);

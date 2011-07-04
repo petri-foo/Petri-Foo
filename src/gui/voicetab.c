@@ -27,6 +27,8 @@
 #include "voicetab.h"
 #include "gui.h"
 #include "patch_set_and_get.h"
+#include "bool_section.h"
+#include "float_section.h"
 
 
 typedef struct _VoiceTabPrivate VoiceTabPrivate;
@@ -41,10 +43,12 @@ struct _VoiceTabPrivate
     guint refresh;
     GtkWidget* cut_sb;
     GtkWidget* cutby_sb;
-    GtkWidget* time_fan;
+
     GtkWidget* mono_check;
-    GtkWidget* legato_check;
-    GtkWidget* porta_check;
+    GtkWidget* legato_sect;
+
+    GtkWidget* porta_sect;
+    GtkWidget* time_sect;
 };
 
 
@@ -73,44 +77,20 @@ static void cutby_cb(PhatSliderButton* button, VoiceTabPrivate* p)
 }
 
 
-static void porta_cb(GtkToggleButton* button, VoiceTabPrivate* p)
+static void porta_cb(BoolSection* b, VoiceTabPrivate* p)
 {
-    patch_set_portamento(p->patch, gtk_toggle_button_get_active(button));
-}
-
-
-static void porta_cb2(GtkToggleButton* button, VoiceTabPrivate* p)
-{
-    if (gtk_toggle_button_get_active(button))
-        gtk_widget_set_sensitive(p->time_fan, TRUE);
+    if (bool_section_get_active(b))
+        gtk_widget_set_sensitive(p->time_sect, TRUE);
     else
-        gtk_widget_set_sensitive(p->time_fan, FALSE);
-}
-
-
-static void time_cb(PhatFanSlider* fan, VoiceTabPrivate* p)
-{
-    float val = phat_fan_slider_get_value(fan);
-    patch_set_portamento_time(p->patch, val);
+        gtk_widget_set_sensitive(p->time_sect, FALSE);
 }
 
 
 static void mono_cb(GtkToggleButton* button, VoiceTabPrivate* p)
 {
     patch_set_monophonic(p->patch, gtk_toggle_button_get_active(button));
-}
-
-
-static void mono_cb2(GtkToggleButton* button, VoiceTabPrivate* p)
-{
-    gtk_widget_set_sensitive(p->legato_check, 
+    gtk_widget_set_sensitive(p->legato_sect,
                             gtk_toggle_button_get_active(button));
-}
-
-
-static void legato_cb(GtkToggleButton* button, VoiceTabPrivate* p)
-{
-    patch_set_legato(p->patch, gtk_toggle_button_get_active(button));
 }
 
 
@@ -120,18 +100,12 @@ static void connect(VoiceTabPrivate* p)
                         G_CALLBACK(cut_cb), (gpointer)p);
     g_signal_connect(G_OBJECT(p->cutby_sb), "value-changed",
                         G_CALLBACK(cutby_cb), (gpointer)p);
+
     g_signal_connect(G_OBJECT(p->mono_check), "toggled",
                         G_CALLBACK(mono_cb), (gpointer)p);
-    g_signal_connect(G_OBJECT(p->mono_check), "toggled",
-                        G_CALLBACK(mono_cb2), (gpointer)p);
-    g_signal_connect(G_OBJECT(p->legato_check), "toggled",
-                        G_CALLBACK(legato_cb), (gpointer)p);
-    g_signal_connect(G_OBJECT(p->porta_check), "toggled",
+
+    g_signal_connect(G_OBJECT(p->porta_sect), "toggled",
                         G_CALLBACK(porta_cb), (gpointer)p);
-    g_signal_connect(G_OBJECT(p->porta_check), "toggled",
-                        G_CALLBACK(porta_cb2), (gpointer)p);
-    g_signal_connect(G_OBJECT(p->time_fan), "value-changed",
-                        G_CALLBACK(time_cb), (gpointer)p);
 }
 
 
@@ -140,10 +114,7 @@ static void block(VoiceTabPrivate* p)
     g_signal_handlers_block_by_func(p->cut_sb,      cut_cb,     p);
     g_signal_handlers_block_by_func(p->cutby_sb,    cutby_cb,   p);
     g_signal_handlers_block_by_func(p->mono_check,  mono_cb,    p);
-    g_signal_handlers_block_by_func(p->legato_check,legato_cb,  p);
-    g_signal_handlers_block_by_func(p->porta_check, porta_cb,   p);
-    g_signal_handlers_block_by_func(p->time_fan,    time_cb,    p);
-    /* *_cb2 intentionally omitted */
+    g_signal_handlers_block_by_func(p->porta_sect,  porta_cb,   p);
 }
 
 
@@ -152,33 +123,7 @@ static void unblock(VoiceTabPrivate* p)
     g_signal_handlers_unblock_by_func(p->cut_sb,        cut_cb,     p);
     g_signal_handlers_unblock_by_func(p->cutby_sb,      cutby_cb,   p);
     g_signal_handlers_unblock_by_func(p->mono_check,    mono_cb,    p);
-    g_signal_handlers_unblock_by_func(p->legato_check,  legato_cb,  p);
-    g_signal_handlers_unblock_by_func(p->porta_check,   porta_cb,   p);
-    g_signal_handlers_unblock_by_func(p->time_fan,      time_cb,    p);
-    /* *_cb2 intentionally omitted */
-}
-
-
-static gboolean refresh(gpointer data)
-{
-    VoiceTabPrivate* p = data;
-    gboolean porta;
-    float time;
-
-    if (p->patch < 0)
-        return TRUE;
-
-    porta = patch_get_portamento(p->patch);
-    time = patch_get_portamento_time(p->patch);
-
-    block(p);
-
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(p->porta_check), porta);
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->time_fan), time);
-
-    unblock(p);
-
-    return TRUE;
+    g_signal_handlers_unblock_by_func(p->porta_sect,    porta_cb,   p);
 }
 
 
@@ -186,11 +131,14 @@ static void voice_tab_init(VoiceTab* self)
 {
     VoiceTabPrivate* p = VOICE_TAB_GET_PRIVATE(self);
     GtkBox* box = GTK_BOX(self);
-    GtkWidget* title;
     GtkWidget* table;
     GtkTable* t;
-    GtkWidget* pad;
-    GtkWidget* label;
+
+    int a1 = 0, a2 = 1;
+    int b1 = 1, b2 = 2;
+    int c1 = 2, c2 = 3;
+
+    int y = 0;
 
     p->patch = -1;
     p->refresh = -1;
@@ -198,45 +146,17 @@ static void voice_tab_init(VoiceTab* self)
     gtk_container_set_border_width(GTK_CONTAINER(self), GUI_BORDERSPACE);
 
     /* table */
-    table = gtk_table_new(8, 6, FALSE);
+    table = gtk_table_new(8, 3, FALSE);
     t = (GtkTable*) table;
-    gtk_box_pack_start(box, table, FALSE, FALSE, 0);
-    gtk_widget_show(table);
-    
-    /* voice title */
-    title = gui_title_new("Voice");
-    gtk_table_attach_defaults(t, title, 0, 6, 0, 1);
-    gtk_widget_show(title);
+    gui_pack(box, table);
 
-    /* indentation */
-    pad = gui_hpad_new(GUI_INDENT);
-    gtk_table_attach(t, pad, 0, 1, 1, 2, 0, 0, 0, 0);
-    gtk_widget_show(pad);
-    
-    /* voice title padding */
-    pad = gui_vpad_new(GUI_TITLESPACE);
-    gtk_table_attach(t, pad, 1, 2, 1, 2, 0, 0, 0, 0);
-    gtk_widget_show(pad);
+    /* title */
+    gui_attach(t, gui_title_new("Voice"), a1, c2, y, y + 1);
+    ++y;
 
-    /* portamento title padding */
-    pad = gui_vpad_new(GUI_TITLESPACE);
-    gtk_table_attach(t, pad, 1, 2, 6, 7, 0, 0, 0, 0);
-    gtk_widget_show(pad);
-
-    /* cut-mono column spacing */
-    pad = gui_hpad_new(GUI_SECSPACE);
-    gtk_table_attach(t, pad, 4, 5, 1, 2, 0, 0, 0, 0);
-    gtk_widget_show(pad);
-
-    /* time-fan column spacing */
-    pad = gui_hpad_new(GUI_TEXTSPACE);
-    gtk_table_attach(t, pad, 2, 3, 1, 2, 0, 0, 0, 0);
-    gtk_widget_show(pad);
-
-    /* section spacing */
-    pad = gui_vpad_new(GUI_SECSPACE);
-    gtk_table_attach(t, pad, 0, 1, 4, 5, 0, 0, 0, 0);
-    gtk_widget_show(pad);
+    /* title padding  */
+    gui_attach(t, gui_vpad_new(GUI_TITLESPACE), a1, c2, y, y + 1);
+    ++y;
 
     /* cut sliderbutton */
     p->cut_sb = phat_slider_button_new_with_range(0, 0, 99, 1, 0);
@@ -244,10 +164,8 @@ static void voice_tab_init(VoiceTab* self)
                                                     "Cut:", NULL);
     phat_slider_button_set_threshold(PHAT_SLIDER_BUTTON(p->cut_sb),
                                                     GUI_THRESHOLD);
-    gtk_table_attach_defaults(t, p->cut_sb, 1, 4, 2, 3);
-    gtk_widget_show(p->cut_sb);
+    gui_attach(t, p->cut_sb, a1, a2, y, y + 1);
 
-    gtk_table_set_row_spacing(t, 2, GUI_SPACING);
 
     /* cutby sliderbutton */
     p->cutby_sb = phat_slider_button_new_with_range(0, 0, 99, 1, 0);
@@ -255,41 +173,36 @@ static void voice_tab_init(VoiceTab* self)
                                                     "Cut by:", NULL);
     phat_slider_button_set_threshold(PHAT_SLIDER_BUTTON(p->cutby_sb),
                                                     GUI_THRESHOLD);
-    gtk_table_attach_defaults(t, p->cutby_sb, 1, 4, 3, 4);
-    gtk_widget_show(p->cutby_sb);
+    gui_attach(t, p->cutby_sb, b1, b2, y, y + 1);
+    ++y;
 
-    /* mono sliderbutton */
+    /* portamento control */
+    p->porta_sect = bool_section_new();
+    bool_section_set_bool(  BOOL_SECTION(p->porta_sect),
+                            PATCH_BOOL_PORTAMENTO);
+    gui_attach(t, p->porta_sect, a1, c2, y, y + 1);
+    ++y;
+
+    p->time_sect = float_section_new();
+    float_section_set_float(FLOAT_SECTION(p->time_sect),
+                            PATCH_FLOAT_PORTAMENTO_TIME);
+    gui_attach(t, p->time_sect, a1, c2, y, y + 1);
+    ++y;
+
+    /* mono check button */
     p->mono_check = gtk_check_button_new_with_label("Monophonic");
-    gtk_table_attach_defaults(t, p->mono_check, 5, 6, 2, 3);
-    gtk_widget_show(p->mono_check);
+    gui_attach(t, p->mono_check, a1, a2, y, y + 1);
+    ++y;
 
-    /* legato sliderbutton */
-    p->legato_check = gtk_check_button_new_with_label("Legato");
-    gtk_table_attach_defaults(t, p->legato_check, 5, 6, 3, 4);
-    gtk_widget_show(p->legato_check);
-    gtk_widget_set_sensitive(p->legato_check, FALSE);
+    /* legato control */
+    p->legato_sect = bool_section_new();
+    bool_section_set_bool(  BOOL_SECTION(p->legato_sect),
+                            PATCH_BOOL_LEGATO);
+    gui_attach(t, p->legato_sect, a1, c2, y, y + 1);
+    ++y;
 
-    /* portamento checkbox */
-    title = gui_title_new("Portamento");
-    p->porta_check = gtk_check_button_new();
-    gtk_container_add(GTK_CONTAINER(p->porta_check), title);
-    gtk_table_attach_defaults(t, p->porta_check, 0, 6, 5, 6);
-    gtk_widget_show(title);
-    gtk_widget_show(p->porta_check);
-
-    /* time fan */
-    label = gtk_label_new("Time:");
-    p->time_fan = phat_hfan_slider_new_with_range(0.05, 0.0, 1.0, 0.01);
-    gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
-    gtk_table_attach(t, label, 1, 2, 7, 8, GTK_FILL, 0, 0, 0);
-    gtk_table_attach_defaults(t, p->time_fan, 3, 4, 7, 8);
-    gtk_widget_show(label);
-    gtk_widget_show(p->time_fan);
-    gtk_widget_set_sensitive(p->time_fan, FALSE);
-
-    /* done */
+    /* done! */
     connect(p);
-    p->refresh = g_timeout_add(GUI_REFRESH_TIMEOUT, refresh, (gpointer)p);
 }
 
 
@@ -323,11 +236,15 @@ void voice_tab_set_patch(VoiceTab* self, int patch)
     phat_slider_button_set_value(PHAT_SLIDER_BUTTON(p->cut_sb), cut);
     phat_slider_button_set_value(PHAT_SLIDER_BUTTON(p->cutby_sb), cutby);
 
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(p->porta_check), porta);
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(p->mono_check), mono);
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(p->legato_check),legato);
+    bool_section_set_patch(BOOL_SECTION(p->porta_sect), patch);
 
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->time_fan), time);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(p->mono_check), mono);
+
+    bool_section_set_patch(BOOL_SECTION(p->legato_sect), patch);
+    float_section_set_patch(FLOAT_SECTION(p->time_sect), patch);
+
+    gtk_widget_set_sensitive(p->legato_sect, mono);
+    gtk_widget_set_sensitive(p->time_sect, porta);
 
     unblock(p);
 }

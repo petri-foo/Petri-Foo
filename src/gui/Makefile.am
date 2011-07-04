@@ -4,8 +4,10 @@ libgui_a_SOURCES = 					\
 	audio-settings.c	audio-settings.h	\
 	bank-ops.c		bank-ops.h		\
 	basic_combos.c		basic_combos.h		\
+	bool_section.c		bool_section.h		\
 	channelsection.c	channelsection.h	\
 	envelopetab.c		envelopetab.h		\
+	float_section.c		float_section.h		\
 	gui.c			gui.h			\
 	idselector.c		idselector.h		\
 	lfotab.c		lfotab.h		\

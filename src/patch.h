@@ -188,6 +188,25 @@ typedef enum
 } PatchParamType;
 
 
+typedef enum
+{
+    PATCH_BOOL_INVALID =        -1,
+    PATCH_BOOL_PORTAMENTO =     0,
+    PATCH_BOOL_MONO,
+    PATCH_BOOL_LEGATO,
+
+} PatchBoolType;
+
+
+typedef enum
+{
+    PATCH_FLOAT_INVALID =           -1,
+    PATCH_FLOAT_PORTAMENTO_TIME =   0
+
+} PatchFloatType;
+
+
+
 void patch_control_init    (void);
 
 /* playback and rendering functions  */
