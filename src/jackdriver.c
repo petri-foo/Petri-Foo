@@ -236,6 +236,10 @@ static int start(void)
 #ifdef HAVE_JACK_SESSION
     client = jack_client_open(instancename,
                                JackSessionID, NULL, session_uuid);
+
+debug("session_uuid:'%s'\n",session_uuid);
+
+
 #else
     client = jack_client_open(instancename, JackNullOption, NULL);
 #endif
