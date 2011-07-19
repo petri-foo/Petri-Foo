@@ -80,19 +80,20 @@ static void param2_cb(GtkWidget* w, ModSectionPrivate* p)
 static void vel_sens_cb(GtkWidget* w, ModSectionPrivate* p)
 {
     float val  = phat_fan_slider_get_value(PHAT_FAN_SLIDER(w));
-    patch_set_vel_amount(p->patch_id, p->param, val);
+    patch_param_set_vel_amount(p->patch_id, p->param, val);
 }
 
 static void key_track_cb(GtkWidget* w, ModSectionPrivate* p)
 {
     float val  = phat_fan_slider_get_value(PHAT_FAN_SLIDER(w));
-    patch_set_key_amount(p->patch_id, p->param, val);
+    patch_param_set_key_amount(p->patch_id, p->param, val);
 }
 
 
 static void mod_src_cb(GtkComboBox* combo, ModSectionPrivate* p)
 {
     int i;
+    gboolean active;
 
     for (i = 0; i < MAX_MOD_SLOTS; ++i)
         if (combo == GTK_COMBO_BOX(p->mod_combo[i]))
@@ -104,7 +105,8 @@ static void mod_src_cb(GtkComboBox* combo, ModSectionPrivate* p)
         return;
     }
 
-    mod_src_callback_helper(p->patch_id, i, combo, p->param );
+    active = mod_src_callback_helper(p->patch_id, i, combo, p->param);
+    gtk_widget_set_sensitive(p->mod_amount[i], active);
 }
 
 static void mod_amount_cb(GtkWidget* w, ModSectionPrivate* p)
@@ -115,16 +117,12 @@ static void mod_amount_cb(GtkWidget* w, ModSectionPrivate* p)
 
     if (p->param == PATCH_PARAM_AMPLITUDE)
         --last_slot;
-    else
-    {
-        if (p->param == PATCH_PARAM_PITCH)
-            val = phat_slider_button_get_value(PHAT_SLIDER_BUTTON(w))
-                                                / PATCH_MAX_PITCH_STEPS;
-        else
-            val = phat_fan_slider_get_value(PHAT_FAN_SLIDER(w));
-    }
 
-    debug("amount val:%f\n",val);
+    if (p->param == PATCH_PARAM_PITCH)
+        val = phat_slider_button_get_value(PHAT_SLIDER_BUTTON(w))
+                                                / PATCH_MAX_PITCH_STEPS;
+    else
+        val = phat_fan_slider_get_value(PHAT_FAN_SLIDER(w));
 
     for (i = 0; i < last_slot; ++i)
         if (w == p->mod_amount[i])
@@ -136,7 +134,7 @@ static void mod_amount_cb(GtkWidget* w, ModSectionPrivate* p)
         return;
     }
 
-    patch_set_mod_amt(p->patch_id, p->param, i, val);
+    patch_param_set_mod_amt(p->patch_id, p->param, i, val);
 }
 
 
@@ -246,25 +244,6 @@ unblock_mod_srcs:
 }
 
 
-
-/*  reflect certain midi cc changes of parameters in the gui
-    no longer required
-
-static gboolean refresh(gpointer data)
-{
-    ModSection* self = MOD_SECTION(data);
-    ModSectionPrivate* p = MOD_SECTION_GET_PRIVATE(self);
-
-    if (p->patch_id < 0)
-        return TRUE;
-
-    mod_section_set_patch(self, p->patch_id);
-
-    return TRUE;
-}
- */
-
-
 static void mod_section_init(ModSection* self)
 {
     ModSectionPrivate* p = MOD_SECTION_GET_PRIVATE(self);
@@ -295,6 +274,8 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
     const char* lstr;
     const char** param_names = names_params_get();
 
+    char buf[80];
+
     int i;
     int y = 0;
     int env_slot = -1;
@@ -318,12 +299,8 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
     gui_attach(t, gui_title_new(param_names[param]), a1, c2, y, y + 1);
     ++y;
 
-    /* indentation */
-    gui_attach(t, gui_hpad_new(GUI_INDENT), a1, a2, y, y + 1);
-    ++y;
-
     /* title padding */
-    gui_attach(t, gui_vpad_new(GUI_TITLESPACE), b1, b2, y, y + 1);
+    gui_attach(t, gui_vpad_new(GUI_TITLESPACE), a1, c2, y, y + 1);
     ++y;
 
     /* label column spacing (of some description!?) */
@@ -337,14 +314,16 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
     {
     case PATCH_PARAM_AMPLITUDE:
         lstr = "Level:";
-        env_slot = --last_mod_slot;
+        env_slot = EG_MOD_SLOT;
+        --last_mod_slot;
         break;
 
     case PATCH_PARAM_PANNING:   lstr = "Position:"; break;
     case PATCH_PARAM_PITCH:     lstr = "Tuning:";   break;
-                                                    break;
+    case PATCH_PARAM_RESONANCE: lstr = "Q:";        break;
     default:
-        lstr = param_names[param];
+        snprintf(buf, 80, "%s:", param_names[param]);
+        lstr = buf;
         break;
     }
 
@@ -407,17 +386,7 @@ create_mod_srcs:
         ++y;
     }
 
-    /* done */
     connect(p);
-
-    /*  add a timeout to allow the gui to reflect changes in
-        parameters which are changeable via midi cc mesages
-
-        nb: no longer required...
-
-    p->refresh = g_timeout_add(GUI_REFRESH_TIMEOUT, refresh,
-                                                    (gpointer)self);
-     */
 }
 
 
@@ -480,17 +449,17 @@ void mod_section_set_patch(ModSection* self, int patch_id)
     else if (p->param == PATCH_PARAM_AMPLITUDE)
         --last_slot;
 
-    patch_get_vel_amount(patch_id, p->param, &vsens);
-    patch_get_key_amount(patch_id, p->param, &ktrack);
+    patch_param_get_vel_amount(patch_id, p->param, &vsens);
+    patch_param_get_key_amount(patch_id, p->param, &ktrack);
 
 get_mod_srcs:
 
     for (i = 0; i < MAX_MOD_SLOTS; ++i)
     {
-        patch_get_mod_src(patch_id, p->param, i, &modsrc[i]);
+        patch_param_get_mod_src(patch_id, p->param, i, &modsrc[i]);
 
         if (i < last_slot)
-            patch_get_mod_amt(patch_id, p->param, i, &modamt[i]);
+            patch_param_get_mod_amt(patch_id, p->param, i, &modamt[i]);
 
         if (!mod_src_combo_get_iter_with_id(GTK_COMBO_BOX(p->mod_combo[i]),
                                                     modsrc[i], &moditer[i]))
@@ -523,11 +492,15 @@ set_mod_srcs:
             phat_slider_button_set_value(
                                 PHAT_SLIDER_BUTTON(p->mod_amount[i]),
                                 modamt[i] * PATCH_MAX_PITCH_STEPS);
+            gtk_widget_set_sensitive(p->mod_amount[i],
+                                        modsrc[i] != MOD_SRC_NONE);
         }
         else if (i < last_slot)
         {
             phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->mod_amount[i]),
                                                             modamt[i]);
+            gtk_widget_set_sensitive(p->mod_amount[i],
+                                        modsrc[i] != MOD_SRC_NONE);
         }
     }
 

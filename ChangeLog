@@ -1,4 +1,15 @@
-2011-07-14  James Morris <james@jwm-art.net>
+2011-07-19 James Morris <james@jwm-art.net>
+
+	* Minimum and maximum Velocity value specification
+	  for patche to allow velocity layering of patches.
+	  Thanks to Brendan Jones for submitting patch.
+
+	* mod_section.c: fix bug in amplitude modulation amount
+	  Finally fixed this bug by the removal of a dangerously
+	  misplaced else.
+
+
+2011-07-14 James Morris <james@jwm-art.net>
 
 	* Auto preview toggle added to the sample selector
 	  dialog so that samples automatically play without
@@ -8,7 +19,6 @@
 
 Thanks to Brendan Jones for submitting these additions.
 
-	
 
 2011-06-30  James Morris <james@jwm-art.net>
 

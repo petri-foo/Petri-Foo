@@ -506,98 +506,160 @@ static int lfo_from_id(int patch_id, int id, LFO** lfo, LFOParams** lfopar)
     return PATCH_LFO_ID_INVALID;
 }
 
-#define LFO_CHECKS                                              \
-    LFO*        lfo;                                            \
-    LFOParams*  lfopar;                                         \
-    int         err;                                            \
-    if ((err = lfo_from_id(patch_id, lfo_id, &lfo, &lfopar)))   \
-        return err;
-
-
 int patch_set_lfo_on (int patch_id, int lfo_id, bool state)
 {
-    LFO_CHECKS
+    LFO*        lfo;
+    LFOParams*  lfopar;
+    int         err;
+
+    if ((err = lfo_from_id(patch_id, lfo_id, &lfo, &lfopar)))
+        return err;
+
     lfopar->lfo_on = state;
+
     if (lfo)
         lfo_trigger(lfo, lfopar);
+
     return 0;
 }
 
 /* set the attack time of the param's LFO */
 int patch_set_lfo_attack (int patch_id, int lfo_id, float secs)
 {
-    LFO_CHECKS
+    LFO*        lfo;
+    LFOParams*  lfopar;
+    int         err;
+
+    if ((err = lfo_from_id(patch_id, lfo_id, &lfo, &lfopar)))
+        return err;
+
     if (secs < 0.0)
         return PATCH_PARAM_INVALID;
+
     lfopar->attack = secs;
+
     if (lfo)
         lfo_rigger(lfo, lfopar);
+
     return 0;
 }
 
 /* set the period length of the param's lfo in beats */
 int patch_set_lfo_beats (int patch_id, int lfo_id, float beats)
 {
-    LFO_CHECKS
+    LFO*        lfo;
+    LFOParams*  lfopar;
+    int         err;
+
+    if ((err = lfo_from_id(patch_id, lfo_id, &lfo, &lfopar)))
+        return err;
+
     if (beats < 0.0)
         return PATCH_PARAM_INVALID;
+
     lfopar->sync_beats = beats;
+
     if (lfo)
         lfo_rigger(lfo, lfopar);
+
     return 0;
 }
 
 /* set the delay time of the param's LFO */
 int patch_set_lfo_delay (int patch_id, int lfo_id, float secs)
 {
-    LFO_CHECKS
+    LFO*        lfo;
+    LFOParams*  lfopar;
+    int         err;
+
+    if ((err = lfo_from_id(patch_id, lfo_id, &lfo, &lfopar)))
+        return err;
+
     if (secs < 0.0)
         return PATCH_PARAM_INVALID;
+
     lfopar->delay = secs;
+
     if (lfo)
         lfo_rigger(lfo, lfopar);
+
     return 0;
 }
 
 /* set the frequency of the param's lfo */
 int patch_set_lfo_freq (int patch_id, int lfo_id, float freq)
 {
-    LFO_CHECKS
+    LFO*        lfo;
+    LFOParams*  lfopar;
+    int         err;
+
+    if ((err = lfo_from_id(patch_id, lfo_id, &lfo, &lfopar)))
+        return err;
+
     if (freq < 0.0)
         return PATCH_PARAM_INVALID;
+
     lfopar->freq = freq;
+
     if (lfo)
         lfo_rigger(lfo, lfopar);
+
     return 0;
 }
+
 
 /* set whether to constrain the param's LFOs to positive values or not */
 int patch_set_lfo_positive (int patch_id, int lfo_id, bool state)
 {
-    LFO_CHECKS
+    LFO*        lfo;
+    LFOParams*  lfopar;
+    int         err;
+
+    if ((err = lfo_from_id(patch_id, lfo_id, &lfo, &lfopar)))
+        return err;
+
     lfopar->positive = state;
+
     if (lfo)
         lfo_rigger(lfo, lfopar);
+
     return 0;
 }
+
 
 /* set the param's lfo shape */
 int patch_set_lfo_shape (int patch_id, int lfo_id, LFOShape shape)
 {
-    LFO_CHECKS
+    LFO*        lfo;
+    LFOParams*  lfopar;
+    int         err;
+
+    if ((err = lfo_from_id(patch_id, lfo_id, &lfo, &lfopar)))
+        return err;
+
     lfopar->shape = shape;
+
     if (lfo)
         lfo_rigger(lfo, lfopar);
+
     return 0;
 }
 
 /* set whether to the param's lfo should sync to tempo or not */
 int patch_set_lfo_sync (int patch_id, int lfo_id, bool state)
 {
-    LFO_CHECKS
+    LFO*        lfo;
+    LFOParams*  lfopar;
+    int         err;
+
+    if ((err = lfo_from_id(patch_id, lfo_id, &lfo, &lfopar)))
+        return err;
+
     lfopar->sync = state;
+
     if (lfo)
         lfo_rigger(lfo, lfopar);
+
     return 0;
 }
 
@@ -605,16 +667,12 @@ int patch_set_lfo_sync (int patch_id, int lfo_id, bool state)
 /*************************** LFO GETTERS ********************************/
 /************************************************************************/
 
-#define LFO_GET_CHECK                                           \
-    LFOParams*  lfopar;                                         \
-    int         err;                                            \
-    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))   \
-        return err;
-
-
 int patch_get_lfo_on(int patch_id, int lfo_id, bool* val)
 {
-    LFO_GET_CHECK
+    LFOParams*  lfopar;
+    int         err;
+    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))
+        return err;
     *val = lfopar->lfo_on;
     return 0;
 }
@@ -623,7 +681,10 @@ int patch_get_lfo_on(int patch_id, int lfo_id, bool* val)
 /* get the attack time of the param's LFO */
 int patch_get_lfo_attack (int patch_id, int lfo_id, float* val)
 {
-    LFO_GET_CHECK
+    LFOParams*  lfopar;
+    int         err;
+    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))
+        return err;
     *val = lfopar->attack;
     return 0;
 }
@@ -631,7 +692,10 @@ int patch_get_lfo_attack (int patch_id, int lfo_id, float* val)
 /* get the param's lfo period length in beats */
 int patch_get_lfo_beats (int patch_id, int lfo_id, float* val)
 {
-    LFO_GET_CHECK
+    LFOParams*  lfopar;
+    int         err;
+    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))
+        return err;
     *val = lfopar->sync_beats;
     return 0;
 }
@@ -639,7 +703,10 @@ int patch_get_lfo_beats (int patch_id, int lfo_id, float* val)
 /* get the delay time of the param's LFO */
 int patch_get_lfo_delay (int patch_id, int lfo_id, float* val)
 {
-    LFO_GET_CHECK
+    LFOParams*  lfopar;
+    int         err;
+    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))
+        return err;
     *val = lfopar->delay;
     return 0;
 }
@@ -647,14 +714,20 @@ int patch_get_lfo_delay (int patch_id, int lfo_id, float* val)
 /* get the param's lfo frequency */
 int patch_get_lfo_freq (int patch_id, int lfo_id, float* val)
 {
-    LFO_GET_CHECK
+    LFOParams*  lfopar;
+    int         err;
+    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))
+        return err;
     *val = lfopar->freq;
     return 0;
 }
 
 int patch_get_lfo_positive (int patch_id, int lfo_id, bool* val)
 {
-    LFO_GET_CHECK
+    LFOParams*  lfopar;
+    int         err;
+    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))
+        return err;
     *val = lfopar->positive;
     return 0;
 }
@@ -662,7 +735,10 @@ int patch_get_lfo_positive (int patch_id, int lfo_id, bool* val)
 /* get param's lfo shape */
 int patch_get_lfo_shape (int patch_id, int lfo_id, LFOShape* val)
 {
-    LFO_GET_CHECK
+    LFOParams*  lfopar;
+    int         err;
+    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))
+        return err;
     *val = lfopar->shape;
     return 0;
 }
@@ -670,7 +746,10 @@ int patch_get_lfo_shape (int patch_id, int lfo_id, LFOShape* val)
 /* get whether param's lfo is tempo synced or not */
 int patch_get_lfo_sync (int patch_id, int lfo_id, bool* val)
 {
-    LFO_GET_CHECK
+    LFOParams*  lfopar;
+    int         err;
+    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))
+        return err;
     *val = lfopar->sync;
     return 0;
 }
@@ -1126,33 +1205,6 @@ int patch_set_upper_note (int id, int note)
     return 0;
 }
 
-/* sets the patch lower velocity */ 
-int patch_set_lower_vel (int id, int vel)
-{
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-
-    if (vel < 0 || vel > 127)
-	return PATCH_VELOCITY_INVALID;
-
-    patches[id]->lower_vel = vel;
-    return 0;
-}
-
-/* sets the patch upper velocity */ 
-int patch_set_upper_vel (int id, int vel)
-{
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-
-    if (vel < 0 || vel > 127)
-	return PATCH_VELOCITY_INVALID;
-
-    patches[id]->upper_vel = vel;
-    return 0;
-}
-
-
 /* set the amplitude */
 int patch_set_amplitude (int id, float vol)
 {
@@ -1394,24 +1446,6 @@ int patch_get_upper_note (int id)
         return PATCH_ID_INVALID;
 
     return patches[id]->upper_note;
-}
-
-/* get the upper velocity trigger */
-int patch_get_upper_vel (int id)
-{
-    if (!isok(id))
-        return PATCH_ID_INVALID;
-
-    return patches[id]->upper_vel;
-}
-
-/* get the lower velocity trigger */
-int patch_get_lower_vel (int id)
-{
-    if (!isok(id))
-        return PATCH_ID_INVALID;
-
-    return patches[id]->lower_vel;
 }
 
 /* get the amplitude */

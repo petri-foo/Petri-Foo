@@ -128,6 +128,7 @@ enum
      PATCH_LFO_ID_INVALID =         -13,
      PATCH_MOD_SRC_INVALID =        -14,
      PATCH_MOD_AMOUNT_INVALID =     -15,
+     PATCH_VELOCITY_INVALID =       -16,
      PATCH_MOD_SLOT_INVALID
 };
 
@@ -186,6 +187,25 @@ typedef enum
     PATCH_PARAM_RESONANCE,
 
 } PatchParamType;
+
+
+typedef enum
+{
+    PATCH_BOOL_INVALID =        -1,
+    PATCH_BOOL_PORTAMENTO =     0,
+    PATCH_BOOL_MONO,
+    PATCH_BOOL_LEGATO,
+
+} PatchBoolType;
+
+
+typedef enum
+{
+    PATCH_FLOAT_INVALID =           -1,
+    PATCH_FLOAT_PORTAMENTO_TIME =   0
+
+} PatchFloatType;
+
 
 
 void patch_control_init    (void);

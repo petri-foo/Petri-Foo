@@ -163,37 +163,37 @@ int patch_create_default(void)
     /* controllers... */
 
     /* pitch */
-    patch_set_mod_src(  id, PATCH_PARAM_PITCH, 0, MOD_SRC_PITCH_WHEEL);
-    patch_set_mod_amt(  id, PATCH_PARAM_PITCH, 0,
+    patch_param_set_mod_src(id, PATCH_PARAM_PITCH, 0, MOD_SRC_PITCH_WHEEL);
+    patch_param_set_mod_amt(id, PATCH_PARAM_PITCH, 0,
                                         6.0f / PATCH_MAX_PITCH_STEPS);
 
-    patch_set_mod_src(  id, PATCH_PARAM_PITCH, 1, MOD_SRC_VLFO);
-    patch_set_mod_amt(  id, PATCH_PARAM_PITCH, 1,
+    patch_param_set_mod_src(id, PATCH_PARAM_PITCH, 1, MOD_SRC_VLFO);
+    patch_param_set_mod_amt(id, PATCH_PARAM_PITCH, 1,
                                         2.0f / PATCH_MAX_PITCH_STEPS);
 
     /* AMPLITUDE EG_MOD_SLOT has full effect, no need to set amount */
-    patch_set_mod_src(  id, PATCH_PARAM_AMPLITUDE,  EG_MOD_SLOT,
+    patch_param_set_mod_src(id, PATCH_PARAM_AMPLITUDE,  EG_MOD_SLOT,
                                                         MOD_SRC_EG);
-    patch_set_mod_src(  id, PATCH_PARAM_AMPLITUDE, 0,
+    patch_param_set_mod_src(id, PATCH_PARAM_AMPLITUDE, 0,
                                 MOD_SRC_MIDI_CC | CC_CHANNEL_VOLUME);
-    patch_set_mod_amt(  id, PATCH_PARAM_AMPLITUDE, 0, 1.0f);
+    patch_param_set_mod_amt(id, PATCH_PARAM_AMPLITUDE, 0, 1.0f);
 
     /* pan */
-    patch_set_mod_src(  id, PATCH_PARAM_PANNING, 0,
+    patch_param_set_mod_src(id, PATCH_PARAM_PANNING, 0,
                                 MOD_SRC_MIDI_CC | CC_PAN);
-    patch_set_mod_amt(  id, PATCH_PARAM_PANNING, 0, 1.0f);
+    patch_param_set_mod_amt(id, PATCH_PARAM_PANNING, 0, 1.0f);
 
     /* filter cutoff */
     patch_param_set_value(  id, PATCH_PARAM_CUTOFF, 0.5f);
-    patch_set_mod_src(  id, PATCH_PARAM_CUTOFF, 0,
+    patch_param_set_mod_src(id, PATCH_PARAM_CUTOFF, 0,
                                 MOD_SRC_MIDI_CC | CC_SNDCTRL5_BRIGHTNESS);
-    patch_set_mod_amt(  id, PATCH_PARAM_CUTOFF, 0, 1.0f);
+    patch_param_set_mod_amt(id, PATCH_PARAM_CUTOFF, 0, 1.0f);
 
     /* filter resonance */
     patch_param_set_value(  id, PATCH_PARAM_RESONANCE, 0.0f);
-    patch_set_mod_src(  id, PATCH_PARAM_RESONANCE, 0,
+    patch_param_set_mod_src(id, PATCH_PARAM_RESONANCE, 0,
                                 MOD_SRC_MIDI_CC | CC_SNDCTRL2_TIMBRE);
-    patch_set_mod_amt(  id, PATCH_PARAM_RESONANCE, 0, 0.975f);
+    patch_param_set_mod_amt(id, PATCH_PARAM_RESONANCE, 0, 0.975f);
 
 
     /* setup VLFO0 to provide the pitch modulation */
@@ -210,6 +210,8 @@ int patch_create_default(void)
     patch_sample_load(id, "Default", 0, 0, 0);
     p->lower_note = 36;
     p->upper_note = 83;
+    p->lower_vel  = 0;
+    p->upper_vel  = 127;
 
     patch_set_name(id, "Default");
 

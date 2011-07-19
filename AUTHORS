@@ -65,3 +65,10 @@
   forker of Specimen to Petri-Foo, primary developer of Petri-Foo
   added modulation routing, midi-cc as modulation sources, remover
   of deprecated GUI code, etc, etc, etc.
+
+
+* Brenden Jones <brendan.jones.it@gmail.com>
+
+  Added auto-preview and a keyboard shortcut to sample-selector,
+  and minimum and maximum velocity values for patch.
+

@@ -40,6 +40,9 @@ GtkWidget*      mod_src_new_combo_with_cell();
 GtkWidget*      mod_src_new_pitch_adjustment(void);
 
 
+int mod_src_combo_get_mod_src_id(GtkComboBox* combo);
+
+
 /*  mod_src_callback_helper
 
         for use in the mod src combo box callback, it reads the

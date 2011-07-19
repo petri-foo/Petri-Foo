@@ -477,13 +477,6 @@ int dish_file_write(const char *name)
 
         snprintf(buf, BUFSIZE, "%d", patch_get_upper_note(patch_id[i]));
         xmlNewProp(node2,   BAD_CAST "upper", BAD_CAST buf);
-        
-        snprintf(buf, BUFSIZE, "%d", patch_get_lower_vel(patch_id[i]));
-        xmlNewProp(node2,   BAD_CAST "velocity_lower", BAD_CAST buf);
-
-        snprintf(buf, BUFSIZE, "%d", patch_get_upper_vel(patch_id[i]));
-        xmlNewProp(node2,   BAD_CAST "velocity_upper", BAD_CAST buf);
-
 
         /*  ------------------------
             amplitude
@@ -704,7 +697,7 @@ int dish_file_read_sample(xmlNodePtr node, int patch_id)
         }
         else if (xmlStrcmp(node1->name, BAD_CAST "Note") == 0)
         {
-            int lower, root, upper, lower_vel, upper_vel;
+            int lower, root, upper;
 
             if ((prop = xmlGetProp(node1, BAD_CAST "root")))
                 if (sscanf((const char*)prop, "%d", &root) == 1)
@@ -717,14 +710,6 @@ int dish_file_read_sample(xmlNodePtr node, int patch_id)
             if ((prop = xmlGetProp(node1, BAD_CAST "upper")))
                 if (sscanf((const char*)prop, "%d", &upper) == 1)
                     patch_set_upper_note(patch_id,  upper);
-            
-            if ((prop = xmlGetProp(node1, BAD_CAST "velocity_lower")))
-                if (sscanf((const char*)prop, "%d", &lower_vel) == 1)
-                    patch_set_lower_vel(patch_id,  lower_vel);
-
-            if ((prop = xmlGetProp(node1, BAD_CAST "velocity_upper")))
-                if (sscanf((const char*)prop, "%d", &upper_vel) == 1)
-                    patch_set_upper_vel(patch_id,  upper_vel);
         }
         else
         {
