@@ -12,6 +12,12 @@
 	  JACK ports. This is required for JACK Session to work
 	  properly.
 
+	* patch.c, patch_set_and_get.c, mod_section.c:
+					inverted velocity mapping
+	  Allows negative setting of velocity sensitivity. Means
+	  you can cause low velocity to have the effect of high
+	  velocity and vice-versa.
+
 
 2011-07-14 James Morris <james@jwm-art.net>
 

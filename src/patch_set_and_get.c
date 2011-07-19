@@ -1569,7 +1569,7 @@ patch_param_set_vel_amount(int patch_id, PatchParamType param, float amt)
 {
     PATCH_PARAM_CHECKS
 
-    if (amt < 0.0 || amt > 1.0)
+    if (amt < -1.0 || amt > 1.0)
         return PATCH_PARAM_INVALID;
 
     p->vel_amt = amt;

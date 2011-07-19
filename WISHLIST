@@ -1,6 +1,3 @@
-lash -everyone
-jack-midi -everyone
-
 multiple jack outs -thorwil, yves potin
 envelope, velocity controllable plugins -thorwil, larsl
 

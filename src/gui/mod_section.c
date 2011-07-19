@@ -345,7 +345,7 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
 
     /* velocity sensitivity */
     gui_label_attach("Vel.Sens:", t, a1, a2, y, y + 1);
-    p->vel_sens = phat_hfan_slider_new_with_range(0.0, 0.0, 1.0, 0.1);
+    p->vel_sens = phat_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
     gui_attach(t, p->vel_sens, b1, b2, y, y + 1);
     ++y;
 

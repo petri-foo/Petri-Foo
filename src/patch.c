@@ -234,26 +234,6 @@ inline static void prepare_pitch(Patch* p, PatchVoice* v, int note)
 }
 
 
-/*
-inline static void patch_bool_mod(PatchBool* pb, Patch* p)
-{
-    pb->val = (pb->set && pb->mod_id)
-        ? (*(patch_mod_id_to_pointer(pb->mod_id, p, NULL)) > pb->thresh)
-        : pb->set;
-}
-
-inline static void patch_float_mod(PatchFloat* pp, Patch* p)
-{
-    pp->val = pp->set;
-
-    if (pp->mod_id)
-    {
-        const float* mod = patch_mod_id_to_pointer(pp->mod_id, p, NULL);
-        pp->val += *mod * pp->mod_amt;
-    }
-}
-*/
-
 inline static void patch_bool_mod(PatchBool* pb, Patch* p)
 {
     const float* mod = patch_mod_id_to_pointer(pb->mod_id, p, NULL);
@@ -520,7 +500,10 @@ pan (Patch * p, PatchVoice * v, int index, float *l, float *r)
             pan += *v->pan_mod[i] * p->pan.mod_amt[i];
 
     /* scale for velocity tracking */
-    pan = lerp(pan, pan * v->vel, p->pan.vel_amt);
+    if (p->pan.vel_amt < 0)
+        pan = lerp(pan, pan * (1.0 - v->vel), p->pan.vel_amt * -1);
+    else
+        pan = lerp(pan, pan * v->vel, p->pan.vel_amt);
 
     /* scale for key tracking */
     if (p->pan.key_amt < 0)
@@ -561,7 +544,11 @@ filter (Patch* p, PatchVoice* v, int index,  float* l, float* r)
             ffreq += *v->ffreq_mod[i] * p->ffreq.mod_amt[i];
 
     /* scale to velocity */
-    ffreq = lerp (ffreq, ffreq * v->vel, p->ffreq.vel_amt);
+    if (p->ffreq.vel_amt < 0)
+        ffreq = lerp(ffreq, ffreq * (1.0 - v->vel), p->ffreq.vel_amt * -1);
+    else
+        ffreq = lerp(ffreq, ffreq * v->vel, p->ffreq.vel_amt);
+
 
     /* scale for key tracking */
     if (p->ffreq.key_amt < 0)
@@ -585,7 +572,10 @@ filter (Patch* p, PatchVoice* v, int index,  float* l, float* r)
             freso += *v->freso_mod[i] * p->freso.mod_amt[i];
 
     /* scale to velocity */
-    freso = lerp(freso, freso * v->vel, p->freso.vel_amt);
+    if (p->freso.vel_amt < 0)
+        freso = lerp(freso, freso * (1.0 - v->vel), p->freso.vel_amt * -1);
+    else
+        freso = lerp(freso, freso * v->vel, p->freso.vel_amt);
 
     /* scale for key tracking */
     if (p->freso.key_amt < 0)
@@ -643,7 +633,11 @@ gain (Patch* p, PatchVoice* v, int index, float* l, float* r)
 
     /* velocity should be the last parameter considered because it
      * has the most "importance" */
-    vol = lerp(vol, vol * v->vel, p->vol.vel_amt);
+    if (p->vol.vel_amt < 0)
+        vol = lerp(vol, vol * (1.0 - v->vel), p->vol.vel_amt * -1);
+    else
+        vol = lerp(vol, vol * v->vel, p->vol.vel_amt);
+
 
     /* apply fade in/out */
     vol *= v->fade_declick;
@@ -769,6 +763,11 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
     {
         recalc = true;
         pitch = lerp (pitch, pitch * v->vel, p->pitch.vel_amt);
+    }
+    else if (p->pitch.vel_amt < -ALMOST_ZERO)
+    {
+        recalc = true;
+        pitch = lerp (pitch, pitch * (1.0 - v->vel), -p->pitch.vel_amt);
     }
 
     if (recalc)

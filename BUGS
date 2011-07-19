@@ -1,31 +1,5 @@
-KNOWN BUGS
-==========
+File all bug reports in the bug tracker at https://sourceforge.net/tracker/?group_id=404816
 
--------------------------
-the list that follows is inherited from Specimen. i've not actually checked
-if it is still relevant or not - jwm 2011/03/28
-
-Known Bugs
-==========
-
-* Create some patches, load some samples, connect to JACK, and start
-running a MIDI pattern .  Then, flick back and forth between the
-patches quickly (a mousewheel is handy for this).  JACK will fail with
-something along the lines of "unable to execute processing graph
-(invalid file descriptor)".  JACK will stop processing data until
-Specimen is closed (it will exit with a segfault); JACK and all of
-it's clients will then resume normal operation. [This seems to have
-magically disappeared, which I find quite disturbing.  Can anybody
-reproduce it? --pete]
+Thanks.
 
 
-************************** THIS SHOULD BE LOOKED AT!
-* Sample start/stop and loop points don't behave properly when
-switching audio sample rates.  It's probably time to store the audio
-sample rate along with the session file, BTW.
-*******************************
-
-* Midi syncing appears to be broken with Fedora Core 2's kernel.  If
-you compile --enable-debug you'll see the gory details.
-
-* Midi syncing drifts like a bitch anyway.
