@@ -1103,7 +1103,7 @@ void patch_render (float *buf, int nframes)
 /* triggers all patches matching criteria */
 void patch_trigger (int chan, int note, float vel, Tick ticks)
 {
-    static int idp[PATCH_COUNT]; /* holds all patches to be activated */
+    static int idp[PATCH_COUNT];	/* holds all patches to be activated */
     int i, j;
 
     /* We gather up all of the patches that need to be activated here
@@ -1113,16 +1113,14 @@ void patch_trigger (int chan, int note, float vel, Tick ticks)
      * the same note and have the same cut/cut_by values will end up
      * stepping over each other before they both are heard.
      */
-    int int_vel = (int)(vel * 127.0);
+
     for (i = j = 0; i < PATCH_COUNT; i++)
     {
         if (patches[i]
          && patches[i]->active
          && patches[i]->channel == chan
          && (note >= patches[i]->lower_note
-          && note <= patches[i]->upper_note)
-         && (int_vel >= patches[i]->lower_vel
-          && int_vel <= patches[i]->upper_vel))
+         &&  note <= patches[i]->upper_note))
         {
             idp[j++] = i;
         }
@@ -1134,9 +1132,7 @@ void patch_trigger (int chan, int note, float vel, Tick ticks)
 
     /* do triggers */
     for (i = 0; i < j; i++)
-    {    
         patch_trigger_patch(patches[idp[i]], note, vel, ticks);
-    }
 }
 
 

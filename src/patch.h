@@ -128,6 +128,7 @@ enum
      PATCH_LFO_ID_INVALID =         -13,
      PATCH_MOD_SRC_INVALID =        -14,
      PATCH_MOD_AMOUNT_INVALID =     -15,
+     PATCH_VELOCITY_INVALID =       -16,
      PATCH_MOD_SLOT_INVALID
 };
 

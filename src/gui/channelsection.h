@@ -58,6 +58,8 @@ struct _ChannelSection
     /* <private> */
     int patch;
     GtkWidget* chan_sb;
+    GtkWidget* lower_vel_sb;
+    GtkWidget* upper_vel_sb;
 };
 
 

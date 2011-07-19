@@ -117,16 +117,12 @@ static void mod_amount_cb(GtkWidget* w, ModSectionPrivate* p)
 
     if (p->param == PATCH_PARAM_AMPLITUDE)
         --last_slot;
-    else
-    {
-        if (p->param == PATCH_PARAM_PITCH)
-            val = phat_slider_button_get_value(PHAT_SLIDER_BUTTON(w))
-                                                / PATCH_MAX_PITCH_STEPS;
-        else
-            val = phat_fan_slider_get_value(PHAT_FAN_SLIDER(w));
-    }
 
-    debug("amount val:%f\n",val);
+    if (p->param == PATCH_PARAM_PITCH)
+        val = phat_slider_button_get_value(PHAT_SLIDER_BUTTON(w))
+                                                / PATCH_MAX_PITCH_STEPS;
+    else
+        val = phat_fan_slider_get_value(PHAT_FAN_SLIDER(w));
 
     for (i = 0; i < last_slot; ++i)
         if (w == p->mod_amount[i])
@@ -318,7 +314,8 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
     {
     case PATCH_PARAM_AMPLITUDE:
         lstr = "Level:";
-        env_slot = --last_mod_slot;
+        env_slot = EG_MOD_SLOT;
+        --last_mod_slot;
         break;
 
     case PATCH_PARAM_PANNING:   lstr = "Position:"; break;

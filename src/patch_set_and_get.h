@@ -84,6 +84,8 @@ int patch_set_cut_by       (int id, int cut_by);
 int patch_set_cutoff       (int id, float freq);
 int patch_set_legato       (int id, bool val);
 int patch_set_lower_note   (int id, int note);
+int patch_set_lower_vel    (int id, int vel);
+int patch_set_upper_vel    (int id, int vel);
 
 /* both of these return mark_id on success */
 int patch_set_mark_frame   (int patch_id, int mark_id, int frame);
@@ -122,6 +124,8 @@ int     patch_get_display_index (int id);
 int     patch_get_frames        (int id);
 bool    patch_get_legato        (int id);
 int     patch_get_lower_note    (int id);
+int     patch_get_lower_vel     (int id);
+int     patch_get_upper_vel     (int id);
 
 int     patch_get_mark_frame      (int patch_id, int mark_id);
 int     patch_get_mark_frame_range(int patch_id, int mark_id,

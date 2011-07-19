@@ -57,6 +57,8 @@ Patch* patch_new(void)
     p->note =           60;
     p->lower_note =     60;
     p->upper_note =     60;
+    p->lower_vel =      0;
+    p->upper_vel =      127;
 
     p->cut =            0;
     p->cut_by =         0;

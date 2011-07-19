@@ -54,7 +54,9 @@ typedef struct _raw_box
     GtkWidget* box;
 
     /* box contains: */
+    GtkWidget* toggle_box;
     GtkWidget* check;
+    GtkWidget* auto_preview;
     GtkWidget* table;
 
     /* table contains: */
@@ -246,6 +248,18 @@ static void raw_toggled_cb(GtkToggleButton* raw_toggle, gpointer data)
 }
 
 
+static void selection_changed_cb(GtkFileChooser* dialog, gpointer data)
+{
+    (void)dialog;
+
+    raw_box* rb = (raw_box*)data;
+
+    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(rb->auto_preview)))
+        cb_preview(rb);
+}
+
+
+
 static raw_box* raw_box_new(GtkWidget* dialog)
 {
     GtkTable* t;
@@ -264,13 +278,25 @@ static raw_box* raw_box_new(GtkWidget* dialog)
     rb->endian = 0;
 
     rb->box = gtk_vbox_new(FALSE, 0);
+    rb->toggle_box = gtk_hbox_new(FALSE,10);
 
     rb->check = gtk_check_button_new_with_label("Raw/Headerless");
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(rb->check), FALSE);
     gtk_widget_show(rb->check);
-    gtk_box_pack_start(GTK_BOX(rb->box), rb->check, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(rb->toggle_box), rb->check, FALSE, FALSE, 0);
     g_signal_connect(GTK_OBJECT(rb->check), "toggled",
                                             G_CALLBACK(raw_toggled_cb), rb);
+
+    rb->auto_preview = gtk_check_button_new_with_label("Auto Preview");
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(rb->auto_preview), FALSE);
+    gtk_widget_show(rb->auto_preview);
+    gtk_box_pack_start(GTK_BOX(rb->toggle_box), rb->auto_preview, FALSE, FALSE, 0);
+    g_signal_connect(dialog, "selection-changed",
+                                            G_CALLBACK(selection_changed_cb), rb);
+   
+    gtk_box_pack_start(GTK_BOX(rb->box), rb->toggle_box, TRUE, TRUE, 0);
+    gtk_widget_show(rb->toggle_box);
+
     rb->table = gtk_table_new(5, 2, FALSE);
     gtk_box_pack_start(GTK_BOX(rb->box), rb->table, TRUE, TRUE, 0);
 

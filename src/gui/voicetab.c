@@ -216,8 +216,7 @@ void voice_tab_set_patch(VoiceTab* self, int patch)
 {
     VoiceTabPrivate* p = VOICE_TAB_GET_PRIVATE(self);
     int cut, cutby;
-    gboolean porta, mono, legato;
-    float time;
+    gboolean porta, mono;
 
     p->patch = patch;
 
@@ -228,8 +227,6 @@ void voice_tab_set_patch(VoiceTab* self, int patch)
     cutby = patch_get_cut_by(patch);
     porta = patch_get_portamento(patch);
     mono = patch_get_monophonic(patch);
-    legato = patch_get_legato(patch);
-    time = patch_get_portamento_time(patch);
 
     block(p);
 

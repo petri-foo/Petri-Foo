@@ -52,31 +52,79 @@ static void channel_cb(PhatSliderButton* button, ChannelSection* self)
 }
 
 
+static void lower_vel_cb(PhatSliderButton* button, ChannelSection* self)
+{
+    int lower_vel = (int)phat_slider_button_get_value(button);
+    PatchList* list = gui_get_patch_list();
+
+    patch_set_lower_vel(self->patch, lower_vel);
+    patch_list_update(list, patch_list_get_current_patch(list),
+                                                PATCH_LIST_PATCH);
+}
+
+
+static void upper_vel_cb(PhatSliderButton* button, ChannelSection* self)
+{
+    int upper_vel = (int)phat_slider_button_get_value(button);
+    PatchList* list = gui_get_patch_list();
+
+    patch_set_upper_vel(self->patch, upper_vel);
+    patch_list_update(list, patch_list_get_current_patch(list),
+                                                PATCH_LIST_PATCH);
+}
+
+
 static void connect(ChannelSection* self)
 {
     g_signal_connect(G_OBJECT(self->chan_sb), "value-changed",
                         G_CALLBACK(channel_cb), (gpointer) self);
+    g_signal_connect(G_OBJECT(self->lower_vel_sb), "value-changed",
+                        G_CALLBACK(lower_vel_cb), (gpointer) self);
+    g_signal_connect(G_OBJECT(self->upper_vel_sb), "value-changed",
+                        G_CALLBACK(upper_vel_cb), (gpointer) self);
 }
 
 
 static void channel_section_init(ChannelSection* self)
 {
     GtkBox* box = GTK_BOX(self);
-    GtkWidget* hbox = gtk_hbox_new(FALSE, 0);
-    GtkBox* h = GTK_BOX(hbox);
-
+    GtkWidget* table = gtk_table_new( 3, 2, 1);
+    GtkWidget* lbl_chan = gtk_label_new("Channel");
+    GtkWidget* lbl_lower = gtk_label_new("Lower Vel.");
+    GtkWidget* lbl_upper = gtk_label_new("Upper Vel.");
+    
     self->patch = -1;
 
-    gui_pack(box, hbox);
-    gui_label_pack("Channel:", h);
-    gui_pack(h, gui_hpad_new(GUI_TEXTSPACE));
+    gtk_table_attach_defaults(GTK_TABLE(table),lbl_chan,0,1,0,1);
+    gtk_widget_show(lbl_chan);
+    gtk_table_attach_defaults(GTK_TABLE(table),lbl_lower,0,1,1,2);
+    gtk_widget_show(lbl_lower);
+    gtk_table_attach_defaults(GTK_TABLE(table),lbl_upper,0,1,2,3);
+    gtk_widget_show(lbl_upper);
 
     /* channel sliderbutton */
     self->chan_sb = phat_slider_button_new_with_range(1, 1, MIDI_CHANS,1,0);
     phat_slider_button_set_threshold(PHAT_SLIDER_BUTTON(self->chan_sb),
                                                         GUI_THRESHOLD);
-    gui_pack(h, self->chan_sb);
+    gtk_table_attach_defaults(GTK_TABLE(table),self->chan_sb,1,2,0,1);
+    gtk_widget_show(self->chan_sb);
 
+    /* lower velocity slide */ 
+    self->lower_vel_sb = phat_slider_button_new_with_range(0, 0, 127, 1, 0);
+    phat_slider_button_set_threshold(PHAT_SLIDER_BUTTON(self->lower_vel_sb),
+                                                        GUI_THRESHOLD);
+    gtk_table_attach_defaults(GTK_TABLE(table),self->lower_vel_sb,1,2,1,2);
+    gtk_widget_show(self->lower_vel_sb);
+
+    /* upper velocity slider */
+    self->upper_vel_sb = phat_slider_button_new_with_range(127, 0, 127, 1, 0);
+    phat_slider_button_set_threshold(PHAT_SLIDER_BUTTON(self->upper_vel_sb),
+                                                        GUI_THRESHOLD);
+    gtk_table_attach_defaults(GTK_TABLE(table),self->upper_vel_sb,1,2,2,3);
+    gtk_widget_show(self->upper_vel_sb);
+    
+    gui_pack(box, table);
+    
     /* done */
     connect(self);
 }
@@ -97,6 +145,8 @@ static void unblock(ChannelSection* self)
 static void set_sensitive(ChannelSection* self, gboolean val)
 {
     gtk_widget_set_sensitive(self->chan_sb, val);
+    gtk_widget_set_sensitive(self->lower_vel_sb, val);
+    gtk_widget_set_sensitive(self->upper_vel_sb, val);
 }
 
 
@@ -108,7 +158,7 @@ GtkWidget* channel_section_new(void)
 
 void channel_section_set_patch(ChannelSection* self, int patch)
 {
-    int channel;
+    int channel, lower_vel, upper_vel;
 
     self->patch = patch;
 
@@ -118,9 +168,16 @@ void channel_section_set_patch(ChannelSection* self, int patch)
     {
         set_sensitive(self, TRUE);
         channel = patch_get_channel(patch);
+        lower_vel = patch_get_lower_vel(patch);
+        upper_vel = patch_get_upper_vel(patch);
+
         block(self);
         phat_slider_button_set_value(PHAT_SLIDER_BUTTON(self->chan_sb),
                                                                 channel+1);
+        phat_slider_button_set_value(PHAT_SLIDER_BUTTON(self->lower_vel_sb),
+                                                                lower_vel);
+        phat_slider_button_set_value(PHAT_SLIDER_BUTTON(self->upper_vel_sb),
+                                                                upper_vel);
         unblock(self);
     }
 }

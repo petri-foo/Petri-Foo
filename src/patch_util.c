@@ -210,6 +210,8 @@ int patch_create_default(void)
     patch_sample_load(id, "Default", 0, 0, 0);
     p->lower_note = 36;
     p->upper_note = 83;
+    p->lower_vel  = 0;
+    p->upper_vel  = 127;
 
     patch_set_name(id, "Default");
 
