@@ -43,57 +43,58 @@
 
 void show_usage (void)
 {
-	printf ("Usage: petri-foo [options] [bankname]\n\n");
-	printf ("Options:\n");
-	printf("  -n, --name <name>  Specify instance name, defaults to \"petri-foo\"\n" );
-	printf("  -h, --help         Display this help message\n\n");
-	printf ("For more information, please see:\n");
-	printf ("http://petri-foo.sourceforge.net/\n");
+    printf ("Usage: petri-foo [options] [bankname]\n\n");
+    printf ("Options:\n");
+    printf("  -n, --name <name>  Specify instance name, "
+                                "defaults to \"petri-foo\"\n" );
+    printf("  -u, --unconnected  Don't auto-connect to JACK\n");
+    printf("  -h, --help         Display this help message\n\n");
+    printf ("For more information, please see:\n");
+    printf ("http://petri-foo.sourceforge.net/\n");
 }
 
 
 int main(int argc, char *argv[])
 {
-#ifdef HAVE_LASH
-	/*
-	 * Handle lash arguments here to prevent getopt_long() from
-	 * going bonkers over arguments it hasn't been told about.
-	 */
-	lash_args_t *lash_args = lash_extract_args(&argc, &argv);
-#endif
+    int opt;
+    int longopt_index;
 
-	int opt;
-	int longopt_index;
-	static struct option long_options[] = 
-	{
-		{ "name", 1, 0, 'n'},
-		{ "uuid", 1, 0, 'U'},
-		{ "help", 0, 0, 'h'},
-		{ 0, 0, 0, 0}
-	};
+    static struct option long_options[] = 
+    {
+        { "name",           1, 0, 'n'},
+        { "unconnected",    0, 0, 'u'},
+        { "uuid",           1, 0, 'U'},
+        { "help",           0, 0, 'h'},
+        { 0, 0, 0, 0}
+    };
 
-	/* command line argument processing */
-	while((opt = getopt_long(argc, argv, "n:U:h", long_options,
-	                         &longopt_index)) > 0)
-	{
-		switch (opt)
-		{
-			case 'n':
-				set_instance_name(optarg);
-				break;
-			case 'U':
-				jackdriver_set_uuid(strdup(optarg) );
-				break;
-			case 'h':
-				show_usage();
-				return 0;
-				break;
-			default:
-				show_usage();
-				return 1;
-				break;
-		}
-	}
+
+    while((opt = getopt_long(argc, argv, "n:u:U:h",
+                                        long_options, &longopt_index)) > 0)
+    {
+        switch (opt)
+        {
+        case 'n':
+            set_instance_name(optarg);
+            break;
+
+        case 'u':
+            jackdriver_set_unconnected();
+            break;
+
+        case 'U':
+            jackdriver_set_uuid(strdup(optarg) );
+            break;
+
+        case 'h':
+            show_usage();
+            return 0;
+
+        default:
+            show_usage();
+            return 1;
+        }
+    }
 
     mod_src_create();
     gtk_init(&argc, &argv);

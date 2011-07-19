@@ -30,6 +30,7 @@
 #include <jack/jack.h>
 
 
+void            jackdriver_set_unconnected(void);
 void            jackdriver_set_uuid(char *uuid);
 jack_client_t*  jackdriver_get_client(void);
 

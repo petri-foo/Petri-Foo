@@ -1,15 +1,6 @@
 KNOWN BUGS
 ==========
 
-* mixer_mixdown is sometimes called before mixer_set_jack_client
-resulting in a segfault. i've not yet determined if that statement
-is true or not, but it seems likely.
-
-
-
-
-
-
 -------------------------
 the list that follows is inherited from Specimen. i've not actually checked
 if it is still relevant or not - jwm 2011/03/28
@@ -27,16 +18,14 @@ it's clients will then resume normal operation. [This seems to have
 magically disappeared, which I find quite disturbing.  Can anybody
 reproduce it? --pete]
 
+
+************************** THIS SHOULD BE LOOKED AT!
 * Sample start/stop and loop points don't behave properly when
 switching audio sample rates.  It's probably time to store the audio
 sample rate along with the session file, BTW.
+*******************************
 
 * Midi syncing appears to be broken with Fedora Core 2's kernel.  If
 you compile --enable-debug you'll see the gory details.
 
 * Midi syncing drifts like a bitch anyway.
-
-* Help -> About -> credits causes a segfault.
-
-* audio settings dialog currently resets jack client name to default
-"specimen" instead of using previously set name.

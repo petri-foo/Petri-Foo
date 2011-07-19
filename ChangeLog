@@ -8,6 +8,10 @@
 	  Finally fixed this bug by the removal of a dangerously
 	  misplaced else.
 
+	* --unconnected command line option to not auto-connect
+	  JACK ports. This is required for JACK Session to work
+	  properly.
+
 
 2011-07-14 James Morris <james@jwm-art.net>
 

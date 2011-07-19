@@ -62,7 +62,7 @@ static gboolean gui_session_cb(void *data)
     debug("filename:%s\n",filename);
 
     snprintf(command,   sizeof(command),
-                        "petri-foo -U %s ${SESSION_DIR}%s",
+                        "petri-foo --unconnected -U %s ${SESSION_DIR}%s",
                         ev->client_uuid, bankfilename);
 
     debug("command:%s\n",command);

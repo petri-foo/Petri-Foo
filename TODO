@@ -1,16 +1,4 @@
-
-***********************************************************************
--Engine: specimen can have portamento turned on/off via midi cc,
-
-    petri-foo is not currently capable of such a thing.
-    implement method of doing so, giving user same range of
-    choice as existing modulation slots.
-
-    the method should be capable to be used by other parameters
-    such as playback mode, sample positions, monophonic + legato
-    operation
-***********************************************************************
-
+-Engine: Mono/Poly mode switching via midi-cc (see notes on petri-foo-devel)
 
 -Engine: Voice modes
     +polyphonic re-trigger mode (new note repetition cuts old note).
@@ -20,6 +8,7 @@
 
 -Engine: Velocity sensitivity
     +add to eg's for amplitude modulation (i'm not convinced by this)
+     (note this has been coded but was commented out).
 
 -Engine: Logarithmic Amplitudes
     +Fix and remove artefacts arising from use of LAT for log_amplitude

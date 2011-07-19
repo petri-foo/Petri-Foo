@@ -75,6 +75,8 @@ static int             running = 0;
 static pthread_mutex_t running_mutex = PTHREAD_MUTEX_INITIALIZER;
 static char*           session_uuid = NULL;
 
+static bool             autoconnect = true;
+
 /* working together to stop CTS */
 typedef jack_default_audio_sample_t jack_sample_t;
 
@@ -236,10 +238,6 @@ static int start(void)
 #ifdef HAVE_JACK_SESSION
     client = jack_client_open(instancename,
                                JackSessionID, NULL, session_uuid);
-
-debug("session_uuid:'%s'\n",session_uuid);
-
-
 #else
     client = jack_client_open(instancename, JackNullOption, NULL);
 #endif
@@ -321,26 +319,25 @@ debug("session_uuid:'%s'\n",session_uuid);
     ports = jack_get_ports(client, NULL, NULL,
                             JackPortIsInput | JackPortIsPhysical);
 
-    if (ports[0] != NULL)
+    if (autoconnect)
     {
-        if (jack_connect(client, jack_port_name(lport), ports[0]) != 0)
-            errmsg ("Cannot connect left output port\n");
-
-        if (ports[1] != NULL)
+        if (ports[0] != NULL)
         {
-            if (jack_connect(client, jack_port_name (rport), ports[1]))
+            if (jack_connect(client, jack_port_name(lport), ports[0]) != 0)
+                errmsg ("Cannot connect left output port\n");
+
+            if (ports[1] != NULL)
+            {
+                if (jack_connect(client, jack_port_name (rport), ports[1]))
+                    errmsg ("Cannot connect right output port\n");
+            }
+            else
                 errmsg ("Cannot connect right output port\n");
+
+            free (ports);
         }
         else
-        {
-            errmsg ("Cannot connect right output port\n");
-        }
-
-        free (ports);
-    }
-    else
-    {
-        errmsg ("Cannot connect output ports\n");
+            errmsg ("Cannot connect output ports\n");
     }
 
     debug ("Initialization complete\n");
@@ -397,6 +394,13 @@ static void* getid(void)
 {
     return (void*)jack_get_client_name(client);
 }
+
+
+void jackdriver_set_unconnected(void)
+{
+    autoconnect = false;
+}
+
 
 void jackdriver_set_uuid      (char *uuid)
 {
