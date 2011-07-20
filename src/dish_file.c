@@ -232,6 +232,46 @@ dish_file_write_bool(xmlNodePtr nodeparent, int patch_id,
 
 
 static int
+dish_file_write_float(xmlNodePtr nodeparent, int patch_id,
+                                                PatchFloatType float_type)
+{
+    xmlNodePtr  node1;
+    xmlNodePtr  node2;
+    char buf[BUFSIZE];
+    const char* nodestr;
+
+    float   val;
+    float   modamt;
+    int     modsrc;
+
+    switch(float_type)
+    {
+    case PATCH_FLOAT_PORTAMENTO_TIME:
+        nodestr = "Portamento_time";
+        break;
+    default:
+        return -1;
+    }
+
+    patch_float_get_all(patch_id, float_type, &val, &modamt, &modsrc);
+
+    node1 = xmlNewTextChild(nodeparent, NULL, BAD_CAST nodestr, NULL);
+
+    snprintf(buf, BUFSIZE, "%f", val);
+    xmlNewProp(node1,   BAD_CAST "value",   BAD_CAST buf);
+
+    node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Mod", NULL);
+
+    xmlNewProp(node2, BAD_CAST "source", BAD_CAST mod_src_name(modsrc));
+
+    snprintf(buf, BUFSIZE, "%f", modamt);
+    xmlNewProp(node2, BAD_CAST "amount", BAD_CAST buf);
+
+    return 0;
+}
+
+
+static int
 dish_file_write_eg(xmlNodePtr nodeparent, int patch_id, int eg_id)
 {
     xmlNodePtr  node1;
@@ -524,9 +564,8 @@ int dish_file_write(const char *name)
         dish_file_write_bool(node1, patch_id[i], PATCH_BOOL_PORTAMENTO);
 
         /* voice portamento_time */
-        snprintf(buf, BUFSIZE, "%f",
-                            patch_get_portamento_time(patch_id[i]));
-        xmlNewProp(node1,   BAD_CAST "portamento_time", BAD_CAST buf);
+        dish_file_write_float(node1, patch_id[i], 
+                                            PATCH_FLOAT_PORTAMENTO_TIME);
 
         /* voice monophonic */
         xmlNewProp(node1,   BAD_CAST "monophonic",
@@ -535,10 +574,7 @@ int dish_file_write(const char *name)
                                         : "false"));
 
         /* voice legato */
-        xmlNewProp(node1,   BAD_CAST "legato",
-                            BAD_CAST (patch_get_legato(patch_id[i])
-                                        ? "true"
-                                        : "false"));
+        dish_file_write_bool(node1, patch_id[i], PATCH_BOOL_LEGATO);
 
         /*  ------------------------
             envelopes
@@ -1056,6 +1092,45 @@ int dish_file_read_bool(xmlNodePtr node, int patch_id,
 }
 
 
+
+int dish_file_read_float(xmlNodePtr node, int patch_id,
+                                            PatchFloatType float_type)
+{
+    const char* pname = 0;
+    float       n;
+    xmlChar*    prop;
+    xmlNodePtr  node1;
+
+    if ((prop = xmlGetProp(node, BAD_CAST "active")))
+        patch_float_set_assign(patch_id, float_type, xmlstr_to_bool(prop));
+
+    for (   node1 = node->children;
+            node1 != NULL;
+            node1 = node1->next)
+    {
+        if (node1->type != XML_ELEMENT_NODE)
+            continue;
+
+        if (xmlStrcmp(node1->name, BAD_CAST "Mod") == 0)
+        {
+            if ((prop = xmlGetProp(node1, BAD_CAST "source")))
+                patch_float_set_mod_src(patch_id, float_type,
+                            mod_src_id((const char*)prop, MOD_SRC_GLOBALS));
+
+            if ((prop = xmlGetProp(node1, BAD_CAST "amount")))
+                if (sscanf((const char*)prop, "%f", &n) == 1)
+                    patch_float_set_mod_amt(patch_id, float_type, n);
+        }
+        else
+        {
+            errmsg("ignoring:%s\n", (const char*)node1->name);
+        }
+    }
+
+    return 0;
+}
+
+
 int dish_file_read_voice(xmlNodePtr node, int patch_id)
 {
     xmlChar*    prop;
@@ -1072,16 +1147,8 @@ int dish_file_read_voice(xmlNodePtr node, int patch_id)
         if (sscanf((const char*)prop, "%d", &i))
             patch_set_cut_by(patch_id, i);
 
-    if ((prop = xmlGetProp(node, BAD_CAST "portamento_time")))
-        if (sscanf((const char*)prop, "%f", &n))
-            patch_set_portamento_time(patch_id, n);
-
     if ((prop = xmlGetProp(node, BAD_CAST "monophonic")))
         patch_set_monophonic(patch_id, xmlstr_to_bool(prop));
-
-    if ((prop = xmlGetProp(node, BAD_CAST "legato")))
-        patch_set_legato(patch_id, xmlstr_to_bool(prop));
-
 
     for (   node1 = node->children;
             node1 != NULL;
@@ -1093,6 +1160,15 @@ int dish_file_read_voice(xmlNodePtr node, int patch_id)
         if (xmlStrcmp(node1->name, BAD_CAST "Portamento") == 0)
         {
             dish_file_read_bool(node1, patch_id, PATCH_BOOL_PORTAMENTO);
+        }
+        else if (xmlStrcmp(node1->name, BAD_CAST "Portamento_time") == 0)
+        {
+            dish_file_read_float(node1, patch_id,
+                                            PATCH_FLOAT_PORTAMENTO_TIME);
+        }
+        else if (xmlStrcmp(node1->name, BAD_CAST "Legato") == 0)
+        {
+            dish_file_read_bool(node1, patch_id, PATCH_BOOL_LEGATO);
         }
         else
         {

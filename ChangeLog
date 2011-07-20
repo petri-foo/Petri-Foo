@@ -1,3 +1,8 @@
+2011-07-20 James Morris <james@jwm-art.net>
+
+	* dish_file.c: fix/restore read/write of Portamento/Legato
+
+
 2011-07-19 James Morris <james@jwm-art.net>
 
 	* Minimum and maximum Velocity value specification
