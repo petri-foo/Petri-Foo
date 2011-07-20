@@ -27,6 +27,10 @@
 
 
 #include <stdbool.h>
+#include <stdint.h>
+
+
+enum { MAX_SAMPLE_FRAMES = INT32_MAX };
 
 
 typedef struct _RAW_FORMAT
@@ -44,11 +48,10 @@ struct _Sample
 {
     /* Public */
     float* sp;          /* samples pointer */
-    int frames;         /* number of frames (not samples). 
-                         * samples whose length exceeds int on the
-                         * system they're to run on are disallowed.
-                         * (on 64bit, this still is OTT long).
-                         */
+    int frames;         /* number of frames (not samples)
+                           (frames < MAX_SAMPLE_FRAMES) == true */
+
+    double resample_ratio;
 
     int raw_samplerate; /* if the sample was a regular sound file ie */
     int raw_channels;   /* with a header, then these fields will be  */
@@ -68,6 +71,12 @@ void        sample_shallow_copy(Sample* dest, const Sample* src);
 
 /*  sample_deep_copy, ie copy (possibly resampled) audio data aswell */
 int         sample_deep_copy(Sample* dest, const Sample* src);
+
+
+int         sample_get_resampled_size(const char* name, int rate,
+    /* zero for non-raw data */         int raw_samplerate,
+    /* zero for non-raw data */         int raw_channels,
+    /* zero for non-raw data */         int sndfile_format);
 
 
 int         sample_load_file(Sample*, const char* name, int rate,

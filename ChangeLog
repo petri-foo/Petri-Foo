@@ -2,6 +2,21 @@
 
 	* dish_file.c: fix/restore read/write of Portamento/Legato
 
+	* sample.[ch]: added sample_get_resampled_size
+	  this function provides a means to get the size the
+	  sample will use once loaded. this is required for when
+	  soft-limits to the size of samples petri-foo will load
+	  is implemented.
+
+	* sample.[ch]: addition and usage of MAX_SAMPLE_FRAMES
+	  enumeration MAX_SAMPLE_FRAMES = INT32_MAX; replaces
+	  previous detection of overly-large samples by casting
+	  sf_count_t variables to int and noticing difference.
+
+	* patch_util.c, patch_sample_load: scale loop points.
+	  loop points of the default sample are now scaled to
+	  the global sample rate as they should.
+
 
 2011-07-19 James Morris <james@jwm-art.net>
 

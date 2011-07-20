@@ -48,10 +48,6 @@
 #include "patch_private/patch_macros.h"
 
 
-/*
-static int start_frame = 0;
-*/
-
 /**************************************************************************/
 /********************** PRIVATE GENERAL HELPER FUNCTIONS*******************/
 /**************************************************************************/
@@ -467,7 +463,6 @@ const char *patch_strerror (int error)
 }
 
 
-
 /* loads a sample file for a patch */
 int patch_sample_load(int id, const char *name,
                                     int raw_samplerate,
@@ -475,6 +470,10 @@ int patch_sample_load(int id, const char *name,
                                     int sndfile_format)
 {
     int val;
+    double ratio = (patch_samplerate == 44100)
+                            ? 1
+                            : (patch_samplerate / 44100.0f);
+
     bool defsample = (strcmp(name, "Default") == 0);
 
     if (!isok (id))
@@ -509,15 +508,15 @@ int patch_sample_load(int id, const char *name,
 
     if (defsample)
     {
-        patches[id]->loop_start = 296;
-        patches[id]->loop_stop = 5203;
-        patches[id]->fade_samples = 100;
+        patches[id]->loop_start = 296 * ratio;
+        patches[id]->loop_stop = 5203 * ratio;
+        patches[id]->fade_samples = 100 * ratio;
         patches[id]->xfade_samples = 0;
     }
     else
     {
-        patches[id]->fade_samples = 100;
-        patches[id]->xfade_samples = 100;
+        patches[id]->fade_samples = 100 * ratio;
+        patches[id]->xfade_samples = 100 * ratio;
         patches[id]->loop_start = patches[id]->xfade_samples;
         patches[id]->loop_stop = patches[id]->sample_stop -
                                     patches[id]->xfade_samples;

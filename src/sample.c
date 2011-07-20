@@ -125,41 +125,40 @@ int sample_default(Sample* sample, int rate)
 }
 
 
-static float* resample(float* samples, int rate, SF_INFO* sfinfo)
+static float* resample(float* samples, int rate, SF_INFO* sfinfo,
+                                                double* resample_ratio)
 {
     double ratio;
-    int frames;
+    int err;
+    SRC_DATA src;
+    float* tmp;
+
+    *resample_ratio = 0.0;
 
     ratio = rate / (sfinfo->samplerate * 1.0);
-    frames = (int)sfinfo->frames;
 
     debug("Resampling...\n");
 
-    int err;
-    SRC_DATA src;
-    float* tmp = malloc(sizeof(float) * sfinfo->frames
-                                      * sfinfo->channels
-                                      * ratio);
+    src.src_ratio = ratio;
+    src.data_in = samples;
+    src.input_frames = sfinfo->frames;
+    src.output_frames = sfinfo->frames * ratio;
+
+    if (src.output_frames >= MAX_SAMPLE_FRAMES)
+    {
+        errmsg("resampled sample would be too long\n");
+        return 0;
+    }
+
+    tmp = malloc(sizeof(float)
+                * sfinfo->frames * sfinfo->channels * ratio);
     if (!tmp)
     {
         errmsg ("Out of memory for resampling\n");
         return 0;
     }
 
-    src.src_ratio = ratio;
-    src.data_in = samples;
     src.data_out = tmp;
-    src.input_frames = sfinfo->frames;
-    src.output_frames = sfinfo->frames * ratio;
-
-    frames = (int)src.output_frames;
-
-    if (frames != src.output_frames)
-    {
-        errmsg("resampled sample would be too long\n");
-        free(tmp);
-        return 0;
-    }
 
     err = src_simple(&src, SRC_SINC_BEST_QUALITY, sfinfo->channels);
     if (err)
@@ -169,7 +168,7 @@ static float* resample(float* samples, int rate, SF_INFO* sfinfo)
         return 0;
     }
 
-    sfinfo->frames = frames;
+    sfinfo->frames = src.output_frames;
 
     return tmp;
 }
@@ -198,9 +197,8 @@ static float* mono_to_stereo(float* samples, SF_INFO* sfinfo)
 static float* read_audio(SNDFILE* sfp, SF_INFO* sfinfo)
 {
     float* tmp;
-    int frames = (int)sfinfo->frames;
 
-    if (frames != sfinfo->frames)
+    if (sfinfo->frames >= MAX_SAMPLE_FRAMES)
     {
         errmsg("sample is too long\n");
         return 0;
@@ -235,33 +233,89 @@ static float* read_audio(SNDFILE* sfp, SF_INFO* sfinfo)
 }
 
 
+static SNDFILE* open_sample(SF_INFO* sfinfo, const char* name,
+                                        int raw_samplerate,
+                                        int raw_channels,
+                                        int sndfile_format)
+{
+    SNDFILE* sfp = NULL;
+
+    bool raw = (raw_samplerate || raw_channels || sndfile_format);
+
+    sfinfo->frames = 0;
+    sfinfo->samplerate = 0;
+    sfinfo->channels = 0;
+    sfinfo->format = 0;
+    sfinfo->sections = 0;
+    sfinfo->seekable = 0;
+
+    if ((sfp = sf_open(name, SFM_READ, sfinfo)) == NULL)
+    {
+        debug ("libsndfile doesn't like %s\n", name);
+        return 0;
+    }
+
+    if (raw)
+    {
+        sfinfo->samplerate = raw_samplerate;
+        sfinfo->channels =   raw_channels;
+        sfinfo->format =     sndfile_format;
+
+        if (!sf_format_check(sfinfo))
+        {
+            debug("LIBSNDFILE found error in format. aborting.\n");
+            return 0;
+        }
+    }
+
+    return sfp;
+}
+
+
+int sample_get_resampled_size(const char* name, int rate,
+                                        int raw_samplerate,
+                                        int raw_channels,
+                                        int sndfile_format)
+{
+    SF_INFO sfinfo;
+    SNDFILE* sfp;
+    sf_count_t frames;
+
+    if (!(sfp = open_sample(&sfinfo, name,  raw_samplerate,
+                                            raw_channels,
+                                            sndfile_format)))
+    {
+        return -1;
+    }
+
+    sf_close(sfp);
+
+    if (sfinfo.samplerate == rate)
+    {
+        double ratio = rate / (sfinfo.samplerate * 1.0);
+        frames = sfinfo.frames * ratio;
+    }
+    else
+        frames = sfinfo.frames;
+
+    return frames < MAX_SAMPLE_FRAMES ? frames : 0;
+}
+
+
 int sample_load_file(Sample* sample, const char* name,
                                         int rate,
                                         int raw_samplerate,
                                         int raw_channels,
                                         int sndfile_format)
 {
-    SNDFILE* sfp;
-    SF_INFO sfinfo = { 0, 0, 0, 0, 0, 0 };
     float* tmp;
-    bool raw = (raw_samplerate || raw_channels || sndfile_format);
+    SF_INFO sfinfo;
+    SNDFILE* sfp;
 
-    if (raw)
+    if (!(sfp = open_sample(&sfinfo, name,  raw_samplerate,
+                                            raw_channels,
+                                            sndfile_format)))
     {
-        sfinfo.samplerate = raw_samplerate;
-        sfinfo.channels = raw_channels;
-        sfinfo.format = sndfile_format;
-
-        if (!sf_format_check(&sfinfo))
-        {
-            debug("LIBSNDFILE found error in format. aborting.\n");
-            return -1;
-        }
-    }
-
-    if ((sfp = sf_open(name, SFM_READ, &sfinfo)) == NULL)
-    {
-        debug ("libsndfile doesn't like %s\n", name);
         return -1;
     }
 
@@ -270,9 +324,22 @@ int sample_load_file(Sample* sample, const char* name,
 
     sf_close(sfp);
 
+    if (raw_samplerate || raw_channels || sndfile_format)
+    {
+        sample->raw_samplerate = raw_samplerate;
+        sample->raw_channels =   raw_channels;
+        sample->sndfile_format = sndfile_format;
+    }
+    else
+    {
+        sample->raw_samplerate = 0;
+        sample->raw_channels = 0;
+        sample->sndfile_format = 0;
+    }
+
     if (sfinfo.samplerate != rate)
     {
-        float* tmp2 = resample(tmp, rate, &sfinfo);
+        float* tmp2 = resample(tmp, rate, &sfinfo, &sample->resample_ratio);
 
         if (!tmp2)
         {
@@ -312,18 +379,6 @@ debug("setting new sample data\n");
     sample->sp = tmp;
     sample->frames = sfinfo.frames;
 
-    if (raw)
-    {
-        sample->raw_samplerate = raw_samplerate;
-        sample->raw_channels = raw_channels;
-        sample->sndfile_format = sndfile_format;
-    }
-    else
-    {
-        sample->raw_samplerate = 0;
-        sample->raw_channels = 0;
-        sample->sndfile_format = 0;
-    }
 
     sample->default_sample = false;
 
