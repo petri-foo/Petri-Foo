@@ -57,8 +57,12 @@ int         patch_sample_load_from(int dest_id, int src_id);
 const Sample* patch_sample_data(int id);
 
 void        patch_sample_unload   (int id);
+
+
 void        patch_set_buffersize  (int nframes);
 void        patch_set_samplerate  (int rate);
+int         patch_get_samplerate  (void);
+
 void        patch_shutdown        (void);
 void        patch_sync            (float bpm);
 int         patch_verify          (int id);

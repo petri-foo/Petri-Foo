@@ -262,8 +262,6 @@ int mod_src_id(const char* name, int mask)
 {
     id_name* ids;
 
-    debug("identifying %s\n", name);
-
     if (strcmp(name, "OFF") == 0)
         return MOD_SRC_NONE;
 

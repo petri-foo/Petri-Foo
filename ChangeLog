@@ -1,3 +1,21 @@
+2011-07-23 James Morris <james@jwm-art.net>
+
+	* patch_util.c, new function: patch_get_samplerate(void)
+
+	* dish_file.c: current samplerate is written into the
+	  dish_file within the "Master" node. This means that if the
+	  bank is loaded at a later date and JACK is running at a
+	  different samplerate, the values for the play+loop points
+	  can be adjusted accordingly for the resampled audio-data.
+
+	* sample.[ch]: removed resample_ratio from struct _Sample.
+	  the resample_ratio member was added in the previous commit
+	  and removed again due to the dish_file being responsible
+	  for calculating differences in play+loop points when
+	  JACK samplerate changes (between instances, not during a
+	  single instance).
+
+
 2011-07-20 James Morris <james@jwm-art.net>
 
 	* dish_file.c: fix/restore read/write of Portamento/Legato

@@ -55,6 +55,7 @@ Sample* sample_new(void)
     return sample;
 }
 
+
 void sample_free (Sample* sample)
 {
     free(sample->filename);
@@ -125,15 +126,12 @@ int sample_default(Sample* sample, int rate)
 }
 
 
-static float* resample(float* samples, int rate, SF_INFO* sfinfo,
-                                                double* resample_ratio)
+static float* resample(float* samples, int rate, SF_INFO* sfinfo)
 {
     double ratio;
     int err;
     SRC_DATA src;
     float* tmp;
-
-    *resample_ratio = 0.0;
 
     ratio = rate / (sfinfo->samplerate * 1.0);
 
@@ -339,7 +337,7 @@ int sample_load_file(Sample* sample, const char* name,
 
     if (sfinfo.samplerate != rate)
     {
-        float* tmp2 = resample(tmp, rate, &sfinfo, &sample->resample_ratio);
+        float* tmp2 = resample(tmp, rate, &sfinfo);
 
         if (!tmp2)
         {

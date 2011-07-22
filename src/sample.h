@@ -51,8 +51,6 @@ struct _Sample
     int frames;         /* number of frames (not samples)
                            (frames < MAX_SAMPLE_FRAMES) == true */
 
-    double resample_ratio;
-
     int raw_samplerate; /* if the sample was a regular sound file ie */
     int raw_channels;   /* with a header, then these fields will be  */
     int sndfile_format; /* zero. if raw, they will be non-zero       */

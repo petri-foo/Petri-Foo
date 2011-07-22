@@ -39,6 +39,7 @@
 #define BUFSIZE 256
 
 static const char* dish_file_ext = ".petri-foo";
+static int dish_file_samplerate = 0;
 
 
 const char* dish_file_extension(void)
@@ -447,6 +448,10 @@ int dish_file_write(const char *name)
     snprintf(buf, BUFSIZE, "%f", mixer_get_amplitude());
     xmlNewProp(node1, BAD_CAST "level", BAD_CAST buf);
 
+    snprintf(buf, BUFSIZE, "%d", patch_get_samplerate());
+    xmlNewProp(node1, BAD_CAST "samplerate", BAD_CAST buf);
+
+
     /*  ------------------------
         patches
      */
@@ -623,6 +628,14 @@ int dish_file_read_sample(xmlNodePtr node, int patch_id)
     char* filename = 0;
     bool sample_loaded = false;
 
+    double sr_ratio = 1.0;
+
+    if (dish_file_samplerate
+     && dish_file_samplerate != patch_get_samplerate())
+        sr_ratio = patch_get_samplerate() / (double)dish_file_samplerate;
+
+debug("sr_ratio:%f\n",sr_ratio);
+
     int mode = PATCH_PLAY_SINGLESHOT;
 
     if ((prop = xmlGetProp(node, BAD_CAST "file")))
@@ -708,17 +721,17 @@ int dish_file_read_sample(xmlNodePtr node, int patch_id)
                 if (sscanf((const char*)prop, "%d", &s) == 1)
                     patch_set_mark_frame_expand(patch_id,
                                                 WF_MARK_PLAY_START,
-                                                s, NULL);
+                                                s * sr_ratio, NULL);
             }
             if ((prop = xmlGetProp(node1, BAD_CAST "stop")))
                 if (sscanf((const char*)prop, "%d", &s) == 1)
                     patch_set_mark_frame_expand(patch_id,
                                                 WF_MARK_PLAY_STOP,
-                                                s, NULL);
+                                                s * sr_ratio, NULL);
 
             if ((prop = xmlGetProp(node1, BAD_CAST "fade_samples")))
                 if (sscanf((const char*)prop, "%d", &s) == 1)
-                    patch_set_fade_samples(patch_id, s);
+                    patch_set_fade_samples(patch_id, s * sr_ratio);
         }
         else if (xmlStrcmp(node1->name, BAD_CAST "Loop") == 0)
         {
@@ -726,17 +739,17 @@ int dish_file_read_sample(xmlNodePtr node, int patch_id)
                 if (sscanf((const char*)prop, "%d", &s) == 1)
                     patch_set_mark_frame_expand(patch_id,
                                                 WF_MARK_LOOP_START,
-                                                s, NULL);
+                                                s * sr_ratio, NULL);
 
             if ((prop = xmlGetProp(node1, BAD_CAST "stop")))
                 if (sscanf((const char*)prop, "%d", &s) == 1)
                     patch_set_mark_frame_expand(patch_id,
                                                 WF_MARK_LOOP_STOP,
-                                                s, NULL);
+                                                s * sr_ratio, NULL);
 
             if ((prop = xmlGetProp(node1, BAD_CAST "xfade_samples")))
                 if (sscanf((const char*)prop, "%d", &s) == 1)
-                    patch_set_xfade_samples(patch_id, s);
+                    patch_set_xfade_samples(patch_id, s * sr_ratio);
         }
         else if (xmlStrcmp(node1->name, BAD_CAST "Note") == 0)
         {
@@ -1057,7 +1070,6 @@ int dish_file_read_param(xmlNodePtr node,   int patch_id,
 int dish_file_read_bool(xmlNodePtr node, int patch_id,
                                             PatchBoolType bool_type)
 {
-    const char* pname = 0;
     float       n;
     xmlChar*    prop;
     xmlNodePtr  node1;
@@ -1096,7 +1108,6 @@ int dish_file_read_bool(xmlNodePtr node, int patch_id,
 int dish_file_read_float(xmlNodePtr node, int patch_id,
                                             PatchFloatType float_type)
 {
-    const char* pname = 0;
     float       n;
     xmlChar*    prop;
     xmlNodePtr  node1;
@@ -1136,7 +1147,6 @@ int dish_file_read_voice(xmlNodePtr node, int patch_id)
     xmlChar*    prop;
     xmlNodePtr  node1;
 
-    float n;
     int i;
 
     if ((prop = xmlGetProp(node, BAD_CAST "cut")))
@@ -1227,9 +1237,19 @@ int dish_file_read(const char *path)
 
         if (xmlStrcmp(node1->name, BAD_CAST "Master") == 0)
         {
+            int sr;
+
             if ((prop = xmlGetProp(node1, BAD_CAST "level")))
                 if (sscanf((const char*)prop, "%f", &n) == 1)
                     mixer_set_amplitude(n);
+
+            if ((prop = xmlGetProp(node1, BAD_CAST "samplerate")))
+            {
+                if (sscanf((const char*)prop, "%d", &sr) == 1)
+                    dish_file_samplerate = sr;
+                else
+                    dish_file_samplerate = 0;
+            }
         }
         else if (xmlStrcmp(node1->name, BAD_CAST "Patch") == 0)
         {

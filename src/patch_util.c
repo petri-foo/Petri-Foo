@@ -662,6 +662,13 @@ void patch_set_samplerate (int rate)
     }
 }
 
+
+int patch_get_samplerate(void)
+{
+    return patch_samplerate;
+}
+
+
 /* destructor */
 void patch_shutdown ( )
 {
