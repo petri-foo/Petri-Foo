@@ -15,6 +15,10 @@
 	  JACK samplerate changes (between instances, not during a
 	  single instance).
 
+	* sample.c, sample_default: scaled output of LFO.
+	  scale output of LFO to prevent the default sample having
+	  samples exceeding the range -1.0 to +1.0.
+
 
 2011-07-20 James Morris <james@jwm-art.net>
 

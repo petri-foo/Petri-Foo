@@ -86,6 +86,7 @@ int sample_default(Sample* sample, int rate)
     LFO*        lfo;
     LFOParams   lfopar;
     int         i;
+    double      v;
 
     float const*    lfo_out;
 
@@ -108,13 +109,11 @@ int sample_default(Sample* sample, int rate)
     for (i = 0; i < frames; ++i)
     {
         lfo_tick(lfo);
-        *tmp++ = *lfo_out;
-        *tmp++ = *lfo_out;
 
-        if (*lfo_out < -1.0 || *lfo_out > 1.0)
-        {
-            debug("lfo output %1.3f clips -1.0 || 1.0\n", *lfo_out);
-        }
+        v = *lfo_out * 0.9;
+
+        *tmp++ = v;
+        *tmp++ = v;
     }
 
     lfo_free(lfo);
