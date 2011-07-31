@@ -332,7 +332,7 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
     if (param == PATCH_PARAM_PANNING || param == PATCH_PARAM_PITCH)
         range_low = -1.0;
 
-    p->param1 = phat_vfan_slider_new_with_range(0.0, range_low,
+    p->param1 = phat_hfan_slider_new_with_range(0.0, range_low,
                                                         range_hi,   0.1);
     gui_attach(t, p->param1, b1, b2, y, y + 1);
 
@@ -351,7 +351,7 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
 
     /* key tracking */
     gui_label_attach("Key Track:", t, a1, a2, y, y + 1);
-    p->key_track = phat_hfan_slider_new_with_range(0.0, -1.0, 1.75, 0.1);
+    p->key_track = phat_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
     gui_attach(t, p->key_track, b1, b2, y, y + 1);
     ++y;
 
