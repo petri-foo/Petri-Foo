@@ -1,3 +1,5 @@
+config.h
+
 # http://www.gnu.org/software/automake
 
 Makefile.in
@@ -17,18 +19,24 @@ aclocal.m4
 autom4te.cache/
 compile
 config.guess
-config.*
 configure
 depcomp
 Makefile
 Makefile.in
 m4/
 missing
-
 libtool
 stamp-h1
 
-src/gui/libgui.a
-src/petri-foo
-src/core
+petri-foo
+core
+
+
+# CMake
+
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+
+Makefile.am
 

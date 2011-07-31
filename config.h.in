@@ -1,0 +1,9 @@
+#define PACKAGE "${PROJECT_NAME}"
+#cmakedefine HAVE_MALLOC_H 1
+#cmakedefine HAVE_JACK_SESSION_H 1
+
+#cmakedefine DEBUG 1
+/* surely there must be an easier way? */
+#ifndef DEBUG
+#define DEBUG 0
+#endif

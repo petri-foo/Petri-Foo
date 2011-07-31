@@ -1,0 +1,2 @@
+file (GLOB LIBPATCHPRIVATE_SOURCES *.c)
+add_library( patch_private ${LIBPATCHPRIVATE_SOURCES})

@@ -1,3 +1,52 @@
+2011-07-26 James Morris <james@jwm-art.net>
+
+	* new build system using cmake. alter dir structures.
+
+	* include subset of PHAT in build and call it phin.
+
+
+2011-07-23 James Morris <james@jwm-art.net>
+
+	* patch_util.c, new function: patch_get_samplerate(void)
+
+	* dish_file.c: current samplerate is written into the
+	  dish_file within the "Master" node. This means that if the
+	  bank is loaded at a later date and JACK is running at a
+	  different samplerate, the values for the play+loop points
+	  can be adjusted accordingly for the resampled audio-data.
+
+	* sample.[ch]: removed resample_ratio from struct _Sample.
+	  the resample_ratio member was added in the previous commit
+	  and removed again due to the dish_file being responsible
+	  for calculating differences in play+loop points when
+	  JACK samplerate changes (between instances, not during a
+	  single instance).
+
+	* sample.c, sample_default: scaled output of LFO.
+	  scale output of LFO to prevent the default sample having
+	  samples exceeding the range -1.0 to +1.0.
+
+
+2011-07-20 James Morris <james@jwm-art.net>
+
+	* dish_file.c: fix/restore read/write of Portamento/Legato
+
+	* sample.[ch]: added sample_get_resampled_size
+	  this function provides a means to get the size the
+	  sample will use once loaded. this is required for when
+	  soft-limits to the size of samples petri-foo will load
+	  is implemented.
+
+	* sample.[ch]: addition and usage of MAX_SAMPLE_FRAMES
+	  enumeration MAX_SAMPLE_FRAMES = INT32_MAX; replaces
+	  previous detection of overly-large samples by casting
+	  sf_count_t variables to int and noticing difference.
+
+	* patch_util.c, patch_sample_load: scale loop points.
+	  loop points of the default sample are now scaled to
+	  the global sample rate as they should.
+
+
 2011-07-19 James Morris <james@jwm-art.net>
 
 	* Minimum and maximum Velocity value specification
@@ -11,6 +60,12 @@
 	* --unconnected command line option to not auto-connect
 	  JACK ports. This is required for JACK Session to work
 	  properly.
+
+	* patch.c, patch_set_and_get.c, mod_section.c:
+					inverted velocity mapping
+	  Allows negative setting of velocity sensitivity. Means
+	  you can cause low velocity to have the effect of high
+	  velocity and vice-versa.
 
 
 2011-07-14 James Morris <james@jwm-art.net>

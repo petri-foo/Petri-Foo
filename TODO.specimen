@@ -1,4 +1,4 @@
-(TODO file from the Specimen project)
+(TODO file from the Specimen project, edited: 19/07/2011)
 
 -Add per-channel volume and panning parameters
 
@@ -11,14 +11,7 @@
 
 -Make "loop to end" optional
 
--Create a better file format
-
--Make a sample browser
-
 -Allow patches to have their own JACK ports
-
--Automatically append .beef to a filename when saving a bank if it
- doesn't have that already
 
 -Make it possible to copy and paste whole parameter tabs
 
@@ -27,17 +20,9 @@
 -TOOLTIPS!  Or a status bar... or tooltips AND a statusbar!  This is
  low hanging fruit, any takers?  Please?  FOR THE LOVE OF GOD!!!
 
--Make the bank save-as dialog prompt you before overwriting
-an existing file
-
--Allow patches to host a few effects
-
 -Allow for longer times in the Envelopes and LFOs using non-linear sliders
 
 -Add more filter types
-
--Figure out why some parts of the gui don't redraw properly, such as
-the waveform and the audio-settings window
 
 -Add a progressbar when loading soundfiles and banks
 
@@ -66,4 +51,3 @@ the waveform and the audio-settings window
 
 -Add a sampling capability
 
--Fix --enable-debug, which currently does nothing

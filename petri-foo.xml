@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-petri-foo">
+  <comment>Petri-Foo sample bank file</comment>
+  <glob pattern="*.petri-foo"/>
+  </mime-type>
+</mime-info>

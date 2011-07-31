@@ -1,0 +1,32 @@
+-*- text -*-
+
+---must---
+
+* format specifier thing for sliderbuttons is LAME ASS!  Just use a
+  num digits arg.
+
+---gravy---
+
+* add escaping to fansliders
+
+* add ghosting to fansliders
+
+* add support for update policies
+
+* implement properties and style properties
+
+* add default context menu (copy, paste, revert, previous);
+  perhaps use interfaces?
+
+* use gconf to allow the user to set properties accross all
+  applications, create a config frontend
+
+* add option to turn off fan drawing and mouse hiding/warping for
+  fansliders
+
+* add fan threshold to fansliders
+
+---magic---
+
+* figure out how to make fanslider fans not flicker when pulled out to
+  the left or up (thresholds might help)
