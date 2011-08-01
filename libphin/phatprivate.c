@@ -54,15 +54,13 @@ void phat_screen_changed(GtkWidget *widget, GdkScreen *old_screen,
     if (!colormap)
     {
         debug("Your screen does not support alpha channels!\n");
-        printf("Your screen does not support alpha channels!\n");
         colormap = gdk_screen_get_rgb_colormap(screen);
         supports_alpha = FALSE;
     }
     else
     {
         debug("Your screen supports alpha channels!\n");
-        printf("Your screen supports alpha channels!\n");
-        supports_alpha = FALSE;//TRUE;
+        supports_alpha = TRUE;
     }
 
     /* Now we have a colormap appropriate for the screen, use it */
