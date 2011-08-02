@@ -23,7 +23,9 @@
 
 
 #include <gtk/gtk.h>
-#include <phat/phat.h>
+
+#include "phin.h"
+
 #include "mastersection.h"
 #include "petri-foo.h"
 #include "gui.h"
@@ -41,11 +43,11 @@ static void master_section_class_init(MasterSectionClass* klass)
 }
 
 
-static void amplitude_changed_cb(PhatFanSlider* slider, gpointer data)
+static void amplitude_changed_cb(PhinFanSlider* slider, gpointer data)
 {
     (void)data;
     float val;
-    val = phat_fan_slider_get_value(slider);
+    val = phin_fan_slider_get_value(slider);
     mixer_set_amplitude(val);
 }
 
@@ -62,7 +64,7 @@ static void master_section_init(MasterSection* self)
     /* amplitude */
     label = gtk_label_new(NULL);
     self->amplitude_fan =
-        phat_hfan_slider_new_with_range(DEFAULT_AMPLITUDE, 0.0, 1.0, 0.1);
+        phin_hfan_slider_new_with_range(DEFAULT_AMPLITUDE, 0.0, 1.0, 0.1);
     hbox = gtk_hbox_new(FALSE, GUI_TEXTSPACE);
 
     gtk_label_set_markup(GTK_LABEL(label), "<b>Master</b>");
@@ -100,7 +102,7 @@ void master_section_update(MasterSection* self)
     g_signal_handlers_block_by_func(self->amplitude_fan, 
                                     (gpointer)amplitude_changed_cb, NULL);
 
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(self->amplitude_fan), amplitude);
+    phin_fan_slider_set_value(PHIN_FAN_SLIDER(self->amplitude_fan), amplitude);
     g_signal_handlers_unblock_by_func(self->amplitude_fan, amplitude_changed_cb, NULL);
 }
     

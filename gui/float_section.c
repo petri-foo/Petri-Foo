@@ -19,7 +19,8 @@
 
 
 #include <gtk/gtk.h>
-#include <phat/phat.h>
+
+#include "phin.h"
 
 #include "float_section.h"
 #include "gui.h"
@@ -59,7 +60,7 @@ static void float_section_class_init(FloatSectionClass* klass)
 
 static void float_cb(GtkWidget* w, FloatSectionPrivate* p)
 {
-    float val = phat_fan_slider_get_value(PHAT_FAN_SLIDER(w));
+    float val = phin_fan_slider_get_value(PHIN_FAN_SLIDER(w));
     patch_float_set_assign(p->patch_id, p->float_type, val);
 }
 
@@ -76,7 +77,7 @@ static void mod_amt_cb(GtkWidget* w, FloatSectionPrivate* p)
 {
     patch_float_set_mod_amt(p->patch_id,
                             p->float_type,
-                            phat_fan_slider_get_value(PHAT_FAN_SLIDER(w)));
+                            phin_fan_slider_get_value(PHIN_FAN_SLIDER(w)));
 }
 
 
@@ -159,7 +160,7 @@ void float_section_set_float( FloatSection* self, PatchFloatType float_type)
     gui_attach(t, gui_hpad_new(GUI_TEXTSPACE), c1, c2, y, y + 1);
     ++y;
 
-    p->float_fan = phat_hfan_slider_new_with_range(0.0, floatmin,
+    p->float_fan = phin_hfan_slider_new_with_range(0.0, floatmin,
                                                         floatmax,
                                                         floatstep);
     gui_attach(t, p->float_fan, b1, b2, y, y + 1);
@@ -171,7 +172,7 @@ void float_section_set_float( FloatSection* self, PatchFloatType float_type)
     mod_src_combo_set_model(GTK_COMBO_BOX(p->mod_combo), MOD_SRC_GLOBALS);
     gui_attach(t, p->mod_combo, b1, b2, y, y + 1);
 
-    p->mod_amt = phat_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
+    p->mod_amt = phin_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
     gui_attach(t, p->mod_amt, c1, c2, y, y + 1);
     ++y;
 
@@ -228,8 +229,8 @@ void float_section_set_patch(FloatSection* self, int patch_id)
                                                     &modsrc);
     block(p);
 
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->float_fan), assign);
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->mod_amt), mod_amt);
+    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->float_fan), assign);
+    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->mod_amt), mod_amt);
 
     if (!mod_src_combo_get_iter_with_id(GTK_COMBO_BOX(p->mod_combo),
                                         modsrc,

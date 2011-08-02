@@ -35,7 +35,7 @@ enum {
 GtkWidget*      mod_src_new_combo_with_cell();
 
 /*  mod_src_new_pitch_adjustment
-        creates a phat slider button with semitones label within.
+        creates a phin slider button with semitones label within.
 */
 GtkWidget*      mod_src_new_pitch_adjustment(void);
 

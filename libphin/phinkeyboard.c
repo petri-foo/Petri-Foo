@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <gtk/gtk.h>
 #include <libgnomecanvas/libgnomecanvas.h>
-#include "phatkeyboard.h"
+#include "phinkeyboard.h"
 
 /* properties */
 enum
@@ -54,19 +54,19 @@ static const guint KEY_TEXT_BG = 0x000000FF;
 static int signals[LAST_SIGNAL];
 static GtkViewportClass* parent_class;
 
-static void phat_keyboard_class_init(PhatKeyboardClass* klass);
-static void phat_keyboard_init(PhatKeyboard* self);
-static void phat_keyboard_destroy(GtkObject* object);
-static void phat_keyboard_set_property(GObject          *object,
+static void phin_keyboard_class_init(PhinKeyboardClass* klass);
+static void phin_keyboard_init(PhinKeyboard* self);
+static void phin_keyboard_destroy(GtkObject* object);
+static void phin_keyboard_set_property(GObject          *object,
                                        guint             prop_id,
                                        const GValue     *value,
                                        GParamSpec       *pspec);
-static void phat_keyboard_get_property(GObject          *object,
+static void phin_keyboard_get_property(GObject          *object,
                                        guint             prop_id,
                                        GValue           *value,
                                        GParamSpec       *pspec);
 
-GType phat_keyboard_get_type(void)
+GType phin_keyboard_get_type(void)
 {
     static GType type = 0;
 
@@ -74,36 +74,36 @@ GType phat_keyboard_get_type(void)
     {
         static const GTypeInfo info =
             {
-                sizeof (PhatKeyboardClass),
+                sizeof (PhinKeyboardClass),
                 NULL,
                 NULL,
-                (GClassInitFunc) phat_keyboard_class_init,
+                (GClassInitFunc) phin_keyboard_class_init,
                 NULL,
                 NULL,
-                sizeof (PhatKeyboard),
+                sizeof (PhinKeyboard),
                 0,
-                (GInstanceInitFunc) phat_keyboard_init,
+                (GInstanceInitFunc) phin_keyboard_init,
                 NULL
             };
 
         /* replace PARENT_CLASS_TYPE with whatever's appropriate for your widget */
-        type = g_type_register_static(GTK_TYPE_VIEWPORT, "PhatKeyboard", &info, 0);
+        type = g_type_register_static(GTK_TYPE_VIEWPORT, "PhinKeyboard", &info, 0);
     }
 
     return type;
 }
 
 
-static void phat_keyboard_class_init(PhatKeyboardClass* klass)
+static void phin_keyboard_class_init(PhinKeyboardClass* klass)
 {
     GObjectClass* gobject_class = G_OBJECT_CLASS(klass);
     
     parent_class = g_type_class_peek_parent(klass);
 
-    GTK_OBJECT_CLASS(klass)->destroy =  phat_keyboard_destroy;
+    GTK_OBJECT_CLASS(klass)->destroy =  phin_keyboard_destroy;
     
-    gobject_class->set_property = phat_keyboard_set_property;
-    gobject_class->get_property = phat_keyboard_get_property;
+    gobject_class->set_property = phin_keyboard_set_property;
+    gobject_class->get_property = phin_keyboard_get_property;
 
     g_object_class_install_property(gobject_class,
                                     PROP_ORIENTATION,
@@ -133,7 +133,7 @@ static void phat_keyboard_class_init(PhatKeyboardClass* klass)
                                                          G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
 
     /**
-     * PhatKeyboard::key-pressed
+     * PhinKeyboard::key-pressed
      * @keyboard: the object on which the signal was emitted
      * @key: the index of the key that was pressed
      *
@@ -144,12 +144,12 @@ static void phat_keyboard_class_init(PhatKeyboardClass* klass)
         g_signal_new ("key-pressed",
                       G_TYPE_FROM_CLASS (klass),
                       G_SIGNAL_RUN_FIRST | G_SIGNAL_ACTION,
-                      G_STRUCT_OFFSET (PhatKeyboardClass, key_pressed),
+                      G_STRUCT_OFFSET (PhinKeyboardClass, key_pressed),
                       NULL, NULL,
                       g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
 
     /**
-     * PhatKeyboard::key-released
+     * PhinKeyboard::key-released
      * @keyboard: the object on which the signal was emitted
      * @key: the index of the key that was pressed
      *
@@ -160,7 +160,7 @@ static void phat_keyboard_class_init(PhatKeyboardClass* klass)
         g_signal_new ("key-released",
                       G_TYPE_FROM_CLASS (klass),
                       G_SIGNAL_RUN_FIRST | G_SIGNAL_ACTION,
-                      G_STRUCT_OFFSET (PhatKeyboardClass, key_released),
+                      G_STRUCT_OFFSET (PhinKeyboardClass, key_released),
                       NULL, NULL,
                       g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
 
@@ -199,7 +199,7 @@ static gboolean key_press_cb(GnomeCanvasItem* item, GdkEvent* event, _Key* key)
 
 /* so much gayness in here, either I suck or gnome-canvas does; most
  * likely, we both do */
-static void draw_key(PhatKeyboard* self, int index, int pos, guint bg,
+static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
                      guint hi, guint low, guint pre, guint on, guint shad)
 {
     _Key* key = &self->keys[index];
@@ -213,15 +213,15 @@ static void draw_key(PhatKeyboard* self, int index, int pos, guint bg,
     {
         x1 = 0;
         y1 = pos + 1;           /* teh gayz0r */
-        x2 = PHAT_KEYBOARD_KEY_LENGTH - 1;
-        y2 = pos - PHAT_KEYBOARD_KEY_WIDTH + 1;
+        x2 = PHIN_KEYBOARD_KEY_LENGTH - 1;
+        y2 = pos - PHIN_KEYBOARD_KEY_WIDTH + 1;
     }
     else
     {
-        x1 = pos + PHAT_KEYBOARD_KEY_WIDTH - 1;
+        x1 = pos + PHIN_KEYBOARD_KEY_WIDTH - 1;
         y1 = 0;
         x2 = pos;
-        y2 = PHAT_KEYBOARD_KEY_LENGTH - 1;
+        y2 = PHIN_KEYBOARD_KEY_LENGTH - 1;
     }
     
     /* key group */
@@ -412,7 +412,7 @@ static void draw_key(PhatKeyboard* self, int index, int pos, guint bg,
                                   gnome_canvas_text_get_type(),
                                   "text", s,
                                   "x", (gdouble)(x2 - 2),
-                                  "y", (gdouble)(y1 - (PHAT_KEYBOARD_KEY_WIDTH / 2)),
+                                  "y", (gdouble)(y1 - (PHIN_KEYBOARD_KEY_WIDTH / 2)),
                                   "anchor", GTK_ANCHOR_EAST,
                                   "fill-color-rgba", (gint)KEY_TEXT_BG,
                                   "font", "sans",
@@ -424,7 +424,7 @@ static void draw_key(PhatKeyboard* self, int index, int pos, guint bg,
             gnome_canvas_item_new(key->group,
                                   gnome_canvas_text_get_type(),
                                   "text", s,
-                                  "x", (gdouble)(x1 - (PHAT_KEYBOARD_KEY_WIDTH / 2)),
+                                  "x", (gdouble)(x1 - (PHIN_KEYBOARD_KEY_WIDTH / 2)),
                                   "y", (gdouble)(y2 - 2),
                                   "anchor", GTK_ANCHOR_SOUTH,
                                   "fill-color-rgba", (gint)KEY_TEXT_BG,
@@ -439,7 +439,7 @@ static void draw_key(PhatKeyboard* self, int index, int pos, guint bg,
 }
 
 
-static void draw_keyboard(PhatKeyboard* self)
+static void draw_keyboard(PhinKeyboard* self)
 {
     int i, pos, note;
 
@@ -455,21 +455,21 @@ static void draw_keyboard(PhatKeyboard* self)
     /* orientation */
     if (self->orientation == GTK_ORIENTATION_VERTICAL)
     {
-        gtk_widget_set_size_request(GTK_WIDGET(self), PHAT_KEYBOARD_KEY_LENGTH, 0);
-        gtk_widget_set_size_request(GTK_WIDGET(self->canvas), PHAT_KEYBOARD_KEY_LENGTH, (PHAT_KEYBOARD_KEY_WIDTH * self->nkeys));
-        gnome_canvas_set_scroll_region(self->canvas, 0, 0, PHAT_KEYBOARD_KEY_LENGTH-1, (PHAT_KEYBOARD_KEY_WIDTH * self->nkeys) - 1);
+        gtk_widget_set_size_request(GTK_WIDGET(self), PHIN_KEYBOARD_KEY_LENGTH, 0);
+        gtk_widget_set_size_request(GTK_WIDGET(self->canvas), PHIN_KEYBOARD_KEY_LENGTH, (PHIN_KEYBOARD_KEY_WIDTH * self->nkeys));
+        gnome_canvas_set_scroll_region(self->canvas, 0, 0, PHIN_KEYBOARD_KEY_LENGTH-1, (PHIN_KEYBOARD_KEY_WIDTH * self->nkeys) - 1);
     }
     else
     {
-        gtk_widget_set_size_request(GTK_WIDGET(self), 0, PHAT_KEYBOARD_KEY_LENGTH);
-        gtk_widget_set_size_request(GTK_WIDGET(self->canvas), (PHAT_KEYBOARD_KEY_WIDTH * self->nkeys), PHAT_KEYBOARD_KEY_LENGTH);
-        gnome_canvas_set_scroll_region(self->canvas, 0, 0, (PHAT_KEYBOARD_KEY_WIDTH * self->nkeys) - 1, PHAT_KEYBOARD_KEY_LENGTH-1);
+        gtk_widget_set_size_request(GTK_WIDGET(self), 0, PHIN_KEYBOARD_KEY_LENGTH);
+        gtk_widget_set_size_request(GTK_WIDGET(self->canvas), (PHIN_KEYBOARD_KEY_WIDTH * self->nkeys), PHIN_KEYBOARD_KEY_LENGTH);
+        gnome_canvas_set_scroll_region(self->canvas, 0, 0, (PHIN_KEYBOARD_KEY_WIDTH * self->nkeys) - 1, PHIN_KEYBOARD_KEY_LENGTH-1);
     }
 
     /* keys */
     if (self->orientation == GTK_ORIENTATION_VERTICAL)
     {
-        for (i = note = 0, pos = (PHAT_KEYBOARD_KEY_WIDTH * self->nkeys) - 1; i < self->nkeys; ++i, ++note, pos -= PHAT_KEYBOARD_KEY_WIDTH)
+        for (i = note = 0, pos = (PHIN_KEYBOARD_KEY_WIDTH * self->nkeys) - 1; i < self->nkeys; ++i, ++note, pos -= PHIN_KEYBOARD_KEY_WIDTH)
         {
             if (note > 11)
                 note = 0;
@@ -497,7 +497,7 @@ static void draw_keyboard(PhatKeyboard* self)
     }
     else                        /* gaarrrrrr */
     {
-        for (i = note = 0, pos = 0; i < self->nkeys; ++i, ++note, pos += PHAT_KEYBOARD_KEY_WIDTH)
+        for (i = note = 0, pos = 0; i < self->nkeys; ++i, ++note, pos += PHIN_KEYBOARD_KEY_WIDTH)
         {
             if (note > 11)
                 note = 0;
@@ -527,7 +527,7 @@ static void draw_keyboard(PhatKeyboard* self)
 
 
 
-static void phat_keyboard_init(PhatKeyboard* self)
+static void phin_keyboard_init(PhinKeyboard* self)
 {
     self->keys = NULL;
     self->nkeys = -1;
@@ -540,14 +540,14 @@ static void phat_keyboard_init(PhatKeyboard* self)
 }
  
 
-static void phat_keyboard_set_property(GObject          *object,
+static void phin_keyboard_set_property(GObject          *object,
                                        guint             prop_id,
                                        const GValue     *value,
                                        GParamSpec       *pspec)
 {
-    PhatKeyboard* self;
+    PhinKeyboard* self;
 
-    self = PHAT_KEYBOARD(object);
+    self = PHIN_KEYBOARD(object);
 
     switch (prop_id)
     {
@@ -570,14 +570,14 @@ static void phat_keyboard_set_property(GObject          *object,
 }
 
 
-static void phat_keyboard_get_property(GObject          *object,
+static void phin_keyboard_get_property(GObject          *object,
                                        guint             prop_id,
                                        GValue           *value,
                                        GParamSpec       *pspec)
 {
-    PhatKeyboard* self;
+    PhinKeyboard* self;
 
-    self = PHAT_KEYBOARD (object);
+    self = PHIN_KEYBOARD (object);
 
     switch (prop_id)
     {
@@ -597,9 +597,9 @@ static void phat_keyboard_get_property(GObject          *object,
 }
 
 
-static void phat_keyboard_destroy(GtkObject* object)
+static void phin_keyboard_destroy(GtkObject* object)
 {
-    PhatKeyboard* self = PHAT_KEYBOARD(object);
+    PhinKeyboard* self = PHIN_KEYBOARD(object);
 
     g_free(self->keys);
     self->keys = NULL;
@@ -607,15 +607,15 @@ static void phat_keyboard_destroy(GtkObject* object)
 
 
 /**
- * phat_keyboard_get_adjustment:
- * @keyboard: a #PhatKeyboard
+ * phin_keyboard_get_adjustment:
+ * @keyboard: a #PhinKeyboard
  *
  * Retrives the current adjustment in use by @keyboard.
  *
  * Returns: @keyboard's current #GtkAdjustment
  *
  */
-GtkAdjustment* phat_keyboard_get_adjustment(PhatKeyboard* keyboard)
+GtkAdjustment* phin_keyboard_get_adjustment(PhinKeyboard* keyboard)
 {
     GtkAdjustment* adj;
 
@@ -629,14 +629,14 @@ GtkAdjustment* phat_keyboard_get_adjustment(PhatKeyboard* keyboard)
 
 
 /**
- * phat_keyboard_set_adjustment:
- * @keyboard: a #PhatKeyboard
+ * phin_keyboard_set_adjustment:
+ * @keyboard: a #PhinKeyboard
  * @adjustment: a #GtkAdjustment
  *
  * Sets the adjustment used by @keyboard.
  *
  */
-void phat_keyboard_set_adjustment(PhatKeyboard* keyboard, GtkAdjustment* adj)
+void phin_keyboard_set_adjustment(PhinKeyboard* keyboard, GtkAdjustment* adj)
 {
     if (!adj)
         return;

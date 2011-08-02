@@ -23,7 +23,8 @@
 
 
 #include <gtk/gtk.h>
-#include <phat/phat.h>
+
+#include "phin.h"
 
 #include "paramtab.h"
 #include "gui.h"

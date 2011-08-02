@@ -1,8 +1,8 @@
 #include <gdk/gdk.h>
 #include <gdk/gdkx.h>
-#include "phatprivate.h"
+#include "phinprivate.h"
 
-void phat_warp_pointer (int xsrc, int ysrc,
+void phin_warp_pointer (int xsrc, int ysrc,
                         int xdest, int ydest)
 {
 /* this function used to use the Xlib function:
@@ -44,7 +44,7 @@ gboolean supports_alpha = FALSE;
 
 
 /* Only some X servers support alpha channels. Always have a fallback */
-void phat_screen_changed(GtkWidget *widget, GdkScreen *old_screen,
+void phin_screen_changed(GtkWidget *widget, GdkScreen *old_screen,
                                                     gpointer userdata)
 {
     /* To check if the display supports alpha channels, get the colormap */

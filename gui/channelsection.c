@@ -23,7 +23,9 @@
 
 
 #include <gtk/gtk.h>
-#include <phat/phat.h>
+
+#include "phin.h"
+
 #include "channelsection.h"
 #include "gui.h"
 #include "patchlist.h"
@@ -41,9 +43,9 @@ static void channel_section_class_init(ChannelSectionClass* klass)
 }
 
 
-static void channel_cb(PhatSliderButton* button, ChannelSection* self)
+static void channel_cb(PhinSliderButton* button, ChannelSection* self)
 {
-    int channel = (int)phat_slider_button_get_value(button);
+    int channel = (int)phin_slider_button_get_value(button);
     PatchList* list = gui_get_patch_list();
 
     patch_set_channel(self->patch, channel-1);
@@ -52,9 +54,9 @@ static void channel_cb(PhatSliderButton* button, ChannelSection* self)
 }
 
 
-static void lower_vel_cb(PhatSliderButton* button, ChannelSection* self)
+static void lower_vel_cb(PhinSliderButton* button, ChannelSection* self)
 {
-    int lower_vel = (int)phat_slider_button_get_value(button);
+    int lower_vel = (int)phin_slider_button_get_value(button);
     PatchList* list = gui_get_patch_list();
 
     patch_set_lower_vel(self->patch, lower_vel);
@@ -63,9 +65,9 @@ static void lower_vel_cb(PhatSliderButton* button, ChannelSection* self)
 }
 
 
-static void upper_vel_cb(PhatSliderButton* button, ChannelSection* self)
+static void upper_vel_cb(PhinSliderButton* button, ChannelSection* self)
 {
-    int upper_vel = (int)phat_slider_button_get_value(button);
+    int upper_vel = (int)phin_slider_button_get_value(button);
     PatchList* list = gui_get_patch_list();
 
     patch_set_upper_vel(self->patch, upper_vel);
@@ -103,22 +105,22 @@ static void channel_section_init(ChannelSection* self)
     gtk_widget_show(lbl_upper);
 
     /* channel sliderbutton */
-    self->chan_sb = phat_slider_button_new_with_range(1, 1, MIDI_CHANS,1,0);
-    phat_slider_button_set_threshold(PHAT_SLIDER_BUTTON(self->chan_sb),
+    self->chan_sb = phin_slider_button_new_with_range(1, 1, MIDI_CHANS,1,0);
+    phin_slider_button_set_threshold(PHIN_SLIDER_BUTTON(self->chan_sb),
                                                         GUI_THRESHOLD);
     gtk_table_attach_defaults(GTK_TABLE(table),self->chan_sb,1,2,0,1);
     gtk_widget_show(self->chan_sb);
 
     /* lower velocity slide */ 
-    self->lower_vel_sb = phat_slider_button_new_with_range(0, 0, 127, 1, 0);
-    phat_slider_button_set_threshold(PHAT_SLIDER_BUTTON(self->lower_vel_sb),
+    self->lower_vel_sb = phin_slider_button_new_with_range(0, 0, 127, 1, 0);
+    phin_slider_button_set_threshold(PHIN_SLIDER_BUTTON(self->lower_vel_sb),
                                                         GUI_THRESHOLD);
     gtk_table_attach_defaults(GTK_TABLE(table),self->lower_vel_sb,1,2,1,2);
     gtk_widget_show(self->lower_vel_sb);
 
     /* upper velocity slider */
-    self->upper_vel_sb = phat_slider_button_new_with_range(127, 0, 127, 1, 0);
-    phat_slider_button_set_threshold(PHAT_SLIDER_BUTTON(self->upper_vel_sb),
+    self->upper_vel_sb = phin_slider_button_new_with_range(127, 0, 127, 1, 0);
+    phin_slider_button_set_threshold(PHIN_SLIDER_BUTTON(self->upper_vel_sb),
                                                         GUI_THRESHOLD);
     gtk_table_attach_defaults(GTK_TABLE(table),self->upper_vel_sb,1,2,2,3);
     gtk_widget_show(self->upper_vel_sb);
@@ -172,11 +174,11 @@ void channel_section_set_patch(ChannelSection* self, int patch)
         upper_vel = patch_get_upper_vel(patch);
 
         block(self);
-        phat_slider_button_set_value(PHAT_SLIDER_BUTTON(self->chan_sb),
+        phin_slider_button_set_value(PHIN_SLIDER_BUTTON(self->chan_sb),
                                                                 channel+1);
-        phat_slider_button_set_value(PHAT_SLIDER_BUTTON(self->lower_vel_sb),
+        phin_slider_button_set_value(PHIN_SLIDER_BUTTON(self->lower_vel_sb),
                                                                 lower_vel);
-        phat_slider_button_set_value(PHAT_SLIDER_BUTTON(self->upper_vel_sb),
+        phin_slider_button_set_value(PHIN_SLIDER_BUTTON(self->upper_vel_sb),
                                                                 upper_vel);
         unblock(self);
     }

@@ -15,6 +15,8 @@ add_definitions (
     ${LIBGNOMECANVAS2_CFLAGS_OTHER}
     )
 
-add_library( phin ${LIBPHIN_SOURCES})
+add_library( phin STATIC ${LIBPHIN_SOURCES})
+SET(CMAKE_INSTALL_LIBDIR lib CACHE PATH "Output directory for libraries")
+install(TARGETS phin DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 target_link_Libraries(phin ${GTK2_LIBRARIES} ${LIBGNOMECANVAS2_LIBRARIES})

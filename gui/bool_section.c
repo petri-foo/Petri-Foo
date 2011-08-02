@@ -19,7 +19,8 @@
 
 
 #include <gtk/gtk.h>
-#include <phat/phat.h>
+
+#include "phin.h"
 
 #include "bool_section.h"
 #include "gui.h"
@@ -108,7 +109,7 @@ static void thresh_cb(GtkWidget* w, BoolSectionPrivate* p)
 {
     patch_bool_set_thresh(  p->patch_id,
                             p->bool_type,
-                            phat_fan_slider_get_value(PHAT_FAN_SLIDER(w)));
+                            phin_fan_slider_get_value(PHIN_FAN_SLIDER(w)));
 }
 
 
@@ -194,7 +195,7 @@ void bool_section_set_bool( BoolSection* self, PatchBoolType bool_type)
     mod_src_combo_set_model(GTK_COMBO_BOX(p->mod_combo), MOD_SRC_GLOBALS);
     gui_attach(t, p->mod_combo, b1, b2, y, y + 1);
 
-    p->thresh = phat_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
+    p->thresh = phin_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
     gui_attach(t, p->thresh, c1, c2, y, y + 1);
     gtk_widget_set_tooltip_text(p->thresh, "Switch threshold");
     ++y;
@@ -251,7 +252,7 @@ void bool_section_set_patch(BoolSection* self, int patch_id)
 
     block(p);
 
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->thresh), thresh);
+    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->thresh), thresh);
 
     if (!mod_src_combo_get_iter_with_id(GTK_COMBO_BOX(p->mod_combo),
                                         modsrc,

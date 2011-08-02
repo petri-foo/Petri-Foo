@@ -1,5 +1,5 @@
-#ifndef __PHAT_PRIVATE_H__
-#define __PHAT_PRIVATE_H__
+#ifndef __PHIN_PRIVATE_H__
+#define __PHIN_PRIVATE_H__
 
 #include <gtk/gtk.h>
 #include <stdio.h>
@@ -16,13 +16,13 @@
 
 extern gboolean supports_alpha;
 
-void phat_screen_changed(GtkWidget *widget, GdkScreen *old_screen,
+void phin_screen_changed(GtkWidget *widget, GdkScreen *old_screen,
                                                     gpointer userdata);
 
-void phat_warp_pointer (int xsrc, int ysrc, int xdest, int ydest);
+void phin_warp_pointer (int xsrc, int ysrc, int xdest, int ydest);
 
 void set_cairo_rgba_from_gdk(cairo_t* cr, GdkColor* col, double a);
 void gdk_col_to_double(GdkColor* c, double* r, double* g, double* b);
 
 
-#endif /* __PHAT_PRIVATE_H__ */
+#endif /* __PHIN_PRIVATE_H__ */

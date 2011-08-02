@@ -23,7 +23,9 @@
 
 
 #include <gtk/gtk.h>
-#include <phat/phat.h>
+
+#include "phin.h"
+
 #include "envelopetab.h"
 #include "gui.h"
 #include "idselector.h"
@@ -79,7 +81,7 @@ static void envelope_tab_class_init(EnvelopeTabClass* klass)
 static void set_sensitive(EnvelopeTabPrivate* p, gboolean val)
 {
     /*  setting the table itself takes care of the labels,
-     *  but still need to set the phat widgets...
+     *  but still need to set the phin widgets...
      */
     gtk_widget_set_sensitive(p->env_table, val);
     gtk_widget_set_sensitive(p->delay_fan, val);
@@ -116,65 +118,65 @@ static void on_cb2(GtkToggleButton* button, EnvelopeTabPrivate* p)
 }
 
 
-static void delay_cb(PhatFanSlider* fan, EnvelopeTabPrivate* p)
+static void delay_cb(PhinFanSlider* fan, EnvelopeTabPrivate* p)
 {
-    float val = phat_fan_slider_get_value(fan);
+    float val = phin_fan_slider_get_value(fan);
     patch_set_env_delay(p->patch,
         id_selector_get_id(ID_SELECTOR(p->idsel)),val);
 }
 
 
-static void attack_cb(PhatFanSlider* fan, EnvelopeTabPrivate* p)
+static void attack_cb(PhinFanSlider* fan, EnvelopeTabPrivate* p)
 {
-    float val = phat_fan_slider_get_value(fan);
+    float val = phin_fan_slider_get_value(fan);
     patch_set_env_attack(p->patch,
         id_selector_get_id(ID_SELECTOR(p->idsel)), val);
 }
 
 
-static void hold_cb(PhatFanSlider* fan, EnvelopeTabPrivate* p)
+static void hold_cb(PhinFanSlider* fan, EnvelopeTabPrivate* p)
 {
-    float val = phat_fan_slider_get_value(fan);
+    float val = phin_fan_slider_get_value(fan);
     patch_set_env_hold(p->patch,
         id_selector_get_id(ID_SELECTOR(p->idsel)), val);
 }
 
 
-static void decay_cb(PhatFanSlider* fan, EnvelopeTabPrivate* p)
+static void decay_cb(PhinFanSlider* fan, EnvelopeTabPrivate* p)
 {
-    float val = phat_fan_slider_get_value(fan);
+    float val = phin_fan_slider_get_value(fan);
     patch_set_env_decay(p->patch,
         id_selector_get_id(ID_SELECTOR(p->idsel)), val);
 }
 
 
-static void sustain_cb(PhatFanSlider* fan, EnvelopeTabPrivate* p)
+static void sustain_cb(PhinFanSlider* fan, EnvelopeTabPrivate* p)
 {
-    float val = phat_fan_slider_get_value(fan);
+    float val = phin_fan_slider_get_value(fan);
     patch_set_env_sustain(p->patch,
         id_selector_get_id(ID_SELECTOR(p->idsel)), val);
 }
 
 
-static void release_cb(PhatFanSlider* fan, EnvelopeTabPrivate* p)
+static void release_cb(PhinFanSlider* fan, EnvelopeTabPrivate* p)
 {
-    float val = phat_fan_slider_get_value(fan);
+    float val = phin_fan_slider_get_value(fan);
     patch_set_env_release(p->patch,
         id_selector_get_id(ID_SELECTOR(p->idsel)), val);
 }
 
 
-static void key_cb(PhatFanSlider* fan, EnvelopeTabPrivate* p)
+static void key_cb(PhinFanSlider* fan, EnvelopeTabPrivate* p)
 {
-    float val = phat_fan_slider_get_value(fan);
+    float val = phin_fan_slider_get_value(fan);
     patch_set_env_key_amt(p->patch,
         id_selector_get_id(ID_SELECTOR(p->idsel)), val);
 }
 
 /*
-static void vel_cb(PhatFanSlider* fan, EnvelopeTabPrivate* p)
+static void vel_cb(PhinFanSlider* fan, EnvelopeTabPrivate* p)
 {
-    float val = phat_fan_slider_get_value(fan);
+    float val = phin_fan_slider_get_value(fan);
     patch_set_env_vel_amt(p->patch,
         id_selector_get_id(ID_SELECTOR(p->idsel)), val);
 }
@@ -279,49 +281,49 @@ static void envelope_tab_init(EnvelopeTab* self)
 
     /* delay fan */
     gui_label_attach("Delay:", t, a1, a2, y, y + 1);
-    p->delay_fan = phat_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
+    p->delay_fan = phin_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
     gui_attach(t, p->delay_fan, b1, b2, y, y + 1);
     ++y;
 
     /* attack fan */
     gui_label_attach("Attack:", t, a1, a2, y, y + 1);
-    p->attack_fan = phat_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
+    p->attack_fan = phin_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
     gui_attach(t, p->attack_fan, b1, b2, y, y + 1);
     ++y;
 
     /* hold fan */
     gui_label_attach("Hold:", t, a1, a2, y, y + 1);
-    p->hold_fan = phat_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
+    p->hold_fan = phin_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
     gui_attach(t, p->hold_fan, b1, b2, y, y + 1);
     ++y;
 
     /* decay fan */
     gui_label_attach("Decay:", t, a1, a2, y, y + 1);
-    p->decay_fan = phat_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
+    p->decay_fan = phin_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
     gui_attach(t, p->decay_fan, b1, b2, y, y + 1);
     ++y;
 
     /* sustain fan */
     gui_label_attach("Sustain:", t, a1, a2, y, y + 1);
-    p->sustain_fan = phat_hfan_slider_new_with_range(0.7, 0.0, 1.0, 0.01);
+    p->sustain_fan = phin_hfan_slider_new_with_range(0.7, 0.0, 1.0, 0.01);
     gui_attach(t, p->sustain_fan, b1, b2, y, y + 1);
     ++y;
 
     /* release fan */
     gui_label_attach("Release:", t, a1, a2, y, y  + 1);
-    p->release_fan = phat_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
+    p->release_fan = phin_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
     gui_attach(t, p->release_fan, b1, b2, y, y + 1);
     ++y;
 
     /* key fan */
     gui_label_attach("Key Track:", t, a1, a2, y, y + 1);
-    p->key_fan = phat_hfan_slider_new_with_range(0.1, -1.0, 1.0, 0.01);
+    p->key_fan = phin_hfan_slider_new_with_range(0.1, -1.0, 1.0, 0.01);
     gui_attach(t, p->key_fan, b1, b2, y, y + 1);
     ++y;
 
     /* vel fan
     gui_label_attach("Vel.Sens:", t, a1, a2, y, y + 1);
-    p->vel_fan = phat_hfan_slider_new_with_range(0.1, -1.0, 1.0, 0.01);
+    p->vel_fan = phin_hfan_slider_new_with_range(0.1, -1.0, 1.0, 0.01);
     gui_attach(t, p->vel_fan, b1, b2, y, y + 1);
     ++y;
     */
@@ -353,14 +355,14 @@ static void update_env(EnvelopeTabPrivate* p)
 
     block(p);
 
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->delay_fan), l);
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->attack_fan), a);
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->hold_fan), h);
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->decay_fan), d);
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->sustain_fan), s);
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->release_fan), r);
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->key_fan), key);
-/*  phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->vel_fan), vel); */
+    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->delay_fan), l);
+    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->attack_fan), a);
+    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->hold_fan), h);
+    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->decay_fan), d);
+    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->sustain_fan), s);
+    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->release_fan), r);
+    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->key_fan), key);
+/*  phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->vel_fan), vel); */
 
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(p->env_check), on);
 

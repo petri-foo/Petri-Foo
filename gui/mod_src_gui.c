@@ -23,7 +23,8 @@
 
 
 #include "mod_src_gui.h"
-#include <phat/phat.h>
+
+#include "phin.h"
 
 #include "gui.h"
 #include "petri-foo.h"
@@ -106,14 +107,14 @@ GtkWidget* mod_src_new_pitch_adjustment(void)
 {
     GtkWidget* amt;
 
-    amt = phat_slider_button_new_with_range(12,    -PATCH_MAX_PITCH_STEPS,
+    amt = phin_slider_button_new_with_range(12,    -PATCH_MAX_PITCH_STEPS,
                                                     PATCH_MAX_PITCH_STEPS,
                                                     0.1, 1.0);
 
-    phat_slider_button_set_format(PHAT_SLIDER_BUTTON(amt),
+    phin_slider_button_set_format(PHIN_SLIDER_BUTTON(amt),
                                                     -1, NULL, NULL);
     gtk_widget_set_tooltip_text(amt, "Semitones");
-    phat_slider_button_set_threshold(PHAT_SLIDER_BUTTON(amt),
+    phin_slider_button_set_threshold(PHIN_SLIDER_BUTTON(amt),
                                                             GUI_THRESHOLD);
     return amt;
 }

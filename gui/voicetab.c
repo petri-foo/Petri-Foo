@@ -23,7 +23,9 @@
 
 
 #include <gtk/gtk.h>
-#include <phat/phat.h>
+
+#include "phin.h"
+
 #include "voicetab.h"
 #include "gui.h"
 #include "patch_set_and_get.h"
@@ -63,16 +65,16 @@ static void voice_tab_class_init(VoiceTabClass* klass)
 }
 
 
-static void cut_cb(PhatSliderButton* button, VoiceTabPrivate* p)
+static void cut_cb(PhinSliderButton* button, VoiceTabPrivate* p)
 {
-    int val = phat_slider_button_get_value(button);
+    int val = phin_slider_button_get_value(button);
     patch_set_cut(p->patch, val);
 }
 
 
-static void cutby_cb(PhatSliderButton* button, VoiceTabPrivate* p)
+static void cutby_cb(PhinSliderButton* button, VoiceTabPrivate* p)
 {
-    int val = phat_slider_button_get_value(button);
+    int val = phin_slider_button_get_value(button);
     patch_set_cut_by(p->patch, val);
 }
 
@@ -159,19 +161,19 @@ static void voice_tab_init(VoiceTab* self)
     ++y;
 
     /* cut sliderbutton */
-    p->cut_sb = phat_slider_button_new_with_range(0, 0, 99, 1, 0);
-    phat_slider_button_set_format(PHAT_SLIDER_BUTTON(p->cut_sb), 0,
+    p->cut_sb = phin_slider_button_new_with_range(0, 0, 99, 1, 0);
+    phin_slider_button_set_format(PHIN_SLIDER_BUTTON(p->cut_sb), 0,
                                                     "Cut:", NULL);
-    phat_slider_button_set_threshold(PHAT_SLIDER_BUTTON(p->cut_sb),
+    phin_slider_button_set_threshold(PHIN_SLIDER_BUTTON(p->cut_sb),
                                                     GUI_THRESHOLD);
     gui_attach(t, p->cut_sb, a1, a2, y, y + 1);
 
 
     /* cutby sliderbutton */
-    p->cutby_sb = phat_slider_button_new_with_range(0, 0, 99, 1, 0);
-    phat_slider_button_set_format(PHAT_SLIDER_BUTTON(p->cutby_sb), 0,
+    p->cutby_sb = phin_slider_button_new_with_range(0, 0, 99, 1, 0);
+    phin_slider_button_set_format(PHIN_SLIDER_BUTTON(p->cutby_sb), 0,
                                                     "Cut by:", NULL);
-    phat_slider_button_set_threshold(PHAT_SLIDER_BUTTON(p->cutby_sb),
+    phin_slider_button_set_threshold(PHIN_SLIDER_BUTTON(p->cutby_sb),
                                                     GUI_THRESHOLD);
     gui_attach(t, p->cutby_sb, b1, b2, y, y + 1);
     ++y;
@@ -230,8 +232,8 @@ void voice_tab_set_patch(VoiceTab* self, int patch)
 
     block(p);
 
-    phat_slider_button_set_value(PHAT_SLIDER_BUTTON(p->cut_sb), cut);
-    phat_slider_button_set_value(PHAT_SLIDER_BUTTON(p->cutby_sb), cutby);
+    phin_slider_button_set_value(PHIN_SLIDER_BUTTON(p->cut_sb), cut);
+    phin_slider_button_set_value(PHIN_SLIDER_BUTTON(p->cutby_sb), cutby);
 
     bool_section_set_patch(BOOL_SECTION(p->porta_sect), patch);
 

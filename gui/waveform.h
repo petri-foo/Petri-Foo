@@ -45,9 +45,6 @@
                                     WAVEFORM_TYPE,  WaveformClass))
 
 
-
-
-
 typedef struct _Waveform      Waveform;
 typedef struct _WaveformClass WaveformClass;
 

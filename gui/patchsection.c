@@ -24,8 +24,10 @@
 
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
-#include <phat/phat.h>
 #include <stdlib.h>
+
+#include "phin.h"
+
 #include "patchsection.h"
 #include "petri-foo.h"
 #include "gui.h"

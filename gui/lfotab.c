@@ -23,7 +23,9 @@
 
 
 #include <gtk/gtk.h>
-#include <phat/phat.h>
+
+#include "phin.h"
+
 #include "lfotab.h"
 #include "gui.h"
 #include "idselector.h"
@@ -110,7 +112,7 @@ static void set_sensitive(LfoTabPrivate* p, gboolean val)
                                 GTK_TOGGLE_BUTTON(p->sync_radio));
 
     /*  setting the table itself takes care of the labels,
-     *  but still need to set the phat widgets...
+     *  but still need to set the phin widgets...
      */
     gtk_widget_set_sensitive(p->lfo_table,  val);
 
@@ -190,17 +192,17 @@ static void sync_cb2(GtkToggleButton* button, LfoTabPrivate* p)
 }
 
 
-static void freq_cb(PhatFanSlider* fan, LfoTabPrivate* p)
+static void freq_cb(PhinFanSlider* fan, LfoTabPrivate* p)
 {
     patch_set_lfo_freq( p->patch_id, p->lfo_id,
-                        phat_fan_slider_get_value(fan));
+                        phin_fan_slider_get_value(fan));
 }
 
 
-static void beats_cb(PhatSliderButton* button, LfoTabPrivate* p)
+static void beats_cb(PhinSliderButton* button, LfoTabPrivate* p)
 {
     patch_set_lfo_beats(p->patch_id, p->lfo_id,
-                        phat_slider_button_get_value(button));
+                        phin_slider_button_get_value(button));
 }
 
 static void positive_cb(GtkToggleButton* button, LfoTabPrivate* p)
@@ -210,17 +212,17 @@ static void positive_cb(GtkToggleButton* button, LfoTabPrivate* p)
 }
 
 
-static void delay_cb(PhatFanSlider* fan, LfoTabPrivate* p)
+static void delay_cb(PhinFanSlider* fan, LfoTabPrivate* p)
 {
     patch_set_lfo_delay(p->patch_id, p->lfo_id,
-                        phat_fan_slider_get_value(fan));
+                        phin_fan_slider_get_value(fan));
 }
 
 
-static void attack_cb(PhatFanSlider* fan, LfoTabPrivate* p)
+static void attack_cb(PhinFanSlider* fan, LfoTabPrivate* p)
 {
     patch_set_lfo_attack(p->patch_id, p->lfo_id,
-                        phat_fan_slider_get_value(fan));
+                        phin_fan_slider_get_value(fan));
 }
 
 static void mod_src_cb(GtkComboBox* combo, LfoTabPrivate* p)
@@ -246,7 +248,7 @@ static void mod_src_cb(GtkComboBox* combo, LfoTabPrivate* p)
 
 static void mod_amount_cb(GtkWidget* w, LfoTabPrivate* p)
 {
-    float val = phat_fan_slider_get_value(PHAT_FAN_SLIDER(w));
+    float val = phin_fan_slider_get_value(PHIN_FAN_SLIDER(w));
 
     if (w == p->fm1_amount)
         patch_set_lfo_fm1_amt(p->patch_id, p->lfo_id, val);
@@ -405,7 +407,7 @@ static void lfo_tab_init(LfoTab* self)
     /* freq */
     gui_label_attach("Hrtz:", t, a1, a2, y, y + 1);
     p->free_radio = gtk_radio_button_new(NULL);
-    p->freq_fan = phat_hfan_slider_new_with_range(5.0, 0.0, 50.0, 0.1);
+    p->freq_fan = phin_hfan_slider_new_with_range(5.0, 0.0, 50.0, 0.1);
     gui_attach(t, p->free_radio, b1, b2, y, y + 1);
     gui_attach(t, p->freq_fan, c1, c2, y, y + 1);
     ++y;
@@ -413,10 +415,10 @@ static void lfo_tab_init(LfoTab* self)
     /* sync */
     p->sync_radio = gtk_radio_button_new_from_widget(
                             GTK_RADIO_BUTTON(p->free_radio));
-    p->beats_sb = phat_slider_button_new_with_range(1.0, .25, 32.0, .25, 2);
-    phat_slider_button_set_format(PHAT_SLIDER_BUTTON(p->beats_sb),
+    p->beats_sb = phin_slider_button_new_with_range(1.0, .25, 32.0, .25, 2);
+    phin_slider_button_set_format(PHIN_SLIDER_BUTTON(p->beats_sb),
                                     -1, NULL, "Beats");
-    phat_slider_button_set_threshold(PHAT_SLIDER_BUTTON(p->beats_sb),
+    phin_slider_button_set_threshold(PHIN_SLIDER_BUTTON(p->beats_sb),
                                     GUI_THRESHOLD);
     gui_attach(t, p->sync_radio, b1, b2, y, y + 1);
     gui_attach(t, p->beats_sb, c1, c2, y, y + 1);
@@ -430,7 +432,7 @@ static void lfo_tab_init(LfoTab* self)
     ++y;
 
     gui_label_attach("Amount:", t, a1, a2, y, y + 1);
-    p->fm1_amount = phat_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
+    p->fm1_amount = phin_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
     gui_attach(t, p->fm1_amount, c1, c2, y, y + 1);
     ++y;
 
@@ -441,7 +443,7 @@ static void lfo_tab_init(LfoTab* self)
     ++y;
 
     gui_label_attach("Amount:", t, a1, a2, y, y + 1);
-    p->fm2_amount = phat_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
+    p->fm2_amount = phin_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
     gui_attach(t, p->fm2_amount, c1, c2, y, y + 1);
     ++y;
 
@@ -469,13 +471,13 @@ static void lfo_tab_init(LfoTab* self)
 
     /* delay fan */
     p->delay_label = label = gui_label_attach("Delay:", t, a1, a2, y, y+1);
-    p->delay_fan = phat_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
+    p->delay_fan = phin_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
     gui_attach(t, p->delay_fan, c1, c2, y, y + 1);
     ++y;
 
     /* attack fan */
     p->attack_label = label = gui_label_attach("Attack:", t, a1, a2, y,y+1);
-    p->attack_fan = phat_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
+    p->attack_fan = phin_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
     gui_attach(t, p->attack_fan, c1, c2, y, y + 1);
     ++y;
 
@@ -486,7 +488,7 @@ static void lfo_tab_init(LfoTab* self)
     ++y;
 
     gui_label_attach("Amount:", t, a1, a2, y, y + 1);
-    p->am1_amount = phat_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
+    p->am1_amount = phin_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
     gui_attach(t, p->am1_amount, c1, c2, y, y + 1);
     ++y;
 
@@ -497,7 +499,7 @@ static void lfo_tab_init(LfoTab* self)
     ++y;
 
     gui_label_attach("Amount:", t, a1, a2, y, y + 1);
-    p->am2_amount = phat_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
+    p->am2_amount = phin_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
     gui_attach(t, p->am2_amount, c1, c2, y, y + 1);
     ++y;
 
@@ -599,7 +601,7 @@ static void update_lfo(LfoTabPrivate* p)
 
     block(p);
 
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->freq_fan), freq);
+    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->freq_fan), freq);
 
 
     if (mod_src_is_global(p->lfo_id))
@@ -611,15 +613,15 @@ static void update_lfo(LfoTabPrivate* p)
     }
     else
     {
-        phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->delay_fan), delay);
-        phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->attack_fan), attack);
+        phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->delay_fan), delay);
+        phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->attack_fan), attack);
         gtk_widget_show(p->delay_fan);
         gtk_widget_show(p->delay_label);
         gtk_widget_show(p->attack_fan);
         gtk_widget_show(p->attack_label);
     }
 
-    phat_slider_button_set_value(PHAT_SLIDER_BUTTON(p->beats_sb), beats);
+    phin_slider_button_set_value(PHIN_SLIDER_BUTTON(p->beats_sb), beats);
 
     if (sync)
         gtk_toggle_button_set_active(
@@ -650,10 +652,10 @@ static void update_lfo(LfoTabPrivate* p)
     gtk_combo_box_set_active_iter(GTK_COMBO_BOX(p->am1_combo), &am1iter);
     gtk_combo_box_set_active_iter(GTK_COMBO_BOX(p->am2_combo), &am2iter);
 
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->fm1_amount), fm1amt);
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->fm2_amount), fm2amt);
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->am1_amount), am1amt);
-    phat_fan_slider_set_value(PHAT_FAN_SLIDER(p->am2_amount), am2amt);
+    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->fm1_amount), fm1amt);
+    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->fm2_amount), fm2amt);
+    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->am1_amount), am1amt);
+    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->am2_amount), am2amt);
 
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(p->lfo_check), on);
 

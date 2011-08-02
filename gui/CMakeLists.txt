@@ -1,9 +1,8 @@
-include_directories(${Petri-Foo_SOURCE_DIR}/libpetrifoo)
-include_directories(${Petri-Foo_SOURCE_DIR}/libphin)
-
 file (GLOB PETRI_FOO_SOURCES *.c)
 
 include_directories (
+    ${Petri-Foo_SOURCE_DIR}/libpetrifoo
+    ${Petri-Foo_SOURCE_DIR}/libphin
     ${GTK2_INCLUDE_DIRS}
     ${LIBGNOMECANVAS2_INCLUDE_DIRS}
     )

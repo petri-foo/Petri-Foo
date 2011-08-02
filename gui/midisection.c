@@ -23,8 +23,10 @@
 
 
 #include <gtk/gtk.h>
-#include <phat/phat.h>
-#include <libgnomecanvas/libgnomecanvas.h>
+/*#include <libgnomecanvas/libgnomecanvas.h>*/
+
+#include "phin.h"
+
 #include "midisection.h"
 #include "petri-foo.h"
 #include "gui.h"
@@ -120,7 +122,7 @@ static gboolean range_cb(GnomeCanvasItem* item, GdkEvent* event,
 
     list = gui_get_patch_list();
 
-    clicked = event->button.x / PHAT_KEYBOARD_KEY_WIDTH;
+    clicked = event->button.x / PHIN_KEYBOARD_KEY_WIDTH;
     note = patch_get_note(p->patch);
     lower = patch_get_lower_note(p->patch);
     upper = patch_get_upper_note(p->patch);
@@ -156,17 +158,17 @@ static gboolean range_cb(GnomeCanvasItem* item, GdkEvent* event,
 
     /* reposition note */
     gnome_canvas_item_set(p->note, "x1",
-                    (gdouble)(note * PHAT_KEYBOARD_KEY_WIDTH - 1),  NULL);
+                    (gdouble)(note * PHIN_KEYBOARD_KEY_WIDTH - 1),  NULL);
     gnome_canvas_item_set(p->note, "x2",
-                    (gdouble) (note * PHAT_KEYBOARD_KEY_WIDTH
-                                    + PHAT_KEYBOARD_KEY_WIDTH - 1), NULL);
+                    (gdouble) (note * PHIN_KEYBOARD_KEY_WIDTH
+                                    + PHIN_KEYBOARD_KEY_WIDTH - 1), NULL);
 
     /* reposition range */
     gnome_canvas_item_set(p->range, "x1",
-                    (gdouble)(lower * PHAT_KEYBOARD_KEY_WIDTH - 1), NULL);
+                    (gdouble)(lower * PHIN_KEYBOARD_KEY_WIDTH - 1), NULL);
     gnome_canvas_item_set(p->range, "x2",
-                    (gdouble)(upper * PHAT_KEYBOARD_KEY_WIDTH
-                                    + PHAT_KEYBOARD_KEY_WIDTH - 1), NULL);
+                    (gdouble)(upper * PHIN_KEYBOARD_KEY_WIDTH
+                                    + PHIN_KEYBOARD_KEY_WIDTH - 1), NULL);
 
     /* apply changes */
     patch_set_note(p->patch, note);
@@ -234,7 +236,7 @@ static void midi_section_init(MidiSection* self)
     p->ignore = FALSE;
     x1 = 0;
     y1 = 0;
-    x2 = (PHAT_KEYBOARD_KEY_WIDTH * MIDI_NOTES);
+    x2 = (PHIN_KEYBOARD_KEY_WIDTH * MIDI_NOTES);
     y2 = HEIGHT;
 
     /* adjustment */
@@ -270,7 +272,7 @@ static void midi_section_init(MidiSection* self)
 					gnome_canvas_rect_get_type(),
 					"x1", (gdouble)x1,
 					"y1", (gdouble)y1,
-					"x2", (gdouble)PHAT_KEYBOARD_KEY_WIDTH,
+					"x2", (gdouble)PHIN_KEYBOARD_KEY_WIDTH,
 					"y2", (gdouble)y2,
 					"fill-color-rgba", RANGE_COLOR,
 					"outline-color", "black",
@@ -282,7 +284,7 @@ static void midi_section_init(MidiSection* self)
 				       gnome_canvas_rect_get_type(),
 				       "x1", (gdouble)x1,
 				       "y1", (gdouble)y1,
-				       "x2", (gdouble)PHAT_KEYBOARD_KEY_WIDTH,
+				       "x2", (gdouble)PHIN_KEYBOARD_KEY_WIDTH,
 				       "y2", (gdouble)y2,
 				       "fill-color-rgba", NOTE_COLOR,
 				       "outline-color", "black",
@@ -313,7 +315,7 @@ static void midi_section_init(MidiSection* self)
 
 
     /* keyboard */
-    p->keyboard = phat_hkeyboard_new(p->adj, MIDI_NOTES, TRUE);
+    p->keyboard = phin_hkeyboard_new(p->adj, MIDI_NOTES, TRUE);
     gtk_box_pack_start(box, p->keyboard, FALSE, FALSE, 0);
     gtk_widget_show(p->keyboard);
 
@@ -372,17 +374,17 @@ void midi_section_set_patch(MidiSection* self, int patch)
         block(p);
 
         gnome_canvas_item_set(p->note, "x1",
-                (gdouble)(note * PHAT_KEYBOARD_KEY_WIDTH - 1), NULL);
+                (gdouble)(note * PHIN_KEYBOARD_KEY_WIDTH - 1), NULL);
         gnome_canvas_item_set(p->note, "x2",
-                (gdouble)(note * PHAT_KEYBOARD_KEY_WIDTH
-                               + PHAT_KEYBOARD_KEY_WIDTH - 1), NULL);
+                (gdouble)(note * PHIN_KEYBOARD_KEY_WIDTH
+                               + PHIN_KEYBOARD_KEY_WIDTH - 1), NULL);
         gnome_canvas_item_show(p->note);
 
         gnome_canvas_item_set(p->range, "x1",
-                (gdouble) (lower * PHAT_KEYBOARD_KEY_WIDTH - 1), NULL);
+                (gdouble) (lower * PHIN_KEYBOARD_KEY_WIDTH - 1), NULL);
         gnome_canvas_item_set(p->range, "x2",
-                (gdouble) (upper * PHAT_KEYBOARD_KEY_WIDTH
-                                 + PHAT_KEYBOARD_KEY_WIDTH - 1), NULL);
+                (gdouble) (upper * PHIN_KEYBOARD_KEY_WIDTH
+                                 + PHIN_KEYBOARD_KEY_WIDTH - 1), NULL);
         if (lower != upper)
             gnome_canvas_item_show(p->range);
         else
