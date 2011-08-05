@@ -244,12 +244,12 @@ int bank_ops_new(void)
 
 int bank_ops_open_recent(GtkWidget* parent_window, char* filename)
 {
-    GtkWidget* dialog;
     int val; 
+
     if ((val = dish_file_read(filename)) < 0)
     {
          errmsg("Failed to read file %s\n", filename);
-         GtkWidget* msg = gtk_message_dialog_new(GTK_WINDOW(dialog),
+         GtkWidget* msg = gtk_message_dialog_new(GTK_WINDOW(parent_window),
                                    GTK_DIALOG_MODAL,
                                    GTK_MESSAGE_ERROR,
                                    GTK_BUTTONS_CLOSE,
@@ -268,7 +268,7 @@ int bank_ops_open_recent(GtkWidget* parent_window, char* filename)
         last_bank = strdup(filename);
         set_bankname(filename);
     }
-    gtk_widget_destroy(dialog);
+
     return val;
 }
 

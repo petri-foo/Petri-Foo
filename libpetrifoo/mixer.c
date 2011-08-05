@@ -198,7 +198,6 @@ void mixer_flush(void)
 /* constructor */
 void mixer_init(void)
 {
-    int p, c;
     debug ("initializing...\n");
     amplitude = DEFAULT_AMPLITUDE;
     pthread_mutex_init (&preview.mutex, NULL);

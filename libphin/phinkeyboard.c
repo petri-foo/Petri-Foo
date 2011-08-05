@@ -1,7 +1,31 @@
+/*  Phin is a fork of the PHAT Audio Toolkit.
+    Phin is part of Petri-Foo. Petri-Foo is a fork of Specimen.
+
+    Original author Pete Bessman
+    Copyright 2005 Pete Bessman
+    Copyright 2011 James W. Morris
+
+    This file is part of Phin.
+
+    Phin is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License version 2 as
+    published by the Free Software Foundation.
+
+    Phin is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Phin.  If not, see <http://www.gnu.org/licenses/>.
+
+    This file is a derivative of a PHAT original, modified 2011
+*/
 #include <stdio.h>
 #include <gtk/gtk.h>
 #include <libgnomecanvas/libgnomecanvas.h>
 #include "phinkeyboard.h"
+
 
 /* properties */
 enum
@@ -20,7 +44,8 @@ enum
     LAST_SIGNAL,
 };
 
-/* all colors are 32bits, RGBA, 8 bits (2 hex digits) per channel */
+static int signals[LAST_SIGNAL];
+
 
 /* magic numbers */
 enum
@@ -31,32 +56,64 @@ enum
     TEXT_POINTS = 7,
 };
 
+/* all colors are 32bits, RGBA, 8 bits (2 hex digits) per channel */
+
 /* natural (white) key colors */
-static const guint KEY_NAT_BG = 0xEEEEEEFF;
-static const guint KEY_NAT_HI = 0xFFFFFFFF;
-static const guint KEY_NAT_LOW = 0x000000FF;
-static const guint KEY_NAT_PRE = 0xFFFFFFFF;
-static const guint KEY_NAT_ON = 0xD7D7D7FF;
-static const guint KEY_NAT_SHAD = 0xAAAAAAFF;
+static const guint KEY_NAT_BG =     0xEEEEEEFF;
+static const guint KEY_NAT_HI =     0xFFFFFFFF;
+static const guint KEY_NAT_LOW =    0x000000FF;
+static const guint KEY_NAT_PRE =    0xFFFFFFFF;
+static const guint KEY_NAT_ON =     0xD7D7D7FF;
+static const guint KEY_NAT_SHAD =   0xAAAAAAFF;
 
 /* accidental (black) key colors */
-static const guint KEY_ACC_BG = 0x949494FF;
-static const guint KEY_ACC_HI = 0xC9C9C9FF;
-static const guint KEY_ACC_LOW = 0x000000FF;
-static const guint KEY_ACC_PRE = 0xA5A5A5FF;
-static const guint KEY_ACC_ON = 0x767676FF;
-static const guint KEY_ACC_SHAD = 0x4D4D4DFF;
+static const guint KEY_ACC_BG =     0x949494FF;
+static const guint KEY_ACC_HI =     0xC9C9C9FF;
+static const guint KEY_ACC_LOW =    0x000000FF;
+static const guint KEY_ACC_PRE =    0xA5A5A5FF;
+static const guint KEY_ACC_ON =     0x767676FF;
+static const guint KEY_ACC_SHAD =   0x4D4D4DFF;
 
 /* c text label color */
-static const guint KEY_TEXT_BG = 0x000000FF;
+static const guint KEY_TEXT_BG =    0x000000FF;
 
 
-static int signals[LAST_SIGNAL];
-static GtkViewportClass* parent_class;
+typedef struct __Key _Key;
+
+struct __Key
+{
+    int index;
+    PhinKeyboard* keyboard;     /* the keyboard we belong to */
+    GnomeCanvasGroup* group;    /* the group this key belongs to */
+    GnomeCanvasItem* pre;       /* prelight rectangle */
+    GnomeCanvasItem* on;        /* active (depressed) rectangle */
+    GnomeCanvasItem* shad;      /* active shadow */
+};
+
+
+typedef struct _PhinKeyboardPrivate PhinKeyboardPrivate;
+
+#define PHIN_KEYBOARD_GET_PRIVATE(obj) \
+    (G_TYPE_INSTANCE_GET_PRIVATE((obj), PHIN_TYPE_KEYBOARD, \
+                                        PhinKeyboardPrivate))
+
+struct _PhinKeyboardPrivate
+{
+    _Key    *keys;
+    int     nkeys;
+    int     label;
+
+    GnomeCanvas*    canvas;
+    GtkOrientation  orientation;
+};
+
+
+G_DEFINE_TYPE(PhinKeyboard, phin_keyboard, GTK_TYPE_VIEWPORT)
+
 
 static void phin_keyboard_class_init(PhinKeyboardClass* klass);
 static void phin_keyboard_init(PhinKeyboard* self);
-static void phin_keyboard_destroy(GtkObject* object);
+static void phin_keyboard_dispose(GObject* object);
 static void phin_keyboard_set_property(GObject          *object,
                                        guint             prop_id,
                                        const GValue     *value,
@@ -66,71 +123,49 @@ static void phin_keyboard_get_property(GObject          *object,
                                        GValue           *value,
                                        GParamSpec       *pspec);
 
-GType phin_keyboard_get_type(void)
-{
-    static GType type = 0;
-
-    if (!type)
-    {
-        static const GTypeInfo info =
-            {
-                sizeof (PhinKeyboardClass),
-                NULL,
-                NULL,
-                (GClassInitFunc) phin_keyboard_class_init,
-                NULL,
-                NULL,
-                sizeof (PhinKeyboard),
-                0,
-                (GInstanceInitFunc) phin_keyboard_init,
-                NULL
-            };
-
-        /* replace PARENT_CLASS_TYPE with whatever's appropriate for your widget */
-        type = g_type_register_static(GTK_TYPE_VIEWPORT, "PhinKeyboard", &info, 0);
-    }
-
-    return type;
-}
-
 
 static void phin_keyboard_class_init(PhinKeyboardClass* klass)
 {
-    GObjectClass* gobject_class = G_OBJECT_CLASS(klass);
-    
-    parent_class = g_type_class_peek_parent(klass);
+    GObjectClass* object_class = G_OBJECT_CLASS(klass);
 
-    GTK_OBJECT_CLASS(klass)->destroy =  phin_keyboard_destroy;
-    
-    gobject_class->set_property = phin_keyboard_set_property;
-    gobject_class->get_property = phin_keyboard_get_property;
+    phin_keyboard_parent_class = g_type_class_peek_parent(klass);
 
-    g_object_class_install_property(gobject_class,
+    object_class->dispose = phin_keyboard_dispose;
+
+    g_type_class_add_private(object_class, sizeof(PhinKeyboardPrivate));
+
+    object_class->set_property = phin_keyboard_set_property;
+    object_class->get_property = phin_keyboard_get_property;
+
+    g_object_class_install_property(object_class,
                                     PROP_ORIENTATION,
                                     g_param_spec_enum("orientation",
                                                       "Orientation",
-                                                      "How the keyboard should be arranged on the screen",
-                                                      GTK_TYPE_ORIENTATION,
-                                                      GTK_ORIENTATION_VERTICAL,
-                                                      G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
+                    "How the keyboard should be arranged on the screen",
+                                    GTK_TYPE_ORIENTATION,
+                                    GTK_ORIENTATION_VERTICAL,
+                                    G_PARAM_READWRITE
+                                  | G_PARAM_CONSTRUCT_ONLY));
 
-    g_object_class_install_property(gobject_class,
+    g_object_class_install_property(object_class,
                                     PROP_NUMKEYS,
                                     g_param_spec_int("numkeys",
                                                      "Number of Keys",
-                                                     "How many keys this keyboard should have",
-                                                     MINKEYS,
-                                                     MAXKEYS,
-                                                     NUMKEYS,
-                                                     G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
+                    "How many keys this keyboard should have",
+                                    MINKEYS,
+                                    MAXKEYS,
+                                    NUMKEYS,
+                                    G_PARAM_READWRITE
+                                  | G_PARAM_CONSTRUCT_ONLY));
 
-    g_object_class_install_property(gobject_class,
+    g_object_class_install_property(object_class,
                                     PROP_SHOWLABELS,
                                     g_param_spec_boolean("show-labels",
                                                          "Show Labels",
-                                                         "Whether C keys should be labeled or not",
-                                                         TRUE,
-                                                         G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
+                    "Whether C keys should be labeled or not",
+                                    TRUE,
+                                    G_PARAM_READWRITE
+                                  | G_PARAM_CONSTRUCT_ONLY));
 
     /**
      * PhinKeyboard::key-pressed
@@ -146,7 +181,8 @@ static void phin_keyboard_class_init(PhinKeyboardClass* klass)
                       G_SIGNAL_RUN_FIRST | G_SIGNAL_ACTION,
                       G_STRUCT_OFFSET (PhinKeyboardClass, key_pressed),
                       NULL, NULL,
-                      g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
+                      g_cclosure_marshal_VOID__INT,
+                      G_TYPE_NONE, 1, G_TYPE_INT);
 
     /**
      * PhinKeyboard::key-released
@@ -162,37 +198,45 @@ static void phin_keyboard_class_init(PhinKeyboardClass* klass)
                       G_SIGNAL_RUN_FIRST | G_SIGNAL_ACTION,
                       G_STRUCT_OFFSET (PhinKeyboardClass, key_released),
                       NULL, NULL,
-                      g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
+                      g_cclosure_marshal_VOID__INT,
+                      G_TYPE_NONE, 1, G_TYPE_INT);
 
     klass->key_pressed = NULL;
     klass->key_released = NULL;
 }
 
 
-static gboolean key_press_cb(GnomeCanvasItem* item, GdkEvent* event, _Key* key)
+static gboolean
+key_press_cb(GnomeCanvasItem* item, GdkEvent* event, _Key* key)
 {
+    (void)item;
+
     switch (event->type)
     {
-    case GDK_BUTTON_PRESS:  
+    case GDK_BUTTON_PRESS:
         gnome_canvas_item_show(key->on);
         gnome_canvas_item_show(key->shad);
         g_signal_emit(key->keyboard, signals[KEY_PRESSED], 0, key->index);
         break;
+
     case GDK_BUTTON_RELEASE:
         gnome_canvas_item_hide(key->on);
         gnome_canvas_item_hide(key->shad);
         g_signal_emit(key->keyboard, signals[KEY_RELEASED], 0, key->index);
         break;
+
     case GDK_ENTER_NOTIFY:
         gnome_canvas_item_show(key->pre);
         break;
+
     case GDK_LEAVE_NOTIFY:
         gnome_canvas_item_hide(key->pre);
         break;
+
     default:
         break;
     }
-    
+
     return FALSE;
 }
 
@@ -202,14 +246,16 @@ static gboolean key_press_cb(GnomeCanvasItem* item, GdkEvent* event, _Key* key)
 static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
                      guint hi, guint low, guint pre, guint on, guint shad)
 {
-    _Key* key = &self->keys[index];
+    PhinKeyboardPrivate* p = PHIN_KEYBOARD_GET_PRIVATE(self);
+
+    _Key* key = &p->keys[index];
     GnomeCanvasPoints* points;
     int x1;
     int y1;
     int x2;
     int y2;
 
-    if (self->orientation == GTK_ORIENTATION_VERTICAL)
+    if (p->orientation == GTK_ORIENTATION_VERTICAL)
     {
         x1 = 0;
         y1 = pos + 1;           /* teh gayz0r */
@@ -223,16 +269,18 @@ static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
         x2 = pos;
         y2 = PHIN_KEYBOARD_KEY_LENGTH - 1;
     }
-    
+
     /* key group */
-    key->group = (GnomeCanvasGroup*) gnome_canvas_item_new(gnome_canvas_root(self->canvas),
-                                                           gnome_canvas_group_get_type(),
-                                                           NULL);
+    key->group = (GnomeCanvasGroup*)
+        gnome_canvas_item_new(  gnome_canvas_root(p->canvas),
+                                gnome_canvas_group_get_type(), NULL);
+
     g_signal_connect(G_OBJECT(key->group), "event",
                      G_CALLBACK(key_press_cb), (gpointer)key);
+
     key->index = index;
     key->keyboard = self;
-    
+
     /* draw main key rect */
     gnome_canvas_item_new(key->group,
                           gnome_canvas_rect_get_type(),
@@ -243,7 +291,6 @@ static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
                           "fill-color-rgba", bg,
                           NULL);
 
-    
     /* draw prelight rect */
     key->pre = gnome_canvas_item_new(key->group,
                                      gnome_canvas_rect_get_type(),
@@ -253,28 +300,23 @@ static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
                                      "y2", (gdouble)y2,
                                      "fill-color-rgba", pre,
                                      NULL);
+
     gnome_canvas_item_hide(key->pre);
-    
+
     /* draw key highlight */
     points = gnome_canvas_points_new(3);
 
-    if (self->orientation == GTK_ORIENTATION_VERTICAL)
+    if (p->orientation == GTK_ORIENTATION_VERTICAL)
     {
-        points->coords[0] = x1+1;
-        points->coords[1] = y1;
-        points->coords[2] = x1+1;
-        points->coords[3] = y2+1;
-        points->coords[4] = x2;
-        points->coords[5] = y2+1;
+        points->coords[0] = x1+1;   points->coords[1] = y1;
+        points->coords[2] = x1+1;   points->coords[3] = y2+1;
+        points->coords[4] = x2;     points->coords[5] = y2+1;
     }
     else
     {
-        points->coords[0] = x1;
-        points->coords[1] = y1+1;
-        points->coords[2] = x2;
-        points->coords[3] = y1+1;
-        points->coords[4] = x2;
-        points->coords[5] = y2;
+        points->coords[0] = x1;     points->coords[1] = y1+1;
+        points->coords[2] = x2;     points->coords[3] = y1+1;
+        points->coords[4] = x2;     points->coords[5] = y2;
     }
 
     gnome_canvas_item_new(key->group,
@@ -289,27 +331,19 @@ static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
     /* draw key border */
     points = gnome_canvas_points_new(4);
     
-    if (self->orientation == GTK_ORIENTATION_VERTICAL)
+    if (p->orientation == GTK_ORIENTATION_VERTICAL)
     {
-        points->coords[0] = x1;
-        points->coords[1] = y1;
-        points->coords[2] = x1;
-        points->coords[3] = y2;
-        points->coords[4] = x2;
-        points->coords[5] = y2;
-        points->coords[6] = x2;
-        points->coords[7] = y1;
+        points->coords[0] = x1;     points->coords[1] = y1;
+        points->coords[2] = x1;     points->coords[3] = y2;
+        points->coords[4] = x2;     points->coords[5] = y2;
+        points->coords[6] = x2;     points->coords[7] = y1;
     }
     else
     {
-        points->coords[0] = x2;
-        points->coords[1] = y1;
-        points->coords[2] = x1;
-        points->coords[3] = y1;
-        points->coords[4] = x1;
-        points->coords[5] = y2;
-        points->coords[6] = x2;
-        points->coords[7] = y2;
+        points->coords[0] = x2;     points->coords[1] = y1;
+        points->coords[2] = x1;     points->coords[3] = y1;
+        points->coords[4] = x1;     points->coords[5] = y2;
+        points->coords[6] = x2;     points->coords[7] = y2;
     }
 
     gnome_canvas_item_new(key->group,
@@ -318,10 +352,10 @@ static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
                           "width-units", (gdouble)1,
                           "fill-color-rgba", low,
                           NULL);
-    
+
     gnome_canvas_points_unref(points);
 
-    if (self->orientation == GTK_ORIENTATION_VERTICAL)
+    if (p->orientation == GTK_ORIENTATION_VERTICAL)
     {
         /* draw active rect */
         key->on = gnome_canvas_item_new(key->group,
@@ -345,54 +379,31 @@ static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
                                         "fill-color-rgba", on,
                                         NULL);
     }
-    
+
     gnome_canvas_item_hide(key->on);
-    
+
     /* draw active shadow */
     points = gnome_canvas_points_new(6);
 
-    if (self->orientation == GTK_ORIENTATION_VERTICAL)
+    if (p->orientation == GTK_ORIENTATION_VERTICAL)
     {
-        points->coords[0] = x1+1;
-        points->coords[1] = y1;
-    
-        points->coords[2] = x1+1;
-        points->coords[3] = y2+1;
-    
-        points->coords[4] = x2;
-        points->coords[5] = y2+1;
-    
-        points->coords[6] = x2;
-        points->coords[7] = y2 + 3;
-    
-        points->coords[8] = x1 + 3;
-        points->coords[9] = y2 + 3;
-    
-        points->coords[10] = x1 + 3;
-        points->coords[11] = y1;
+        points->coords[0] = x1+1;   points->coords[1] = y1;
+        points->coords[2] = x1+1;   points->coords[3] = y2+1;
+        points->coords[4] = x2;     points->coords[5] = y2+1;
+        points->coords[6] = x2;     points->coords[7] = y2 + 3;
+        points->coords[8] = x1 + 3; points->coords[9] = y2 + 3;
+        points->coords[10] = x1 + 3;points->coords[11] = y1;
     }
     else
     {
-        points->coords[0] = x1;
-        points->coords[1] = y1 + 1;
-    
-        points->coords[2] = x2;
-        points->coords[3] = y1 + 1;
-    
-        points->coords[4] = x2;
-        points->coords[5] = y2;
-    
-        points->coords[6] = x2 + 2;
-        points->coords[7] = y2;
-    
-        points->coords[8] = x2 + 2;
-        points->coords[9] = y1 + 3;
-    
-        points->coords[10] = x1;
-        points->coords[11] = y1 + 3;
+        points->coords[0] = x1;     points->coords[1] = y1 + 1;
+        points->coords[2] = x2;     points->coords[3] = y1 + 1;
+        points->coords[4] = x2;     points->coords[5] = y2;
+        points->coords[6] = x2 + 2; points->coords[7] = y2;
+        points->coords[8] = x2 + 2; points->coords[9] = y1 + 3;
+        points->coords[10] = x1;    points->coords[11] = y1 + 3;
     }
-        
-    
+
     key->shad = gnome_canvas_item_new(key->group,
                                       gnome_canvas_polygon_get_type(),
                                       "points", points,
@@ -402,38 +413,36 @@ static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
     gnome_canvas_points_unref(points);
 
     /* draw label if applicable */
-    if (self->label && (index % 12) == 0)
+    if (p->label && (index % 12) == 0)
     {
         char* s = g_strdup_printf("%d", index / 12);
 
-        if (self->orientation == GTK_ORIENTATION_VERTICAL)
+        if (p->orientation == GTK_ORIENTATION_VERTICAL)
         {
             gnome_canvas_item_new(key->group,
-                                  gnome_canvas_text_get_type(),
-                                  "text", s,
-                                  "x", (gdouble)(x2 - 2),
-                                  "y", (gdouble)(y1 - (PHIN_KEYBOARD_KEY_WIDTH / 2)),
-                                  "anchor", GTK_ANCHOR_EAST,
-                                  "fill-color-rgba", (gint)KEY_TEXT_BG,
-                                  "font", "sans",
-                                  "size-points", (gdouble)TEXT_POINTS,
-                                  NULL);
+                        gnome_canvas_text_get_type(),
+                        "text", s,
+                        "x", (gdouble)(x2 - 2),
+                        "y", (gdouble)(y1 - (PHIN_KEYBOARD_KEY_WIDTH / 2)),
+                        "anchor", GTK_ANCHOR_EAST,
+                        "fill-color-rgba", (gint)KEY_TEXT_BG,
+                        "font", "sans",
+                        "size-points", (gdouble)TEXT_POINTS, NULL);
         }
         else
         {
             gnome_canvas_item_new(key->group,
-                                  gnome_canvas_text_get_type(),
-                                  "text", s,
-                                  "x", (gdouble)(x1 - (PHIN_KEYBOARD_KEY_WIDTH / 2)),
-                                  "y", (gdouble)(y2 - 2),
-                                  "anchor", GTK_ANCHOR_SOUTH,
-                                  "fill-color-rgba", (gint)KEY_TEXT_BG,
-                                  "font", "sans",
-                                  "size-points", (gdouble)TEXT_POINTS,
-                                  "justification", GTK_JUSTIFY_CENTER,
-                                  NULL);
+                        gnome_canvas_text_get_type(),
+                        "text", s,
+                        "x", (gdouble)(x1 - (PHIN_KEYBOARD_KEY_WIDTH / 2)),
+                        "y", (gdouble)(y2 - 2),
+                        "anchor", GTK_ANCHOR_SOUTH,
+                        "fill-color-rgba", (gint)KEY_TEXT_BG,
+                        "font", "sans",
+                        "size-points", (gdouble)TEXT_POINTS,
+                        "justification", GTK_JUSTIFY_CENTER, NULL);
         }
-    
+
         g_free(s);
     }
 }
@@ -441,86 +450,91 @@ static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
 
 static void draw_keyboard(PhinKeyboard* self)
 {
+    PhinKeyboardPrivate* p = PHIN_KEYBOARD_GET_PRIVATE(self);
     int i, pos, note;
 
     /* make sure our construction properties are set (this is
      * _lame_ass_) */
-    if (self->nkeys < 0
-/*        || self->orientation < 0  ie unsigned < 0 is always false duh */
-        || self->label < 0)
+    if (p->nkeys < 0 || p->label < 0)
         return;
 
-    self->keys = g_new(_Key, self->nkeys);
-    
+    p->keys = g_new(_Key, p->nkeys);
+
     /* orientation */
-    if (self->orientation == GTK_ORIENTATION_VERTICAL)
+    if (p->orientation == GTK_ORIENTATION_VERTICAL)
     {
-        gtk_widget_set_size_request(GTK_WIDGET(self), PHIN_KEYBOARD_KEY_LENGTH, 0);
-        gtk_widget_set_size_request(GTK_WIDGET(self->canvas), PHIN_KEYBOARD_KEY_LENGTH, (PHIN_KEYBOARD_KEY_WIDTH * self->nkeys));
-        gnome_canvas_set_scroll_region(self->canvas, 0, 0, PHIN_KEYBOARD_KEY_LENGTH-1, (PHIN_KEYBOARD_KEY_WIDTH * self->nkeys) - 1);
+        gtk_widget_set_size_request(GTK_WIDGET(self),
+                                    PHIN_KEYBOARD_KEY_LENGTH, 0);
+        gtk_widget_set_size_request(GTK_WIDGET(p->canvas),
+                                    PHIN_KEYBOARD_KEY_LENGTH,
+                                    (PHIN_KEYBOARD_KEY_WIDTH * p->nkeys));
+        gnome_canvas_set_scroll_region(p->canvas, 0, 0,
+                                    PHIN_KEYBOARD_KEY_LENGTH - 1,
+                                    (PHIN_KEYBOARD_KEY_WIDTH * p->nkeys)-1);
     }
     else
     {
-        gtk_widget_set_size_request(GTK_WIDGET(self), 0, PHIN_KEYBOARD_KEY_LENGTH);
-        gtk_widget_set_size_request(GTK_WIDGET(self->canvas), (PHIN_KEYBOARD_KEY_WIDTH * self->nkeys), PHIN_KEYBOARD_KEY_LENGTH);
-        gnome_canvas_set_scroll_region(self->canvas, 0, 0, (PHIN_KEYBOARD_KEY_WIDTH * self->nkeys) - 1, PHIN_KEYBOARD_KEY_LENGTH-1);
+        gtk_widget_set_size_request(GTK_WIDGET(self), 0,
+                                    PHIN_KEYBOARD_KEY_LENGTH);
+        gtk_widget_set_size_request(GTK_WIDGET(p->canvas),
+                                    (PHIN_KEYBOARD_KEY_WIDTH * p->nkeys),
+                                    PHIN_KEYBOARD_KEY_LENGTH);
+        gnome_canvas_set_scroll_region(p->canvas, 0, 0,
+                                    (PHIN_KEYBOARD_KEY_WIDTH * p->nkeys)-1,
+                                    PHIN_KEYBOARD_KEY_LENGTH - 1);
     }
 
-    /* keys */
-    if (self->orientation == GTK_ORIENTATION_VERTICAL)
+    if (p->orientation == GTK_ORIENTATION_VERTICAL)
     {
-        for (i = note = 0, pos = (PHIN_KEYBOARD_KEY_WIDTH * self->nkeys) - 1; i < self->nkeys; ++i, ++note, pos -= PHIN_KEYBOARD_KEY_WIDTH)
+        pos = (PHIN_KEYBOARD_KEY_WIDTH * p->nkeys) - 1;
+
+        for (i = note = 0; i < p->nkeys; ++i, ++note)
         {
             if (note > 11)
                 note = 0;
 
             switch (note)
             {
-            case 0:
-            case 2:
-            case 4:
-            case 5:
-            case 7:
-            case 9:
-            case 11:
+            case 0: case 2: case 4: case 5: case 7: case 9: case 11:
                 draw_key(self, i, pos, KEY_NAT_BG, KEY_NAT_HI,
                          KEY_NAT_LOW, KEY_NAT_PRE,
                          KEY_NAT_ON, KEY_NAT_SHAD);
                 break;
+
             default:
                 draw_key(self, i, pos, KEY_ACC_BG, KEY_ACC_HI,
                          KEY_ACC_LOW, KEY_ACC_PRE,
                          KEY_ACC_ON, KEY_ACC_SHAD);
                 break;
             }
+            pos -= PHIN_KEYBOARD_KEY_WIDTH;
         }
     }
-    else                        /* gaarrrrrr */
+    else
     {
-        for (i = note = 0, pos = 0; i < self->nkeys; ++i, ++note, pos += PHIN_KEYBOARD_KEY_WIDTH)
+        pos = 0;
+
+        for (i = note = 0; i < p->nkeys; ++i, ++note)
         {
             if (note > 11)
                 note = 0;
 
             switch (note)
             {
-            case 0:
-            case 2:
-            case 4:
-            case 5:
-            case 7:
-            case 9:
-            case 11:
+            case 0: case 2: case 4: case 5: case 7: case 9: case 11:
                 draw_key(self, i, pos, KEY_NAT_BG, KEY_NAT_HI,
                          KEY_NAT_LOW, KEY_NAT_PRE,
                          KEY_NAT_ON, KEY_NAT_SHAD);
                 break;
+
             default:
                 draw_key(self, i, pos, KEY_ACC_BG, KEY_ACC_HI,
                          KEY_ACC_LOW, KEY_ACC_PRE,
                          KEY_ACC_ON, KEY_ACC_SHAD);
                 break;
             }
+
+            pos += PHIN_KEYBOARD_KEY_WIDTH;
         }
     }
 }
@@ -529,14 +543,15 @@ static void draw_keyboard(PhinKeyboard* self)
 
 static void phin_keyboard_init(PhinKeyboard* self)
 {
-    self->keys = NULL;
-    self->nkeys = -1;
-    self->orientation = -1;
-    self->label = -1;
+    PhinKeyboardPrivate* p = PHIN_KEYBOARD_GET_PRIVATE(self);
+    p->keys = NULL;
+    p->nkeys = -1;
+    p->orientation = -1;
+    p->label = -1;
 
-    self->canvas = (GnomeCanvas*) gnome_canvas_new();
-    gtk_container_add(GTK_CONTAINER(self), GTK_WIDGET(self->canvas));
-    gtk_widget_show(GTK_WIDGET(self->canvas));
+    p->canvas = (GnomeCanvas*) gnome_canvas_new();
+    gtk_container_add(GTK_CONTAINER(self), GTK_WIDGET(p->canvas));
+    gtk_widget_show(GTK_WIDGET(p->canvas));
 }
  
 
@@ -545,28 +560,28 @@ static void phin_keyboard_set_property(GObject          *object,
                                        const GValue     *value,
                                        GParamSpec       *pspec)
 {
-    PhinKeyboard* self;
-
-    self = PHIN_KEYBOARD(object);
+    PhinKeyboardPrivate* p = PHIN_KEYBOARD_GET_PRIVATE(object);
 
     switch (prop_id)
     {
     case PROP_ORIENTATION:
-        self->orientation = g_value_get_enum(value);
-        draw_keyboard(self);
+        p->orientation = g_value_get_enum(value);
         break;
+
     case PROP_NUMKEYS:
-        self->nkeys = g_value_get_int(value);
-        draw_keyboard(self);
+        p->nkeys = g_value_get_int(value);
         break;
+
     case PROP_SHOWLABELS:
-        self->label = g_value_get_boolean(value);
-        draw_keyboard(self);
+        p->label = g_value_get_boolean(value);
         break;
+
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
-        break;
+        return;
     }
+
+    draw_keyboard(PHIN_KEYBOARD(object));
 }
 
 
@@ -575,21 +590,22 @@ static void phin_keyboard_get_property(GObject          *object,
                                        GValue           *value,
                                        GParamSpec       *pspec)
 {
-    PhinKeyboard* self;
-
-    self = PHIN_KEYBOARD (object);
+    PhinKeyboardPrivate* p = PHIN_KEYBOARD_GET_PRIVATE(object);
 
     switch (prop_id)
     {
     case PROP_ORIENTATION:
-        g_value_set_enum (value, self->orientation);
+        g_value_set_enum (value, p->orientation);
         break;
+
     case PROP_NUMKEYS:
-        g_value_set_int(value, self->nkeys);
+        g_value_set_int(value, p->nkeys);
         break;
+
     case PROP_SHOWLABELS:
-        g_value_set_boolean(value, self->label);
+        g_value_set_boolean(value, p->label);
         break;
+
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
         break;
@@ -597,12 +613,12 @@ static void phin_keyboard_get_property(GObject          *object,
 }
 
 
-static void phin_keyboard_destroy(GtkObject* object)
+static void phin_keyboard_dispose(GObject* object)
 {
-    PhinKeyboard* self = PHIN_KEYBOARD(object);
+    PhinKeyboardPrivate* p = PHIN_KEYBOARD_GET_PRIVATE(object);
 
-    g_free(self->keys);
-    self->keys = NULL;
+    g_free(p->keys);
+    p->keys = NULL;
 }
 
 
@@ -615,14 +631,15 @@ static void phin_keyboard_destroy(GtkObject* object)
  * Returns: @keyboard's current #GtkAdjustment
  *
  */
-GtkAdjustment* phin_keyboard_get_adjustment(PhinKeyboard* keyboard)
+GtkAdjustment* phin_keyboard_get_adjustment(PhinKeyboard* kb)
 {
+    PhinKeyboardPrivate* p = PHIN_KEYBOARD_GET_PRIVATE(kb);
     GtkAdjustment* adj;
 
-    if (keyboard->orientation == GTK_ORIENTATION_VERTICAL)
-        g_object_get(keyboard, "vadjustment", &adj, (char *)NULL);
+    if (p->orientation == GTK_ORIENTATION_VERTICAL)
+        g_object_get(kb, "vadjustment", &adj, (char *)NULL);
     else
-        g_object_get(keyboard, "hadjustment", &adj, (char *)NULL);
+        g_object_get(kb, "hadjustment", &adj, (char *)NULL);
 
     return adj;
 }
@@ -636,13 +653,15 @@ GtkAdjustment* phin_keyboard_get_adjustment(PhinKeyboard* keyboard)
  * Sets the adjustment used by @keyboard.
  *
  */
-void phin_keyboard_set_adjustment(PhinKeyboard* keyboard, GtkAdjustment* adj)
+void phin_keyboard_set_adjustment(PhinKeyboard* kb, GtkAdjustment* adj)
 {
+    PhinKeyboardPrivate* p = PHIN_KEYBOARD_GET_PRIVATE(kb);
+
     if (!adj)
         return;
-    
-    if (keyboard->orientation == GTK_ORIENTATION_VERTICAL)
-        g_object_set(keyboard, "vadjustment", adj, (char *)NULL);
+
+    if (p->orientation == GTK_ORIENTATION_VERTICAL)
+        g_object_set(kb, "vadjustment", adj, (char *)NULL);
     else
-        g_object_set(keyboard, "hadjustment", adj, (char *)NULL);
+        g_object_set(kb, "hadjustment", adj, (char *)NULL);
 }

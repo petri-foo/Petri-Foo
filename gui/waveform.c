@@ -154,8 +154,8 @@ static void waveform_draw(Waveform * wf);
 
 static void waveform_class_init (WaveformClass * klass)
 {
-    GObjectClass *object_class = G_OBJECT_CLASS(klass);
-    GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(klass);
+    GObjectClass*   object_class = G_OBJECT_CLASS(klass);
+    GtkWidgetClass* widget_class = GTK_WIDGET_CLASS(klass);
 
     waveform_parent_class = g_type_class_peek_parent(klass);
 

@@ -336,7 +336,7 @@ static void envelope_tab_init(EnvelopeTab* self)
 static void update_env(EnvelopeTabPrivate* p)
 {
     int i = p->patch;
-    float l, a, h, d, s, r, key, vel;
+    float l, a, h, d, s, r, key;
     bool on;
 
     int id;

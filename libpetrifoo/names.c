@@ -103,7 +103,6 @@ id_name* id_name_sequence(id_name* start, int first_id, int count,
     int n;
     const int blen = 40;
     char buf[blen];
-    id_name* idnames = start;
 
     for (i = 0; i < count; ++i)
     {

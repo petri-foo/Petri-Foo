@@ -319,9 +319,18 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
         --last_mod_slot;
         break;
 
-    case PATCH_PARAM_PANNING:   lstr = "Position:"; break;
-    case PATCH_PARAM_PITCH:     lstr = "Tuning:";   break;
-    case PATCH_PARAM_RESONANCE: lstr = "Q:";        break;
+    case PATCH_PARAM_PANNING:
+        lstr = "Position:";
+        range_low = -1.0;
+        break;
+
+    case PATCH_PARAM_PITCH:
+        lstr = "Tuning:";
+        range_low = -1.0;
+        break;
+    case PATCH_PARAM_RESONANCE:
+        lstr = "Q:";
+        break;
     default:
         snprintf(buf, 80, "%s:", param_names[param]);
         lstr = buf;
@@ -329,9 +338,6 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
     }
 
     gui_label_attach(lstr, t, a1, a2, y, y + 1);
-
-    if (param == PATCH_PARAM_PANNING || param == PATCH_PARAM_PITCH)
-        range_low = -1.0;
 
     p->param1 = phin_hfan_slider_new_with_range(0.0, range_low,
                                                         range_hi,   0.1);

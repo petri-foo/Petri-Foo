@@ -1,3 +1,26 @@
+/*  Phin is a fork of the PHAT Audio Toolkit.
+    Phin is part of Petri-Foo. Petri-Foo is a fork of Specimen.
+
+    Original author Pete Bessman
+    Copyright 2005 Pete Bessman
+    Copyright 2011 James W. Morris
+
+    This file is part of Phin.
+
+    Phin is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License version 2 as
+    published by the Free Software Foundation.
+
+    Phin is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Phin.  If not, see <http://www.gnu.org/licenses/>.
+
+    This file is a derivative of a PHAT original, modified 2011
+*/
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 #include <math.h>
@@ -21,6 +44,12 @@ enum
     STATE_CLICKED,
     STATE_SCROLL,
 };
+
+#define VALUE_RATIO_NORMAL  1.00
+#define VALUE_RATIO_SHIFT   0.10
+#define VALUE_RATIO_CTRL    0.01
+
+
 
 /* signals */
 enum
@@ -49,6 +78,7 @@ struct _PhinFanSliderPrivate
     int            yclick_root;
     int            xclick;
     int            yclick;
+    double         value_update_ratio;
     int            fan_max_thickness;
     int            state;
     gboolean       inverted;
@@ -71,14 +101,9 @@ struct _PhinFanSliderPrivate
 G_DEFINE_TYPE(PhinFanSlider, phin_fan_slider, GTK_TYPE_WIDGET);
 
 
-static GtkWidgetClass* parent_class   = NULL;
-static int             fan_max_height = 0;
-static int             fan_max_width  = 0;
-
-/*static void phin_fan_slider_class_init      (PhinFanSliderClass* klass);
-static void phin_fan_slider_init            (PhinFanSlider* slider);
-static void phin_fan_slider_destroy         (GtkObject* object);
-*/
+static gboolean fans_active =       FALSE;
+static int      fan_max_height =    0;
+static int      fan_max_width  =    0;
 
 
 static void phin_fan_slider_dispose         (GObject* object);
@@ -149,6 +174,17 @@ static void phin_fan_slider_adjustment_changed (GtkAdjustment* adjustment,
 static void phin_fan_slider_adjustment_value_changed(   GtkAdjustment*,
                                                         PhinFanSlider*);
                                                         
+
+
+void phin_fan_slider_set_fans_active(gboolean enable_fans)
+{
+    fans_active = enable_fans;
+}
+
+gboolean phin_fan_slider_get_fans_active(void)
+{
+    return fans_active;
+}
 
 
 /**
@@ -415,18 +451,13 @@ static void phin_fan_slider_class_init (PhinFanSliderClass* klass)
     GObjectClass* object_class = G_OBJECT_CLASS(klass);
     GtkWidgetClass* widget_class = GTK_WIDGET_CLASS(klass);
     phin_fan_slider_parent_class = g_type_class_peek_parent(klass);
-
-
-    GdkScreen*      screen       = gdk_screen_get_default ( );
+    GdkScreen*      screen       = gdk_screen_get_default();
 
     debug ("class init\n");
-     
-    parent_class = g_type_class_peek (gtk_widget_get_type ());
 
-/*    object_class->destroy = phin_fan_slider_destroy; */
+    phin_fan_slider_parent_class = g_type_class_peek(gtk_widget_get_type());
 
     object_class->dispose =                 phin_fan_slider_dispose;
-
     widget_class->realize =                 phin_fan_slider_realize;
     widget_class->unrealize =               phin_fan_slider_unrealize;
     widget_class->map =                     phin_fan_slider_map;
@@ -510,6 +541,7 @@ static void phin_fan_slider_init (PhinFanSlider* slider)
     p->yclick_root = 0;
     p->xclick = 0;
     p->yclick = 0;
+    p->value_update_ratio = VALUE_RATIO_NORMAL;
     p->fan_max_thickness = 1;
     p->inverted = FALSE;
     p->direction = 0;
@@ -635,7 +667,7 @@ static void phin_fan_slider_realize (GtkWidget* widget)
 
     slider = PHIN_FAN_SLIDER(widget);
     p = PHIN_FAN_SLIDER_GET_PRIVATE(widget);
-     
+
     if (p->orientation == GTK_ORIENTATION_VERTICAL)
     {
         p->arrow_cursor = gdk_cursor_new (GDK_SB_V_DOUBLE_ARROW);
@@ -721,7 +753,7 @@ static void phin_fan_slider_realize (GtkWidget* widget)
 static void phin_fan_slider_unrealize (GtkWidget *widget)
 {
     PhinFanSliderPrivate* p = PHIN_FAN_SLIDER_GET_PRIVATE (widget);;
-    GtkWidgetClass* klass = GTK_WIDGET_CLASS (parent_class);
+    GtkWidgetClass* klass = GTK_WIDGET_CLASS(phin_fan_slider_parent_class);
 
     debug ("unrealize\n");
 
@@ -751,7 +783,7 @@ static void phin_fan_slider_unrealize (GtkWidget *widget)
 
 static void phin_fan_slider_map (GtkWidget *widget)
 {
-    PhinFanSliderPrivate* p = PHIN_FAN_SLIDER_GET_PRIVATE (widget);;
+    PhinFanSliderPrivate* p = PHIN_FAN_SLIDER_GET_PRIVATE (widget);
 
     debug ("map\n");
 
@@ -759,13 +791,13 @@ static void phin_fan_slider_map (GtkWidget *widget)
 
     gdk_window_show (p->event_window);
 
-    GTK_WIDGET_CLASS (parent_class)->map (widget);
+    GTK_WIDGET_CLASS(phin_fan_slider_parent_class)->map(widget);
 }
 
 
 static void phin_fan_slider_unmap (GtkWidget *widget)
 {
-    PhinFanSliderPrivate* p = PHIN_FAN_SLIDER_GET_PRIVATE (widget);;
+    PhinFanSliderPrivate* p = PHIN_FAN_SLIDER_GET_PRIVATE(widget);;
 
     debug ("unmap\n");
 
@@ -773,7 +805,7 @@ static void phin_fan_slider_unmap (GtkWidget *widget)
 
     gdk_window_hide (p->event_window);
 
-    GTK_WIDGET_CLASS (parent_class)->unmap (widget);
+    GTK_WIDGET_CLASS(phin_fan_slider_parent_class)->unmap(widget);
 }
 
 static void phin_fan_slider_size_request (GtkWidget*      widget,
@@ -841,8 +873,6 @@ static void phin_fan_slider_size_allocate (GtkWidget*     widget,
                                 x, y, w, h);
     }
 }
-
-
 
 
 static void draw_fan_rectangle(cairo_t* cr, double x, double y,
@@ -1119,7 +1149,7 @@ static gboolean phin_fan_slider_scroll (GtkWidget* widget,
     gdouble val, pinc;
 
     gtk_widget_grab_focus (widget);
-     
+
     p->state = STATE_SCROLL;
 
     p->xclick_root = event->x_root;
@@ -1147,7 +1177,7 @@ static gboolean phin_fan_slider_scroll (GtkWidget* widget,
     return TRUE;
 }
 
-/* ctrl locks precision, shift locks value */
+/* ctrl locks precision, xshiftxlocksxvaluex shift increases precision */
 static gboolean phin_fan_slider_motion_notify (GtkWidget*      widget,
                                                GdkEventMotion* event)
 {
@@ -1167,21 +1197,33 @@ static gboolean phin_fan_slider_motion_notify (GtkWidget*      widget,
     {
     case STATE_SCROLL:
         if (ABS (event->x - p->xclick) >= THRESHOLD
-            || ABS (event->y - p->yclick) >= THRESHOLD)
+         || ABS (event->y - p->yclick) >= THRESHOLD)
         {
             gdk_window_set_cursor (p->event_window, p->arrow_cursor);
             p->state = STATE_NORMAL;
         }
     case STATE_NORMAL:
         goto skip;
-        break;
     }
 
-    if (!(event->state & GDK_CONTROL_MASK))
+    if (fans_active && !(event->state & GDK_CONTROL_MASK))
         phin_fan_slider_update_fan (slider, event->x, event->y);
 
+/*
     if (!(event->state & GDK_SHIFT_MASK))
         phin_fan_slider_update_value (slider, event->x_root, event->y_root);
+*/
+
+
+    /* shift no longer locks value */
+    if ((event->state & GDK_SHIFT_MASK))
+        p->value_update_ratio = VALUE_RATIO_SHIFT;
+    else if ((event->state & GDK_CONTROL_MASK))
+        p->value_update_ratio = VALUE_RATIO_CTRL;
+    else
+        p->value_update_ratio = VALUE_RATIO_NORMAL;
+
+    phin_fan_slider_update_value (slider, event->x_root, event->y_root);
 
     if (p->orientation == GTK_ORIENTATION_VERTICAL)
     {
@@ -1571,8 +1613,6 @@ static void phin_fan_slider_draw_fan (PhinFanSlider* slider)
 
     phin_fan_slider_calc_layout(slider, &x, &y, &w, &h);
 
-printf("calc layout:x:%d y:%d w:%d h:%d\n",x,y,w,h);
-
     {
         int root_x, root_y;
         gdk_window_get_origin(gtk_widget_get_window(widget),
@@ -1650,7 +1690,7 @@ static void phin_fan_slider_update_value (PhinFanSlider* slider,
     double value;
     double inc;
     GtkAllocation slider_alloc;
-     
+
     if (p->state != STATE_CLICKED)
         return;
 
@@ -1665,12 +1705,12 @@ static void phin_fan_slider_update_value (PhinFanSlider* slider,
         {
             length = phin_fan_slider_get_fan_length (slider);
             inc = ((p->yclick_root - y_root)
-                   * 1.0 / length);
+                   * p->value_update_ratio / length);
         }
         else
         {
             inc = ((p->yclick_root - y_root)
-                   * 1.0 / slider_alloc.height);
+                   * p->value_update_ratio / slider_alloc.height);
         }
     }
     else
@@ -1680,12 +1720,12 @@ static void phin_fan_slider_update_value (PhinFanSlider* slider,
         {
             length = phin_fan_slider_get_fan_length (slider);
             inc = ((x_root - p->xclick_root)
-                   * 1.0 / length);
+                   * p->value_update_ratio / length);
         }
         else
         {
             inc = ((x_root - p->xclick_root)
-                   * 1.0 / slider_alloc.width);
+                   * p->value_update_ratio / slider_alloc.width);
         }
     }
 

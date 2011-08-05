@@ -136,9 +136,9 @@ static void voice_tab_init(VoiceTab* self)
     GtkWidget* table;
     GtkTable* t;
 
-    int a1 = 0, a2 = 1;
-    int b1 = 1, b2 = 2;
-    int c1 = 2, c2 = 3;
+    int a1 = 0,     a2 = 1;
+    int b1 = 1,     b2 = 2;
+    int /*c1 = 2*/  c2 = 3;
 
     int y = 0;
 

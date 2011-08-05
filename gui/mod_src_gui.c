@@ -110,7 +110,6 @@ GtkWidget* mod_src_new_pitch_adjustment(void)
     amt = phin_slider_button_new_with_range(12,    -PATCH_MAX_PITCH_STEPS,
                                                     PATCH_MAX_PITCH_STEPS,
                                                     0.1, 1.0);
-
     phin_slider_button_set_format(PHIN_SLIDER_BUTTON(amt),
                                                     -1, NULL, NULL);
     gtk_widget_set_tooltip_text(amt, "Semitones");

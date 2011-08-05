@@ -149,7 +149,6 @@ void bool_section_set_bool( BoolSection* self, PatchBoolType bool_type)
     GtkTable* t;
     GtkWidget* title;
 
-    int i;
     int y = 0;
 
     int a1 = 0, a2 = 1;

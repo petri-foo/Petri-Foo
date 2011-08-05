@@ -1,3 +1,26 @@
+/*  Phin is a fork of the PHAT Audio Toolkit.
+    Phin is part of Petri-Foo. Petri-Foo is a fork of Specimen.
+
+    Original author Pete Bessman
+    Copyright 2005 Pete Bessman
+    Copyright 2011 James W. Morris
+
+    This file is part of Phin.
+
+    Phin is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License version 2 as
+    published by the Free Software Foundation.
+
+    Phin is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Phin.  If not, see <http://www.gnu.org/licenses/>.
+
+    This file is a derivative of a PHAT original, modified 2011
+*/
 /*  Phin is a fork of PHAT
 
     Original Specimen author Pete Bessman
@@ -58,32 +81,11 @@ struct _PhinFanSliderClass
     /* private */
     void (*value_changed) (PhinFanSlider* slider);
     void (*changed)       (PhinFanSlider* slider);
-/*
-    GtkAdjustment* adjustment;
-    GtkAdjustment* adjustment_prv;
-    double         val;
-    double         center_val;
-    int            xclick_root;
-    int            yclick_root;
-    int            xclick;
-    int            yclick;
-    int            fan_max_thickness;
-    int            state;
-    gboolean       inverted;
-    int            direction;
-    gboolean       is_log;
-    GtkOrientation orientation;
-    GtkWidget*     fan_window;
-    GdkCursor*     arrow_cursor;
-    GdkCursor*     empty_cursor;
-    GdkWindow*     event_window;
-    GtkWidget*     hint_window0;
-    GtkWidget*     hint_window1;
-    GdkRectangle   cur_fan;
-    gboolean       use_default_value;
-    gdouble        default_value;
-*/
 };
+
+/* whether to use fans on the sliders or not (requires compositing).*/
+void        phin_fan_slider_set_fans_active(gboolean enable_fans);
+gboolean    phin_fan_slider_get_fans_active(void);
 
 
 GType       phin_fan_slider_get_type(   void );

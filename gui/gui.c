@@ -30,6 +30,7 @@
 
 #include "instance.h"
 #include "petri-foo.h"
+#include "phin.h"
 
 #include "driver.h"
 #include "mixer.h"
@@ -65,6 +66,9 @@ static GtkWidget* menu_settings = 0;
 static GtkWidget* menu_patch = 0;
 static GtkWidget* menu_help = 0;
 static GtkWidget* menuitem_file_recent = 0;
+
+/* settings */
+static GtkWidget* menu_settings_fans = 0;
 
 
 GtkWidget* gui_title_new(const char* msg)
@@ -471,6 +475,15 @@ static void cb_menu_settings_audio (GtkWidget * widget, gpointer data)
 }
 
 
+static void cb_menu_settings_fans(GtkWidget* widget, gpointer data)
+{
+    (void)widget;(void)data;
+    phin_fan_slider_set_fans_active(
+        gtk_check_menu_item_get_active(
+            GTK_CHECK_MENU_ITEM(menu_settings_fans)));
+}
+
+
 static void cb_menu_help_stfu (GtkWidget* widget, gpointer data)
 {
     (void)widget;(void)data;
@@ -570,8 +583,8 @@ int gui_init(void)
             G_CALLBACK(cb_menu_file_new_bank),      window);
     gui_menu_add(menu_file, "Open Bank...",
             G_CALLBACK(cb_menu_file_open_bank),     window);
-    menuitem_file_recent = GTK_MENU_ITEM(
-            gtk_menu_item_new_with_label("Open Recent"));
+
+    menuitem_file_recent = gtk_menu_item_new_with_label("Open Recent");
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_file), menuitem_file_recent);   
     gui_menu_add(menu_file, "Save Bank",
             G_CALLBACK(cb_menu_file_save_bank),     window);
@@ -599,6 +612,21 @@ int gui_init(void)
     menu_settings = gui_menu_add(menubar, "Settings", NULL, NULL);
     gui_menu_add(menu_settings, "Audio...",
             G_CALLBACK(cb_menu_settings_audio),     NULL);
+
+    menu_settings_fans =
+        gtk_check_menu_item_new_with_label("Use slider fans");
+
+    gtk_check_menu_item_set_active(
+        GTK_CHECK_MENU_ITEM(menu_settings_fans), 
+            phin_fan_slider_get_fans_active());
+
+    g_signal_connect(GTK_OBJECT(menu_settings_fans), "toggled",
+        G_CALLBACK(cb_menu_settings_fans), NULL);
+
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu_settings),
+                                        menu_settings_fans);
+
+    gtk_widget_show(menu_settings_fans);
 
     /* help menu */
     menu_help = gui_menu_add(menubar, "Help", NULL, NULL);
