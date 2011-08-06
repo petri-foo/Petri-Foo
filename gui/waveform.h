@@ -45,6 +45,9 @@
                                     WAVEFORM_TYPE,  WaveformClass))
 
 
+#define SCROLL_WHEEL_ZOOM_RATIO 1.5
+
+
 typedef struct _Waveform      Waveform;
 typedef struct _WaveformClass WaveformClass;
 
@@ -81,6 +84,8 @@ int         waveform_get_patch      (Waveform* wf);
 void        waveform_get_size       (Waveform* wf, int* w, int* h);
 void        waveform_get_range      (Waveform* wf, float* start,
                                                    float* stop);
+
+void        waveform_zoom(Waveform* wf, float zoom, float center);
 
 
 void        waveform_goto_mark_prev (Waveform* wf);

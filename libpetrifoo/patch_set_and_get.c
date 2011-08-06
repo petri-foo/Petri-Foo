@@ -1225,8 +1225,6 @@ int patch_get_frames (int id)
     if (patches[id]->sample->sp == NULL)
         return 0;
 
-   debug("patches[%d].sample->frames:%d\n", id, patches[id]->sample->frames);
-
     return patches[id]->sample->frames;
 }
 
@@ -1461,8 +1459,6 @@ int patch_get_max_xfade_samples(int id)
 
     tmp = patches[id]->loop_start - patches[id]->play_start;
     min = (tmp < min) ? tmp : min;
-
-debug("max xfade samples:%d\n", min);
 
     return min;
 }

@@ -1,3 +1,21 @@
+2011-08-06 James Morris <james@jwm-art.net>
+
+	* New zoom-in, zoom-out, zoom-fit, and zoom-1:1 buttons
+	  these buttons replace the cruddy oldspin button previously
+	  used for zooming and which the values of were meaningless.
+
+	* Mouse-wheel zooming.
+	  Moving the mouse-wheel down will zoom in to wherever the
+	  pointer is pointing in the waveform.
+
+	* Probably stuff which I've forgotten and not added into
+	  this Changelog.
+
+	* PHIN fan sliders have fans disabled by default.
+	  the fans of the fan sliders require desktop compositing
+	  so are disabled by default.
+
+
 2011-07-26 James Morris <james@jwm-art.net>
 
 	* new build system using cmake. alter dir structures.

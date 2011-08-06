@@ -137,17 +137,12 @@ G_DEFINE_TYPE(Waveform, waveform, GTK_TYPE_DRAWING_AREA)
 
 static void waveform_dispose(GObject * object);
 
-static void waveform_size_request (GtkWidget * widget,
-                                    GtkRequisition * requisition);
+static void     waveform_size_request(  GtkWidget*, GtkRequisition*);
+static gboolean waveform_expose(        GtkWidget*, GdkEventExpose*);
+static gboolean waveform_button_press(  GtkWidget*, GdkEventButton*);
+static gboolean waveform_configure(     GtkWidget*, GdkEventConfigure*);
+static gboolean waveform_scroll_event(  GtkWidget*, GdkEventScroll*);
 
-static gboolean waveform_expose(GtkWidget * widget,
-                                    GdkEventExpose * event);
-
-static gboolean waveform_button_press(GtkWidget * widget,
-                                    GdkEventButton * event);
-
-static gboolean waveform_configure(GtkWidget * widget,
-                                    GdkEventConfigure * event);
 
 static void waveform_draw(Waveform * wf);
 
@@ -164,6 +159,7 @@ static void waveform_class_init (WaveformClass * klass)
     widget_class->configure_event =     waveform_configure;
     widget_class->size_request =        waveform_size_request;
     widget_class->button_press_event =  waveform_button_press;
+    widget_class->scroll_event =        waveform_scroll_event;
 
     signals[PLAY_CHANGED] =
         g_signal_new   ("play-changed",
@@ -389,6 +385,28 @@ waveform_button_press (GtkWidget * widget, GdkEventButton * event)
 }
 
 
+static gboolean
+waveform_scroll_event(GtkWidget* widget, GdkEventScroll* event)
+{
+    Waveform* wf = WAVEFORM(widget);
+    WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
+    float center;
+
+    if (!p->interactive)
+        return FALSE;
+
+    center = event->x / p->width;
+
+    if (event->direction == GDK_SCROLL_DOWN)
+        waveform_zoom(wf, SCROLL_WHEEL_ZOOM_RATIO, center);
+    else
+        waveform_zoom(wf, 1 / SCROLL_WHEEL_ZOOM_RATIO, center);
+
+    g_signal_emit_by_name(G_OBJECT(wf), "view-changed");
+    return FALSE;
+}
+
+
 inline static void
 cr_rect(cairo_t* cr, double x1, double y1, double x2, double y2)
 {
@@ -470,7 +488,8 @@ static void draw_back(WaveformPrivate* p, int w, int h, cairo_t* cr)
     {   /* show left dead area if visible */
         int w1 = (play_start < w - 1) ? play_start : w - 1;
         cairo_rectangle (cr, 0, 0, w1, h);
-        cairo_set_source (cr, bg_dead);
+        /*cairo_set_source (cr, bg_dead);*/
+        cairo_set_source_rgb(cr, BG_DEAD_R1, BG_DEAD_G1, BG_DEAD_B1);
         cairo_fill (cr);
 
         if (play_start > w - 1)
@@ -482,7 +501,8 @@ static void draw_back(WaveformPrivate* p, int w, int h, cairo_t* cr)
         int x1 = (play_start > 0) ? play_start : 0;
         int x2 = (loop_start < w - 1) ? loop_start : w - 1;
         cr_rect(cr, x1, 0, x2, h);
-        cairo_set_source (cr, bg_play);
+        /*cairo_set_source (cr, bg_play);*/
+        cairo_set_source_rgb(cr, BG_PLAY_R1, BG_PLAY_G1, BG_PLAY_B1);
         cairo_fill (cr);
 
         if (loop_start > w - 1)
@@ -495,7 +515,8 @@ static void draw_back(WaveformPrivate* p, int w, int h, cairo_t* cr)
         int x1 = (loop_start > 0) ? loop_start: 0;
         int x2 = (loop_stop < w - 1) ? loop_stop : w - 1;
         cr_rect(cr, x1, 0, x2, h);
-        cairo_set_source(cr, bg_loop);
+        /*cairo_set_source(cr, bg_loop);*/
+        cairo_set_source_rgb(cr, BG_LOOP_R1, BG_LOOP_G1, BG_LOOP_B1);
         cairo_fill(cr);
 
         if (loop_stop > w - 1)
@@ -507,7 +528,8 @@ static void draw_back(WaveformPrivate* p, int w, int h, cairo_t* cr)
         int x1 = (loop_stop > 0) ? loop_stop : 0;
         int x2 = (play_stop < w - 1) ? play_stop : w - 1;
         cr_rect(cr, x1, 0, x2, h);
-        cairo_set_source(cr, bg_play);
+        /*cairo_set_source(cr, bg_play);*/
+        cairo_set_source_rgb(cr, BG_PLAY_R1, BG_PLAY_G1, BG_PLAY_B1);
         cairo_fill(cr);
 
         if (play_stop > w - 1)
@@ -518,7 +540,8 @@ static void draw_back(WaveformPrivate* p, int w, int h, cairo_t* cr)
     {   /* right dead area visible */
         int x1 = (play_stop > 0) ? play_stop : 0;
         cr_rect(cr, x1, 0, w, h);
-        cairo_set_source(cr, bg_dead);
+        /*cairo_set_source(cr, bg_dead);*/
+        cairo_set_source_rgb(cr, BG_DEAD_R1, BG_DEAD_G1, BG_DEAD_B1);
         cairo_fill(cr);
     }
 
@@ -538,11 +561,14 @@ static void draw_grid(WaveformPrivate* p, int w, int h, cairo_t* cr)
 
     cairo_pattern_t *fg = cairo_pattern_create_linear (0, 0, 0, h);
 
+    /*
     cairo_pattern_add_color_stop_rgb(fg, 0.0, GRID_R1, GRID_G1, GRID_B1 );
     cairo_pattern_add_color_stop_rgb(fg, 0.5, GRID_R2, GRID_G2, GRID_B2 );
     cairo_pattern_add_color_stop_rgb(fg, 1.0, GRID_R1, GRID_G1, GRID_B1 );
 
     cairo_set_source(cr, fg);
+    */
+    cairo_set_source_rgb(cr, GRID_R1, GRID_G1, GRID_B1);
     cairo_set_line_width(cr, 1.0);
 
     /*  Massive improvement here using Cairo drawing with gradients
@@ -903,8 +929,6 @@ static void waveform_draw(Waveform * wf)
         return;
     #endif
 
-    debug("drawing %p\n", p);
-
     cr = gdk_cairo_create(p->pixmap);
 
     cairo_rectangle(cr, 0, 0, p->width, p->height);
@@ -1008,6 +1032,47 @@ int waveform_detect_mark(Waveform* wf)
     return small_mark;
 }
 
+void waveform_zoom(Waveform* wf, gfloat zoom, gfloat center)
+{
+    WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
+
+    float dist;
+    float newstart;
+    float newstop;
+
+    float distl;
+    float distr;
+    float center_cp;
+
+    float newdistl;
+    float newdistr;
+
+    dist = p->range_stop - p->range_start;
+    distl = dist * center;
+    distr = dist * (1 - center);
+
+    center_cp = p->range_start + dist * center;
+
+    newdistl = distl / zoom;
+    newdistr = distr / zoom;
+
+    if (newdistl + newdistr >= 1.0)
+    {
+        waveform_set_range(wf, 0.0, 1.0);
+        return;
+    }
+
+    newstart =  center_cp - newdistl;
+    newstop =   center_cp + newdistr;
+
+    if (newstart < 0.0)
+        newstart = 0.0;
+
+    if (newstop > 1.0)
+        newstop = 1.0;
+
+    waveform_set_range(wf, newstart, newstop);
+}
 
 
 void waveform_set_range (Waveform * wf, float start, float stop)
@@ -1019,7 +1084,7 @@ void waveform_set_range (Waveform * wf, float start, float stop)
                             ? 0.0 
                             : start;
 
-    p->range_stop = (stop < 0.0 || start > 1.0 || start > stop)
+    p->range_stop = (stop < 0.0 || stop > 1.0 || start > stop)
                             ? 1.0
                             : stop;
 
@@ -1079,8 +1144,13 @@ int waveform_get_patch (Waveform * wf)
 void waveform_get_size (Waveform * wf, int *w, int *h)
 {
     WaveformPrivate* p = WAVEFORM_GET_PRIVATE(wf);
-    *w = p->width;
-    *h = p->height;
+
+    if (w)
+        *w = p->width;
+
+    if (h)
+        *h = p->height;
+
     return;
 }
 
