@@ -1,3 +1,10 @@
+2011-08-06 Brendan Jones <brendan.jones.it@gmail.com>
+
+	* gui/global_settings.[ch]
+	  Stores last-used sample and bank directories into
+	  XDG_CONFIG_HOME/petri-foo/rc.xml
+
+
 2011-08-06 James Morris <james@jwm-art.net>
 
 	* New zoom-in, zoom-out, zoom-fit, and zoom-1:1 buttons
@@ -14,6 +21,8 @@
 	* PHIN fan sliders have fans disabled by default.
 	  the fans of the fan sliders require desktop compositing
 	  so are disabled by default.
+
+	* PHIN fan slider setting stored via global_settings
 
 
 2011-07-26 James Morris <james@jwm-art.net>
