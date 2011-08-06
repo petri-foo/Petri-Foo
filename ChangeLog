@@ -24,6 +24,10 @@
 
 	* PHIN fan slider setting stored via global_settings
 
+	* sample.c: Fixed raw/headerless sample loading
+
+	* float_section.c: Fixed portamento time setting.
+
 
 2011-07-26 James Morris <james@jwm-art.net>
 

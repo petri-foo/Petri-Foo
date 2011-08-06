@@ -177,7 +177,7 @@ void float_section_set_float( FloatSection* self, PatchFloatType float_type)
     ++y;
 
     g_signal_connect(G_OBJECT(p->float_fan),        "value-changed",
-                        G_CALLBACK(float_cb),       (gpointer)self);
+                        G_CALLBACK(float_cb),       (gpointer)p);
 
     g_signal_connect(G_OBJECT(p->mod_amt),          "value-changed",
                         G_CALLBACK(mod_amt_cb),     (gpointer)p);
