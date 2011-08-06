@@ -246,12 +246,6 @@ static SNDFILE* open_sample(SF_INFO* sfinfo, const char* name,
     sfinfo->sections = 0;
     sfinfo->seekable = 0;
 
-    if ((sfp = sf_open(name, SFM_READ, sfinfo)) == NULL)
-    {
-        debug ("libsndfile doesn't like %s\n", name);
-        return 0;
-    }
-
     if (raw)
     {
         sfinfo->samplerate = raw_samplerate;
@@ -263,6 +257,12 @@ static SNDFILE* open_sample(SF_INFO* sfinfo, const char* name,
             debug("LIBSNDFILE found error in format. aborting.\n");
             return 0;
         }
+    }
+
+    if ((sfp = sf_open(name, SFM_READ, sfinfo)) == NULL)
+    {
+        debug ("libsndfile doesn't like %s\n", name);
+        return 0;
     }
 
     return sfp;

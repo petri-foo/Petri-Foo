@@ -333,14 +333,14 @@ waveform_button_press (GtkWidget * widget, GdkEventButton * event)
         {
             if (event->button == 1)
                 mark = WF_MARK_PLAY_START;
-            else if (event->button == 3) 
+            else if (event->button == 3)
                 mark = WF_MARK_PLAY_STOP;
         }
         else
         {
             if (event->button == 1)
                 mark = WF_MARK_LOOP_START;
-            else if (event->button == 3) 
+            else if (event->button == 3)
                 mark = WF_MARK_LOOP_STOP;
         }
     }
@@ -559,9 +559,8 @@ static void draw_grid(WaveformPrivate* p, int w, int h, cairo_t* cr)
     int center = h / 2;
     int step = h / GRID_Y;
 
-    cairo_pattern_t *fg = cairo_pattern_create_linear (0, 0, 0, h);
-
     /*
+    cairo_pattern_t *fg = cairo_pattern_create_linear (0, 0, 0, h);
     cairo_pattern_add_color_stop_rgb(fg, 0.0, GRID_R1, GRID_G1, GRID_B1 );
     cairo_pattern_add_color_stop_rgb(fg, 0.5, GRID_R2, GRID_G2, GRID_B2 );
     cairo_pattern_add_color_stop_rgb(fg, 1.0, GRID_R1, GRID_G1, GRID_B1 );

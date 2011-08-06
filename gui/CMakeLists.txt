@@ -5,6 +5,7 @@ include_directories (
     ${Petri-Foo_SOURCE_DIR}/libphin
     ${GTK2_INCLUDE_DIRS}
     ${LIBGNOMECANVAS2_INCLUDE_DIRS}
+    ${LIBXML2_INCLUDE_DIRS}    
     )
 
 #link_directories (
@@ -24,4 +25,6 @@ set (BuildOptionsDebug
         CACHE STRING "Debug build flags")
 
 
-target_link_Libraries(petri-foo phin petrifoo)
+target_link_Libraries(petri-foo phin petrifoo pthread)
+
+install (TARGETS petri-foo DESTINATION ${BINDIR})

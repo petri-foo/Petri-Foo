@@ -37,6 +37,7 @@
 #include "names.h"
 #include "sample-selector.h"
 #include "sample.h"
+#include "global_settings.h"
 
 
 #include <sndfile.h>
@@ -97,6 +98,7 @@ static void cb_load(raw_box* rb)
     int err;
     char *name = (char *)
             gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(rb->dialog));
+    global_settings* settings = settings_get();
 
     if (!name)
         goto fail;
@@ -123,6 +125,20 @@ static void cb_load(raw_box* rb)
 
         if ((err = patch_sample_load(patch, name, 0, 0, 0)))
             goto fail;
+    }
+
+    if (name)
+    {
+        char* dirname = g_path_get_dirname(name);
+
+        if (dirname)
+        {
+            if (settings->last_sample_dir)
+                free(settings->last_sample_dir);
+
+            settings->last_sample_dir = strdup(dirname);
+            free(dirname);     
+        }
     }
 
     debug ("Successfully loaded sample %s\n", name);
@@ -354,6 +370,7 @@ int sample_selector_show(int id, GtkWidget* parent_window,
 {
     GtkWidget* dialog;
     raw_box* rawbox;
+    global_settings* settings = settings_get();
 
     enum {
         RESPONSE_LOAD = 1,
@@ -382,6 +399,13 @@ int sample_selector_show(int id, GtkWidget* parent_window,
     {
         gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(dialog),
                                 last_sample->filename);
+        gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),
+                         g_path_get_dirname(last_sample->filename));
+    } 
+    else {
+        if ( settings->last_sample_dir) 
+            gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),
+                                          settings->last_sample_dir);
     }
 
     gtk_dialog_add_button(GTK_DIALOG(dialog),

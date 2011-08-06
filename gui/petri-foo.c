@@ -40,6 +40,7 @@
 #include "names.h"
 #include "dish_file.h"
 #include "jackdriver.h"
+#include "global_settings.h"
 
 void show_usage (void)
 {
@@ -98,6 +99,7 @@ int main(int argc, char *argv[])
 
     mod_src_create();
     gtk_init(&argc, &argv);
+    settings_init();
     gui_init();
     driver_init();
     lfo_tables_init();
@@ -123,6 +125,8 @@ int main(int argc, char *argv[])
     driver_stop();
     patch_shutdown();
     mixer_shutdown();
+    settings_write();
+    settings_free();
     free_instance_name();
     mod_src_destroy();
 

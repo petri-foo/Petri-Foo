@@ -424,8 +424,13 @@ void sample_editor_show(int id)
     se->old_loop_stop =  patch_get_mark_frame(se->patch,
                                                 WF_MARK_LOOP_STOP);
 
-    gtk_combo_box_set_active(GTK_COMBO_BOX(se->mark_combo),
+    if (gtk_combo_box_get_active(GTK_COMBO_BOX(se->mark_combo))
+        == WF_MARK_START)
+    {
+        gtk_combo_box_set_active(GTK_COMBO_BOX(se->mark_combo),
                                                 WF_MARK_PLAY_START);
+    }
+
     update_fade_spins();
     gtk_widget_show(se->window);
 }
@@ -532,7 +537,6 @@ void sample_editor_init(GtkWidget * parent)
     tmp = gtk_vseparator_new();
     gtk_box_pack_start(GTK_BOX(hbox), tmp, FALSE, FALSE, 0);
     gtk_widget_show(tmp);
-
 
     /* mark combo */
     se->mark_combo = basic_combo_create(waveform_get_mark_names());

@@ -32,6 +32,7 @@
 #include "patch_util.h"
 #include "petri-foo.h"
 #include "gui.h"
+#include "global_settings.h"
 
 
 static char *last_bank = 0;
@@ -99,6 +100,8 @@ int bank_ops_save_as (GtkWidget* parent_window)
 
     char* filter = strconcat("*", dish_file_extension());
     char* untitled_dish = strconcat("untitled", dish_file_extension());
+    
+    global_settings* settings = settings_get();
 
     dialog = gtk_file_chooser_dialog_new("Save Bank",
                                     GTK_WINDOW(parent_window),
@@ -110,6 +113,13 @@ int bank_ops_save_as (GtkWidget* parent_window)
     gtk_file_chooser_set_do_overwrite_confirmation(
                                     GTK_FILE_CHOOSER(dialog), TRUE);
 
+    if ( last_bank == 0)   
+        gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),
+                                    settings->last_bank_dir);
+    else 
+        gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),
+                                    g_path_get_dirname(last_bank));
+ 
     gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(dialog),
                     (last_bank != 0) ? last_bank : untitled_dish);
 
@@ -177,6 +187,7 @@ int bank_ops_open(GtkWidget* parent_window)
     GtkWidget* dialog;
     int val;
     char* filter = strconcat("*", dish_file_extension());
+    global_settings* settings = settings_get();
 
     dialog = gtk_file_chooser_dialog_new("Open Bank",
                                           GTK_WINDOW(parent_window),
@@ -185,10 +196,13 @@ int bank_ops_open(GtkWidget* parent_window)
                                           GTK_RESPONSE_CANCEL,
                                           GTK_STOCK_OPEN,
                                           GTK_RESPONSE_ACCEPT, NULL);
-    if (last_bank)
-        gtk_file_chooser_select_filename(GTK_FILE_CHOOSER(dialog),
+    if (last_bank) 
+       gtk_file_chooser_select_filename(GTK_FILE_CHOOSER(dialog),
                                                         last_bank);
-
+    else 
+        gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),
+                                           settings->last_bank_dir);
+ 
     file_chooser_add_filter(dialog, "Petri-Foo files", filter);
     file_chooser_add_filter(dialog, "All files", "*");
 
@@ -214,9 +228,12 @@ int bank_ops_open(GtkWidget* parent_window)
         {
             debug ("Succesfully read file %s\n", name);
             gtk_recent_manager_add_item (recent_manager, 
-                 g_filename_to_uri(name, NULL, NULL));
+                g_filename_to_uri(name, NULL, NULL));
             free(last_bank);
             last_bank = strdup(name);
+            if (settings->last_bank_dir)
+                free(settings->last_bank_dir);
+            settings->last_bank_dir = g_path_get_dirname(name);
             set_bankname(name);
         }
     }
@@ -268,7 +285,7 @@ int bank_ops_open_recent(GtkWidget* parent_window, char* filename)
         last_bank = strdup(filename);
         set_bankname(filename);
     }
-
+    
     return val;
 }
 

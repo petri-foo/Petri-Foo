@@ -130,3 +130,15 @@ ADD_SUBDIRECTORY( gui )
 
 #ADD_SUBDIRECTORY( pixmaps )
 
+# Install targets
+set (BINDIR  "bin" CACHE STRING "Where to install binaries")
+set (DATADIR "share/petri-foo" CACHE STRING "Where to install data files")
+set (APPLICATIONS_DIR "share/applications" CACHE STRING "Where to install desktop files")
+set (PIXMAPS_DIR "share/pixmaps" CACHE STRING "Where to install icons")
+set (MIME_DIR "share/mime" CACHE STRING "Where MIME definitions are located")
+
+install (DIRECTORY pixmaps/ DESTINATION ${DATADIR}/pixmaps
+          FILES_MATCHING PATTERN "*.png")
+install (FILES petri-foo.xml DESTINATION ${MIME_DIR}/packages)
+install (FILES pixmaps/petri-foo.png DESTINATION ${PIXMAPS_DIR})
+install (FILES petri-foo.desktop DESTINATION ${APPLICATIONS_DIR})
