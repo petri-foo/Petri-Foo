@@ -1,3 +1,27 @@
+Petri-Foo AUTHORS
+-----------------
+
+* James W. Morris <james@jwm-art.net>
+
+  forker of Specimen to Petri-Foo, primary developer of Petri-Foo
+  added modulation routing, midi-cc as modulation sources, remover
+  of deprecated GUI code, etc, etc, etc.
+
+
+* Brenden Jones <brendan.jones.it@gmail.com>
+
+  Added auto-preview and a keyboard shortcut to sample-selector,
+  and minimum and maximum velocity values for patch.
+
+
+
+Specimen AUTHORS
+----------------
+
+Petri-Foo began as a fork of Specimen.
+
+Specimen was written by the following people:
+
 -*- text -*-
 
 * Pete Bessman <ninjadroid@gazuga.net>
@@ -58,17 +82,3 @@
 * Eric Dantan Rzewnicki <eric@zhevny.com>
 
   maintainer
-
-
-* James W. Morris <james@jwm-art.net>
-
-  forker of Specimen to Petri-Foo, primary developer of Petri-Foo
-  added modulation routing, midi-cc as modulation sources, remover
-  of deprecated GUI code, etc, etc, etc.
-
-
-* Brenden Jones <brendan.jones.it@gmail.com>
-
-  Added auto-preview and a keyboard shortcut to sample-selector,
-  and minimum and maximum velocity values for patch.
-

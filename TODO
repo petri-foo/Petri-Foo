@@ -18,6 +18,10 @@
 -GUI: general
     +replace PHAT widgets with something else?
     +custom cairo based widgets?
+     Petri-Foo now uses Phin instead of PHAT. Phin is a modified
+     fork of PHAT which uses Cairo and avoids deprecated GTK/GDK code,
+     with the fans on the sliders disabled but default by allowed to
+     be enabled by users of compositing desktop environments.
 
 
 -GUI: Patch List:
