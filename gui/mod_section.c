@@ -271,6 +271,7 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
 
     float range_low = 0.0;
     float range_hi = 1.0;
+    gboolean logscale = FALSE;
 
     const char* lstr;
     const char** param_names = names_params_get();
@@ -330,7 +331,11 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
         break;
     case PATCH_PARAM_RESONANCE:
         lstr = "Q:";
+        /* broken impl in Phat/Phin: logscale = TRUE; */
         break;
+    case PATCH_PARAM_CUTOFF:
+        /* logscale = TRUE; */
+        /* intentional fallthrough */
     default:
         snprintf(buf, 80, "%s:", param_names[param]);
         lstr = buf;
@@ -341,6 +346,8 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
 
     p->param1 = phin_hfan_slider_new_with_range(0.0, range_low,
                                                         range_hi,   0.1);
+    phin_fan_slider_set_log(PHIN_FAN_SLIDER(p->param1), logscale);
+
     gui_attach(t, p->param1, b1, b2, y, y + 1);
 
     if (param == PATCH_PARAM_PITCH)

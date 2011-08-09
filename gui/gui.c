@@ -495,13 +495,13 @@ static void cb_menu_help_about (GtkWidget* widget, gpointer data)
 {
     (void)widget;
     GdkPixbuf* logo = 0;
-    const char* authors[] = { "Pete Bessman (original author)",
-                             "See the AUTHORS file for others", 0 };
+    const char* authors[] = {   "Pete Bessman - original Specimen author",
+                                "James Morris - Petri-Foo creator",
+                                "See the AUTHORS file for others", 0 };
 
-/* FIXME!!!!!!
-     should this be freed later on? 
-    logo = gdk_pixbuf_new_from_file(PIXMAPSDIR "petri-foo.png", NULL);
-
+/*  should this be freed later on?  */
+    logo = gdk_pixbuf_new_from_file(PIXMAPS_DIR "petri-foo.png", NULL);
+printf("%s\n",PIXMAPS_DIR "petri-foo.png");
     gtk_show_about_dialog(
         GTK_WINDOW(data),
         "name", "Petri-Foo",
@@ -512,7 +512,6 @@ static void cb_menu_help_about (GtkWidget* widget, gpointer data)
                         "(C) 2006-2007 others\n"
                         "(C) 2011 James Morris\n",
         NULL);
-*/
 }
 
 

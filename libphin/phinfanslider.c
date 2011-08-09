@@ -114,8 +114,6 @@ static void phin_fan_slider_unmap           (GtkWidget *widget);
 
 static void phin_fan_slider_draw_fan        (PhinFanSlider* slider);
 static int  phin_fan_slider_get_fan_length  (PhinFanSlider* slider);
-
-
 static void phin_fan_slider_update_hints    (PhinFanSlider* slider);
 
 static void phin_fan_slider_size_request    (GtkWidget*widget,
@@ -173,7 +171,6 @@ static void phin_fan_slider_adjustment_changed (GtkAdjustment* adjustment,
 
 static void phin_fan_slider_adjustment_value_changed(   GtkAdjustment*,
                                                         PhinFanSlider*);
-                                                        
 
 
 void phin_fan_slider_set_fans_active(gboolean enable_fans)
@@ -235,7 +232,6 @@ gboolean phin_fan_slider_is_log (PhinFanSlider* slider)
     return p->is_log;
 }
 
-    
 
 /**
  * phin_fan_slider_get_value:
@@ -256,7 +252,7 @@ double phin_fan_slider_get_value (PhinFanSlider* slider)
     gdouble prv_value = gtk_adjustment_get_value(p->adjustment_prv);
 
     if(p->is_log)
-    {
+    {   /* FIXME: log scale */
         value = exp(prv_value * log(upper - lower)) + lower;
     }
     else
@@ -264,10 +260,30 @@ double phin_fan_slider_get_value (PhinFanSlider* slider)
         value = prv_value * (upper - lower) + lower;
     }
 
+    /* not sure what the purpose of this set value call is: */
     gtk_adjustment_set_value(p->adjustment, value);
+
     return value;
 }
 
+/*
+http://stackoverflow.com/questions/846221/logarithmic-slider/846249#846249
+  function logslider(value) {
+  // value will be between 0 and 100
+  var slidermin = 0;
+  var slidermax = 100;
+
+  // The result should be between 100 an 10000000
+  var minv = Math.log(100);
+  var maxv = Math.log(10000000);
+
+  // calculate adjustment factor
+  var scale = (maxv-minv) / (slidermax-slidermin);
+
+  return Math.exp(minv + scale*(value-slidermin));
+}
+
+*/
 /**
  * phin_fan_slider_set_range:
  * @slider: a #PhinFanSlider

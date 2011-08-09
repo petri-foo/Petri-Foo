@@ -1,4 +1,8 @@
-#define PACKAGE "${PROJECT_NAME}"
+#define PACKAGE     "${PROJECT_NAME}"
+#define VERSION     "0.${Petri-Foo_VERSION_MAJOR}.${Petri-Foo_VERSION_MINOR}"
+
+#define PIXMAPS_DIR "${PIXMAPS_DIR}"
+
 #cmakedefine HAVE_MALLOC_H 1
 #cmakedefine HAVE_JACK_SESSION_H 1
 

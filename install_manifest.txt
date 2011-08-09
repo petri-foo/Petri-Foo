@@ -1,0 +1,7 @@
+/usr/local/share/petri-foo/pixmaps/petri-foo.png
+/usr/local/share/petri-foo/pixmaps/petri-foo_small.png
+/usr/local/share/mime/packages/petri-foo.xml
+/usr/local/share/pixmaps/petri-foo.png
+/usr/local/share/applications/petri-foo.desktop
+/usr/local/lib/libphin.a
+/usr/local/bin/petri-foo
