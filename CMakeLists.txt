@@ -132,6 +132,7 @@ set (DATADIR "share/petri-foo" CACHE STRING "Where to install data files")
 set (APPLICATIONS_DIR "share/applications" CACHE STRING "Where to install desktop files")
 set (PIXMAPS_DIR "share/pixmaps" CACHE STRING "Where to install icons")
 set (MIME_DIR "share/mime" CACHE STRING "Where MIME definitions are located")
+set (UpdateMime "ON" CACHE BOOL "Update Mime Database")
 
 ADD_SUBDIRECTORY( libphin )
 ADD_SUBDIRECTORY( libpetrifoo )
@@ -144,3 +145,11 @@ install (DIRECTORY pixmaps/ DESTINATION ${DATADIR}/pixmaps
 install (FILES petri-foo.xml DESTINATION ${MIME_DIR}/packages)
 install (FILES pixmaps/petri-foo.png DESTINATION ${PIXMAPS_DIR})
 install (FILES petri-foo.desktop DESTINATION ${APPLICATIONS_DIR})
+
+if (UpdateMime)
+    install (CODE
+        "EXEC_PROGRAM ( \"update-mime-database ${CMAKE_INSTALL_PREFIX}/${MIME_DIR}\" ) "
+    )
+endif (UpdateMime)
+
+

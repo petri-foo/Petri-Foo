@@ -591,16 +591,16 @@ filter (Patch* p, PatchVoice* v, int index,  float* l, float* r)
     else if (freso < 0.0)
         freso = 0.0;
 
-    /* logify */
-    logreso = log_amplitude(freso);
+    /* logify - seems better without this:
+    logreso = log_amplitude(freso); */
 
     /* left */
-    v->fbl = logreso * v->fbl + ffreq * (*l - v->fll);
+    v->fbl = freso * v->fbl + ffreq * (*l - v->fll);
     v->fll += ffreq * v->fbl;
     *l = v->fll;
 
     /* right */
-    v->fbr = logreso * v->fbr + ffreq * (*r - v->flr);
+    v->fbr = freso * v->fbr + ffreq * (*r - v->flr);
     v->flr += ffreq * v->fbr;
     *r = v->flr;
 }
