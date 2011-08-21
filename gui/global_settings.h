@@ -26,12 +26,21 @@
     
  */
 
+#define DEFAULT_LOG_LINES           100
+#define DEFAULT_ABS_MAX_SAMPLE      (1024 * 1024 * 1024)
+#define DEFAULT_MAX_SAMPLE          (1024 * 1024 * 25)
+
+
 typedef struct global_settings_def
 {
-    char*       filename;
-    char*       last_sample_dir;
-    char*       last_bank_dir;
-
+    char*   filename;
+    char*   last_sample_dir;
+    char*   last_bank_dir;
+    int     log_lines;
+/*
+    int     abs_max_sample_size;
+    int     max_sample_size;
+ */
 } global_settings;
 
 

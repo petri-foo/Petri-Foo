@@ -25,15 +25,15 @@
 #include <unistd.h>
 #include <errno.h>
 
+
 #include "phin.h"
 #include "global_settings.h"
 #include "petri-foo.h"
+#include "msg_log.h"
 
-#ifndef BUFSIZE
-# define BUFSIZE 256
-#endif
 
 #define SETTINGS_BASENAME "rc.xml"
+
 
 static global_settings* gbl_settings = 0;
 /*
@@ -42,17 +42,22 @@ static global_settings* gbl_settings = 0;
 void settings_init()
 {
     if (gbl_settings) settings_free();
-    
+
     gbl_settings  = malloc(sizeof(global_settings));
     gbl_settings->last_sample_dir = strdup(getenv("HOME"));
     gbl_settings->last_bank_dir = strdup(getenv("HOME"));
-    
-    gbl_settings->filename = (char*) g_build_filename( 
+
+    gbl_settings->filename = (char*) g_build_filename(
                              g_get_user_config_dir(),
-                             g_get_prgname(), 
+                             g_get_prgname(),
                              SETTINGS_BASENAME,
                              NULL);
 
+    gbl_settings->log_lines =           DEFAULT_LOG_LINES;
+/*
+    gbl_settings->abs_max_sample_size = DEFAULT_ABS_MAX_SAMPLE;
+    gbl_settings->max_sample_size =     DEFAULT_MAX_SAMPLE;
+ */
     settings_read((char*) gbl_settings->filename);
 }
 
@@ -115,26 +120,39 @@ int settings_read(const char* path)
             node2 != NULL;
             node2 = node2->next)
         {
+            int n;
+
             if (xmlStrcmp(node2->name, BAD_CAST "property") == 0)
             {
                 prop = BAD_CAST xmlGetProp(node2, BAD_CAST "name");
-                if (xmlStrcmp(prop, BAD_CAST "last-sample-directory") == 0 )
+
+                if (xmlStrcmp(prop, BAD_CAST "last-sample-directory") == 0)
                 {
                     free(gbl_settings->last_sample_dir);
                     gbl_settings->last_sample_dir =
                         (char*) xmlGetProp(node2, BAD_CAST "value");
                 }
-                if (xmlStrcmp(prop, BAD_CAST "last-bank-directory") == 0 )
+
+                if (xmlStrcmp(prop, BAD_CAST "last-bank-directory") == 0)
                 {
                     free(gbl_settings->last_bank_dir);
                     gbl_settings->last_bank_dir =
                         (char*) xmlGetProp(node2, BAD_CAST "value");
                 }
-                if (xmlStrcmp(prop, BAD_CAST "sliders-use-fans") == 0 )
+
+                if (xmlStrcmp(prop, BAD_CAST "sliders-use-fans") == 0)
                 {
                     phin_fan_slider_set_fans_active(
                         xmlstr_to_gboolean(xmlGetProp(node2,
                                                     BAD_CAST "value")));
+                }
+
+                if (xmlStrcmp(prop, BAD_CAST "log-lines") == 0)
+                {
+                    xmlChar* vprop = xmlGetProp(node2, BAD_CAST "value");
+
+                    if (sscanf((const char*)vprop, "%d", &n) == 1)
+                        gbl_settings->log_lines = n;
                 }
             }
         }
@@ -142,10 +160,12 @@ int settings_read(const char* path)
     return 0;
 }
 
+
 int settings_write()
 {
     int rc;
     char* config_dir;
+    char buf[CHARBUFSIZE];
 
     xmlDocPtr   doc;
     xmlNodePtr  noderoot;
@@ -175,10 +195,12 @@ int settings_write()
                                                       SETTINGS_BASENAME,
                                                       NULL);
     free(config_dir);
-    
-    noderoot = xmlNewDocNode(doc, NULL, BAD_CAST "Petri-Foo-Settings", NULL);
-    if (!noderoot) { 
-        errmsg("XML error!\n"); return -1; 
+
+    noderoot = xmlNewDocNode(doc, NULL, BAD_CAST "Petri-Foo-Settings",NULL);
+
+    if (!noderoot)
+    {
+        errmsg("XML error!\n"); return -1;
     }
 
     xmlDocSetRootElement(doc, noderoot);
@@ -188,20 +210,36 @@ int settings_write()
     node2 = xmlNewTextChild(node1, NULL, BAD_CAST "property", NULL);
     xmlNewProp(node2, BAD_CAST "name", BAD_CAST "last-sample-directory");
     xmlNewProp(node2, BAD_CAST "type", BAD_CAST "string");
-    xmlNewProp(node2, BAD_CAST "value", BAD_CAST gbl_settings->last_sample_dir);
-    
+    xmlNewProp(node2, BAD_CAST "value",
+                      BAD_CAST gbl_settings->last_sample_dir);
+
     node2 = xmlNewTextChild(node1, NULL, BAD_CAST "property", NULL);
     xmlNewProp(node2, BAD_CAST "name", BAD_CAST "last-bank-directory");
     xmlNewProp(node2, BAD_CAST "type", BAD_CAST "string");
-    xmlNewProp(node2, BAD_CAST "value", BAD_CAST gbl_settings->last_bank_dir);
+    xmlNewProp(node2, BAD_CAST "value",
+                      BAD_CAST gbl_settings->last_bank_dir);
 
     node2 = xmlNewTextChild(node1, NULL, BAD_CAST "property", NULL);
     xmlNewProp(node2, BAD_CAST "name", BAD_CAST "sliders-use-fans");
     xmlNewProp(node2, BAD_CAST "type", BAD_CAST "boolean");
-    xmlNewProp(node2, BAD_CAST "value", BAD_CAST 
-                                (phin_fan_slider_get_fans_active()
+    xmlNewProp(node2, BAD_CAST "value",
+                      BAD_CAST (phin_fan_slider_get_fans_active()
                                     ? "true"
                                     : "false"));
+
+    node2 = xmlNewTextChild(node1, NULL, BAD_CAST "property", NULL);
+    xmlNewProp(node2, BAD_CAST "name", BAD_CAST "last-bank-directory");
+    xmlNewProp(node2, BAD_CAST "type", BAD_CAST "string");
+    xmlNewProp(node2, BAD_CAST "value",
+                      BAD_CAST gbl_settings->last_bank_dir);
+
+    node2 = xmlNewTextChild(node1, NULL, BAD_CAST "property", NULL);
+    xmlNewProp(node2, BAD_CAST "name", BAD_CAST "log-lines");
+    xmlNewProp(node2, BAD_CAST "type", BAD_CAST "int");
+
+    snprintf(buf, CHARBUFSIZE, "%d", gbl_settings->log_lines);
+
+    xmlNewProp(node2, BAD_CAST "value", BAD_CAST buf);
 
     debug("attempting to write file:%s\n",gbl_settings->filename);
 
@@ -211,20 +249,28 @@ int settings_write()
     return rc;
 }
 
+
 global_settings* settings_get(void)
 {
     return gbl_settings;
 }
 
+
 void settings_free(void)
 {
-    if (gbl_settings == NULL) return;
+    if (gbl_settings == NULL)
+        return;
+
     if (gbl_settings->filename) 
         free(gbl_settings->filename);
+
     if (gbl_settings->last_sample_dir) 
         free(gbl_settings->last_sample_dir);
+
     if (gbl_settings->last_bank_dir) 
         free(gbl_settings->last_bank_dir);
+
     free(gbl_settings);
+
     return;
 }

@@ -29,6 +29,7 @@
 
 #include "mixer.h"
 #include "mod_src.h"
+#include "msg_log.h"
 #include "petri-foo.h"
 #include "patch.h"
 #include "patch_util.h"
@@ -36,7 +37,6 @@
 #include "sample.h"
 
 
-#define BUFSIZE 256
 
 static const char* dish_file_ext = ".petri-foo";
 static int dish_file_samplerate = 0;
@@ -77,20 +77,20 @@ static int dish_file_write_sample_raw(xmlNodePtr nodeparent, int patch_id)
 {
     xmlNodePtr node;
     const Sample* s = patch_sample_data(patch_id);
-    char buf[BUFSIZE];
+    char buf[CHARBUFSIZE];
 
     if (!(s->raw_samplerate || s->raw_channels || s->sndfile_format))
         return 0;
 
     node = xmlNewTextChild(nodeparent, NULL, BAD_CAST "Raw", NULL);
 
-    snprintf(buf, BUFSIZE, "%d", s->raw_samplerate);
+    snprintf(buf, CHARBUFSIZE, "%d", s->raw_samplerate);
     xmlNewProp(node, BAD_CAST "samplerate", BAD_CAST buf);
 
-    snprintf(buf, BUFSIZE, "%d", s->raw_channels);
+    snprintf(buf, CHARBUFSIZE, "%d", s->raw_channels);
     xmlNewProp(node, BAD_CAST "channels", BAD_CAST buf);
 
-    snprintf(buf, BUFSIZE, "%d", s->sndfile_format);
+    snprintf(buf, CHARBUFSIZE, "%d", s->sndfile_format);
     xmlNewProp(node, BAD_CAST "sndfile_format", BAD_CAST buf);
 
     return 0;
@@ -103,7 +103,7 @@ dish_file_write_param(xmlNodePtr nodeparent, int patch_id,
 {
     xmlNodePtr  node1;
     xmlNodePtr  node2;
-    char buf[BUFSIZE];
+    char buf[CHARBUFSIZE];
     const char** param_names;
 
     const char* prop1 = 0;
@@ -142,35 +142,35 @@ dish_file_write_param(xmlNodePtr nodeparent, int patch_id,
     node1 = xmlNewTextChild(nodeparent, NULL,
                             BAD_CAST param_names[param], NULL);
 
-    snprintf(buf, BUFSIZE, "%f", val1);
+    snprintf(buf, CHARBUFSIZE, "%f", val1);
     xmlNewProp(node1, BAD_CAST prop1, BAD_CAST buf);
 
     if (prop2)
     {
-        snprintf(buf, BUFSIZE, "%f", val2);
+        snprintf(buf, CHARBUFSIZE, "%f", val2);
         xmlNewProp(node1, BAD_CAST prop2, BAD_CAST buf);
     }
 
     /* velocity sensing */
     patch_param_get_vel_amount(patch_id, param, &vel_amt);
-    snprintf(buf, BUFSIZE, "%f", vel_amt);
+    snprintf(buf, CHARBUFSIZE, "%f", vel_amt);
     xmlNewProp(node1, BAD_CAST "velocity_sensing", BAD_CAST buf);
 
     /* keyboard tracking */
     patch_param_get_key_amount(patch_id, param, &keytrack);
-    snprintf(buf, BUFSIZE, "%f", keytrack);
+    snprintf(buf, CHARBUFSIZE, "%f", keytrack);
     xmlNewProp(node1, BAD_CAST "key_tracking", BAD_CAST buf);
 
     for (i = 0; i < last_mod_slot; ++i)
     {
-        snprintf(buf, BUFSIZE, "Mod%d", i + 1);
+        snprintf(buf, CHARBUFSIZE, "Mod%d", i + 1);
 
         patch_param_get_mod_src(patch_id, param, i, &modsrc);
         patch_param_get_mod_amt(patch_id, param, i, &modamt);
 
         node2 = xmlNewTextChild(node1, NULL, BAD_CAST buf, NULL);
         xmlNewProp(node2, BAD_CAST "source", BAD_CAST mod_src_name(modsrc));
-        snprintf(buf, BUFSIZE, "%f", modamt);
+        snprintf(buf, CHARBUFSIZE, "%f", modamt);
         xmlNewProp(node2, BAD_CAST "amount", BAD_CAST buf);
     }
 
@@ -192,7 +192,7 @@ dish_file_write_bool(xmlNodePtr nodeparent, int patch_id,
 {
     xmlNodePtr  node1;
     xmlNodePtr  node2;
-    char buf[BUFSIZE];
+    char buf[CHARBUFSIZE];
     const char* nodestr;
 
     bool    set;
@@ -225,7 +225,7 @@ dish_file_write_bool(xmlNodePtr nodeparent, int patch_id,
 
     xmlNewProp(node2, BAD_CAST "source", BAD_CAST mod_src_name(modsrc));
 
-    snprintf(buf, BUFSIZE, "%f", thresh);
+    snprintf(buf, CHARBUFSIZE, "%f", thresh);
     xmlNewProp(node2, BAD_CAST "threshold", BAD_CAST buf);
 
     return 0;
@@ -238,7 +238,7 @@ dish_file_write_float(xmlNodePtr nodeparent, int patch_id,
 {
     xmlNodePtr  node1;
     xmlNodePtr  node2;
-    char buf[BUFSIZE];
+    char buf[CHARBUFSIZE];
     const char* nodestr;
 
     float   val;
@@ -258,14 +258,14 @@ dish_file_write_float(xmlNodePtr nodeparent, int patch_id,
 
     node1 = xmlNewTextChild(nodeparent, NULL, BAD_CAST nodestr, NULL);
 
-    snprintf(buf, BUFSIZE, "%f", val);
+    snprintf(buf, CHARBUFSIZE, "%f", val);
     xmlNewProp(node1,   BAD_CAST "value",   BAD_CAST buf);
 
     node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Mod", NULL);
 
     xmlNewProp(node2, BAD_CAST "source", BAD_CAST mod_src_name(modsrc));
 
-    snprintf(buf, BUFSIZE, "%f", modamt);
+    snprintf(buf, CHARBUFSIZE, "%f", modamt);
     xmlNewProp(node2, BAD_CAST "amount", BAD_CAST buf);
 
     return 0;
@@ -276,7 +276,7 @@ static int
 dish_file_write_eg(xmlNodePtr nodeparent, int patch_id, int eg_id)
 {
     xmlNodePtr  node1;
-    char buf[BUFSIZE];
+    char buf[CHARBUFSIZE];
     bool active;
     float val;
 
@@ -290,31 +290,31 @@ dish_file_write_eg(xmlNodePtr nodeparent, int patch_id, int eg_id)
                         BAD_CAST (active ? "true" : "false"));
 
     patch_get_env_delay(patch_id, eg_id, &val);
-    snprintf(buf, BUFSIZE, "%f", val);
+    snprintf(buf, CHARBUFSIZE, "%f", val);
     xmlNewProp(node1,   BAD_CAST "delay",   BAD_CAST buf);
 
     patch_get_env_attack(patch_id, eg_id, &val);
-    snprintf(buf, BUFSIZE, "%f", val);
+    snprintf(buf, CHARBUFSIZE, "%f", val);
     xmlNewProp(node1,   BAD_CAST "attack",   BAD_CAST buf);
 
     patch_get_env_hold(patch_id, eg_id, &val);
-    snprintf(buf, BUFSIZE, "%f", val);
+    snprintf(buf, CHARBUFSIZE, "%f", val);
     xmlNewProp(node1,   BAD_CAST "hold",   BAD_CAST buf);
 
     patch_get_env_decay(patch_id, eg_id, &val);
-    snprintf(buf, BUFSIZE, "%f", val);
+    snprintf(buf, CHARBUFSIZE, "%f", val);
     xmlNewProp(node1,   BAD_CAST "decay",   BAD_CAST buf);
 
     patch_get_env_sustain(patch_id, eg_id, &val);
-    snprintf(buf, BUFSIZE, "%f", val);
+    snprintf(buf, CHARBUFSIZE, "%f", val);
     xmlNewProp(node1,   BAD_CAST "sustain",   BAD_CAST buf);
 
     patch_get_env_release(patch_id, eg_id, &val);
-    snprintf(buf, BUFSIZE, "%f", val);
+    snprintf(buf, CHARBUFSIZE, "%f", val);
     xmlNewProp(node1,   BAD_CAST "release",   BAD_CAST buf);
 
     patch_get_env_key_amt(patch_id, eg_id, &val);
-    snprintf(buf, BUFSIZE, "%f", val);
+    snprintf(buf, CHARBUFSIZE, "%f", val);
     xmlNewProp(node1,   BAD_CAST "key_tracking",   BAD_CAST buf);
 
     return 0;
@@ -327,7 +327,7 @@ dish_file_write_lfo(xmlNodePtr nodeparent, int patch_id, int lfo_id)
     xmlNodePtr  node1;
     xmlNodePtr  node2;
     xmlNodePtr  node3;
-    char buf[BUFSIZE];
+    char buf[CHARBUFSIZE];
     bool state;
     float val;
     const char** shapes = names_lfo_shapes_get();
@@ -348,11 +348,11 @@ dish_file_write_lfo(xmlNodePtr nodeparent, int patch_id, int lfo_id)
 
     node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Frequency", NULL);
     patch_get_lfo_freq(patch_id, lfo_id, &val);
-    snprintf(buf, BUFSIZE, "%f", val);
+    snprintf(buf, CHARBUFSIZE, "%f", val);
     xmlNewProp(node2,   BAD_CAST "hrtz", BAD_CAST buf);
 
     patch_get_lfo_beats(patch_id, lfo_id, &val);
-    snprintf(buf, BUFSIZE, "%f", val);
+    snprintf(buf, CHARBUFSIZE, "%f", val);
     xmlNewProp(node2,   BAD_CAST "beats", BAD_CAST buf);
 
     patch_get_lfo_sync(patch_id, lfo_id, &state);
@@ -366,12 +366,12 @@ dish_file_write_lfo(xmlNodePtr nodeparent, int patch_id, int lfo_id)
 
     node3 = xmlNewTextChild(node2, NULL, BAD_CAST "Mod1", NULL);
     xmlNewProp(node3, BAD_CAST "source", BAD_CAST mod_src_name(mod1src));
-    snprintf(buf, BUFSIZE, "%f", mod1amt);
+    snprintf(buf, CHARBUFSIZE, "%f", mod1amt);
     xmlNewProp(node3, BAD_CAST "amount", BAD_CAST buf);
 
     node3 = xmlNewTextChild(node2, NULL, BAD_CAST "Mod2", NULL);
     xmlNewProp(node3, BAD_CAST "source", BAD_CAST mod_src_name(mod2src));
-    snprintf(buf, BUFSIZE, "%f", mod2amt);
+    snprintf(buf, CHARBUFSIZE, "%f", mod2amt);
     xmlNewProp(node3, BAD_CAST "amount", BAD_CAST buf);
 
 
@@ -388,11 +388,11 @@ dish_file_write_lfo(xmlNodePtr nodeparent, int patch_id, int lfo_id)
     if (!mod_src_is_global(lfo_id))
     {
         patch_get_lfo_delay(patch_id, lfo_id, &val);
-        snprintf(buf, BUFSIZE, "%f", val);
+        snprintf(buf, CHARBUFSIZE, "%f", val);
         xmlNewProp(node2,   BAD_CAST "delay",   BAD_CAST buf);
 
         patch_get_lfo_attack(patch_id, lfo_id, &val);
-        snprintf(buf, BUFSIZE, "%f", val);
+        snprintf(buf, CHARBUFSIZE, "%f", val);
         xmlNewProp(node2,   BAD_CAST "attack",  BAD_CAST buf);
     }
 
@@ -403,12 +403,12 @@ dish_file_write_lfo(xmlNodePtr nodeparent, int patch_id, int lfo_id)
 
     node3 = xmlNewTextChild(node2, NULL, BAD_CAST "Mod1", NULL);
     xmlNewProp(node3, BAD_CAST "source", BAD_CAST mod_src_name(mod1src));
-    snprintf(buf, BUFSIZE, "%f", mod1amt);
+    snprintf(buf, CHARBUFSIZE, "%f", mod1amt);
     xmlNewProp(node3, BAD_CAST "amount", BAD_CAST buf);
 
     node3 = xmlNewTextChild(node2, NULL, BAD_CAST "Mod2", NULL);
     xmlNewProp(node3, BAD_CAST "source", BAD_CAST mod_src_name(mod2src));
-    snprintf(buf, BUFSIZE, "%f", mod2amt);
+    snprintf(buf, CHARBUFSIZE, "%f", mod2amt);
     xmlNewProp(node3, BAD_CAST "amount", BAD_CAST buf);
 
     return 0;
@@ -425,7 +425,7 @@ int dish_file_write(const char *name)
     xmlNodePtr  node1;
     xmlNodePtr  node2;
 
-    char    buf[BUFSIZE];
+    char    buf[CHARBUFSIZE];
     int     i, j;
     int*    patch_id;
     int     patch_count;
@@ -445,10 +445,10 @@ int dish_file_write(const char *name)
      */
     node1 = xmlNewTextChild(noderoot, NULL, BAD_CAST "Master", NULL);
 
-    snprintf(buf, BUFSIZE, "%f", mixer_get_amplitude());
+    snprintf(buf, CHARBUFSIZE, "%f", mixer_get_amplitude());
     xmlNewProp(node1, BAD_CAST "level", BAD_CAST buf);
 
-    snprintf(buf, BUFSIZE, "%d", patch_get_samplerate());
+    snprintf(buf, CHARBUFSIZE, "%d", patch_get_samplerate());
     xmlNewProp(node1, BAD_CAST "samplerate", BAD_CAST buf);
 
 
@@ -467,7 +467,7 @@ int dish_file_write(const char *name)
         xmlNewProp(nodepatch,   BAD_CAST "name",
                                 BAD_CAST patch_get_name(patch_id[i]));
 
-        snprintf(buf, BUFSIZE, "%d", patch_get_channel(patch_id[i]));
+        snprintf(buf, CHARBUFSIZE, "%d", patch_get_channel(patch_id[i]));
         xmlNewProp(nodepatch,   BAD_CAST "channel", BAD_CAST buf);
 
         /*  ------------------------
@@ -486,47 +486,49 @@ int dish_file_write(const char *name)
         /* sample play */
         node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Play", NULL);
 
-        snprintf(buf, BUFSIZE, "%d",
+        snprintf(buf, CHARBUFSIZE, "%d",
                     patch_get_mark_frame(patch_id[i], WF_MARK_PLAY_START));
         xmlNewProp(node2,   BAD_CAST "start", BAD_CAST buf);
 
-        snprintf(buf, BUFSIZE, "%d",
+        snprintf(buf, CHARBUFSIZE, "%d",
                     patch_get_mark_frame(patch_id[i], WF_MARK_PLAY_STOP));
         xmlNewProp(node2,   BAD_CAST "stop", BAD_CAST buf);
 
-        snprintf(buf, BUFSIZE, "%d", patch_get_fade_samples(patch_id[i]));
+        snprintf(buf, CHARBUFSIZE, "%d",
+                                patch_get_fade_samples(patch_id[i]));
         xmlNewProp(node2,   BAD_CAST "fade_samples", BAD_CAST buf);
 
         /* sample loop */
         node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Loop", NULL);
 
-        snprintf(buf, BUFSIZE, "%d",
+        snprintf(buf, CHARBUFSIZE, "%d",
                     patch_get_mark_frame(patch_id[i], WF_MARK_LOOP_START));
         xmlNewProp(node2,   BAD_CAST "start", BAD_CAST buf);
 
-        snprintf(buf, BUFSIZE, "%d",
+        snprintf(buf, CHARBUFSIZE, "%d",
                     patch_get_mark_frame(patch_id[i], WF_MARK_LOOP_STOP));
         xmlNewProp(node2,   BAD_CAST "stop", BAD_CAST buf);
 
-        snprintf(buf, BUFSIZE, "%d", patch_get_xfade_samples(patch_id[i]));
+        snprintf(buf, CHARBUFSIZE, "%d",
+                    patch_get_xfade_samples(patch_id[i]));
         xmlNewProp(node2,   BAD_CAST "xfade_samples", BAD_CAST buf);
 
         /* sample note */
         node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Note", NULL);
 
-        snprintf(buf, BUFSIZE, "%d", patch_get_note(patch_id[i]));
+        snprintf(buf, CHARBUFSIZE, "%d", patch_get_note(patch_id[i]));
         xmlNewProp(node2,   BAD_CAST "root", BAD_CAST buf);
 
-        snprintf(buf, BUFSIZE, "%d", patch_get_lower_note(patch_id[i]));
+        snprintf(buf, CHARBUFSIZE, "%d", patch_get_lower_note(patch_id[i]));
         xmlNewProp(node2,   BAD_CAST "lower", BAD_CAST buf);
 
-        snprintf(buf, BUFSIZE, "%d", patch_get_upper_note(patch_id[i]));
+        snprintf(buf, CHARBUFSIZE, "%d", patch_get_upper_note(patch_id[i]));
         xmlNewProp(node2,   BAD_CAST "upper", BAD_CAST buf);
         
-        snprintf(buf, BUFSIZE, "%d", patch_get_lower_vel(patch_id[i]));
+        snprintf(buf, CHARBUFSIZE, "%d", patch_get_lower_vel(patch_id[i]));
         xmlNewProp(node2,   BAD_CAST "velocity_lower", BAD_CAST buf);
 
-        snprintf(buf, BUFSIZE, "%d", patch_get_upper_vel(patch_id[i]));
+        snprintf(buf, CHARBUFSIZE, "%d", patch_get_upper_vel(patch_id[i]));
         xmlNewProp(node2,   BAD_CAST "velocity_upper", BAD_CAST buf);
 
 
@@ -558,11 +560,11 @@ int dish_file_write(const char *name)
         node1 = xmlNewTextChild(nodepatch, NULL, BAD_CAST "Voice", NULL);
 
         /* voice cut */
-        snprintf(buf, BUFSIZE, "%d", patch_get_cut(patch_id[i]));
+        snprintf(buf, CHARBUFSIZE, "%d", patch_get_cut(patch_id[i]));
         xmlNewProp(node1,   BAD_CAST "cut", BAD_CAST buf);
 
         /* voice cut by */
-        snprintf(buf, BUFSIZE, "%d", patch_get_cut_by(patch_id[i]));
+        snprintf(buf, CHARBUFSIZE, "%d", patch_get_cut_by(patch_id[i]));
         xmlNewProp(node1,   BAD_CAST "cut_by", BAD_CAST buf);
 
         /* voice portamento */
@@ -653,7 +655,7 @@ debug("sr_ratio:%f\n",sr_ratio);
             mode = PATCH_PLAY_LOOP | PATCH_PLAY_PINGPONG;
         else
         {
-            errmsg("invalid play mode:%s\n", prop);
+            msg_log(MSG_ERROR, "Invalid sample play mode:%s\n", prop);
         }
     }
 
@@ -704,10 +706,7 @@ debug("sr_ratio:%f\n",sr_ratio);
                                               raw_channels,
                                               sndfile_format);
             if (err)
-            {
-                errmsg("failed to load sample:%s\n", (const char*)filename);
                 return 0;
-            }
 
             free(filename);
             filename = 0;

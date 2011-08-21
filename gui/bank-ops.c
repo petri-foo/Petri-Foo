@@ -28,9 +28,11 @@
 #include <string.h>
 
 #include "dish_file.h"
+#include "log_display.h"
 #include "patch.h"
 #include "patch_util.h"
 #include "petri-foo.h"
+#include "msg_log.h"
 #include "gui.h"
 #include "global_settings.h"
 
@@ -54,15 +56,6 @@ static void set_bankname(const char* name)
 
     bankname = (name) ? strdup(name) : NULL;
     gui_set_window_title(bankname);
-}
-
-
-inline static char* strconcat(const char* str1, const char* str2)
-{
-    char* str = malloc(strlen(str1) + strlen(str2) + 1);
-    strcpy(str, str1);
-    strcat(str, str2);
-    return str;
 }
 
 /* unused... reason/purpose ???
@@ -133,7 +126,7 @@ int bank_ops_save_as (GtkWidget* parent_window)
 
         if ((val = dish_file_write(name)) < 0)
         {
-            errmsg ("Failed to write file %s\n", name);
+            msg_log(MSG_ERROR, "Failed to write file %s\n", name);
             GtkWidget* msg = gtk_message_dialog_new(GTK_WINDOW(dialog),
                                     GTK_DIALOG_MODAL,
                                     GTK_MESSAGE_ERROR,
@@ -149,7 +142,7 @@ int bank_ops_save_as (GtkWidget* parent_window)
 
             gtk_recent_manager_add_item (recent_manager, 
                 g_filename_to_uri(name, NULL, NULL));
-            debug ("Succesfully wrote file %s\n", name);
+            msg_log(MSG_MESSAGE, "Succesfully wrote file %s\n", name);
             free(last_bank);
             last_bank = strdup(name);
             set_bankname(name);
@@ -199,21 +192,24 @@ int bank_ops_open(GtkWidget* parent_window)
     if (last_bank) 
        gtk_file_chooser_select_filename(GTK_FILE_CHOOSER(dialog),
                                                         last_bank);
-    else 
+    else
         gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),
                                            settings->last_bank_dir);
- 
+
     file_chooser_add_filter(dialog, "Petri-Foo files", filter);
     file_chooser_add_filter(dialog, "All files", "*");
 
     if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT)
     {
         char* name = (char*) gtk_file_chooser_get_filename(
-                   GTK_FILE_CHOOSER(dialog));
-        
-        if ((val = dish_file_read(name)) < 0)
+                                        GTK_FILE_CHOOSER(dialog));
+
+        msg_log_reset_notification_state();
+        val = dish_file_read(name);
+
+        if (val < 0)
         {
-            errmsg("Failed to read file %s\n", name);
+            msg_log(MSG_ERROR, "Failed to read file %s\n", name);
             GtkWidget* msg = gtk_message_dialog_new(GTK_WINDOW(dialog),
                                     GTK_DIALOG_MODAL,
                                     GTK_MESSAGE_ERROR,
@@ -226,13 +222,22 @@ int bank_ops_open(GtkWidget* parent_window)
         }
         else
         {
-            debug ("Succesfully read file %s\n", name);
-            gtk_recent_manager_add_item (recent_manager, 
-                g_filename_to_uri(name, NULL, NULL));
+            if (msg_log_get_notification_state())
+            {
+                msg_log(MSG_WARNING, "Bank %s read with errors\n", name);
+                log_display_show();
+            }
+            else
+                msg_log(MSG_MESSAGE, "Succesfully read bank %s\n", name);
+
+            gtk_recent_manager_add_item(recent_manager,
+                                    g_filename_to_uri(name, NULL, NULL));
             free(last_bank);
             last_bank = strdup(name);
+
             if (settings->last_bank_dir)
                 free(settings->last_bank_dir);
+
             settings->last_bank_dir = g_path_get_dirname(name);
             set_bankname(name);
         }
@@ -261,11 +266,14 @@ int bank_ops_new(void)
 
 int bank_ops_open_recent(GtkWidget* parent_window, char* filename)
 {
-    int val; 
+    int val;
 
-    if ((val = dish_file_read(filename)) < 0)
+    msg_log_reset_notification_state();
+    val = dish_file_read(filename);
+
+    if (val < 0)
     {
-         errmsg("Failed to read file %s\n", filename);
+         msg_log(MSG_ERROR, "Failed to read file %s\n", filename);
          GtkWidget* msg = gtk_message_dialog_new(GTK_WINDOW(parent_window),
                                    GTK_DIALOG_MODAL,
                                    GTK_MESSAGE_ERROR,
@@ -278,7 +286,14 @@ int bank_ops_open_recent(GtkWidget* parent_window, char* filename)
     }
     else
     {
-        debug ("Succesfully read file %s\n", filename);
+        if (msg_log_get_notification_state())
+        {
+            msg_log(MSG_WARNING, "Bank %s read with errors\n", filename);
+            log_display_show();
+        }
+        else
+            msg_log(MSG_MESSAGE, "Succesfully read bank %s\n", filename);
+
         gtk_recent_manager_add_item (recent_manager, 
              g_filename_to_uri(filename, NULL, NULL));
         free(last_bank);

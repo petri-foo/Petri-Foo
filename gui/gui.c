@@ -32,22 +32,25 @@
 #include "petri-foo.h"
 #include "phin.h"
 
-#include "driver.h"
-#include "mixer.h"
-#include "gui.h"
-#include "patchsection.h"
-#include "mastersection.h"
-#include "channelsection.h"
-#include "midisection.h"
-#include "patchlist.h"
-#include "waveform.h"
-#include "sample-editor.h"
-#include "sample-selector.h"
-#include "bank-ops.h"
 #include "audio-settings.h"
+#include "bank-ops.h"
+#include "channelsection.h"
+#include "config.h"
+#include "driver.h"
+#include "gui.h"
+#include "log_display.h"
+#include "mastersection.h"
+#include "midisection.h"
+#include "mixer.h"
 #include "mod_src_gui.h"
+#include "msg_log.h"
+#include "patchlist.h"
+#include "patchsection.h"
 #include "patch_set_and_get.h"
 #include "patch_util.h"
+#include "sample-editor.h"
+#include "sample-selector.h"
+#include "waveform.h"
 
 
 /* windows */
@@ -65,10 +68,18 @@ static GtkWidget* menu_file = 0;
 static GtkWidget* menu_settings = 0;
 static GtkWidget* menu_patch = 0;
 static GtkWidget* menu_help = 0;
+static GtkWidget* menu_view = 0;
 static GtkWidget* menuitem_file_recent = 0;
+
+/* view menu */
+static GtkWidget* menu_view_log_display = 0;
+
 
 /* settings */
 static GtkWidget* menu_settings_fans = 0;
+
+/* current patch, makes passing patch id to sample editor easier */
+static int cur_patch = -1;
 
 
 GtkWidget* gui_title_new(const char* msg)
@@ -270,7 +281,7 @@ void cb_menu_patch_add(GtkWidget* menu_item, gpointer data)
 
         if (id < 0)
         {
-            errmsg("Failed to create a new patch (%s).\n",
+            msg_log(MSG_ERROR, "Failed to create a new patch (%s).\n",
                                         patch_strerror(id));
             return;
         }
@@ -295,7 +306,7 @@ void cb_menu_patch_add_default(GtkWidget* menu_item, gpointer data)
 
     if (id < 0)
     {
-        errmsg("Failed to create a new patch (%s).\n",
+        msg_log(MSG_ERROR, "Failed to create a new patch (%s).\n",
                                         patch_strerror(id));
         return;
     }
@@ -316,14 +327,14 @@ void cb_menu_patch_duplicate(GtkWidget* menu_item, gpointer data)
 
     if ((cp = patch_list_get_current_patch(PATCH_LIST(patch_list))) < 0)
     {   /* let's be a little more polite here shall we? */
-        debug ("Pardon, but exactly what am I to duplicate?\n");
+        msg_log(MSG_WARNING, "No patch to duplicate\n");
         return;
     }
 
     if ((val = patch_duplicate(cp)) < 0)
     {
-        errmsg ("Failed to create a new patch (%s).\n",
-        patch_strerror (val));
+        msg_log(MSG_ERROR, "Failed to duplicate patch (%s).\n",
+                                            patch_strerror (val));
         return;
     }
 
@@ -388,8 +399,8 @@ void cb_menu_patch_rename(GtkWidget* menu_item, gpointer data)
 
         if (val < 0)
         {
-            errmsg ("Failed to rename patch (%s).\n",
-            patch_strerror (val));
+            msg_log(MSG_ERROR, "Failed to rename patch (%s).\n",
+                                            patch_strerror (val));
             return;
         }
 
@@ -418,8 +429,8 @@ void cb_menu_patch_remove(GtkWidget* menu_item, gpointer data)
     index = patch_list_get_current_index (PATCH_LIST(patch_list));
     if ((val = patch_destroy (cp)) < 0)
     {
-        errmsg ("Error removing patch %d (%s).\n", cp,
-        patch_strerror (val));
+        msg_log(MSG_ERROR, "Error removing patch %d (%s).\n", cp,
+                                                patch_strerror (val));
         return;
     }
 
@@ -429,6 +440,25 @@ void cb_menu_patch_remove(GtkWidget* menu_item, gpointer data)
     else
         patch_list_update(PATCH_LIST(patch_list), index - 1,
                                                     PATCH_LIST_INDEX);
+}
+
+
+void cb_menu_view_log_display_showing(gboolean active)
+{
+    gtk_check_menu_item_set_active(
+        GTK_CHECK_MENU_ITEM(menu_view_log_display), active);
+}
+
+
+static void cb_menu_view_log_display(GtkWidget* widget, gpointer data)
+{
+    if (gtk_check_menu_item_get_active(
+        GTK_CHECK_MENU_ITEM(menu_view_log_display)))
+    {
+        log_display_show();
+    }
+    else
+        log_display_hide();
 }
 
 
@@ -500,8 +530,7 @@ static void cb_menu_help_about (GtkWidget* widget, gpointer data)
                                 "See the AUTHORS file for others", 0 };
 
 /*  should this be freed later on?  */
-    logo = gdk_pixbuf_new_from_file(PIXMAPS_DIR "petri-foo.png", NULL);
-printf("%s\n",PIXMAPS_DIR "petri-foo.png");
+    logo = gdk_pixbuf_new_from_file(PIXMAPS_DIR "/petri-foo.png", NULL);
     gtk_show_about_dialog(
         GTK_WINDOW(data),
         "name", "Petri-Foo",
@@ -518,13 +547,13 @@ printf("%s\n",PIXMAPS_DIR "petri-foo.png");
 static void cb_patch_list_changed(PatchList* list, gpointer data)
 {
     (void)data;
-    int patch = patch_list_get_current_patch(list);
+    cur_patch = patch_list_get_current_patch(list);
 
     debug("patch list changed!\n");
 
-    patch_section_set_patch(PATCH_SECTION(patch_section), patch);
-    midi_section_set_patch(MIDI_SECTION(midi_section), patch);
-    channel_section_set_patch(CHANNEL_SECTION(channel_section), patch);
+    patch_section_set_patch(PATCH_SECTION(patch_section), cur_patch);
+    midi_section_set_patch(MIDI_SECTION(midi_section), cur_patch);
+    channel_section_set_patch(CHANNEL_SECTION(channel_section), cur_patch);
 }
 
 
@@ -607,6 +636,13 @@ int gui_init(void)
     gui_menu_add(menu_patch, "Remove",
             G_CALLBACK(cb_menu_patch_remove),       NULL);
 
+    /* view menu */
+    menu_view = gui_menu_add(menubar, "View", NULL, NULL);
+
+    menu_view_log_display =
+        gui_menu_check_add(menu_view, "Message Log", FALSE,
+            G_CALLBACK(cb_menu_view_log_display), window);
+
     /* settings menu */
     menu_settings = gui_menu_add(menubar, "Settings", NULL, NULL);
     gui_menu_add(menu_settings, "Audio...",
@@ -629,7 +665,7 @@ int gui_init(void)
 
     /* help menu */
     menu_help = gui_menu_add(menubar, "Help", NULL, NULL);
-    gui_menu_add(menu_help, "Stuff You!",
+    gui_menu_add(menu_help, "All Sound Off!",
             G_CALLBACK(cb_menu_help_stfu),          NULL);
     gui_menu_add(menu_help, "About...",
             G_CALLBACK(cb_menu_help_about),         window);
@@ -690,6 +726,7 @@ int gui_init(void)
     /* intialize children */
     sample_editor_init(window);
     audio_settings_init(window);
+    log_display_init(window);
 
     /* priming updates */
     master_section_update(MASTER_SECTION(master_section));
@@ -756,6 +793,23 @@ GtkWidget* gui_menu_add(GtkWidget* menu, const char* label, GCallback cb,
     gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 
     return (submenu) ? submenu : item;
+}
+
+
+GtkWidget*
+gui_menu_check_add(GtkWidget* menu, const char* label,  gboolean active,
+                                                        GCallback cb,
+                                                        gpointer data)
+{
+    GtkWidget* item = 0;
+    GtkWidget* submenu = 0;
+
+    item = gtk_check_menu_item_new_with_label(label);
+    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), active);
+    g_signal_connect(item, "toggled", cb, data);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+
+    return item;
 }
 
 /* recent items menu */

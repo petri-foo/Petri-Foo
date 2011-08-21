@@ -1,7 +1,5 @@
 /*  Petri-Foo is a fork of the Specimen audio sampler.
 
-    Original Specimen author Pete Bessman
-    Copyright 2005 Pete Bessman
     Copyright 2011 James W. Morris
 
     This file is part of Petri-Foo.
@@ -17,26 +15,19 @@
 
     You should have received a copy of the GNU General Public License
     along with Petri-Foo.  If not, see <http://www.gnu.org/licenses/>.
-
-    This file is a derivative of a Specimen original, modified 2011
 */
 
 
-#ifndef __SAMPLE_EDITOR_H__
-#define __SAMPLE_EDITOR_H__
+#ifndef LOG_DISPLAY_H
+#define LOG_DISPLAY_H
+
 
 #include <gtk/gtk.h>
 
 
-void sample_editor_init(GtkWidget* parent);
-
-/* waveform thumb in sample tab */
-void sample_editor_set_thumb(GtkWidget* thumb);
-
-void sample_editor_show(int id);
-void sample_editor_hide(void);
-
-void sample_editor_update(void);
+void log_display_init(GtkWidget* parent);
+void log_display_show(void);
+void log_display_hide(void);
 
 
-#endif /* __SAMPLE_EDITOR_H__ */
+#endif

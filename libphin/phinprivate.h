@@ -28,11 +28,21 @@
 #include <stdio.h>
 #include "config.h"
 
-/* we don't particularly want debugging right now */
+
+#ifndef DEBUG
+#define DEBUG 0
+#endif
+
+
+/*  no mechanism to set debug for petri-foo but not phin, so force no debug
+    here:
+ */
+
 #ifdef DEBUG
 #undef DEBUG
 #define DEBUG 0
 #endif
+
 
 #define debug(...) if (DEBUG) fprintf (stderr, __VA_ARGS__)
 

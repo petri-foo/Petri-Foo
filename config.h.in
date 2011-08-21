@@ -1,15 +1,11 @@
 #define PACKAGE     "${PROJECT_NAME}"
-#define VERSION     "0.${Petri-Foo_VERSION_MAJOR}.${Petri-Foo_VERSION_MINOR}"
+#define VERSION \
+    "0.${Petri-Foo_VERSION_MAJOR}.${Petri-Foo_VERSION_MINOR}"
 
-#define PIXMAPS_DIR "${PIXMAPS_DIR}"
+#ifndef PIXMAPS_DIR
+#define PIXMAPS_DIR "${CMAKE_INSTALL_PREFIX}/${DATADIR}/pixmaps"
+#endif
 
 #cmakedefine HAVE_MALLOC_H 1
 #cmakedefine HAVE_JACK_SESSION_H 1
-
 #cmakedefine DEBUG 1
-/* surely there must be an easier way? */
-#ifndef DEBUG
-#define DEBUG 0
-#endif
-
-

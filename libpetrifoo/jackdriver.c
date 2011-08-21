@@ -43,6 +43,7 @@
 #include "driver.h"
 #include "patch.h"
 #include "mixer.h"
+#include "msg_log.h"
 #include "sync.h"
 #include "lfo.h"
 #include "midi_control.h"
@@ -120,12 +121,12 @@ static int process(jack_nframes_t frames, void* arg)
         if ((last_state == JackTransportStopped)
          || (last_state == JackTransportStarting))
         {
-            debug ("got transport start\n");
+            //debug ("got transport start\n");
             sync_start_jack (new_tempo);
         }
         else if (new_tempo != last_tempo)
         {
-            debug ("got tempo change\n");
+            //debug ("got tempo change\n");
             sync_start_jack (new_tempo);
         }
         last_tempo = new_tempo;
@@ -236,7 +237,7 @@ static int start(void)
     const char** ports;
     char* instancename = strdup (get_instance_name());
 
-    debug ("Initializing Jack Driver...\n");
+    msg_log(MSG_MESSAGE, "JACK initializing driver...\n");
     pthread_mutex_lock (&running_mutex);
     running = 0;
 
@@ -249,7 +250,8 @@ static int start(void)
 
     if (client == 0)
     {
-        errmsg ("Failed to open new jack client: %s\n", instancename);
+        msg_log(MSG_ERROR,  "JACK failed to open client: %s\n",
+                            instancename);
         pthread_mutex_unlock (&running_mutex);
         return -1;
     }
@@ -259,19 +261,11 @@ static int start(void)
     jack_set_process_callback (client, process, 0);
 
 #ifdef HAVE_JACK_SESSION_H
-    debug("HAVE JACK SESSION_H\n");
+
     if (jack_set_session_callback)
     {
-        debug("setting session callback... ");
-
         if (jack_set_session_callback(client, session_cb, 0))
-        {
-            printf("fail\n");
-        }
-        else
-        {
-            printf("ok\n");
-        }
+            msg_log(MSG_ERROR, "JACK failed to set session callback\n");
     }
 #endif
 
@@ -305,7 +299,7 @@ static int start(void)
 
     if ((buffer = malloc (sizeof (float) * periodsize * 2)) == NULL)
     {
-        errmsg ("Failed to allocate space for buffer\n");
+        msg_log(MSG_ERROR, "JACK failed to allocate buffer\n");
         jack_client_close (client);
         pthread_mutex_unlock (&running_mutex);
         return -1;
@@ -315,7 +309,7 @@ static int start(void)
 
     if (jack_activate(client) != 0)
     {
-        errmsg ("Failed to activate client\n");
+        msg_log(MSG_ERROR, "JACK failed to activate client\n");
         jack_client_close(client);
         pthread_mutex_unlock(&running_mutex);
         return -1;
@@ -329,23 +323,27 @@ static int start(void)
         if (ports[0] != NULL)
         {
             if (jack_connect(client, jack_port_name(lport), ports[0]) != 0)
-                errmsg ("Cannot connect left output port\n");
+                msg_log(MSG_WARNING,
+                    "JACK failed to connect left output port\n");
 
             if (ports[1] != NULL)
             {
                 if (jack_connect(client, jack_port_name (rport), ports[1]))
-                    errmsg ("Cannot connect right output port\n");
+                    msg_log(MSG_WARNING,
+                    "JACK failed to connect right output port\n");
             }
             else
-                errmsg ("Cannot connect right output port\n");
+                msg_log(MSG_WARNING,
+                    "JACK failed to connect right output port\n");
 
             free (ports);
         }
         else
-            errmsg ("Cannot connect output ports\n");
+            msg_log(MSG_WARNING,
+                "JACK failed to connect output ports\n");
     }
 
-    debug ("Initialization complete\n");
+    msg_log(MSG_MESSAGE, "JACK Initialization complete\n");
     running = 1;
     pthread_mutex_unlock (&running_mutex);
 
@@ -359,18 +357,12 @@ static int stop(void)
 
     if (running)
     {
-        debug ("Shutting down...\n");
+        msg_log(MSG_MESSAGE, "JACK shutting down...\n");
         jack_deactivate (client);
         jack_client_close (client);
 
         if (buffer != NULL)
             free (buffer);
-
-        debug ("Shutdown complete\n");
-    }
-    else
-    {
-        debug ("Not running, so not shutting down\n");
     }
 
     running = 0;

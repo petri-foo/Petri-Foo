@@ -41,6 +41,8 @@
 #include "dish_file.h"
 #include "jackdriver.h"
 #include "global_settings.h"
+#include "msg_log.h"
+
 
 void show_usage (void)
 {
@@ -99,6 +101,7 @@ int main(int argc, char *argv[])
 
     mod_src_create();
     gtk_init(&argc, &argv);
+
     settings_init();
     gui_init();
     driver_init();
@@ -129,8 +132,7 @@ int main(int argc, char *argv[])
     settings_free();
     free_instance_name();
     mod_src_destroy();
-
-    debug("Goodbye.\n");
+    msg_log(MSG_MESSAGE, "Goodbye!\n");
 
     return 0;
 }

@@ -8,6 +8,12 @@ project(Petri-Foo)
 
 set(Petri-Foo_VERSION_MAJOR 0)
 set(Petri-Foo_VERSION_MINOR 3)
+set(BINDIR  "bin" CACHE STRING "Where to install binaries")
+set(DATADIR "share/petri-foo" CACHE STRING "Where to install data files")
+set(APPLICATIONS_DIR "share/applications" CACHE STRING "Where to install desktop files")
+set(PIXMAPS_DIR "share/pixmaps" CACHE STRING "Where to install icons")
+set(MIME_DIR "share/mime" CACHE STRING "Where MIME definitions are located")
+set(UpdateMime "ON" CACHE BOOL "Update Mime Database")
 
 mark_as_advanced(EXECUTABLE_OUTPUT_PATH)
 mark_as_advanced(LIBRARY_OUTPUT_PATH)
@@ -127,12 +133,6 @@ link_libraries(m)
 include_directories ( . )
 
 # Install targets
-set (BINDIR  "bin" CACHE STRING "Where to install binaries")
-set (DATADIR "share/petri-foo" CACHE STRING "Where to install data files")
-set (APPLICATIONS_DIR "share/applications" CACHE STRING "Where to install desktop files")
-set (PIXMAPS_DIR "share/pixmaps" CACHE STRING "Where to install icons")
-set (MIME_DIR "share/mime" CACHE STRING "Where MIME definitions are located")
-set (UpdateMime "ON" CACHE BOOL "Update Mime Database")
 
 ADD_SUBDIRECTORY( libphin )
 ADD_SUBDIRECTORY( libpetrifoo )

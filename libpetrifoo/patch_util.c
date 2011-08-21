@@ -32,6 +32,7 @@
 
 #include "petri-foo.h"
 #include "maths.h"
+#include "msg_log.h"
 #include "ticks.h"
 #include "patch.h"
 #include "sample.h"
@@ -479,13 +480,13 @@ int patch_sample_load(int id, const char *name,
     if (!isok (id))
         return PATCH_ID_INVALID;
 
-    if (name == NULL)
+    if (!name)
     {
-        debug ("Refusing to load null sample for patch %d\n", id);
+        debug("Refusing to load null sample for patch %d\n", id);
         return PATCH_PARAM_INVALID;
     }
 
-    debug ("Loading sample %s for patch %d\n", name, id);
+    msg_log(MSG_MESSAGE, "Loading sample %s for patch %d\n", name, id);
     patch_flush (id);
 
     /* we lock *after* we call patch_flush because patch_flush does

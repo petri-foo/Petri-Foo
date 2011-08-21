@@ -93,9 +93,17 @@ void cb_menu_patch_duplicate(   GtkWidget* menu_item, gpointer data);
 void cb_menu_patch_rename(      GtkWidget* menu_item, gpointer data);
 void cb_menu_patch_remove(      GtkWidget* menu_item, gpointer data);
 
+void cb_menu_view_log_display_showing(gboolean);
+
 
 GtkWidget* gui_menu_add(GtkWidget* menu, const char* label, GCallback cb,
                                                             gpointer data);
+
+GtkWidget*
+     gui_menu_check_add(GtkWidget* menu, const char* label, gboolean active,
+                                                            GCallback cb,
+                                                            gpointer data);
+
 GtkRecentManager *recent_manager;
  
 #endif /* __GUI_H__ */

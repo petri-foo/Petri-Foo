@@ -411,9 +411,12 @@ static void cb_zoom_out(GtkWidget* widget, gpointer data)
 
 void sample_editor_show(int id)
 {
-    waveform_set_patch(WAVEFORM(se->waveform), id);
+    if (patch_get_frames(id) <= 0)
+        return;
 
     se->patch = id;
+
+    waveform_set_patch(WAVEFORM(se->waveform), id);
 
     se->old_play_start = patch_get_mark_frame(se->patch,
                                                 WF_MARK_PLAY_START);
@@ -433,6 +436,12 @@ void sample_editor_show(int id)
 
     update_fade_spins();
     gtk_widget_show(se->window);
+}
+
+
+void sample_editor_hide(void)
+{
+    gtk_widget_hide(se->window);
 }
 
 

@@ -26,32 +26,55 @@
 #define __SPECIMEN_H__
 
 #include "config.h"
+#include "msg_log.h"
 #include <stdio.h>
 #include <signal.h>
 
+
+#define DEFAULT_AMPLITUDE 0.7
+
+
+#define CHARBUFSIZE 256
+
+
 #ifndef DEBUG
-# define DEBUG 0
+#define DEBUG 0
 #endif
 
-enum
-{
-    FUBAR = -69
-};
 
-#define DEFAULT_AMPLITUDE 0.7 /* default amplitude stuff is set to, from 0 to 1 */
+#define errmsg(fmt, ...)                                    \
+{                                                           \
+    msg_log(MSG_CRITICAL,                                   \
+        "%20s:%5d\t%30s" fmt,                               \
+        __FILE__, __LINE__, __FUNCTION__ , ## __VA_ARGS__); \
+}
+/*
+    fprintf(stderr, "%20s:%5d\t%30s", __FILE__, __LINE__, __FUNCTION__); \
+    fprintf(stderr, ": ");          \
+    fprintf(stderr, __VA_ARGS__);   \
+}*/
 
-#ifndef PIXMAPSDIR
-# define PIXMAPSDIR INSTALLDIR"/petri-foo/pixmaps/"
-#endif
-
-#define errmsg(...) {fprintf(stderr, "%20s:%5d\t%30s", __FILE__, __LINE__, __FUNCTION__); fprintf(stderr, ": "); fprintf(stderr, __VA_ARGS__);}
 
 #if DEBUG
-# define debug(...) errmsg(__VA_ARGS__)
+#define debug(fmt, ...)                                     \
+{                                                           \
+    msg_log(MSG_DEBUG,                                      \
+        "%20s:%5d\t%30s" fmt,                               \
+        __FILE__, __LINE__, __FUNCTION__ , ## __VA_ARGS__); \
+}
 #else
-# define debug(...)
+#define debug(...)
 #endif
 
+/*
+#if DEBUG
+#define debug(...) errmsg(__VA_ARGS__)
+#else
+#define debug(...)
+#endif
+*/
+
 typedef sig_atomic_t Atomic;
+
 
 #endif /* __SPECIMEN_H__ */

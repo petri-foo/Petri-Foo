@@ -32,6 +32,7 @@
 #include "gui.h"
 #include "petri-foo.h"
 #include "mixer.h"
+#include "msg_log.h"
 #include "patch_set_and_get.h"
 #include "patch_util.h"
 #include "names.h"
@@ -103,8 +104,6 @@ static void cb_load(raw_box* rb)
     if (!name)
         goto fail;
 
-    debug("about to load sample...\n");
-
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(rb->check)))
     {
         int samplerate = gtk_spin_button_get_value_as_int(
@@ -141,12 +140,11 @@ static void cb_load(raw_box* rb)
         }
     }
 
-    debug ("Successfully loaded sample %s\n", name);
     return;
 
 fail:
     if (!name)
-    {
+    {   /* I don't really think this is possible, but hey. */
         errmsg("no file selected\n");
         msg = gtk_message_dialog_new(GTK_WINDOW(rb->dialog),
                                      GTK_DIALOG_DESTROY_WITH_PARENT,
@@ -155,8 +153,12 @@ fail:
     }
     else
     {
-        errmsg ("Failed to load sample %s for patch %d (%s)\n", name,
-                                            patch, patch_strerror(err));
+        msg_log(MSG_TYPE_ERROR, /*  Unlike MSG_ERROR, MSG_TYPE_ERROR does
+                                    not set the log notification flag */
+                "Failed to load sample %s for patch %d (%s)\n",
+                name, patch, patch_strerror(err));
+
+        /* do our own notification here: */
         msg = gtk_message_dialog_new(GTK_WINDOW(rb->dialog),
                                      GTK_DIALOG_DESTROY_WITH_PARENT,
                                      GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE,
@@ -193,18 +195,17 @@ static void cb_preview(raw_box* rb)
 
 static void cb_cancel(void)
 {
-    debug("cancelling sample load...\n");
-
     if (!last_sample->filename)
     {
-        debug("no sample to restore, just unloading...\n");
         patch_sample_unload(patch);
         return;
     }
 
     if (strcmp(patch_get_sample_name(patch), last_sample->filename) != 0)
     {
-        debug("restoring sample:%s\n", last_sample->filename);
+        msg_log(MSG_MESSAGE, "Restoring sample:%s\n",
+                                last_sample->filename);
+
         patch_sample_load(patch, last_sample->filename,
                                  last_sample->raw_samplerate,
                                  last_sample->raw_channels,
@@ -222,34 +223,15 @@ static void raw_toggles_toggled_cb(GtkToggleButton* tog, gpointer data)
     if (gtk_toggle_button_get_active(tog))
     {
         if (tog == GTK_TOGGLE_BUTTON(rb->stereo))
-        {
-            debug("setting raw channels to two\n");
             rb->channels = 2;
-        }
         else if (tog == GTK_TOGGLE_BUTTON(rb->mono))
-        {
-            debug("setting raw channels to one\n");
             rb->channels = 1;
-        }
         else if (tog == GTK_TOGGLE_BUTTON(rb->big_endian))
-        {
-            debug("setting raw endianness to big\n");
             rb->endian = 2;
-        }
         else if (tog == GTK_TOGGLE_BUTTON(rb->little_endian))
-        {
-            debug("setting raw endianness to little\n");
             rb->endian = 1;
-        }
         else if (tog == GTK_TOGGLE_BUTTON(rb->file_endian))
-        {
-            debug("setting raw endianness to file\n");
             rb->endian = 0;
-        }
-        else
-        {
-            debug("unknown raw data toggle\n");
-        }
     }
 }
 
@@ -303,12 +285,14 @@ static raw_box* raw_box_new(GtkWidget* dialog)
                                             G_CALLBACK(raw_toggled_cb), rb);
 
     rb->auto_preview = gtk_check_button_new_with_label("Auto Preview");
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(rb->auto_preview), FALSE);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(rb->auto_preview),
+                                                                FALSE);
     gtk_widget_show(rb->auto_preview);
-    gtk_box_pack_start(GTK_BOX(rb->toggle_box), rb->auto_preview, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(rb->toggle_box), rb->auto_preview, FALSE,
+                                                                FALSE, 0);
     g_signal_connect(dialog, "selection-changed",
-                                            G_CALLBACK(selection_changed_cb), rb);
-   
+                                    G_CALLBACK(selection_changed_cb), rb);
+
     gtk_box_pack_start(GTK_BOX(rb->box), rb->toggle_box, TRUE, TRUE, 0);
     gtk_widget_show(rb->toggle_box);
 
