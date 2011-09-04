@@ -123,7 +123,7 @@ static gboolean range_cb(GnomeCanvasItem* item, GdkEvent* event,
     list = gui_get_patch_list();
 
     clicked = event->button.x / PHIN_KEYBOARD_KEY_WIDTH;
-    note = patch_get_note(p->patch);
+    note =  patch_get_root_note(p->patch);
     lower = patch_get_lower_note(p->patch);
     upper = patch_get_upper_note(p->patch);
 
@@ -171,7 +171,7 @@ static gboolean range_cb(GnomeCanvasItem* item, GdkEvent* event,
                                     + PHIN_KEYBOARD_KEY_WIDTH - 1), NULL);
 
     /* apply changes */
-    patch_set_note(p->patch, note);
+    patch_set_root_note(p->patch, note);
     patch_set_lower_note(p->patch, lower);
     patch_set_upper_note(p->patch, upper);
 
@@ -367,7 +367,7 @@ void midi_section_set_patch(MidiSection* self, int patch)
 
         set_sensitive(p, TRUE);
 
-        note = patch_get_note(patch);
+        note =  patch_get_root_note(patch);
         lower = patch_get_lower_note(patch);
         upper = patch_get_upper_note(patch);
 

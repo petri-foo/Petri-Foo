@@ -41,6 +41,7 @@ static GtkWidget*   textview;
 static void cb_close (GtkWidget* widget, gpointer data)
 {
     (void)widget; (void)data;
+    printf("\n\nclose\n\n");
     gtk_widget_hide (window);
     cb_menu_view_log_display_showing(false);
 }
@@ -52,6 +53,15 @@ static void msg_log_callback(const char* msg, int msg_base_type)
     GtkTextIter     iter;
     GtkTextMark*    mark;
     const char* tag = 0;
+
+if (GTK_IS_TEXT_VIEW(textview))
+{
+printf("%p ***IS*** textview\n", textview);
+}
+else
+{
+printf("%p ***IS NOT *** textview\n", textview);
+}
 
     switch(msg_base_type)
     {
@@ -101,7 +111,7 @@ void log_display_init(GtkWidget* parent)
     gtk_window_set_default_size(GTK_WINDOW(window), 700, 160);
     gtk_window_set_modal (GTK_WINDOW (window), FALSE);
 
-    g_signal_connect(GTK_WINDOW(window), "delete-event",
+    g_signal_connect(window, "delete-event",
                                 G_CALLBACK(cb_close), NULL);
 
     gtk_container_set_border_width(GTK_CONTAINER(window), GUI_SPACING);

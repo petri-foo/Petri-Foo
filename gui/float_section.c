@@ -61,7 +61,7 @@ static void float_section_class_init(FloatSectionClass* klass)
 static void float_cb(GtkWidget* w, FloatSectionPrivate* p)
 {
     float val = phin_fan_slider_get_value(PHIN_FAN_SLIDER(w));
-    patch_float_set_assign(p->patch_id, p->float_type, val);
+    patch_float_set_value(p->patch_id, p->float_type, val);
 }
 
 

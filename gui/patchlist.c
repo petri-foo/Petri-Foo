@@ -140,7 +140,7 @@ void popup_menu(GdkEventButton *event, gboolean full_menu, gpointer data)
 static gboolean
 pressed_cb(GtkWidget *treeview, GdkEventButton *event, gpointer data)
 {
-    (void)data;
+    PatchListPrivate* p = (PatchListPrivate*)data;
 
     if (event->type == GDK_BUTTON_PRESS && event->button == 3)
     {
@@ -160,7 +160,10 @@ pressed_cb(GtkWidget *treeview, GdkEventButton *event, gpointer data)
                                                     &path,
                                                     NULL, NULL, NULL))
             {
+                g_signal_handlers_block_by_func(p->select, select_cb, p);
                 gtk_tree_selection_unselect_all(selection);
+                g_signal_handlers_unblock_by_func(p->select, select_cb, p);
+
                 gtk_tree_selection_select_path(selection, path);
                 full_menu = TRUE;
             }

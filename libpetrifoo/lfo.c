@@ -86,7 +86,7 @@ inline static void lfo_phase_inc_from_beats (LFO* lfo, float beats)
 
 void lfo_params_init(LFOParams* lfopar, float freq, LFOShape shape)
 {
-    lfopar->lfo_on =        false;
+    lfopar->active =        false;
     lfopar->shape =         shape;
     lfopar->freq =          freq;
     lfopar->sync_beats =    1.0;
@@ -196,7 +196,7 @@ void lfo_set_tempo(float bpm)
 }
 
 
-void lfo_rigger(LFO* lfo, LFOParams* params)
+void lfo_update_params(LFO* lfo, LFOParams* params)
 {
     lfo->positive = params->positive;
 
@@ -237,7 +237,7 @@ void lfo_rigger(LFO* lfo, LFOParams* params)
 
 void lfo_trigger(LFO* lfo, LFOParams* params)
 {
-    lfo_rigger(lfo, params);
+    lfo_update_params(lfo, params);
     lfo->phase = 0;
     lfo->val = 0;
 }

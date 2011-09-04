@@ -58,7 +58,7 @@ static float cc[16][CC_ARR_SIZE];
 /*  inline definitions shared by patch and patch_util:
  *                          (see private/patch_data.h)
  */
-INLINE_ISOK_DEF
+INLINE_PATCHOK_DEF
 INLINE_PATCH_LOCK_DEF
 INLINE_PATCH_TRYLOCK_DEF
 INLINE_PATCH_UNLOCK_DEF
@@ -158,7 +158,7 @@ inline static void patch_release_patch(Patch* p, int note, release_t mode)
             /* we don't really release here, that's the job of
              * advance( ); we just tell it *when* to release */
             p->voices[i]->relmode = mode;
-            p->voices[i]->relset = (p->mono && p->legato.active)
+            p->voices[i]->relset = (p->mono && p->voices[i]->legato)
                                         ? patch_legato_lag
                                         : 0;
         }
@@ -197,27 +197,27 @@ inline static void prepare_pitch(Patch* p, PatchVoice* v, int note)
     /* this applies the tuning factor */
     scale = pow(2, (p->pitch.val * p->pitch_steps) / 12.0);
 
-    if (p->porta.active
-    && (p->porta_secs.value > 0.0)
+    if (v->portamento
+    && (v->porta_secs > 0.0)
     && (p->last_note != note))
     {
         /* we calculate the pitch here because we can't be certain
          * what the current value of the last voice's pitch is */
         v->pitch =
-            pow(2, (p->last_note - p->note) * p->pitch.key_amt / 12.0);
+            pow(2, (p->last_note - p->root_note) * p->pitch.key_amt / 12.0);
         v->pitch *= scale;
-        v->porta_ticks = ticks_secs_to_ticks (p->porta_secs.value);
+        v->porta_ticks = ticks_secs_to_ticks(v->porta_secs);
 
         /* calculate the value to be added to pitch each tick by
          * subtracting the target pitch from the initial pitch and
          * dividing by porta_ticks */
         v->pitch_step =
-            ((pow(2, (note - p->note) * p->pitch.key_amt / 12.0)
+            ((pow(2, (note - p->root_note) * p->pitch.key_amt / 12.0)
                              * scale) - v->pitch) / v->porta_ticks;
     }
     else
     {
-        v->pitch = pow(2, (note - p->note) * p->pitch.key_amt / 12.0);
+        v->pitch = pow(2, (note - p->root_note) * p->pitch.key_amt / 12.0);
         v->pitch *= scale;
         v->porta_ticks = 0;
     }
@@ -234,23 +234,23 @@ inline static void prepare_pitch(Patch* p, PatchVoice* v, int note)
 }
 
 
-inline static void patch_bool_mod(PatchBool* pb, Patch* p)
+inline static bool patch_bool_get(PatchBool* pb, Patch* p)
 {
     const float* mod = patch_mod_id_to_pointer(pb->mod_id, p, NULL);
-    pb->active = (pb->on && pb->mod_id)
-                        ? (*mod > pb->thresh)
-                        : pb->on;
+    return (pb->active && pb->mod_id) ? (*mod > pb->thresh) : pb->active;
 }
 
-inline static void patch_float_mod(PatchFloat* pf, Patch* p)
+inline static float patch_float_get(PatchFloat* pf, Patch* p)
 {
-    pf->value = pf->assign;
+    float value = pf->val;
 
     if (pf->mod_id)
     {
         const float* mod = patch_mod_id_to_pointer(pf->mod_id, p, NULL);
-        pf->value += *mod * pf->mod_amt;
+        value += *mod * pf->mod_amt;
     }
+
+    return value;
 }
 
 
@@ -266,6 +266,7 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
     PatchVoice* v;
     int index;          /* the index we ended up settling on */
     float key_track;
+    bool legato;
 
     if (p->sample->sp == NULL)
         return;
@@ -276,12 +277,9 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
         key_track = (float)(note - p->lower_note)
                                 / (p->upper_note - p->lower_note);
 
-    /* boolean modulation */
-    patch_bool_mod(&p->porta, p);
-    patch_bool_mod(&p->legato, p);
-    patch_float_mod(&p->porta_secs, p);
+    legato = patch_bool_get(&p->legato, p);
 
-    if (p->mono && p->legato.active)
+    if (p->mono && legato)
     {
         /*  half of the previous logic operating here was ignored.
          *  removing it left only logic which could be simplified
@@ -295,6 +293,7 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
             v->vel = vel;
         else
         {
+            /* don't trigger voice, do legato instead: */
             v->ticks =      ticks;
             v->note =       note;
             v->vel =        vel;
@@ -305,9 +304,9 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
             v->xfade =      false;
             v->loop =       p->play_mode & PATCH_PLAY_LOOP;
             v->key_track =  key_track;
-
+            v->portamento = patch_bool_get(&p->porta, p);
+            v->porta_secs = patch_float_get(&p->porta_secs, p);
             prepare_pitch(p, v, note);
-
             return;
         }
     }
@@ -350,8 +349,11 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
     v->loop =       p->play_mode & PATCH_PLAY_LOOP;
     v->note =       note;
     v->key_track =  key_track;
+    v->legato =     legato;
+    v->portamento = patch_bool_get(&p->porta, p);
+    v->porta_secs = patch_float_get(&p->porta_secs, p);
 
-    if (!(p->mono && p->legato.active))
+    if (!(p->mono && v->legato))
         v->vel = vel;
 
     if (!p->mono)
@@ -359,21 +361,21 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
 
     for (i = 0; i < MAX_MOD_SLOTS; ++i)
     {
-        v->vol_mod[i] = patch_mod_id_to_pointer(p->vol.mod_id[i], p, v);
+        v->amp_mod[i] = patch_mod_id_to_pointer(p->amp.mod_id[i], p, v);
         v->pan_mod[i] = patch_mod_id_to_pointer(p->pan.mod_id[i], p, v);
         v->ffreq_mod[i] = patch_mod_id_to_pointer(p->ffreq.mod_id[i], p, v);
         v->freso_mod[i] = patch_mod_id_to_pointer(p->freso.mod_id[i], p, v);
         v->pitch_mod[i] = patch_mod_id_to_pointer(p->pitch.mod_id[i], p, v);
     }
 
-    if (!(p->mono && p->legato.active && v->active))
+    if (!(p->mono && v->legato && v->active))
         playstate_init_fade_in(p, v);
 
     prepare_pitch(p, v, note);
 
     for (i = 0; i < VOICE_MAX_ENVS; i++)
     {
-        if (p->env_params[i].env_on)
+        if (p->env_params[i].active)
         {
             adsr_set_params(v->env[i], &p->env_params[i]);
             adsr_trigger(v->env[i], key_track, vel);
@@ -382,7 +384,7 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
 
     for (i = 0; i < VOICE_MAX_LFOS; i++)
     {
-        if (p->vlfo_params[i].lfo_on)
+        if (p->vlfo_params[i].active)
         {
             float const* src;
 
@@ -611,60 +613,60 @@ inline static int
 gain (Patch* p, PatchVoice* v, int index, float* l, float* r)
 {
     int i;
-    float vol = 0.0;
-    float logvol = 0.0;
+    float amp = 0.0;
+    float logamp = 0.0;
 
     /* first, we use our set value as a base */
-    vol = p->vol.val;
+    amp = p->amp.val;
 
     for (i = 0; i < EG_MOD_SLOT; ++i)
-        if (v->vol_mod[i] != NULL)
-            vol += *v->vol_mod[i] * p->vol.mod_amt[i];
+        if (v->amp_mod[i] != NULL)
+            amp += *v->amp_mod[i] * p->amp.mod_amt[i];
 
     /* direct modulation source (ie no amount) */
-    if (v->vol_mod[EG_MOD_SLOT])
-        vol *= *v->vol_mod[EG_MOD_SLOT];
+    if (v->amp_mod[EG_MOD_SLOT])
+        amp *= *v->amp_mod[EG_MOD_SLOT];
 
     /* scale for key tracking */
-    if (p->vol.key_amt < 0)
-        vol = lerp(vol, vol * (1.0 - v->key_track), p->vol.key_amt * -1);
+    if (p->amp.key_amt < 0)
+        amp = lerp(amp, amp * (1.0 - v->key_track), p->amp.key_amt * -1);
     else
-        vol = lerp(vol, vol * v->key_track, p->vol.key_amt);
+        amp = lerp(amp, amp * v->key_track, p->amp.key_amt);
 
     /* velocity should be the last parameter considered because it
      * has the most "importance" */
-    if (p->vol.vel_amt < 0)
-        vol = lerp(vol, vol * (1.0 - v->vel), p->vol.vel_amt * -1);
+    if (p->amp.vel_amt < 0)
+        amp = lerp(amp, amp * (1.0 - v->vel), p->amp.vel_amt * -1);
     else
-        vol = lerp(vol, vol * v->vel, p->vol.vel_amt);
+        amp = lerp(amp, amp * v->vel, p->amp.vel_amt);
 
 
     /* apply fade in/out */
-    vol *= v->fade_declick;
+    amp *= v->fade_declick;
 
     /* clip */
-    if (vol > 1.0)
-        vol = 1.0;
-    else if (vol < 0.0)
-        vol = 0.0;
+    if (amp > 1.0)
+        amp = 1.0;
+    else if (amp < 0.0)
+        amp = 0.0;
 
     /* as a last step, make logarithmic */
-/*   logvol = log_amplitude(vol);
+/*   logamp = log_amplitude(amp);
 */
 
     /* adjust amplitude */
 
-    *l *= vol;
-    *r *= vol;
+    *l *= amp;
+    *r *= amp;
 
 /*
-    *l *= logvol;
-    *r *= logvol;
+    *l *= logamp;
+    *r *= logamp;
 */
     /* check to see if we've finished a release */
     if (v->released && (v->fade_declick == 0.0f //< ALMOST_ZERO
-                    || (v->vol_mod[EG_MOD_SLOT] 
-                    && *v->vol_mod[EG_MOD_SLOT] < ALMOST_ZERO)))
+                    || (v->amp_mod[EG_MOD_SLOT] 
+                    && *v->amp_mod[EG_MOD_SLOT] < ALMOST_ZERO)))
     {
         return -1;
     }
@@ -722,7 +724,7 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
         /* whether we need to recalculate our pos/step vars */
 
     /* portamento */
-    if (p->porta.active && v->porta_ticks)
+    if (v->portamento && v->porta_ticks)
     {
         recalc = true;
         v->pitch += v->pitch_step;
@@ -901,7 +903,7 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
 
                 if (!(p->play_mode & PATCH_PLAY_SINGLESHOT))
                 {
-                    if (!v->vol_mod[EG_MOD_SLOT]) /* direct mod source */
+                    if (!v->amp_mod[EG_MOD_SLOT]) /* direct mod source */
                     {
                         playstate_init_fade_out(p, v);
                     }
@@ -961,7 +963,7 @@ inline static void patch_render_patch (Patch* p, float* buf, int nframes)
     {
         for (j = 0; j < PATCH_MAX_LFOS; ++j)
         {
-            if (p->glfo_params[j].lfo_on)
+            if (p->glfo_params[j].active)
                 p->glfo_table[j][i] = lfo_tick(p->glfo[j]);
         }
     }
@@ -990,15 +992,15 @@ inline static void patch_render_patch (Patch* p, float* buf, int nframes)
                 the correct value for the frame.
             */
             for (k = 0; k < PATCH_MAX_LFOS; ++k)
-                if (p->glfo_params[k].lfo_on)
+                if (p->glfo_params[k].active)
                     lfo_set_output(p->glfo[k], p->glfo_table[k][j]);
 
             for (k = 0; k < VOICE_MAX_ENVS; ++k)
-                if (p->env_params[k].env_on)
+                if (p->env_params[k].active)
                     adsr_tick(v->env[k]);
 
             for (k = 0; k < VOICE_MAX_LFOS; ++k)
-                if (p->vlfo_params[k].lfo_on)
+                if (p->vlfo_params[k].active)
                     lfo_tick(v->lfo[k]);
 
             /* process samples */

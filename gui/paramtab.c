@@ -21,7 +21,7 @@
     This file is a derivative of a Specimen original, modified 2011
 */
 
-
+#include <assert.h>
 #include <gtk/gtk.h>
 
 #include "phin.h"
@@ -105,7 +105,7 @@ void param_tab_set_param(ParamTab* self, PatchParamType param)
         break;
 
     default:
-        debug ("unrecognised parameter for param tab\n");
+        assert(0);
         return;
     }
 
@@ -116,6 +116,7 @@ void param_tab_set_param(ParamTab* self, PatchParamType param)
         gtk_box_pack_start(box, p->modsect1, FALSE, FALSE, 0);
         gtk_widget_show(p->modsect1);
     }
+    else {debug("param1 invalid\n");}
 
     if (ms2 != PATCH_PARAM_INVALID)
     {

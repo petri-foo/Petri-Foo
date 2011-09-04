@@ -83,13 +83,13 @@ int settings_read(const char* path)
     xmlNodePtr  node2;
     xmlChar*    prop;
 
-    debug("Reading settings from file: %s\n",path);
+    msg_log(MSG_MESSAGE, "Reading global settings from: %s\n",path);
 
     doc = xmlParseFile (path);
 
     if (doc == NULL)
     {
-        errmsg("Failed to parse %s\n", path);
+        msg_log(MSG_ERROR, "Failed to parse %s\n", path);
         return -1;
     }
 
@@ -97,14 +97,15 @@ int settings_read(const char* path)
 
     if (noderoot == NULL)
     {
-        errmsg("%s is empty\n", path);
+        msg_log(MSG_WARNING, "%s is empty\n", path);
         xmlFreeDoc(doc);
         return -1;
     }
 
     if (xmlStrcmp(noderoot->name, BAD_CAST "Petri-Foo-Settings") != 0)
     {
-        errmsg("%s is not a valid 'Petri-Foo-Settings' file\n", path);
+        msg_log(MSG_ERROR,
+                "%s is not a valid 'Petri-Foo-Settings' file\n", path);
         xmlFreeDoc(doc);
         return -1;
     }
@@ -157,6 +158,7 @@ int settings_read(const char* path)
             }
         }
     }
+
     return 0;
 }
 
@@ -172,19 +174,27 @@ int settings_write()
     xmlNodePtr  node1;
     xmlNodePtr  node2;
 
+    msg_log(MSG_MESSAGE, "Writing global settings to: %s\n",
+                         gbl_settings->filename);
+
     doc = xmlNewDoc(BAD_CAST "1.0");
-    if (!doc) 
-    { 
-        errmsg("XML error!\n"); 
+
+    if (!doc)
+    {
+        msg_log(MSG_ERROR, "XML error!\n");
         return -1; 
     }
 
     config_dir = (char*) g_build_filename(g_get_user_config_dir(),
                                           g_get_prgname(), NULL);
-    
-    if ( mkdir(config_dir, S_IRWXU  ) != 0) {
-         if (errno != EEXIST) {
-             errmsg("Could not create config directory: %s.\n", config_dir);
+
+    if (mkdir(config_dir, S_IRWXU) != 0)
+    {
+         if (errno != EEXIST)
+         {
+             msg_log(MSG_ERROR,
+                    "Could not create config directory: %s.\n",
+                    config_dir);
              free(config_dir);
              return -1;
          }
@@ -200,7 +210,8 @@ int settings_write()
 
     if (!noderoot)
     {
-        errmsg("XML error!\n"); return -1;
+        msg_log(MSG_ERROR, "XML error!\n");
+        return -1;
     }
 
     xmlDocSetRootElement(doc, noderoot);

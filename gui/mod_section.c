@@ -17,7 +17,7 @@
     along with Petri-Foo.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
+#include <assert.h>
 #include <gtk/gtk.h>
 
 #include "phin.h"
@@ -287,6 +287,8 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
     int b1 = 1, b2 = 2;
     int c1 = 2, c2 = 3;
 
+debug("creating mod section...\n");
+
     box = GTK_BOX(self);
     p->param = param;
 
@@ -334,12 +336,12 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
         /* broken impl in Phat/Phin: logscale = TRUE; */
         break;
     case PATCH_PARAM_CUTOFF:
-        /* logscale = TRUE; */
-        /* intentional fallthrough */
-    default:
         snprintf(buf, 80, "%s:", param_names[param]);
         lstr = buf;
         break;
+    default:
+        assert(0);
+        return;
     }
 
     gui_label_attach(lstr, t, a1, a2, y, y + 1);
@@ -436,10 +438,10 @@ GtkWidget* mod_section_new(void)
 void mod_section_set_patch(ModSection* self, int patch_id)
 {
     ModSectionPrivate* p = MOD_SECTION_GET_PRIVATE(self);
-    float param1 = PATCH_PARAM_INVALID;
-    float param2 = PATCH_PARAM_INVALID;
-    float vsens;
-    float ktrack;
+    float param1;
+    float param2 = 0;
+    float vel_amt;
+    float key_trk;
 
     int     i;
     int     last_slot = MAX_MOD_SLOTS;
@@ -456,24 +458,24 @@ void mod_section_set_patch(ModSection* self, int patch_id)
     if (p->mod_only)
         goto get_mod_srcs;
 
-    patch_param_get_value(p->patch_id, p->param, &param1);
+    param1 = patch_param_get_value(p->patch_id, p->param);
 
     if (p->param == PATCH_PARAM_PITCH)
         param2 = patch_get_pitch_steps(p->patch_id);
     else if (p->param == PATCH_PARAM_AMPLITUDE)
         --last_slot;
 
-    patch_param_get_vel_amount(patch_id, p->param, &vsens);
-    patch_param_get_key_amount(patch_id, p->param, &ktrack);
+    vel_amt = patch_param_get_vel_amount(patch_id, p->param);
+    key_trk = patch_param_get_key_amount(patch_id, p->param);
 
 get_mod_srcs:
 
     for (i = 0; i < MAX_MOD_SLOTS; ++i)
     {
-        patch_param_get_mod_src(patch_id, p->param, i, &modsrc[i]);
+        modsrc[i] = patch_param_get_mod_src(patch_id, p->param, i);
 
         if (i < last_slot)
-            patch_param_get_mod_amt(patch_id, p->param, i, &modamt[i]);
+            modamt[i] = patch_param_get_mod_amt(patch_id, p->param, i);
 
         if (!mod_src_combo_get_iter_with_id(GTK_COMBO_BOX(p->mod_combo[i]),
                                                     modsrc[i], &moditer[i]))
@@ -492,8 +494,8 @@ get_mod_srcs:
     if (p->param == PATCH_PARAM_PITCH)
         phin_slider_button_set_value(PHIN_SLIDER_BUTTON(p->param2), param2);
 
-    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->key_track), ktrack);
-    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->vel_sens), vsens);
+    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->key_track), key_trk);
+    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->vel_sens),  vel_amt);
 
 set_mod_srcs:
 

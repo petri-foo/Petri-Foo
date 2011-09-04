@@ -24,6 +24,7 @@
 
 #include "patch_util.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -32,9 +33,9 @@
 
 #include "petri-foo.h"
 #include "maths.h"
-#include "msg_log.h"
 #include "ticks.h"
 #include "patch.h"
+#include "pf_error.h"
 #include "sample.h"
 #include "adsr.h"
 #include "lfo.h"
@@ -57,7 +58,7 @@
 /*  inline definitions shared by patch and patch_util:
  *                          (see private/patch_data.h)
  */
-INLINE_ISOK_DEF
+INLINE_PATCHOK_DEF
 INLINE_PATCH_LOCK_DEF
 INLINE_PATCH_TRYLOCK_DEF
 INLINE_PATCH_UNLOCK_DEF
@@ -114,15 +115,16 @@ int patch_create(void)
     /* find unoccupied patch id */
     for (id = 0; patches[id] && patches[id]->active; ++id)
         if (id == PATCH_COUNT)
-            return PATCH_LIMIT;
+        {
+            pf_error(PF_ERR_PATCH_COUNT);
+            return -1;
+        }
 
     if (!(p = patch_new()))
     {
-        errmsg("Failed to create new patch\n");
-        return PATCH_ALLOC_FAIL;
+        pf_error(PF_ERR_PATCH_ALLOC);
+        return -1;
     }
-
-    debug("Creating patch %d [%p]\n", id, p);
 
     patches[id] = p;
     patch_lock(id);
@@ -146,13 +148,13 @@ int patch_create_default(void)
 
     patch_lock(id);
 
-    p->play_mode = PATCH_PLAY_LOOP | PATCH_PLAY_FORWARD;
+    p->play_mode = PATCH_PLAY_LOOP;
     p->fade_samples =  DEFAULT_FADE_SAMPLES;
     p->xfade_samples = DEFAULT_FADE_SAMPLES;
 
     /* adsr */
     eg1 = &p->env_params[0];
-    eg1->env_on  = true;
+    eg1->active  = true;
     eg1->attack  = 0.005;
     eg1->release = 0.375;
     eg1->key_amt = -0.99;
@@ -194,7 +196,7 @@ int patch_create_default(void)
 
 
     /* setup VLFO0 to provide the pitch modulation */
-    patch_set_lfo_on(       id, MOD_SRC_VLFO, true);
+    patch_set_lfo_active(   id, MOD_SRC_VLFO, true);
     patch_set_lfo_freq(     id, MOD_SRC_VLFO, 9);
 
     /* and the MOD WHEEL to modulate VLFO0 amplitude */
@@ -216,13 +218,12 @@ int patch_create_default(void)
 }
 
 
-int patch_destroy(int id)
+void patch_destroy(int id)
 {
     int index;
     Patch* p;
 
-    if (!isok(id))
-        return PATCH_ID_INVALID;
+    assert(patchok(id));
 
     debug ("Removing patch: %d\n", id);
 
@@ -249,8 +250,6 @@ int patch_destroy(int id)
             --patches[id]->display_index;
         }
     }
-
-    return 0;
 }
 
 
@@ -261,7 +260,8 @@ void patch_destroy_all(void)
     int id;
 
     for (id = 0; id < PATCH_COUNT; id++)
-        patch_destroy (id);
+        if (patches[id])
+            patch_destroy (id);
 
     return;
 }
@@ -284,7 +284,10 @@ int patch_dump(int **dump)
     /* allocate dump */
     *dump = malloc(sizeof(int) * count);
     if (*dump == NULL)
-        return PATCH_ALLOC_FAIL;
+    {
+        pf_error(PF_ERR_PATCH_DUMP_ALLOC);
+        return -1;
+    }
 
     /* place active patches into dump array */
     for (id = i = 0; id < PATCH_COUNT; id++)
@@ -320,8 +323,8 @@ int patch_dump(int **dump)
                 if (patches[(*dump)[k]]->channel != i)
                     continue;
 
-                if (patches[(*dump)[k]]->note <
-                    patches[(*dump)[j]]->note)
+                if (patches[(*dump)[k]]->root_note <
+                    patches[(*dump)[j]]->root_note)
                 {
                     tmp = (*dump)[j];
                     (*dump)[j] = (*dump)[k];
@@ -339,19 +342,13 @@ int patch_duplicate(int src_id)
     int i;
     int dest_id;
 
-    if (!isok(src_id))
-        return PATCH_ID_INVALID;
-
-    if (!patches[src_id]->active)
-        return PATCH_ID_INVALID;
+    assert(patchok(src_id));
+    assert(patches[src_id]->active);
 
     dest_id = patch_create();
 
     if (dest_id < 0)
-    {
-        debug("couldn't duplicate\n");
-        return dest_id;
-    }
+        return -1;
 
     debug("Creating patch (%d) from patch %s (%d).\n", dest_id,
            patches[src_id]->name, src_id);
@@ -386,11 +383,10 @@ int patch_duplicate(int src_id)
 int patch_flush (int id)
 {
     int i;
-     
-    if (!isok(id))
-        return PATCH_ID_INVALID;
 
-debug("flusing:%d\n",id);
+    assert(patchok(id));
+
+    debug("flusing:%d\n",id);
 
     patch_lock (id);
 
@@ -408,7 +404,7 @@ debug("flusing:%d\n",id);
 
     patch_unlock (id);
 
-debug("done\n");
+    debug("done\n");
     return 0;
 }
 
@@ -418,49 +414,8 @@ void patch_flush_all ( )
     int i;
 
     for (i = 0; i < PATCH_COUNT; i++)
-        patch_flush (i);
-}
-
-
-/* returns error message associated with error code */
-const char *patch_strerror (int error)
-{
-    switch (error)
-    {
-    case PATCH_PARAM_INVALID:
-	return "patch parameter is invalid";
-	break;
-    case PATCH_ID_INVALID:
-	return "patch id is invalid";
-	break;
-    case PATCH_ALLOC_FAIL:
-	return "failed to allocate space for patch";
-	break;
-    case PATCH_NOTE_INVALID:
-	return "specified note is invalid";
-	break;
-    case PATCH_PAN_INVALID:
-	return "specified panning is invalid";
-	break;
-    case PATCH_CHANNEL_INVALID:
-	return "specified channel is invalid";
-	break;
-    case PATCH_VOL_INVALID:
-	return "specified amplitude is invalid";
-	break;
-    case PATCH_PLAY_MODE_INVALID:
-	return "specified patch play mode is invalid";
-	break;
-    case PATCH_LIMIT:
-	return "maximum patch count reached, can't create another";
-	break;
-    case PATCH_SAMPLE_INDEX_INVALID:
-	return "specified sample is invalid";
-	break;
-    default:
-	return "unknown error";
-	break;
-    }
+        if (patches[i])
+            patch_flush (i);
 }
 
 
@@ -474,19 +429,14 @@ int patch_sample_load(int id, const char *name,
     double ratio = (patch_samplerate == 44100)
                             ? 1
                             : (patch_samplerate / 44100.0f);
+    int frames;
 
     bool defsample = (strcmp(name, "Default") == 0);
 
-    if (!isok (id))
-        return PATCH_ID_INVALID;
+    assert(patchok(id));
+    assert(name != NULL);
 
-    if (!name)
-    {
-        debug("Refusing to load null sample for patch %d\n", id);
-        return PATCH_PARAM_INVALID;
-    }
-
-    msg_log(MSG_MESSAGE, "Loading sample %s for patch %d\n", name, id);
+    debug("Loading sample %s for patch %d\n", name, id);
     patch_flush (id);
 
     /* we lock *after* we call patch_flush because patch_flush does
@@ -502,7 +452,12 @@ int patch_sample_load(int id, const char *name,
                                             raw_channels,
                                             sndfile_format);
 
-    patches[id]->sample_stop = patches[id]->sample->frames - 1;
+    if (val < 0)
+        frames = 0;
+    else
+        frames = patches[id]->sample->frames - 1;
+
+    patches[id]->sample_stop = frames;
 
     patches[id]->play_start = 0;
     patches[id]->play_stop = patches[id]->sample_stop;
@@ -516,8 +471,8 @@ int patch_sample_load(int id, const char *name,
     }
     else
     {
-        patches[id]->fade_samples = 100 * ratio;
-        patches[id]->xfade_samples = 100 * ratio;
+        patches[id]->fade_samples = (frames / 2 > 100) ? 100 * ratio : 0;
+        patches[id]->xfade_samples = (frames / 2 > 100) ? 100 * ratio : 0;
         patches[id]->loop_start = patches[id]->xfade_samples;
         patches[id]->loop_stop = patches[id]->sample_stop -
                                     patches[id]->xfade_samples;
@@ -537,8 +492,8 @@ int patch_sample_load_from(int dest_id, int src_id)
     const char* name;
     bool defsample;
 
-    if (!isok(dest_id) || !isok(src_id))
-        return PATCH_ID_INVALID;
+    assert(patchok(dest_id));
+    assert(patchok(src_id));
 
     name = patches[src_id]->sample->filename;
     defsample = (strcmp(name, "Default") == 0);
@@ -578,9 +533,7 @@ int patch_sample_load_from(int dest_id, int src_id)
 
 const Sample* patch_sample_data(int id)
 {
-    if (!isok(id))
-        return 0;
-
+    assert(patchok(id));
     return patches[id]->sample;
 }
 
@@ -588,9 +541,8 @@ const Sample* patch_sample_data(int id)
 /* unloads a patch's sample */
 void patch_sample_unload (int id)
 {
-    if (!isok(id))
-	return;
-     
+    assert(patchok(id));
+
     debug ("Unloading sample for patch %d\n", id);
     patch_lock (id);
 

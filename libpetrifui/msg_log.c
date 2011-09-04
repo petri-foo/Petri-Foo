@@ -92,10 +92,13 @@ int msg_log(int type, const char* fmt, ...)
     char    tmp[1024];
 
     va_list ap;
-    FILE* output = 0;
 
-    int rc;
+    int rc = 0;
     int base_type = type & MSG_TYPE_MASK;
+    int out_type = type & MSG_FLAG_OUTPUT_MASK;
+
+    if (!out_type)
+        goto skip;
 
     if (base_type <= MSG_INVALID || base_type >= MSG_TYPE_XXX)
     {
@@ -120,21 +123,27 @@ int msg_log(int type, const char* fmt, ...)
 
     va_end(ap);
 
-    if (snprintf(msg, 1023, "%s %s: %s", tm, types[base_type], tmp) >= 1023)
-        msg[1023] = '\0';
+    rc = snprintf(msg, 1023, "%s %s: %s ", tm, types[base_type], tmp);
 
-    if (base_type == MSG_TYPE_ERROR)
-        output = stderr;
-    else
-        output = stdout;
+    if (rc >= 1023)
+    {
+        rc = 1023;
+        msg[rc] = '\0';
+    }
+
+    if (out_type & MSG_FLAG_STDOUT)
+        fprintf(stdout, "%s", msg);
+
+    if (out_type & MSG_FLAG_STDERR)
+        fprintf(stderr, "%s", msg);
+
+    if ((out_type & MSG_FLAG_STDUI) && msg_log_callback)
+        msg_log_callback(msg, base_type);
+
+skip:
 
     if (type & MSG_FLAG_NOTIFY)
         msg_log_notification_state = true;
-
-    rc = fprintf(output, "%s", msg);
-
-    if (msg_log_callback)
-        msg_log_callback(msg, base_type);
 
     return rc;
 }

@@ -416,7 +416,7 @@ cr_rect(cairo_t* cr, double x1, double y1, double x2, double y2)
 
 static void draw_back(WaveformPrivate* p, int w, int h, cairo_t* cr)
 {
-    int frames;
+    int frames = -1;
     int start, stop;
     int play_start, play_stop;
     int loop_start, loop_stop;
@@ -426,10 +426,9 @@ static void draw_back(WaveformPrivate* p, int w, int h, cairo_t* cr)
     cairo_pattern_t *bg_play;
     cairo_pattern_t *bg_loop;
 
-    frames = patch_get_frames(p->patch);
-
-    if (frames > 0)
+    if (p->patch > -1 && patch_get_sample(p->patch))
     {
+        frames = patch_get_frames(p->patch);
         start = frames * p->range_start;
         stop = frames * p->range_stop;
 
@@ -801,10 +800,10 @@ void draw_mark(WaveformPrivate* p, int w, int h, cairo_t* cr)
 
     cairo_text_extents_t extents;
 
-    frames = patch_get_frames (p->patch);
-
-    if (frames <= 0)
+    if (p->patch < 0 || !patch_get_sample(p->patch))
         return;
+
+    frames = patch_get_frames (p->patch);
 
     start = frames * p->range_start;
     stop = frames * p->range_stop;

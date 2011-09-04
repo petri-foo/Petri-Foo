@@ -134,8 +134,9 @@ include_directories ( . )
 
 # Install targets
 
-ADD_SUBDIRECTORY( libphin )
 ADD_SUBDIRECTORY( libpetrifoo )
+ADD_SUBDIRECTORY( libpetrifui )
+ADD_SUBDIRECTORY( libphin )
 ADD_SUBDIRECTORY( gui )
 
 #ADD_SUBDIRECTORY( pixmaps )

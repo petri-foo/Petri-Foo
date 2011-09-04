@@ -75,7 +75,11 @@ typedef struct _PatchVoice
     double      pitch;      /* what pitch ratio to play at */
     double      pitch_step; /* how much to increment pitch by each
                              * porta_tick */
+    bool        legato;
+    bool        portamento;
+    float       porta_secs;
     int         porta_ticks;/* how many ticks to increment pitch for */
+
     int         posi;       /* integer sample index */
     uint32_t    posf;       /* fractional sample index */
     int         stepi;      /* integer step amount */
@@ -84,7 +88,7 @@ typedef struct _PatchVoice
     float   vel;            /* velocity; volume of this voice */
     float   key_track;      /* = (note - lower) / (upper - lower) */
 
-    float const* vol_mod[MAX_MOD_SLOTS];
+    float const* amp_mod[MAX_MOD_SLOTS];
     float const* pan_mod[MAX_MOD_SLOTS];
     float const* ffreq_mod[MAX_MOD_SLOTS];
     float const* freso_mod[MAX_MOD_SLOTS];

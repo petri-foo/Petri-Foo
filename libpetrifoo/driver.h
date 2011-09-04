@@ -36,15 +36,6 @@
 */
 
 
-enum
-{
-     DRIVER_ERR_ID = -1,
-     DRIVER_ERR_OTHER = -2
-};
-
-
-
-
 /* public class definition for drivers */
 typedef struct _Driver
 {
@@ -58,6 +49,7 @@ typedef struct _Driver
 
 } Driver;
 
+
 void        driver_init           (void);
 int         driver_restart        (void);
 int         driver_start          (void);
@@ -66,6 +58,7 @@ bool        driver_running        (void);
 int         driver_get_count      (void);
 const char* driver_get_name       (void);
 const char* driver_get_client_name(void);
+
 
 /* this function should only be called by drivers when they start
  * and/or their samplerate changes */

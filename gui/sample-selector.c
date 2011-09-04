@@ -31,6 +31,7 @@
 #include "basic_combos.h"
 #include "gui.h"
 #include "petri-foo.h"
+#include "pf_error.h"
 #include "mixer.h"
 #include "msg_log.h"
 #include "patch_set_and_get.h"
@@ -109,11 +110,13 @@ static void cb_load(raw_box* rb)
         int samplerate = gtk_spin_button_get_value_as_int(
                                     GTK_SPIN_BUTTON(rb->samplerate));
 
-        err = patch_sample_load(patch, name,    samplerate,
+        if (patch_sample_load(patch, name,    samplerate,
                                                 rb->channels,
-                                                get_format(rb));
-        if (err)
+                                                get_format(rb)) < 0)
+        {
+            err = pf_error_get();
             goto fail;
+        }
     }
     else
     {   /* don't repeat load sample */
@@ -122,8 +125,11 @@ static void cb_load(raw_box* rb)
         if (s->filename && strcmp(name, s->filename) == 0)
             return;
 
-        if ((err = patch_sample_load(patch, name, 0, 0, 0)))
+        if (patch_sample_load(patch, name, 0, 0, 0))
+        {
+            err = pf_error_get();
             goto fail;
+        }
     }
 
     if (name)
@@ -136,7 +142,7 @@ static void cb_load(raw_box* rb)
                 free(settings->last_sample_dir);
 
             settings->last_sample_dir = strdup(dirname);
-            free(dirname);     
+            free(dirname);
         }
     }
 
@@ -156,7 +162,7 @@ fail:
         msg_log(MSG_TYPE_ERROR, /*  Unlike MSG_ERROR, MSG_TYPE_ERROR does
                                     not set the log notification flag */
                 "Failed to load sample %s for patch %d (%s)\n",
-                name, patch, patch_strerror(err));
+                name, patch, pf_error_str(err));
 
         /* do our own notification here: */
         msg = gtk_message_dialog_new(GTK_WINDOW(rb->dialog),

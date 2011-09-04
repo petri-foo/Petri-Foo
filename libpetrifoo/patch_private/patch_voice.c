@@ -37,24 +37,31 @@ PatchVoice* patch_voice_new(void)
     pv->active =        false;
     pv->ticks =         0;
     pv->relset =        0;
+
     pv->relmode =       RELEASE_NONE;
+
     pv->released =      false;
     pv->to_end =        false;
+
     pv->dir =           0;
+
     pv->note =          0;
     pv->pitch =         0;
     pv->pitch_step =    0;
+
     pv->porta_ticks =   0;
+
     pv->posi =          0;
     pv->posf =          0;
     pv->stepi =         0;
     pv->stepf =         0;
+
     pv->vel =           0;
     pv->key_track =     0;
 
     for (i = 0; i < MAX_MOD_SLOTS; ++i)
     {
-        pv->vol_mod[i] = NULL;
+        pv->amp_mod[i] = NULL;
         pv->pan_mod[i] = NULL;
         pv->ffreq_mod[i] = NULL;
         pv->freso_mod[i] = NULL;
@@ -71,20 +78,24 @@ PatchVoice* patch_voice_new(void)
     pv->fbl =           0;
     pv->flr =           0;
     pv->fbr =           0;
+
     pv->playstate =     PLAYSTATE_OFF;
     pv->xfade =         false;
     pv->loop =          false;
+
     pv->fade_posi =     -1;
     pv->fade_posf =     0;
 
     pv->fade_out_start_pos =    0;
+
     pv->fade_declick =          0;
+
     pv->xfade_point_posi =      0;
     pv->xfade_point_posf =      0;
-
     pv->xfade_posi =    -1;
     pv->xfade_posf =    0;
     pv->xfade_dir =     0;
+
     pv->xfade_declick = 0;
 
     return pv;

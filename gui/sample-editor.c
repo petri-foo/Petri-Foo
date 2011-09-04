@@ -21,7 +21,7 @@
     This file is a derivative of a Specimen original, modified 2011
 */
 
-
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -47,6 +47,8 @@ typedef struct _SampleEditorPrivate SampleEditorPrivate;
 struct _SampleEditorPrivate
 {
     GtkWidget*  window;
+    GtkWidget*  toolbar1;
+    GtkWidget*  toolbar2;
     GtkWidget*  waveform;
     GtkWidget*  hscroll;
     GtkObject*  hscrolladj;
@@ -55,6 +57,7 @@ struct _SampleEditorPrivate
     GtkWidget*  mark_combo;
     GtkWidget*  mark_spin;
     GtkWidget*  mark_val;
+    GtkWidget*  reset;
 
     gboolean ignore_callback;
     gboolean ignore_mark_change;
@@ -85,6 +88,8 @@ SampleEditorPrivate* sample_editor_private_new()
         return 0;
 
     p->window =     0;
+    p->toolbar1 =   0;
+    p->toolbar2 =   0;
     p->waveform =   0;
     p->hscroll =    0;
     p->hscrolladj = 0;
@@ -93,6 +98,7 @@ SampleEditorPrivate* sample_editor_private_new()
     p->mark_combo = 0;
     p->mark_spin =  0;
     p->mark_val =   0;
+    p->reset =      0;
 
     p->ignore_callback =    FALSE;
     p->ignore_mark_change = FALSE;
@@ -125,21 +131,21 @@ static void cb_mark_combo_changed(GtkWidget* combo, gpointer data);
 static void cb_close(GtkWidget* widget, gpointer data)
 {
     (void)widget;(void)data;
-    mixer_note_off_with_id(se->patch, patch_get_note(se->patch));
+    mixer_note_off_with_id(se->patch, patch_get_root_note(se->patch));
     gtk_widget_hide(se->window);
 }
 
 static void cb_play(GtkWidget* widget, gpointer data)
 {
     (void)widget;(void)data;
-    mixer_note_off_with_id(se->patch, patch_get_note(se->patch));
-    mixer_note_on_with_id(se->patch, patch_get_note(se->patch), 1.0);
+    mixer_note_off_with_id(se->patch, patch_get_root_note(se->patch));
+    mixer_note_on_with_id(se->patch, patch_get_root_note(se->patch), 1.0);
 }
 
 static void cb_stop(GtkWidget* widget, gpointer data)
 {
     (void)widget;(void)data;
-    mixer_note_off_with_id(se->patch, patch_get_note(se->patch));
+    mixer_note_off_with_id(se->patch, patch_get_root_note(se->patch));
 }
 
 static void cb_reset(GtkWidget* widget, gpointer data)
@@ -409,23 +415,34 @@ static void cb_zoom_out(GtkWidget* widget, gpointer data)
 }
 
 
+static void sensitize_toolbars(gboolean tools_active)
+{
+    gtk_widget_set_sensitive(se->toolbar1, tools_active);
+    gtk_widget_set_sensitive(se->toolbar2, tools_active);
+    gtk_widget_set_sensitive(se->reset,    tools_active);
+}
+
+
 void sample_editor_show(int id)
 {
-    if (patch_get_frames(id) <= 0)
-        return;
-
     se->patch = id;
 
-    waveform_set_patch(WAVEFORM(se->waveform), id);
+    waveform_set_patch(WAVEFORM(se->waveform), se->patch);
 
-    se->old_play_start = patch_get_mark_frame(se->patch,
+    if (patch_get_sample(se->patch))
+    {
+        se->old_play_start = patch_get_mark_frame(se->patch,
                                                 WF_MARK_PLAY_START);
-    se->old_play_stop =  patch_get_mark_frame(se->patch,
+        se->old_play_stop =  patch_get_mark_frame(se->patch,
                                                 WF_MARK_PLAY_STOP);
-    se->old_loop_start = patch_get_mark_frame(se->patch,
+        se->old_loop_start = patch_get_mark_frame(se->patch,
                                                 WF_MARK_LOOP_START);
-    se->old_loop_stop =  patch_get_mark_frame(se->patch,
+        se->old_loop_stop =  patch_get_mark_frame(se->patch,
                                                 WF_MARK_LOOP_STOP);
+        sensitize_toolbars(true);
+    }
+    else
+        sensitize_toolbars(false);
 
     if (gtk_combo_box_get_active(GTK_COMBO_BOX(se->mark_combo))
         == WF_MARK_START)
@@ -445,8 +462,23 @@ void sample_editor_hide(void)
 }
 
 
+gboolean sample_editor_get_visible(void)
+{
+    return gtk_widget_get_visible(se->window);
+}
+
+
+
 void sample_editor_update(void)
 {
+    if (se->patch < 0)
+        return;
+
+    if (patch_get_sample(se->patch))
+        sensitize_toolbars(true);
+    else
+        sensitize_toolbars(false);
+
     waveform_set_range(WAVEFORM(se->waveform), 0.0, 1.0);
     gtk_widget_queue_draw(se->waveform);
 }
@@ -464,10 +496,13 @@ void sample_editor_init(GtkWidget * parent)
     GtkWindow* w;
     GtkWidget* master_vbox;
     GtkWidget* hbox;
+    GtkWidget* brow;
     GtkWidget* button;
     GtkWidget* image;
     GtkWidget* label;
     GtkWidget* tmp;
+
+    assert(se == 0);
 
     se = sample_editor_private_new();
 
@@ -487,9 +522,8 @@ void sample_editor_init(GtkWidget * parent)
     gtk_container_set_border_width(GTK_CONTAINER(se->window), GUI_SPACING);
     gtk_widget_show(master_vbox);
 
-
     /* top row hbox */
-    hbox = gtk_hbox_new(FALSE, GUI_SPACING);
+    se->toolbar1 = hbox = gtk_hbox_new(FALSE, GUI_SPACING);
     gtk_box_pack_start(GTK_BOX(master_vbox), hbox, FALSE, FALSE, 0);
     gtk_widget_show(hbox);
 
@@ -570,54 +604,58 @@ void sample_editor_init(GtkWidget * parent)
     gtk_box_pack_start(GTK_BOX(hbox), tmp, FALSE, FALSE, 0);
     gtk_widget_show(tmp);
 
-     /* loop points clear button */
-     button = gtk_button_new_with_label ("Loop");
-     gtk_box_pack_end (GTK_BOX (hbox), button, FALSE, FALSE, 0);
-     g_signal_connect (G_OBJECT (button), "clicked", G_CALLBACK (cb_clear),
-           (gpointer) "loop");
-     gtk_widget_show (button);
+    /* loop points clear button */
+    button = gtk_button_new_with_label ("Loop");
+    gtk_box_pack_end (GTK_BOX (hbox), button, FALSE, FALSE, 0);
+    g_signal_connect (G_OBJECT (button), "clicked", G_CALLBACK (cb_clear),
+                                                        (gpointer) "loop");
+    gtk_widget_show (button);
 
-     /* play points clear button */
-     button = gtk_button_new_with_label ("Play");
-     gtk_box_pack_end (GTK_BOX (hbox), button, FALSE, FALSE, 0);
-     g_signal_connect (G_OBJECT (button), "clicked", G_CALLBACK (cb_clear),
+    /* play points clear button */
+    button = gtk_button_new_with_label ("Play");
+    gtk_box_pack_end (GTK_BOX (hbox), button, FALSE, FALSE, 0);
+    g_signal_connect (G_OBJECT (button), "clicked", G_CALLBACK (cb_clear),
                                                         (gpointer) "play");
-     gtk_widget_show (button);
+    gtk_widget_show (button);
 
 
-     /* clear label */
-     label = gtk_label_new ("Clear Points:");
-     gtk_box_pack_end (GTK_BOX (hbox), label, FALSE, FALSE, 0);
-     gtk_widget_show (label);
+    /* clear label */
+    label = gtk_label_new ("Clear Points:");
+    gtk_box_pack_end (GTK_BOX (hbox), label, FALSE, FALSE, 0);
+    gtk_widget_show (label);
 
-     /* waveform */
-     se->waveform = waveform_new();
-     waveform_set_patch(        WAVEFORM(se->waveform), -1);
-     waveform_set_size(         WAVEFORM(se->waveform),  512, 256);
-     waveform_set_interactive(  WAVEFORM(se->waveform), TRUE);
-     gtk_box_pack_start(GTK_BOX(master_vbox), se->waveform, TRUE, TRUE, 0);
-     gtk_widget_show(se->waveform);
-     g_signal_connect(G_OBJECT(se->waveform), "play-changed",
+    /* waveform */
+    se->waveform = waveform_new();
+    waveform_set_patch(        WAVEFORM(se->waveform), -1);
+    waveform_set_size(         WAVEFORM(se->waveform),  512, 256);
+    waveform_set_interactive(  WAVEFORM(se->waveform), TRUE);
+    gtk_box_pack_start(GTK_BOX(master_vbox), se->waveform, TRUE, TRUE, 0);
+    gtk_widget_show(se->waveform);
+    g_signal_connect(G_OBJECT(se->waveform), "play-changed",
                             G_CALLBACK(cb_wf_play_changed), NULL);
-     g_signal_connect(G_OBJECT(se->waveform), "loop-changed",
+    g_signal_connect(G_OBJECT(se->waveform), "loop-changed",
                             G_CALLBACK(cb_wf_loop_changed), NULL);
-     g_signal_connect(G_OBJECT(se->waveform), "mark-changed",
+    g_signal_connect(G_OBJECT(se->waveform), "mark-changed",
                             G_CALLBACK(cb_wf_mark_changed), NULL);
-     g_signal_connect(G_OBJECT(se->waveform), "view-changed",
+    g_signal_connect(G_OBJECT(se->waveform), "view-changed",
                             G_CALLBACK(cb_wf_view_changed), NULL);
 
-     /* waveform scrollbar */
-     se->hscrolladj = gtk_adjustment_new(0.0, 0.0, 1.0, 0.0, 0.0, 1.0);
-     se->hscroll = gtk_hscrollbar_new(GTK_ADJUSTMENT(se->hscrolladj));
-     gtk_box_pack_start(GTK_BOX(master_vbox), se->hscroll, FALSE, FALSE, 0);
-     g_signal_connect(G_OBJECT(se->hscroll), "value-changed",
+    /* waveform scrollbar */
+    se->hscrolladj = gtk_adjustment_new(0.0, 0.0, 1.0, 0.0, 0.0, 1.0);
+    se->hscroll = gtk_hscrollbar_new(GTK_ADJUSTMENT(se->hscrolladj));
+    gtk_box_pack_start(GTK_BOX(master_vbox), se->hscroll, FALSE, FALSE, 0);
+    g_signal_connect(G_OBJECT(se->hscroll), "value-changed",
                                             G_CALLBACK (cb_scroll), NULL);
-     gtk_widget_show (se->hscroll);
+    gtk_widget_show (se->hscroll);
 
-     /* hbox */
-     hbox = gtk_hbox_new (FALSE, GUI_SPACING);
-     gtk_box_pack_start (GTK_BOX (master_vbox), hbox, FALSE, FALSE, 0);
-     gtk_widget_show (hbox);
+    /* bottom row hbox */
+    brow = gtk_hbox_new(FALSE, 0);
+    gtk_box_pack_start (GTK_BOX(master_vbox), brow, FALSE, FALSE, 0);
+    gtk_widget_show(brow);
+
+    se->toolbar2 = hbox = gtk_hbox_new (FALSE, GUI_SPACING);
+    gtk_box_pack_start (GTK_BOX(brow), hbox, FALSE, FALSE, 0);
+    gtk_widget_show (hbox);
 
     /* zoom-out button */
     image = gtk_image_new_from_stock(GTK_STOCK_ZOOM_OUT,
@@ -663,17 +701,21 @@ void sample_editor_init(GtkWidget * parent)
     gtk_widget_show(image);
     gtk_widget_show(button);
 
-     /* close button */
-     button = gtk_button_new_from_stock (GTK_STOCK_CLOSE);
-     gtk_box_pack_end (GTK_BOX (hbox), button, FALSE, FALSE, 0);
-     g_signal_connect (G_OBJECT (button), "clicked", G_CALLBACK (cb_close),
-		       NULL);
-     gtk_widget_show (button);
+    hbox = gtk_hbox_new (FALSE, GUI_SPACING);
+    gtk_box_pack_end(GTK_BOX(brow), hbox, FALSE, FALSE, 0);
+    gtk_widget_show (hbox);
 
-     /* reset button */
-     button = gtk_button_new_with_label ("Reset");
-     gtk_box_pack_end (GTK_BOX (hbox), button, FALSE, FALSE, 0);
-     g_signal_connect (G_OBJECT (button), "clicked", G_CALLBACK (cb_reset),
-		       NULL);
-     gtk_widget_show (button);
+     /* close button */
+    button = gtk_button_new_from_stock (GTK_STOCK_CLOSE);
+    gtk_box_pack_end (GTK_BOX (hbox), button, FALSE, FALSE, 0);
+    g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(cb_close),
+                                                                    NULL);
+    gtk_widget_show (button);
+
+    /* reset button */
+    se->reset = button = gtk_button_new_with_label ("Reset");
+    gtk_box_pack_end(GTK_BOX (hbox), button, FALSE, FALSE, 0);
+    g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(cb_reset),
+                                                                    NULL);
+    gtk_widget_show (button);
 }

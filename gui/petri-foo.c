@@ -46,7 +46,9 @@
 
 void show_usage (void)
 {
-    printf ("Usage: petri-foo [options] [bankname]\n\n");
+    printf ("Usage: petri-foo [options] [bank]\n");
+    printf("(Bank files use .petri-foo extension)\n\n");
+
     printf ("Options:\n");
     printf("  -n, --name <name>  Specify instance name, "
                                 "defaults to \"petri-foo\"\n" );
@@ -62,7 +64,7 @@ int main(int argc, char *argv[])
     int opt;
     int longopt_index;
 
-    static struct option long_options[] = 
+    static struct option long_options[] =
     {
         { "name",           1, 0, 'n'},
         { "unconnected",    0, 0, 'u'},
@@ -104,6 +106,7 @@ int main(int argc, char *argv[])
 
     settings_init();
     gui_init();
+
     driver_init();
     lfo_tables_init();
     mixer_init();

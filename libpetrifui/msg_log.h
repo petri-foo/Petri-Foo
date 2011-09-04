@@ -57,17 +57,27 @@ enum
     MSG_TYPE_XXX,
 
 /* message type mask */
-    MSG_TYPE_MASK =         0x00ff,
+    MSG_TYPE_MASK =         0x000f,
 
 /* message flags: */
-    MSG_FLAG_NOTIFY =       0x0100,
+    MSG_FLAG_NOTIFY =       0x0010, /* sets notification state */
+
+    MSG_FLAG_STDOUT =       0x0100, /* output to stdout */
+    MSG_FLAG_STDERR =       0x0200, /* output to stderr */
+    MSG_FLAG_STDUI =        0x0400, /* output to ie gui */
+
+    MSG_FLAG_OUTPUT_MASK =  0x0f00,
 
 /* the actual message types generally used */
-    MSG_DEBUG =     MSG_TYPE_DEBUG,
-    MSG_MESSAGE =   MSG_TYPE_MESSAGE,
-    MSG_WARNING =   MSG_TYPE_WARNING,
-    MSG_ERROR =     MSG_TYPE_ERROR | MSG_FLAG_NOTIFY,
-    MSG_CRITICAL =  MSG_TYPE_CRITICAL | MSG_FLAG_NOTIFY
+    MSG_DEBUG =     MSG_TYPE_DEBUG      | MSG_FLAG_STDOUT,
+    MSG_MESSAGE =   MSG_TYPE_MESSAGE    | MSG_FLAG_STDOUT | MSG_FLAG_STDUI,
+    MSG_WARNING =   MSG_TYPE_WARNING    | MSG_FLAG_STDOUT | MSG_FLAG_STDUI,
+
+    MSG_ERROR =     MSG_TYPE_ERROR      | MSG_FLAG_NOTIFY 
+                  | MSG_FLAG_STDERR     | MSG_FLAG_STDUI,
+
+    MSG_CRITICAL =  MSG_TYPE_CRITICAL   | MSG_FLAG_NOTIFY
+                  | MSG_FLAG_STDERR     | MSG_FLAG_STDUI,
 };
 
 

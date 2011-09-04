@@ -26,7 +26,6 @@
 #define __SPECIMEN_H__
 
 #include "config.h"
-#include "msg_log.h"
 #include <stdio.h>
 #include <signal.h>
 
@@ -41,19 +40,13 @@
 #define DEBUG 0
 #endif
 
-
+/*
 #define errmsg(fmt, ...)                                    \
 {                                                           \
     msg_log(MSG_CRITICAL,                                   \
         "%20s:%5d\t%30s" fmt,                               \
         __FILE__, __LINE__, __FUNCTION__ , ## __VA_ARGS__); \
 }
-/*
-    fprintf(stderr, "%20s:%5d\t%30s", __FILE__, __LINE__, __FUNCTION__); \
-    fprintf(stderr, ": ");          \
-    fprintf(stderr, __VA_ARGS__);   \
-}*/
-
 
 #if DEBUG
 #define debug(fmt, ...)                                     \
@@ -65,14 +58,21 @@
 #else
 #define debug(...)
 #endif
-
-/*
-#if DEBUG
-#define debug(...) errmsg(__VA_ARGS__)
-#else
-#define debug(...)
-#endif
 */
+
+#define errmsg(...) \
+{                   \
+    fprintf(stderr, "%20s:%5d\t%30s", __FILE__, __LINE__, __FUNCTION__); \
+    fprintf(stderr, ": ");          \
+    fprintf(stderr, __VA_ARGS__);   \
+}
+
+#if DEBUG
+# define debug(...) errmsg(__VA_ARGS__)
+#else
+# define debug(...)
+#endif
+
 
 typedef sig_atomic_t Atomic;
 

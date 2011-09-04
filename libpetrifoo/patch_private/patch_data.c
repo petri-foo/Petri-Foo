@@ -50,11 +50,14 @@ Patch* patch_new(void)
 
     p->name[0] = '\0';
 
-    p->active =         true;
+    p->active =         false;
     p->sample =         sample_new();
     p->display_index =  -1;
+
+    p->name[0] = '\0';
+
     p->channel =        0;
-    p->note =           60;
+    p->root_note =      60;
     p->lower_note =     60;
     p->upper_note =     60;
     p->lower_vel =      0;
@@ -62,6 +65,7 @@ Patch* patch_new(void)
 
     p->cut =            0;
     p->cut_by =         0;
+
     p->play_start =     0;
     p->play_stop =      0;
     p->loop_start =     0;
@@ -78,11 +82,11 @@ Patch* patch_new(void)
     p->fade_samples =   0;
     p->xfade_samples =  0;
 
-    p->porta.on =       true;
-    p->porta.thresh =   0.5;
+    p->porta.active =   true;   /* but only if PORTAMENTO   */
+    p->porta.thresh =   0.5;    /* controller says so...    */
     p->porta.mod_id =   MOD_SRC_MIDI_CC + CC_PORTAMENTO;
 
-    p->porta_secs.assign =  0.05;
+    p->porta_secs.val =     0.05;
     p->porta_secs.mod_amt = 1.0;
     p->porta_secs.mod_id =  MOD_SRC_MIDI_CC + CC_PORTAMENTO_TIME;
 
@@ -90,21 +94,17 @@ Patch* patch_new(void)
     p->pitch_bend =     0;
 
     p->mono = false;
-/*
-    p->mono.on =        true;
-    p->mono.thresh =    0.5;
-    p->mono.mod_id =    MOD_SRC_MIDI_CC + CC_
-*/
-    p->legato.on =      true;
-    p->legato.thresh =  0.5;
+
+    p->legato.active =  true;   /* but only if mono is on, *AND*    */
+    p->legato.thresh =  0.5;    /* LEGATO controller says so...     */
     p->legato.mod_id =  MOD_SRC_MIDI_CC + CC_LEGATO;
 
-    p->play_mode =      PATCH_PLAY_SINGLESHOT | PATCH_PLAY_FORWARD;
+    p->play_mode =      PATCH_PLAY_SINGLESHOT;
 
     for (i = 0; i < MAX_MOD_SLOTS; ++i)
     {
-        p->vol.mod_id[i] = MOD_SRC_NONE;
-        p->vol.mod_amt[i] = 0.0;
+        p->amp.mod_id[i] = MOD_SRC_NONE;
+        p->amp.mod_amt[i] = 0.0;
 
         p->pan.mod_id[i] = MOD_SRC_NONE;
         p->pan.mod_amt[i] = 0.0;
@@ -122,9 +122,9 @@ Patch* patch_new(void)
         p->mod_pitch_max[i] = 1.0;
     }
 
-    p->vol.val =        DEFAULT_AMPLITUDE;
-    p->vol.vel_amt =    1.0;
-    p->vol.key_amt =    0.0;
+    p->amp.val =        DEFAULT_AMPLITUDE;
+    p->amp.vel_amt =    1.0;
+    p->amp.key_amt =    0.0;
 
     p->pan.val =        0.0;
     p->pan.vel_amt =    0;
@@ -287,14 +287,14 @@ void patch_copy(Patch* dest, Patch* src)
 {
     int i;
 
-    dest->active = true;
+    dest->active = false;
 
     sample_deep_copy(dest->sample, src->sample);
 
     strcpy(dest->name, src->name);
 
     dest->channel =         src->channel;
-    dest->note =            src->note;
+    dest->root_note =       src->root_note;
     dest->lower_note =      src->lower_note;
     dest->upper_note =      src->upper_note;
     dest->cut =             src->cut;
@@ -315,7 +315,7 @@ void patch_copy(Patch* dest, Patch* src)
     dest->legato =          src->legato;
     dest->play_mode =       src->play_mode;
 
-    dest->vol =             src->vol;
+    dest->amp =             src->amp;
     dest->pan =             src->pan;
     dest->ffreq =           src->ffreq;
     dest->freso =           src->freso;

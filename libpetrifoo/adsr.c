@@ -64,7 +64,7 @@ struct _ADSR
 
 void adsr_params_init(ADSRParams* params, float attack, float release)
 {
-    params->env_on =    false;
+    params->active =    false;
     params->delay =     0.0;
     params->attack =    attack;
     params->decay =     0.0;

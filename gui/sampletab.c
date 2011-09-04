@@ -148,8 +148,6 @@ static void set_mode(SampleTabPrivate* p)
 
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(p->reverse_check)))
         mode |= PATCH_PLAY_REVERSE;
-    else
-        mode |= PATCH_PLAY_FORWARD;
 
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(p->to_end_check)))
         mode |= PATCH_PLAY_TO_END;
@@ -382,9 +380,10 @@ void sample_tab_set_patch(SampleTab* self, int patch)
             gtk_combo_box_set_active_iter(GTK_COMBO_BOX(p->mode_opt),
                                                                     &iter);
         }
+
+        update_to_end_check(p);
     }
 
-    update_to_end_check(p);
     unblock(p);
 }
 

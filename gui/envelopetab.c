@@ -106,7 +106,7 @@ static void id_selector_cb(IDSelector* ids, EnvelopeTabPrivate* p)
 
 static void on_cb(GtkToggleButton* button, EnvelopeTabPrivate* p)
 {
-    patch_set_env_on(p->patch,
+    patch_set_env_active(p->patch,
             id_selector_get_id(ID_SELECTOR(p->idsel)),
                     gtk_toggle_button_get_active(button));
 }
@@ -343,14 +343,14 @@ static void update_env(EnvelopeTabPrivate* p)
 
     id = id_selector_get_id(ID_SELECTOR(p->idsel));
 
-    patch_get_env_delay(i, id, &l);
-    patch_get_env_attack(i, id, &a);
-    patch_get_env_hold(i, id, &h);
-    patch_get_env_decay(i, id, &d);
-    patch_get_env_sustain(i, id, &s);
-    patch_get_env_release(i, id, &r);
-    patch_get_env_on(i, id, &on);
-    patch_get_env_key_amt(i, id, &key);
+    l = patch_get_env_delay(i, id);
+    a = patch_get_env_attack(i, id);
+    h = patch_get_env_hold(i, id);
+    d = patch_get_env_decay(i, id);
+    s = patch_get_env_sustain(i, id);
+    r = patch_get_env_release(i, id);
+    on = patch_get_env_active(i, id);
+    key = patch_get_env_key_amt(i, id);
 /*  patch_get_env_vel_amt(i, id, &vel); */
 
     block(p);

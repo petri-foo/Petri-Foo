@@ -51,6 +51,15 @@ typedef struct _PatchParam
 } PatchParam;
 
 
+typedef struct _PatchFloat
+{
+    float   val;
+    int     mod_id;
+    float   mod_amt;
+
+} PatchFloat;
+
+
 /*  PatchBool
         a structure used for storing boolean settings which can be turned
         on and off by a modulation source.
@@ -62,48 +71,38 @@ typedef struct _PatchParam
         modulation values below the threshold turn the feature off, while
         those above turn it on.
  */
- typedef struct _PatchBool
+typedef struct _PatchBool
 {
-    bool    on;     /* set value */
-    bool    active; /* actual value after modulation */
+    bool    active;
     int     mod_id;
     float   thresh;
 
 } PatchBool;
 
 
-typedef struct _PatchFloat
-{
-    float   assign; /* set value */
-    float   value;  /* actual value after modulation */
-    int     mod_id;
-    float   mod_amt;
-
-} PatchFloat;
-
-
 /* type for array of instruments (called patches) */
 struct _Patch
 {
-    bool     active;        /* whether patch is in use or not */
-    Sample*  sample;        /* sample data */
-    int      display_index; /* order in which this Patch to be displayed */
+    bool    active;         /* whether patch is in use or not */
+    Sample* sample;         /* sample data */
+    int     display_index;  /* order in which this Patch to be displayed */
 
-    char     name[PATCH_MAX_NAME];
+    char    name[PATCH_MAX_NAME];
 
-    int      channel;       /* midi channel to listen on */
-    int      note;          /* midi note to listen on */
-    int      lower_note;    /* lowest note in range */
-    int      upper_note;    /* highest note in range */
-    int      cut;           /* cut signal this patch emits */
-    int      cut_by;        /* what cut signals stop this patch */
-    int      play_start;    /* the first frame to play */
-    int      play_stop;     /* the last frame to play */
-    int      loop_start;    /* the first frame to loop at */
-    int      loop_stop;     /* the last frame to loop at */
-    int      lower_vel;     /* lower velocity trigger */
-    int      upper_vel;     /* upper velocity trigger */
+    int     channel;        /* midi channel to listen on */
+    int     root_note;      /* midi note to listen on */
+    int     lower_note;     /* lowest note in range */
+    int     upper_note;     /* highest note in range */
+    int     lower_vel;      /* lower velocity trigger */
+    int     upper_vel;      /* upper velocity trigger */
 
+    int     cut;            /* cut signal this patch emits */
+    int     cut_by;         /* what cut signals stop this patch */
+
+    int     play_start;     /* the first frame to play */
+    int     play_stop;      /* the last frame to play */
+    int     loop_start;     /* the first frame to loop at */
+    int     loop_stop;      /* the last frame to loop at */
     int     sample_stop;    /* very last frame in sample */
 
     int*    marks[WF_MARK_STOP + 1];
@@ -120,11 +119,12 @@ struct _Patch
     PatchBool   legato;         /* whether patch is played legato or not */
 
     PatchPlayMode   play_mode;  /* how this patch is to be played */
-    PatchParam      vol;        /* volume:                  [0.0, 1.0] */
+
+    PatchParam      amp;        /* amplitude:               [0.0, 1.0] */
     PatchParam      pan;        /* panning:                [-1.0, 1.0] */
     PatchParam      ffreq;      /* filter cutoff frequency: [0.0, 1.0] */
     PatchParam      freso;      /* filter resonance:        [0.0, 1.0] */
-    PatchParam      pitch;      /* pitch scaling:           [0.0, 1.0] */
+    PatchParam      pitch;      /* pitch scaling:          [-1.0, 1.0] */
 
     double mod_pitch_min[MAX_MOD_SLOTS];
     double mod_pitch_max[MAX_MOD_SLOTS];

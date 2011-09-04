@@ -49,7 +49,7 @@ typedef enum _ADSRState
 /* envelope parameters */
 typedef struct _ADSRParams
 {
-    bool env_on;
+    bool  active;
     float delay;    /* delay length in seconds  */
     float attack;   /* attack length in seconds */
     float decay;    /* decay length in seconds  */

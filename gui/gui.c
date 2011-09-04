@@ -30,6 +30,7 @@
 
 #include "instance.h"
 #include "petri-foo.h"
+#include "pf_error.h"
 #include "phin.h"
 
 #include "audio-settings.h"
@@ -282,7 +283,7 @@ void cb_menu_patch_add(GtkWidget* menu_item, gpointer data)
         if (id < 0)
         {
             msg_log(MSG_ERROR, "Failed to create a new patch (%s).\n",
-                                        patch_strerror(id));
+                                            pf_error_str(pf_error_get()));
             return;
         }
 
@@ -307,7 +308,7 @@ void cb_menu_patch_add_default(GtkWidget* menu_item, gpointer data)
     if (id < 0)
     {
         msg_log(MSG_ERROR, "Failed to create a new patch (%s).\n",
-                                        patch_strerror(id));
+                                            pf_error_str(pf_error_get()));
         return;
     }
 
@@ -334,7 +335,7 @@ void cb_menu_patch_duplicate(GtkWidget* menu_item, gpointer data)
     if ((val = patch_duplicate(cp)) < 0)
     {
         msg_log(MSG_ERROR, "Failed to duplicate patch (%s).\n",
-                                            patch_strerror (val));
+                                            pf_error_str(pf_error_get()));
         return;
     }
 
@@ -400,7 +401,7 @@ void cb_menu_patch_rename(GtkWidget* menu_item, gpointer data)
         if (val < 0)
         {
             msg_log(MSG_ERROR, "Failed to rename patch (%s).\n",
-                                            patch_strerror (val));
+                                            pf_error_str(pf_error_get()));
             return;
         }
 
@@ -427,12 +428,7 @@ void cb_menu_patch_remove(GtkWidget* menu_item, gpointer data)
     }
 
     index = patch_list_get_current_index (PATCH_LIST(patch_list));
-    if ((val = patch_destroy (cp)) < 0)
-    {
-        msg_log(MSG_ERROR, "Error removing patch %d (%s).\n", cp,
-                                                patch_strerror (val));
-        return;
-    }
+    patch_destroy(cp);
 
     if (index == 0)
         patch_list_update(PATCH_LIST(patch_list), index,
@@ -549,7 +545,12 @@ static void cb_patch_list_changed(PatchList* list, gpointer data)
     (void)data;
     cur_patch = patch_list_get_current_patch(list);
 
-    debug("patch list changed!\n");
+    debug("patch list changed patch:%d!\n",cur_patch);
+
+    if (cur_patch < 0)
+        sample_editor_hide();
+    else if (sample_editor_get_visible())
+        sample_editor_show(cur_patch);
 
     patch_section_set_patch(PATCH_SECTION(patch_section), cur_patch);
     midi_section_set_patch(MIDI_SECTION(midi_section), cur_patch);

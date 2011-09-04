@@ -89,7 +89,7 @@ static void set_check_cb(GtkToggleButton* button, BoolSection* self)
     gtk_widget_set_sensitive(p->mod_combo,      active);
     gtk_widget_set_sensitive(p->thresh, active && mod_src != MOD_SRC_NONE);
 
-    patch_bool_set_on(p->patch_id, p->bool_type, active);
+    patch_bool_set_active(p->patch_id, p->bool_type, active);
 
     g_signal_emit_by_name(G_OBJECT(self), "toggled");
 }

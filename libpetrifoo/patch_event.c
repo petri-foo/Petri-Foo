@@ -1,7 +1,5 @@
 /*  Petri-Foo is a fork of the Specimen audio sampler.
 
-    Original Specimen author Pete Bessman
-    Copyright 2005 Pete Bessman
     Copyright 2011 James W. Morris
 
     This file is part of Petri-Foo.
@@ -17,26 +15,40 @@
 
     You should have received a copy of the GNU General Public License
     along with Petri-Foo.  If not, see <http://www.gnu.org/licenses/>.
-
-    This file is a derivative of a Specimen original, modified 2011
 */
 
 
-#ifndef __SAMPLE_EDITOR_H__
-#define __SAMPLE_EDITOR_H__
+#include "patch_event.h"
 
-#include <gtk/gtk.h>
-
-
-void        sample_editor_init(GtkWidget* parent);
-
-/* waveform thumb in sample tab */
-void        sample_editor_set_thumb(GtkWidget* thumb);
-
-void        sample_editor_show(int id);
-void        sample_editor_hide(void);
-gboolean    sample_editor_get_visible(void);
-void        sample_editor_update(void);
+#include "patch_private/patch_event_data.h"
 
 
-#endif /* __SAMPLE_EDITOR_H__ */
+
+int patch_event_set(int patch_id, EvType evtype, ...)
+{
+}
+
+
+BaseEvent* patch_event_get(int patch_id, EvType evtype, ...)
+{
+}
+
+
+
+/* assertions on these to make sure correct type used */
+bool base_event_get_bool(BaseEvent* ev)
+{
+}
+
+
+float base_event_get_float(BaseEvent* ev)
+{
+}
+
+
+int base_event_get_int(BaseEvent* ev)
+{
+}
+
+
+

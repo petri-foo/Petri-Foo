@@ -37,7 +37,7 @@ enum { USER_PATCH, DEFAULT_PATCH };
 int         patch_create          (void);
 int         patch_create_default  (void);
 
-int         patch_destroy         (int id);
+void        patch_destroy         (int id);
 void        patch_destroy_all     (void);
 
 int         patch_count           (void);

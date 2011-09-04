@@ -26,31 +26,30 @@
 #define PATCH_MACROS_H
 
 
-#define INLINE_ISOK_DEF                                             \
-inline static int isok(int id)                                      \
-{                                                                   \
-    if (id < 0 || id >= PATCH_COUNT                                 \
-     || !patches[id] || !patches[id]->active)                       \
-        return 0;                                                   \
-    return 1;                                                       \
+#define INLINE_PATCHOK_DEF          \
+inline static bool patchok(int id)  \
+{                                   \
+    return (id >= 0 && id < PATCH_COUNT     \
+                    && patches[id] != 0     \
+                    && patches[id]->active);\
 }
 
 
-#define INLINE_PATCH_TRIGGER_GLOBAL_LFO_DEF                             \
-inline static void                                                      \
-patch_trigger_global_lfo(int patch_id, LFO* lfo, LFOParams* lfopar)     \
-{                                                                       \
-    Patch* p = patches[patch_id];                                       \
-    float const* src;                                                   \
-    src = patch_mod_id_to_pointer(lfopar->fm1_id, p, NULL);             \
-    lfo_set_fm1(lfo, src);                                              \
-    src = patch_mod_id_to_pointer(lfopar->fm2_id, p, NULL);             \
-    lfo_set_fm2(lfo, src);                                              \
-    src = patch_mod_id_to_pointer(lfopar->am1_id, p, NULL);             \
-    lfo_set_am1(lfo, src);                                              \
-    src = patch_mod_id_to_pointer(lfopar->am2_id, p, NULL);             \
-    lfo_set_am2(lfo, src);                                              \
-    lfo_rigger(lfo, lfopar);                                            \
+#define INLINE_PATCH_TRIGGER_GLOBAL_LFO_DEF                 \
+inline static void                                          \
+patch_trigger_global_lfo(int patch_id, LFO* lfo, LFOParams* lfopar) \
+{                                                           \
+    Patch* p = patches[patch_id];                           \
+    float const* src;                                       \
+    src = patch_mod_id_to_pointer(lfopar->fm1_id, p, NULL); \
+    lfo_set_fm1(lfo, src);                                  \
+    src = patch_mod_id_to_pointer(lfopar->fm2_id, p, NULL); \
+    lfo_set_fm2(lfo, src);                                  \
+    src = patch_mod_id_to_pointer(lfopar->am1_id, p, NULL); \
+    lfo_set_am1(lfo, src);                                  \
+    src = patch_mod_id_to_pointer(lfopar->am2_id, p, NULL); \
+    lfo_set_am2(lfo, src);                                  \
+    lfo_update_params(lfo, lfopar);                         \
 }
 
 

@@ -58,7 +58,7 @@ typedef enum
 
 typedef struct _LFOParams
 {
-    bool        lfo_on;
+    bool        active;
     LFOShape    shape;
     float       freq;        /* frequency in hz */
     float       sync_beats;
@@ -106,9 +106,7 @@ void    lfo_init(LFO*);
  * after the samplerate/tempo changes in order for those changes to
  * take effect */
 void    lfo_trigger(LFO*, LFOParams*);
-
-/* like lfo_trigger except it don't reset phase */
-void    lfo_rigger(LFO*, LFOParams*);
+void    lfo_update_params(LFO*, LFOParams*);
 
 /* advance an LFO and return its new value */
 float   lfo_tick(LFO*);

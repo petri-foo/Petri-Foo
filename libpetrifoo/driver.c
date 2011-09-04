@@ -30,7 +30,7 @@
 #include "ticks.h"
 #include "patch_util.h"
 
-
+#include <assert.h>
 #include <strings.h> /* strcasecmp */
 
 
@@ -45,7 +45,7 @@ void driver_init(void)
 {
     int i;
 
-    for (i = 0; drivers[i] != NULL; i++)
+    for (i = 0; drivers[i] != NULL; i++, ndrivers++)
         drivers[i]->init();
 
     if ((ndrivers = i) < 0)
@@ -60,8 +60,7 @@ int driver_restart(void)
 
 int driver_start(void)
 {
-    if (ndrivers <= 0)
-        return DRIVER_ERR_OTHER;
+    assert(ndrivers > 0);
 
     if (curdriver >= 0)
         drivers[curdriver]->stop();
@@ -103,32 +102,19 @@ const char* driver_get_name(void)
 
 int driver_set_samplerate(int rate)
 {
-    if (rate <= 0)
-    {
-        debug ("can't accept samplerate %d\n", rate);
-        return DRIVER_ERR_OTHER;
-    }
-
-    /* tell everybody our (potentially new) samplerate */
-      lfo_set_samplerate (rate);
-    patch_set_samplerate (rate);
-    mixer_set_samplerate (rate);
-    ticks_set_samplerate (rate);
+    assert(rate > 0);
+      lfo_set_samplerate(rate);
+    patch_set_samplerate(rate);
+    mixer_set_samplerate(rate);
+    ticks_set_samplerate(rate);
 
     return 0;
 }
 
 int driver_set_buffersize(int nframes)
 {
-    if (nframes <= 0)
-    {
-        debug ("can't accept buffersize %d\n", nframes);
-        return DRIVER_ERR_OTHER;
-    }
-
-     /* tell everybody our (potentially new) buffersize */
-    patch_set_buffersize (nframes);
-
+    assert(nframes > 0);
+    patch_set_buffersize(nframes);
     return 0;
 }
 

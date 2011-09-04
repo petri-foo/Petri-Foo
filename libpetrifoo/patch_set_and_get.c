@@ -24,7 +24,7 @@
 
 #include "patch_set_and_get.h"
 
-
+#include <assert.h>
 #include <string.h>
 #include <math.h>
 
@@ -32,6 +32,7 @@
 #include "sample.h"
 #include "adsr.h"
 #include "lfo.h"
+#include "pf_error.h"
 
 
 #include "patch_private/patch_data.h"
@@ -39,73 +40,51 @@
 #include "patch_private/patch_macros.h"
 
 
-INLINE_ISOK_DEF
+INLINE_PATCHOK_DEF
 
-
-inline static int mod_src_to_eg_index(int patch_id, int id)
+inline static bool markok(int id)
 {
-    if (!isok(patch_id))
-        return PATCH_ID_INVALID;
-
-    id -= MOD_SRC_EG;
-
-    return (id >= 0 && id < VOICE_MAX_ENVS)
-                ? id
-                : PATCH_ENV_ID_INVALID;
+    return (id >= WF_MARK_START && id <= WF_MARK_STOP);
 }
 
 
-static int mod_src_ok(int id)
+inline static bool marksetok(int id)
 {
-    return (id & MOD_SRC_ALL || id == MOD_SRC_NONE)
-            ? 0 
-            : PATCH_MOD_SRC_INVALID;
+    return (id >= WF_MARK_PLAY_START && id <= WF_MARK_PLAY_STOP);
 }
 
 
-inline static bool mark_ok(int id)
+static inline void set_mark_frame(int patch_id, int mark, int frame)
 {
-    if (id < WF_MARK_START || id > WF_MARK_STOP)
-        return false;
-
-    return true;
-}
-
-inline static bool mark_settable(int id)
-{
-    if (id < WF_MARK_PLAY_START || id > WF_MARK_PLAY_STOP)
-        return false;
-
-    return true;
+    *(patches[patch_id]->marks[mark]) = frame;
 }
 
 
-static inline void set_mark_frame(int patch, int mark, int frame)
+static inline int get_mark_frame(int patch_id, int mark)
 {
-    *(patches[patch]->marks[mark]) = frame;
+    return *(patches[patch_id]->marks[mark]);
 }
 
 
-static inline int get_mark_frame(int patch, int mark)
+static int get_mark_frame_range(int patch_id, int mark, int* min, int* max)
 {
-    return *(patches[patch]->marks[mark]);
-}
+    int xfade;
 
+    assert(patchok(patch_id));
+    assert(markok(mark));
 
-static int get_mark_frame_range(int patch, int mark, int* min, int* max)
-{
-    int xfade = patches[patch]->xfade_samples;
+    xfade = patches[patch_id]->xfade_samples;
 
     if (mark == WF_MARK_START || mark == WF_MARK_STOP)
     {
-        *min = *max = get_mark_frame(patch, mark);
+        *min = *max = get_mark_frame(patch_id, mark);
         /* indicate non-editable! */
         return -1;
     }
 
     /* potential range: */
-    *min = get_mark_frame(patch, mark - 1);
-    *max = get_mark_frame(patch, mark + 1);
+    *min = get_mark_frame(patch_id, mark - 1);
+    *max = get_mark_frame(patch_id, mark + 1);
 
     /* tweak if necessary */
     switch(mark)
@@ -124,72 +103,56 @@ static int get_mark_frame_range(int patch, int mark, int* min, int* max)
         *min += xfade;
         *max -= xfade;
         break;
+    default:
+        assert(0);
     }
 
-    return get_mark_frame(patch, mark);
+    return get_mark_frame(patch_id, mark);
 }
 
 
-static int get_patch_param(int patch_id, PatchParamType param,
-                                                            PatchParam** p)
+static PatchParam* get_patch_param(int patch_id, PatchParamType param)
 {
-    if (!isok(patch_id))
-        return PATCH_ID_INVALID;
-
     switch(param)
     {
-    case PATCH_PARAM_AMPLITUDE: *p = &patches[patch_id]->vol;      break;
-    case PATCH_PARAM_PANNING:   *p = &patches[patch_id]->pan;      break;
-    case PATCH_PARAM_CUTOFF:    *p = &patches[patch_id]->ffreq;    break;
-    case PATCH_PARAM_RESONANCE: *p = &patches[patch_id]->freso;    break;
-    case PATCH_PARAM_PITCH:     *p = &patches[patch_id]->pitch;    break;
+    case PATCH_PARAM_AMPLITUDE: return &patches[patch_id]->amp;
+    case PATCH_PARAM_PANNING:   return &patches[patch_id]->pan;
+    case PATCH_PARAM_CUTOFF:    return &patches[patch_id]->ffreq;
+    case PATCH_PARAM_RESONANCE: return &patches[patch_id]->freso;
+    case PATCH_PARAM_PITCH:     return &patches[patch_id]->pitch;
     default:
-        debug ("Invalid request for address of patch param\n");
-        return PATCH_PARAM_INVALID;
+        assert(0);
     }
-
     return 0;
 }
 
 
-static int get_patch_bool(int patch_id, PatchBoolType booltype,
-                                                            PatchBool** b)
+static PatchBool* get_patch_bool(int patch_id, PatchBoolType booltype)
 {
-    if (!isok(patch_id))
-        return PATCH_ID_INVALID;
-
+    assert(patchok(patch_id));
     switch(booltype)
     {
-    case PATCH_BOOL_PORTAMENTO: *b = &patches[patch_id]->porta;     break;
-    case PATCH_BOOL_LEGATO:     *b = &patches[patch_id]->legato;    break;
+    case PATCH_BOOL_PORTAMENTO: return &patches[patch_id]->porta;
+    case PATCH_BOOL_LEGATO:     return &patches[patch_id]->legato;
     default:
-        debug("Invalid request for address of patch bool\n");
-        return PATCH_BOOL_INVALID;
+        assert(0);
     }
-
     return 0;
 }
 
 
-static int get_patch_float(int patch_id, PatchFloatType floattype,
-                                                            PatchFloat** f)
+static PatchFloat* get_patch_float(int patch_id, PatchFloatType floattype)
 {
-    if (!isok(patch_id))
-        return PATCH_ID_INVALID;
-
+    assert(patchok(patch_id));
     switch(floattype)
     {
     case PATCH_FLOAT_PORTAMENTO_TIME:
-        *f = &patches[patch_id]->porta_secs;
-        break;
+        return &patches[patch_id]->porta_secs;
     default:
-        debug("Invalid request for address of patch float\n");
-        return PATCH_FLOAT_INVALID;
+        assert(0);
     }
-
     return 0;
 }
-
 
 
 /* inline static function def macro, see private/patch_data.h */
@@ -201,649 +164,339 @@ INLINE_PATCH_TRIGGER_GLOBAL_LFO_DEF
 /************************* ENVELOPE SETTERS *******************************/
 /**************************************************************************/
 
-
-int patch_set_env_on (int patch_id, int eg, bool state)
+inline static int mod_src_to_eg_index(int id)
 {
-    eg = mod_src_to_eg_index(patch_id, eg);
+    assert(id >= MOD_SRC_EG);
+    id -= MOD_SRC_EG;
+    assert(id < VOICE_MAX_ENVS);
+    return id;
+}
 
-    if (eg < 0)
-        return eg; /* as error code */
 
-    patches[patch_id]->env_params[eg].env_on = state;
+int patch_set_env_active(int patch_id, int eg, bool state)
+{
+    assert(patchok(patch_id));
+    eg = mod_src_to_eg_index(eg);
+    patches[patch_id]->env_params[eg].active = state;
     return 0;
 }
 
 
-/* sets the delay length in seconds */
-int patch_set_env_delay (int patch_id, int eg, float secs)
-{
-    eg = mod_src_to_eg_index(patch_id, eg);
-
-    if (eg < 0)
-        return eg; /* as error code */
-
-    if (secs < 0.0)
-        return PATCH_PARAM_INVALID;
-
-    patches[patch_id]->env_params[eg].delay = secs;
-    return 0;
+#define PATCH_SET_ENV_TIME( _EGPAR )                            \
+int patch_set_env_##_EGPAR(int patch_id, int eg, float secs)    \
+{                                                       \
+    assert(patchok(patch_id));                          \
+    if (secs < 0.0f)                                    \
+    {                                                   \
+        pf_error(PF_ERR_PATCH_VALUE_NEGATIVE);          \
+        return -1;                                      \
+    }                                                   \
+    eg = mod_src_to_eg_index(eg);                       \
+    patches[patch_id]->env_params[eg]._EGPAR = secs;    \
+    return 0;                                           \
 }
 
-/* sets the attack length in seconds */
-int patch_set_env_attack (int patch_id, int eg, float secs)
-{
-    eg = mod_src_to_eg_index(patch_id, eg);
+PATCH_SET_ENV_TIME( delay  )
+PATCH_SET_ENV_TIME( attack )
+PATCH_SET_ENV_TIME( hold   )
+PATCH_SET_ENV_TIME( decay  )
 
-    if (eg < 0)
-        return eg; /* as error code */
+/* special cases: */
 
-    if (secs < 0.0)
-        return PATCH_PARAM_INVALID;
-
-    patches[patch_id]->env_params[eg].attack = secs;
-    return 0;
-}
-
-/* sets the hold length in seconds */
-int patch_set_env_hold (int patch_id, int eg, float secs)
-{
-    eg = mod_src_to_eg_index(patch_id, eg);
-
-    if (eg < 0)
-        return eg; /* as error code */
-
-    if (secs < 0.0)
-        return PATCH_PARAM_INVALID;
-
-    patches[patch_id]->env_params[eg].hold = secs;
-    return 0;
-}
-
-/* sets the decay length in seconds */
-int patch_set_env_decay (int patch_id, int eg, float secs)
-{
-    eg = mod_src_to_eg_index(patch_id, eg);
-
-    if (eg < 0)
-        return eg; /* as error code */
-
-    if (secs < 0.0)
-        return PATCH_PARAM_INVALID;
-
-    patches[patch_id]->env_params[eg].decay = secs;
-    return 0;
-}
-
-/* sets the sustain level */
 int patch_set_env_sustain (int patch_id, int eg, float level)
 {
-    eg = mod_src_to_eg_index(patch_id, eg);
-
-    if (eg < 0)
-        return eg; /* as error code */
-
+    assert(patchok(patch_id));
     if (level < 0.0 || level > 1.0)
-        return PATCH_PARAM_INVALID;
-
+    {
+        pf_error(PF_ERR_PATCH_VALUE_LEVEL);
+        return -1;
+    }
+    eg = mod_src_to_eg_index(eg);
     patches[patch_id]->env_params[eg].sustain = level;
     return 0;
 }
 
-/* sets the release length in seconds */
+
 int patch_set_env_release (int patch_id, int eg, float secs)
 {
-    eg = mod_src_to_eg_index(patch_id, eg);
-
-    if (eg < 0)
-        return eg; /* as error code */
-
-    if (secs < 0.0)
-        return PATCH_PARAM_INVALID;
-
+    assert(patchok(patch_id));
+    if (secs < 0.0f)
+    {
+        pf_error(PF_ERR_PATCH_VALUE_NEGATIVE);
+        return -1;
+    }
+    eg = mod_src_to_eg_index(eg);
+    /* use of min release time should remain hidden */
     if (secs < PATCH_MIN_RELEASE)
         secs = PATCH_MIN_RELEASE;
-
     patches[patch_id]->env_params[eg].release = secs;
     return 0;
 }
 
-/* sets key tracking amount */
+
 int patch_set_env_key_amt(int patch_id, int eg, float val)
 {
-    eg = mod_src_to_eg_index(patch_id, eg);
-
-    if (eg < 0)
-        return eg; /* as error code */
-
-    if (val < -1.0 || val > 1.0)
-        return PATCH_PARAM_INVALID;
-
+    assert(patchok(patch_id));
+    if (val < 0.0 || val > 1.0)
+    {
+        pf_error(PF_ERR_PATCH_VALUE_LEVEL);
+        return -1;
+    }
+    eg = mod_src_to_eg_index(eg);
     patches[patch_id]->env_params[eg].key_amt = val;
     return 0;
 }
 
-/*
-int patch_set_env_vel_amt(int patch_id, int eg, float val)
-{
-    eg = mod_src_to_eg_index(patch_id, eg);
-
-    if (eg < 0)
-        return eg;
-
-    if (val < -1.0 || val > 1.0)
-        return PATCH_PARAM_INVALID;
-
-    patches[patch_id]->env_params[eg].vel_amt = val;
-    return 0;
-}
-*/
 
 /**************************************************************************/
 /************************* ENVELOPE GETTERS *******************************/
 /**************************************************************************/
 
-/* places the delay length in seconds into val */
-int patch_get_env_on(int patch_id, int eg, bool* val)
+#define PATCH_GET_ENV_PARAM( _EGPAR, _EGPARTYPE)        \
+_EGPARTYPE patch_get_env_##_EGPAR(int patch_id, int eg) \
+{                                                       \
+    assert(patchok(patch_id));                             \
+    eg = mod_src_to_eg_index(eg);                       \
+    return patches[patch_id]->env_params[eg]._EGPAR;    \
+}
+
+PATCH_GET_ENV_PARAM( active,    bool  )
+PATCH_GET_ENV_PARAM( delay,     float )
+PATCH_GET_ENV_PARAM( attack,    float )
+PATCH_GET_ENV_PARAM( hold,      float )
+PATCH_GET_ENV_PARAM( decay,     float )
+PATCH_GET_ENV_PARAM( sustain,   float )
+PATCH_GET_ENV_PARAM( key_amt,   float )
+
+/* special cases: */
+float patch_get_env_release (int patch_id, int eg)
 {
-    eg = mod_src_to_eg_index(patch_id, eg);
-
-    if (eg < 0)
-        return eg; /* as error code */
-
-    *val = patches[patch_id]->env_params[eg].env_on;
-    return 0;
+    float val;
+    assert(patchok(patch_id));
+    eg = mod_src_to_eg_index(eg);
+    val = patches[patch_id]->env_params[eg].release;
+    /* hide usage of min-release-value from outside world */
+    if (val <= PATCH_MIN_RELEASE)
+        val = 0;
+    return val;
 }
 
 
-
-/* places the delay length in seconds into val */
-int patch_get_env_delay (int patch_id, int eg, float* val)
-{
-    eg = mod_src_to_eg_index(patch_id, eg);
-
-    if (eg < 0)
-        return eg; /* as error code */
-
-    *val = patches[patch_id]->env_params[eg].delay;
-    return 0;
-}
-
-
-/* places the attack length in seconds into val */
-int patch_get_env_attack (int patch_id, int eg, float* val)
-{
-    eg = mod_src_to_eg_index(patch_id, eg);
-
-    if (eg < 0)
-        return eg; /* as error code */
-
-    *val = patches[patch_id]->env_params[eg].attack;
-    return 0;
-}
-
-
-/* places the hold length in seconds into val */
-int patch_get_env_hold (int patch_id, int eg, float* val)
-{
-    eg = mod_src_to_eg_index(patch_id, eg);
-
-    if (eg < 0)
-        return eg; /* as error code */
-
-    *val = patches[patch_id]->env_params[eg].hold;
-    return 0;
-}
-
-
-/* places the decay length in seconds into val */
-int patch_get_env_decay (int patch_id, int eg, float* val)
-{
-    eg = mod_src_to_eg_index(patch_id, eg);
-
-    if (eg < 0)
-        return eg; /* as error code */
-
-    *val = patches[patch_id]->env_params[eg].decay;
-    return 0;
-}
-
-
-/* places the sustain level into val */
-int patch_get_env_sustain (int patch_id, int eg, float* val)
-{
-    eg = mod_src_to_eg_index(patch_id, eg);
-
-    if (eg < 0)
-        return eg; /* as error code */
-
-    *val = patches[patch_id]->env_params[eg].sustain;
-    return 0;
-}
-
-/* places the release length in seconds into val */
-int patch_get_env_release (int patch_id, int eg, float* val)
-{
-    eg = mod_src_to_eg_index(patch_id, eg);
-
-    if (eg < 0)
-        return eg; /* as error code */
-
-    *val = patches[patch_id]->env_params[eg].release;
-
-    /* we hide the fact that we have a min release value from the
-     * outside world (they're on a need-to-know basis) */
-    if (*val <= PATCH_MIN_RELEASE)
-        *val = 0;
-    return 0;
-}
-
-
-int patch_get_env_key_amt (int patch_id, int eg, float* val)
-{
-    eg = mod_src_to_eg_index(patch_id, eg);
-
-    if (eg < 0)
-        return eg; /* as error code */
-
-    *val = patches[patch_id]->env_params[eg].key_amt;
-    return 0;
-}
-
-/*
-int patch_get_env_vel_amt (int patch_id, int eg, float* val)
-{
-    eg = mod_src_to_eg_index(patch_id, eg);
-
-    if (eg < 0)
-        return eg;
-
-    *val = patches[patch_id]->env_params[eg].vel_amt;
-    return 0;
-}
-*/
 /************************************************************************/
 /*************************** LFO SETTERS ********************************/
 /************************************************************************/
 
-static int lfo_from_id(int patch_id, int id, LFO** lfo, LFOParams** lfopar)
+static LFOParams* lfopar_from_id(int patch_id, int id, LFO** lfo)
 {
+    assert(patchok(patch_id));
+    assert( ((id & MOD_SRC_VLFO) && (id & MOD_SRC_GLFO)) == 0);
+    assert( ((id & MOD_SRC_VLFO) || (id & MOD_SRC_GLFO)) != 0);
+
     if (lfo)
         *lfo = 0;
 
-    *lfopar = 0;
-
-    if (!isok(patch_id))
-        return PATCH_ID_INVALID;
-
-    if ((id & MOD_SRC_VLFO) && (id & MOD_SRC_GLFO))
-        return PATCH_LFO_ID_INVALID;
-
     if (id & MOD_SRC_VLFO)
     {
-        id -= MOD_SRC_VLFO;
-
-        if (id < VOICE_MAX_LFOS)
-            *lfopar = &patches[patch_id]->vlfo_params[id];
-
-        return 0;
+        assert ((id -= MOD_SRC_VLFO) < VOICE_MAX_LFOS);
+        return &patches[patch_id]->vlfo_params[id];
     }
 
-    if (id & MOD_SRC_GLFO)
-    {
-        id -= MOD_SRC_GLFO;
+    assert((id -= MOD_SRC_GLFO) < PATCH_MAX_LFOS);
 
-        if (id < PATCH_MAX_LFOS)
-        {
-            if (lfo)
-                *lfo = patches[patch_id]->glfo[id];
-
-            *lfopar = &patches[patch_id]->glfo_params[id];
-        }
-
-        return 0;
-    }
-
-    return PATCH_LFO_ID_INVALID;
-}
-
-#define LFO_CHECKS                                              \
-    LFO*        lfo;                                            \
-    LFOParams*  lfopar;                                         \
-    int         err;                                            \
-    if ((err = lfo_from_id(patch_id, lfo_id, &lfo, &lfopar)))   \
-        return err;
-
-
-int patch_set_lfo_on (int patch_id, int lfo_id, bool state)
-{
-    LFO_CHECKS
-    lfopar->lfo_on = state;
     if (lfo)
-        lfo_trigger(lfo, lfopar);
-    return 0;
+        *lfo = patches[patch_id]->glfo[id];
+
+    return &patches[patch_id]->glfo_params[id];
 }
 
-/* set the attack time of the param's LFO */
-int patch_set_lfo_attack (int patch_id, int lfo_id, float secs)
-{
-    LFO_CHECKS
-    if (secs < 0.0)
-        return PATCH_PARAM_INVALID;
-    lfopar->attack = secs;
-    if (lfo)
-        lfo_rigger(lfo, lfopar);
-    return 0;
+
+#define PATCH_SET_LFO_VAR( _LFOVAR, _LFOVARTYPE )                       \
+int patch_set_lfo_##_LFOVAR(int patch_id, int lfo_id, _LFOVARTYPE val)  \
+{                                                   \
+    LFO*        lfo;                                \
+    LFOParams*  lfopar;                             \
+    lfopar = lfopar_from_id(patch_id, lfo_id, &lfo);\
+    lfopar->_LFOVAR = val;                          \
+    if (lfo)                                        \
+        lfo_update_params(lfo, lfopar);             \
+    return 0;                                       \
 }
 
-/* set the period length of the param's lfo in beats */
-int patch_set_lfo_beats (int patch_id, int lfo_id, float beats)
-{
-    LFO_CHECKS
-    if (beats < 0.0)
-        return PATCH_PARAM_INVALID;
-    lfopar->sync_beats = beats;
-    if (lfo)
-        lfo_rigger(lfo, lfopar);
-    return 0;
+PATCH_SET_LFO_VAR( active,   bool)
+PATCH_SET_LFO_VAR( positive, bool)
+PATCH_SET_LFO_VAR( shape,    LFOShape)
+PATCH_SET_LFO_VAR( sync,     bool)
+
+
+#define PATCH_SET_LFO_VAR_BOUNDED( _LFOVAR, _LFOVARTYPE )               \
+int patch_set_lfo_##_LFOVAR(int patch_id, int lfo_id, _LFOVARTYPE val)  \
+{                                                   \
+    LFO*        lfo;                                \
+    LFOParams*  lfopar;                             \
+    lfopar = lfopar_from_id(patch_id, lfo_id, &lfo);\
+    if (val < 0.0)                                  \
+    {                                               \
+        pf_error(PF_ERR_PATCH_VALUE_NEGATIVE);      \
+        return -1;                                  \
+    }                                               \
+    lfopar->_LFOVAR = val;                          \
+    if (lfo)                                        \
+        lfo_update_params(lfo, lfopar);             \
+    return 0;                                       \
 }
 
-/* set the delay time of the param's LFO */
-int patch_set_lfo_delay (int patch_id, int lfo_id, float secs)
-{
-    LFO_CHECKS
-    if (secs < 0.0)
-        return PATCH_PARAM_INVALID;
-    lfopar->delay = secs;
-    if (lfo)
-        lfo_rigger(lfo, lfopar);
-    return 0;
-}
+PATCH_SET_LFO_VAR_BOUNDED( attack,     float )
+PATCH_SET_LFO_VAR_BOUNDED( sync_beats, float )
+PATCH_SET_LFO_VAR_BOUNDED( delay,      float )
+PATCH_SET_LFO_VAR_BOUNDED( freq,       float )
 
-/* set the frequency of the param's lfo */
-int patch_set_lfo_freq (int patch_id, int lfo_id, float freq)
-{
-    LFO_CHECKS
-    if (freq < 0.0)
-        return PATCH_PARAM_INVALID;
-    lfopar->freq = freq;
-    if (lfo)
-        lfo_rigger(lfo, lfopar);
-    return 0;
-}
-
-/* set whether to constrain the param's LFOs to positive values or not */
-int patch_set_lfo_positive (int patch_id, int lfo_id, bool state)
-{
-    LFO_CHECKS
-    lfopar->positive = state;
-    if (lfo)
-        lfo_rigger(lfo, lfopar);
-    return 0;
-}
-
-/* set the param's lfo shape */
-int patch_set_lfo_shape (int patch_id, int lfo_id, LFOShape shape)
-{
-    LFO_CHECKS
-    lfopar->shape = shape;
-    if (lfo)
-        lfo_rigger(lfo, lfopar);
-    return 0;
-}
-
-/* set whether to the param's lfo should sync to tempo or not */
-int patch_set_lfo_sync (int patch_id, int lfo_id, bool state)
-{
-    LFO_CHECKS
-    lfopar->sync = state;
-    if (lfo)
-        lfo_rigger(lfo, lfopar);
-    return 0;
-}
 
 /************************************************************************/
 /*************************** LFO GETTERS ********************************/
 /************************************************************************/
 
-#define LFO_GET_CHECK                                           \
-    LFOParams*  lfopar;                                         \
-    int         err;                                            \
-    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))   \
-        return err;
-
-
-int patch_get_lfo_on(int patch_id, int lfo_id, bool* val)
-{
-    LFO_GET_CHECK
-    *val = lfopar->lfo_on;
-    return 0;
+#define PATCH_GET_LFO_VAR( _LFOVAR, _LFOVARTYPE )               \
+_LFOVARTYPE patch_get_lfo_##_LFOVAR(int patch_id, int lfo_id)   \
+{                                                               \
+    return lfopar_from_id(patch_id, lfo_id, NULL)->_LFOVAR;     \
 }
 
-
-/* get the attack time of the param's LFO */
-int patch_get_lfo_attack (int patch_id, int lfo_id, float* val)
-{
-    LFO_GET_CHECK
-    *val = lfopar->attack;
-    return 0;
-}
-
-/* get the param's lfo period length in beats */
-int patch_get_lfo_beats (int patch_id, int lfo_id, float* val)
-{
-    LFO_GET_CHECK
-    *val = lfopar->sync_beats;
-    return 0;
-}
-
-/* get the delay time of the param's LFO */
-int patch_get_lfo_delay (int patch_id, int lfo_id, float* val)
-{
-    LFO_GET_CHECK
-    *val = lfopar->delay;
-    return 0;
-}
-
-/* get the param's lfo frequency */
-int patch_get_lfo_freq (int patch_id, int lfo_id, float* val)
-{
-    LFO_GET_CHECK
-    *val = lfopar->freq;
-    return 0;
-}
-
-int patch_get_lfo_positive (int patch_id, int lfo_id, bool* val)
-{
-    LFO_GET_CHECK
-    *val = lfopar->positive;
-    return 0;
-}
-
-/* get param's lfo shape */
-int patch_get_lfo_shape (int patch_id, int lfo_id, LFOShape* val)
-{
-    LFO_GET_CHECK
-    *val = lfopar->shape;
-    return 0;
-}
-
-/* get whether param's lfo is tempo synced or not */
-int patch_get_lfo_sync (int patch_id, int lfo_id, bool* val)
-{
-    LFO_GET_CHECK
-    *val = lfopar->sync;
-    return 0;
-}
-
+PATCH_GET_LFO_VAR( active,     bool )
+PATCH_GET_LFO_VAR( attack,     float )
+PATCH_GET_LFO_VAR( sync_beats, float )
+PATCH_GET_LFO_VAR( delay,      float )
+PATCH_GET_LFO_VAR( freq,       float )
+PATCH_GET_LFO_VAR( positive,   bool )
+PATCH_GET_LFO_VAR( shape,      LFOShape )
+PATCH_GET_LFO_VAR( sync,       bool )
 
 /**************************************************************************/
 /************************ PARAMETER SETTERS *******************************/
 /**************************************************************************/
 
-/* sets channel patch listens on */
-int patch_set_channel (int id, int channel)
-{
-    if (!isok (id))
-        return PATCH_ID_INVALID;
-
-    if (channel < 0 || channel > 15)
-        return PATCH_CHANNEL_INVALID;
-
-    patches[id]->channel = channel;
-    return 0;
-}
-
 /* sets the cut signal this patch emits when activated */
-int patch_set_cut (int id, int cut)
+int patch_set_cut (int patch_id, int cut)
 {
-    if (!isok (id))
-        return PATCH_ID_INVALID;
-    patches[id]->cut = cut;
+    assert(patchok(patch_id));
+    patches[patch_id]->cut = cut;
     return 0;
 }
 
 /* sets the cut signal that terminates this patch if active */
-int patch_set_cut_by (int id, int cut_by)
+int patch_set_cut_by (int patch_id, int cut_by)
 {
-    if (!isok (id))
-        return PATCH_ID_INVALID;
-    patches[id]->cut_by = cut_by;
-    return 0;
-}
-
-/* sets filter cutoff frequency */
-int patch_set_cutoff (int id, float freq)
-{
-    if (!isok (id))
-        return PATCH_ID_INVALID;
-
-    if (freq < 0.0 || freq > 1.0)
-	return PATCH_PARAM_INVALID;
-
-    patches[id]->ffreq.val = freq;
+    assert(patchok(patch_id));
+    patches[patch_id]->cut_by = cut_by;
     return 0;
 }
 
 /* set whether this patch should be played legato or not */
-int patch_set_legato(int id, bool val)
+int patch_set_legato(int patch_id, bool val)
 {
-    if (!isok (id))
-        return PATCH_ID_INVALID;
-    patches[id]->legato.on = val;
+    assert(patchok(patch_id));
+    patches[patch_id]->legato.active = val;
     return 0;
 }
 
 
-int patch_set_fade_samples(int id, int samples)
+int patch_set_fade_samples(int patch_id, int samples)
 {
-debug("set fade samples id:%d samples:%d\n",id,samples);
-    if (!isok (id))
-        return PATCH_ID_INVALID;
+    assert(patchok(patch_id));
 
-    if (patches[id]->sample->sp == NULL)
+    if (patches[patch_id]->sample->sp == NULL)
         return 0;
 
     if (samples < 0)
     {
-        debug ("refusing to set negative fade length\n");
-        return PATCH_PARAM_INVALID;
+        pf_error(PF_ERR_PATCH_PARAM_VALUE);
+        return -1;
     }
 
-    if (patches[id]->play_start + samples * 2 >= patches[id]->play_stop)
+    if (patches[patch_id]->play_start + samples * 2
+        >= patches[patch_id]->play_stop)
     {
-        debug ("refusing to set fade length greater than half the "
-               " number of samples between play start and play stop\n");
-        return PATCH_PARAM_INVALID;
+        pf_error(PF_ERR_PATCH_PARAM_VALUE);
+        return -1;
     }
 
-    patches[id]->fade_samples = samples;
+    patches[patch_id]->fade_samples = samples;
     return 0;
 }
 
-int patch_set_xfade_samples(int id, int samples)
+int patch_set_xfade_samples(int patch_id, int samples)
 {
-    if (!isok (id))
-        return PATCH_ID_INVALID;
+    assert(patchok(patch_id));
 
-    if (patches[id]->sample->sp == NULL)
+    if (patches[patch_id]->sample->sp == NULL)
         return 0;
 
     if (samples < 0)
     {
-        debug ("refusing to set negative xfade length\n");
-        return PATCH_PARAM_INVALID;
+        pf_error(PF_ERR_PATCH_PARAM_VALUE);
+        return -1;
     }
 
-    if (patches[id]->loop_start + samples > patches[id]->loop_stop)
+    if (patches[patch_id]->loop_start + samples
+      > patches[patch_id]->loop_stop)
     {
-        debug ("refusing to set xfade length greater than samples"
-               " between play start and play stop\n");
-        return PATCH_PARAM_INVALID;
+        pf_error(PF_ERR_PATCH_PARAM_VALUE);
+        return -1;
     }
 
-    if (patches[id]->loop_stop + samples > patches[id]->play_stop)
+    if (patches[patch_id]->loop_stop + samples
+      > patches[patch_id]->play_stop)
     {
-        debug ("refusing to set xfade length greater than samples"
-               " between loop stop and play stop\n");
-        return PATCH_PARAM_INVALID;
+        pf_error(PF_ERR_PATCH_PARAM_VALUE);
+        return -1;
     }
 
-debug("setting xfade to %d\n",samples);
-    patches[id]->xfade_samples = samples;
+    patches[patch_id]->xfade_samples = samples;
     return 0;
 }
 
 
-/* sets the lower note of a patch's range */
-int patch_set_lower_note (int id, int note)
+int patch_set_mark_frame(int patch_id, int mark, int frame)
 {
-    if (!isok (id))
-	return PATCH_ID_INVALID;
+    /* FIXME: perhaps this complexity better placed in libpetrifui? */
+    assert(patchok(patch_id));
+    assert(marksetok(mark));
 
-    if (note < 0 || note > 127)
-	return PATCH_NOTE_INVALID;
-
-    patches[id]->lower_note = note;
-    return 0;
-}
-
-
-int patch_set_mark_frame(int patch, int mark, int frame)
-{
-    if (!isok(patch))
+    if (patches[patch_id]->sample->sp == NULL)
+    {   /* FIXME: assert here? */
+        errmsg("sample not set\n");
         return -1;
+    }
 
-    if (patches[patch]->sample->sp == NULL)
+/*    if (!mark_settable(mark))
+    {
+        debug("mark %d not settable\n", mark);
         return -1;
-
-    if (!mark_settable(mark))
-        return -1;
-
+    }
+*/
     int min;
     int max;
 
-    get_mark_frame_range(patch, mark, &min, &max);
+    get_mark_frame_range(patch_id, mark, &min, &max);
 
     if (frame < min || frame > max)
         return -1;
 
-    set_mark_frame(patch, mark, frame);
+    set_mark_frame(patch_id, mark, frame);
     return mark;
 }
 
 
-int patch_set_mark_frame_expand(int patch, int mark, int frame,
+int patch_set_mark_frame_expand(int patch_id, int mark, int frame,
                                                      int* also_changed)
 {
     int also = 0;
     int also_frame = -1;
-    int xfade = patches[patch]->xfade_samples;
-    int fade = patches[patch]->fade_samples;
+    int xfade = patches[patch_id]->xfade_samples;
+    int fade = patches[patch_id]->fade_samples;
 
-    if (!isok(patch))
-        return -1;
+    assert(patchok(patch_id));
 
-    if (patches[patch]->sample->sp == NULL)
+    if (patches[patch_id]->sample->sp == NULL)
         return -1;
 
     /*  if callee wishes not to be informed about which marks get changed
@@ -860,15 +513,15 @@ int patch_set_mark_frame_expand(int patch, int mark, int frame,
     case WF_MARK_PLAY_START:
         also_frame = frame + xfade; /* pot loop start pos */
 
-        if (frame + fade * 2 >= get_mark_frame(patch, WF_MARK_PLAY_STOP)
-         || also_frame >= get_mark_frame(patch, WF_MARK_LOOP_STOP))
+        if (frame + fade * 2 >= get_mark_frame(patch_id, WF_MARK_PLAY_STOP)
+         || also_frame >= get_mark_frame(patch_id, WF_MARK_LOOP_STOP))
         {
             mark = -1;
         }
-        else if (also_frame > get_mark_frame(patch, WF_MARK_LOOP_START))
+        else if (also_frame > get_mark_frame(patch_id, WF_MARK_LOOP_START))
         {   /* moving play start along pushes loop start along... */
             if (also_frame + xfade
-                < get_mark_frame(patch, WF_MARK_LOOP_STOP))
+                < get_mark_frame(patch_id, WF_MARK_LOOP_STOP))
             {
                 *also_changed = WF_MARK_LOOP_START;
             }
@@ -880,15 +533,15 @@ int patch_set_mark_frame_expand(int patch, int mark, int frame,
     case WF_MARK_PLAY_STOP:
         also_frame = frame - xfade; /* pot loop stop pos */
 
-        if (frame - fade * 2<= get_mark_frame(patch, WF_MARK_PLAY_START)
-         || also_frame <= get_mark_frame(patch, WF_MARK_LOOP_START))
+        if (frame - fade * 2<= get_mark_frame(patch_id, WF_MARK_PLAY_START)
+         || also_frame <= get_mark_frame(patch_id, WF_MARK_LOOP_START))
         {
             mark = -1;
         }
-        else if (also_frame < get_mark_frame(patch, WF_MARK_LOOP_STOP))
+        else if (also_frame < get_mark_frame(patch_id, WF_MARK_LOOP_STOP))
         {
             if (also_frame - xfade
-                > get_mark_frame(patch, WF_MARK_LOOP_START))
+                > get_mark_frame(patch_id, WF_MARK_LOOP_START))
             {
                 *also_changed = WF_MARK_LOOP_STOP;
             }
@@ -900,9 +553,9 @@ int patch_set_mark_frame_expand(int patch, int mark, int frame,
     case WF_MARK_LOOP_START:
         also_frame = frame - xfade; /* pot play start pos */
 
-        if (frame + xfade >= get_mark_frame(patch, WF_MARK_LOOP_STOP))
+        if (frame + xfade >= get_mark_frame(patch_id, WF_MARK_LOOP_STOP))
             mark = -1;
-        else if (also_frame < get_mark_frame(patch, WF_MARK_PLAY_START))
+        else if (also_frame < get_mark_frame(patch_id, WF_MARK_PLAY_START))
         {
             if (also_frame > 0)
                 *also_changed = WF_MARK_PLAY_START;
@@ -914,11 +567,11 @@ int patch_set_mark_frame_expand(int patch, int mark, int frame,
     case WF_MARK_LOOP_STOP:
         also_frame = frame + xfade /* pot play stop pos */;
 
-        if (frame - xfade <= get_mark_frame(patch, WF_MARK_LOOP_START))
+        if (frame - xfade <= get_mark_frame(patch_id, WF_MARK_LOOP_START))
             mark = -1;
-        else if (also_frame > get_mark_frame(patch, WF_MARK_PLAY_STOP))
+        else if (also_frame > get_mark_frame(patch_id, WF_MARK_PLAY_STOP))
         {
-            if (also_frame < get_mark_frame(patch, WF_MARK_STOP))
+            if (also_frame < get_mark_frame(patch_id, WF_MARK_STOP))
                 *also_changed = WF_MARK_PLAY_STOP;
             else
                 mark = -1;
@@ -931,533 +584,326 @@ int patch_set_mark_frame_expand(int patch, int mark, int frame,
 
     if (mark != -1)
     {
-        set_mark_frame(patch, mark, frame);
+        set_mark_frame(patch_id, mark, frame);
     }
 
     if (*also_changed != -1)
     {
-        set_mark_frame(patch, *also_changed, also_frame);
+        set_mark_frame(patch_id, *also_changed, also_frame);
     }
 
     return mark;
 }
 
 
-/* set whether the patch is monophonic or not */
-int patch_set_monophonic(int id, bool val)
-{
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-
-    patches[id]->mono = val;
-    return 0;
-}
-
 /* sets the name */
-int patch_set_name (int id, const char *name)
+int patch_set_name (int patch_id, const char *name)
 {
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-    strncpy (patches[id]->name, name, PATCH_MAX_NAME);
+    assert(patchok(patch_id));
+    strncpy (patches[patch_id]->name, name, PATCH_MAX_NAME);
     return 0;
 }
 
-/* sets the root note */
-int patch_set_note (int id, int note)
+
+#define PATCH_SET_VAR( _VAR, _VARMIN, _VARMAX ) \
+int patch_set_##_VAR(int patch_id, int val)     \
+{                                               \
+    assert(patchok(patch_id));                     \
+    if (val < _VARMIN || val > _VARMAX)         \
+    {                                           \
+        pf_error(PF_ERR_PATCH_PARAM_VALUE);     \
+        return -1;                              \
+    }                                           \
+    patches[patch_id]->_VAR = val;              \
+    return 0;                                   \
+}
+
+PATCH_SET_VAR( channel,     0,  15 )
+PATCH_SET_VAR( root_note,   0,  127 )
+PATCH_SET_VAR( lower_note,  0,  127 )
+PATCH_SET_VAR( upper_note,  0,  127 )
+PATCH_SET_VAR( lower_vel,   0,  127 )
+PATCH_SET_VAR( upper_vel,   0,  127 )
+
+PATCH_SET_VAR( pitch_steps, -PATCH_MAX_PITCH_STEPS, PATCH_MAX_PITCH_STEPS )
+
+/* set whether the patch is monophonic or not */
+int patch_set_monophonic(int patch_id, bool val)
 {
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-
-    if (note < 0 || note > 127)
-	return PATCH_NOTE_INVALID;
-
-    patches[id]->note = note;
+    assert(patchok(patch_id));
+    patches[patch_id]->mono = val;
     return 0;
 }
 
-/* sets the panorama */
-int patch_set_panning (int id, float pan)
-{
-    if (!isok (id))
-	return PATCH_ID_INVALID;
 
-    if (pan < -1.0 || pan > 1.0)
-	return PATCH_PAN_INVALID;
-
-    patches[id]->pan.val = pan;
-    return 0;
+#define PATCH_SET_PARAM( _PARAM, _PARMIN, _PARMAX ) \
+int patch_set_##_PARAM(int patch_id, float val)     \
+{                                                   \
+    assert(patchok(patch_id));                         \
+    if (val < _PARMIN || val > _PARMAX)             \
+    {                                               \
+        pf_error(PF_ERR_PATCH_PARAM_VALUE);         \
+        return -1;                                  \
+    }                                               \
+    patches[patch_id]->_PARAM.val = val;            \
+    return 0;                                       \
 }
 
-/* set the pitch */
-int patch_set_pitch (int id, float pitch)
-{
-    if (!isok (id))
-	return PATCH_ID_INVALID;
+PATCH_SET_PARAM( amp,       0.0,    1.0 )
+PATCH_SET_PARAM( pan,      -1.0,    1.0 )
+PATCH_SET_PARAM( ffreq,     0.0,    1.0 )
+PATCH_SET_PARAM( freso,     0.0,    1.0 )
+PATCH_SET_PARAM( pitch,    -1.0,    1.0 )
 
-    if (pitch < -1.0 || pitch > 1.0)
-	return PATCH_PARAM_INVALID;
-
-    patches[id]->pitch.val = pitch;
-    return 0;
-}
-
-/* set the pitch range */
-int patch_set_pitch_steps (int id, int steps)
-{
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-
-    if (steps < -PATCH_MAX_PITCH_STEPS
-	|| steps > PATCH_MAX_PITCH_STEPS)
-	return PATCH_PARAM_INVALID;
-
-    patches[id]->pitch_steps = steps;
-    return 0;
-}
 
 /* sets the play mode */
-int patch_set_play_mode (int id, PatchPlayMode mode)
+int patch_set_play_mode (int patch_id, PatchPlayMode mode)
 {
-    if (!isok (id))
-	return PATCH_ID_INVALID;
+    assert(patchok(patch_id));
 
-    /* verify direction */
-    if (mode & PATCH_PLAY_FORWARD)
-    {
-	if (mode & PATCH_PLAY_REVERSE)
-	{
-	    return PATCH_PLAY_MODE_INVALID;
-	}
-    }
-    else if (mode & PATCH_PLAY_REVERSE)
-    {
-	if (mode & PATCH_PLAY_FORWARD)
-	{
-	    return PATCH_PLAY_MODE_INVALID;
-	}
-    }
-    else
-    {
-	return PATCH_PLAY_MODE_INVALID;
-    }
-
-    /* verify duration */
     if (mode & PATCH_PLAY_SINGLESHOT)
     {
-	if ((mode & PATCH_PLAY_TRIM) || (mode & PATCH_PLAY_LOOP))
-	{
-	    return PATCH_PLAY_MODE_INVALID;
-	}
+        assert( ((mode & PATCH_PLAY_TRIM)
+               | (mode & PATCH_PLAY_LOOP)) == 0);
     }
     else if (mode & PATCH_PLAY_TRIM)
     {
-	if ((mode & PATCH_PLAY_SINGLESHOT) || (mode & PATCH_PLAY_LOOP))
-	{
-	    return PATCH_PLAY_MODE_INVALID;
-	}
+        assert( ((mode & PATCH_PLAY_SINGLESHOT)
+               | (mode & PATCH_PLAY_LOOP)) == 0);
     }
     else if (mode & PATCH_PLAY_LOOP)
     {
-	if ((mode & PATCH_PLAY_SINGLESHOT) || (mode & PATCH_PLAY_TRIM))
-	{
-	    return PATCH_PLAY_MODE_INVALID;
-	}
+        assert( ((mode & PATCH_PLAY_SINGLESHOT)
+               | (mode & PATCH_PLAY_TRIM)) == 0);
     }
 
-    /* make sure pingpong isn't frivolously set (just for style
-     * points) */
-    if ((mode & PATCH_PLAY_PINGPONG) && !(mode && PATCH_PLAY_LOOP))
+    if (!(mode & PATCH_PLAY_LOOP))
     {
-	return PATCH_PLAY_MODE_INVALID;
+        assert( ((mode & PATCH_PLAY_PINGPONG)
+               | (mode & PATCH_PLAY_TO_END)) == 0);
     }
 
-    patches[id]->play_mode = mode;
+    patches[patch_id]->play_mode = mode;
     return 0;
 }
 
 /* set whether portamento is being used or not */
-int patch_set_portamento (int id, bool val)
+int patch_set_portamento (int patch_id, bool val)
 {
-    if (!isok (id))
-        return PATCH_ID_INVALID;
-
-    patches[id]->porta.on = val;
+    assert(patchok(patch_id));
+    patches[patch_id]->porta.active = val;
     return 0;
 }
 
 /* set length of portamento slides in seconds */
-int patch_set_portamento_time (int id, float secs)
+int patch_set_portamento_time (int patch_id, float secs)
 {
-    if (!isok (id))
-        return PATCH_ID_INVALID;
-
+    assert(patchok(patch_id));
     if (secs < 0.0)
-        return PATCH_PARAM_INVALID;
-
-    patches[id]->porta_secs.assign = secs;
+    {
+        pf_error(PF_ERR_PATCH_PARAM_VALUE);
+        return -1;
+    }
+    patches[patch_id]->porta_secs.val = secs;
     return 0;
 }
 
 
-/* set the filter's resonance */
-int patch_set_resonance (int id, float reso)
-{
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-
-    if (reso < 0.0 || reso > 1.0)
-	return PATCH_PARAM_INVALID;
-
-    patches[id]->freso.val = reso;
-    return 0;
-}
-
-
-/* set the upper note of a patch's range */
-int patch_set_upper_note (int id, int note)
-{
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-
-    if (note < 0 || note > 127)
-	return PATCH_NOTE_INVALID;
-
-    patches[id]->upper_note = note;
-    return 0;
-}
-
-/* sets the patch lower velocity */ 
-int patch_set_lower_vel (int id, int vel)
-{
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-
-    if (vel < 0 || vel > 127)
-	return PATCH_VELOCITY_INVALID;
-
-    patches[id]->lower_vel = vel;
-    return 0;
-}
-
-/* sets the patch upper velocity */ 
-int patch_set_upper_vel (int id, int vel)
-{
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-
-    if (vel < 0 || vel > 127)
-	return PATCH_VELOCITY_INVALID;
-
-    patches[id]->upper_vel = vel;
-    return 0;
-}
-
-
-/* set the amplitude */
-int patch_set_amplitude (int id, float vol)
-{
-
-    if (!isok (id))
-	return PATCH_ID_INVALID;
-
-    if (vol < 0 || vol > 1.0)
-	return PATCH_VOL_INVALID;
-
-    patches[id]->vol.val = vol;
-    return 0;
-}
 
 /**************************************************************************/
 /************************* PARAMETER GETTERS*******************************/
 /**************************************************************************/
 
-/* get the channel the patch listens on */
-int patch_get_channel (int id)
-{
-    if (!isok (id))
-        return PATCH_ID_INVALID;
 
-    return patches[id]->channel;
+#define PATCH_GET_VAR( _VAR )       \
+int patch_get_##_VAR(int patch_id)  \
+{                                   \
+    assert(patchok(patch_id));         \
+    return patches[patch_id]->_VAR; \
 }
 
-/* get the cut signal */
-int patch_get_cut (int id)
-{
-    if (!isok (id))
-        return PATCH_ID_INVALID;
+PATCH_GET_VAR( channel )
+PATCH_GET_VAR( cut )
+PATCH_GET_VAR( cut_by )
+PATCH_GET_VAR( display_index )
+PATCH_GET_VAR( root_note )
+PATCH_GET_VAR( lower_note )
+PATCH_GET_VAR( upper_note )
+PATCH_GET_VAR( lower_vel )
+PATCH_GET_VAR( upper_vel )
+PATCH_GET_VAR( pitch_steps )
 
-    return patches[id]->cut;
-}
 
-/* get the cut-by signal */
-int patch_get_cut_by (int id)
-{
-    if (!isok (id))
-        return PATCH_ID_INVALID;
-
-    return patches[id]->cut_by;
-}
 
 /* get the filter cutoff value */
-float patch_get_cutoff (int id)
+float patch_get_cutoff(int patch_id)
 {
-    if (!isok (id))
-        return PATCH_ID_INVALID;
-
-    return patches[id]->ffreq.val;
+    assert(patchok(patch_id));
+    return patches[patch_id]->ffreq.val;
 }
 
-/* get the display index */
-int patch_get_display_index (int id)
-{
-    if (!isok (id))
-        return PATCH_ID_INVALID;
-
-    return patches[id]->display_index;
-}
 
 /* get the number of frame in the sample */
-int patch_get_frames (int id)
+int patch_get_frames(int patch_id)
 {
-    if (!isok (id))
-        return PATCH_ID_INVALID;
-
-    if (patches[id]->sample->sp == NULL)
+    assert(patchok(patch_id));
+    if (patches[patch_id]->sample->sp == NULL)
         return 0;
-
-    return patches[id]->sample->frames;
+    return patches[patch_id]->sample->frames;
 }
 
 /* get whether this patch is played legato or not */
-bool patch_get_legato(int id)
+bool patch_get_legato(int patch_id)
 {
-    if (!isok (id))
-        return PATCH_ID_INVALID;
-
-    return patches[id]->legato.on;
+    assert(patchok(patch_id));
+    return patches[patch_id]->legato.active;
 }
 
 
-/* get the lower note */
-int patch_get_lower_note (int id)
+int patch_get_mark_frame(int patch_id, int mark)
 {
-    if (!isok (id))
-        return PATCH_ID_INVALID;
+    assert(patchok(patch_id));
+    assert(markok(mark));
 
-    return patches[id]->lower_note;
+    /* FIXME: should this be an assert or not ? */
+    assert(patches[patch_id]->sample->sp != NULL);
+
+    return get_mark_frame(patch_id, mark);
 }
 
 
-int patch_get_mark_frame(int patch, int mark)
-{
-    if (!isok(patch))
-        return -1;
-
-    if (patches[patch]->sample->sp == NULL)
-        return -1;
-
-    if (!mark_ok(mark))
-        return -1;
-
-    return get_mark_frame(patch, mark);
-}
-
-
-int patch_get_mark_frame_range(int patch, int mark, int* frame_min,
+int patch_get_mark_frame_range(int patch_id, int mark, int* frame_min,
                                                     int* frame_max)
 {
-    if (!isok(patch) || !mark_ok(mark))
-        return -1;
+    assert(patchok(patch_id));
+    assert(markok(mark));
 
-    return get_mark_frame_range(patch, mark, frame_min, frame_max);
+    /* FIXME: should this be an assert or not ? */
+    assert(patches[patch_id]->sample->sp != NULL);
+
+    return get_mark_frame_range(patch_id, mark, frame_min, frame_max);
 }
 
 /* get whether this patch is monophonic or not */
-bool patch_get_monophonic(int id)
+bool patch_get_monophonic(int patch_id)
 {
-    if (!isok(id))
-        return PATCH_ID_INVALID;
-
-    return patches[id]->mono;
+    assert(patchok(patch_id));
+    return patches[patch_id]->mono;
 }
 
 /* get the name */
-char *patch_get_name (int id)
+char *patch_get_name(int patch_id)
 {
     char *name;
-
-    if (!isok(id))
-        name = strdup ("\0");
-    else
-        name = strdup (patches[id]->name);
-
+    assert(patchok(patch_id));
+    name = strdup (patches[patch_id]->name);
     return name;
 }
 
-/* get the root note */
-int patch_get_note (int id)
-{
-    if (!isok(id))
-        return PATCH_ID_INVALID;
-
-    return patches[id]->note;
-}
 
 /* get the panorama */
-float patch_get_panning (int id)
+float patch_get_panning(int patch_id)
 {
-    if (!isok(id))
-        return PATCH_ID_INVALID;
-
-    return patches[id]->pan.val;
+    assert(patchok(patch_id));
+    return patches[patch_id]->pan.val;
 }
 
 /* get the pitch */
-float patch_get_pitch (int id)
+float patch_get_pitch(int patch_id)
 {
-    if (!isok(id))
-        return PATCH_ID_INVALID;
-
-    return patches[id]->pitch.val;
-}
-
-/* get the pitch range */
-int patch_get_pitch_steps (int id)
-{
-    if (!isok(id))
-        return PATCH_ID_INVALID;
-
-    return patches[id]->pitch_steps;
+    assert(patchok(patch_id));
+    return patches[patch_id]->pitch.val;
 }
 
 /* get the play mode */
-PatchPlayMode patch_get_play_mode(int id)
+PatchPlayMode patch_get_play_mode(int patch_id)
 {
-    if (!isok(id))
-        return PATCH_ID_INVALID;
-
-    return patches[id]->play_mode;
+    assert(patchok(patch_id));
+    return patches[patch_id]->play_mode;
 }
 
 /* get whether portamento is used or not */
-bool patch_get_portamento(int id)
+bool patch_get_portamento(int patch_id)
 {
-    if (!isok(id))
-        return PATCH_ID_INVALID;
-
-    return patches[id]->porta.on;
+    assert(patchok(patch_id));
+    return patches[patch_id]->porta.active;
 }
 
 /* get length of portamento slides in seconds */
-float patch_get_portamento_time(int id)
+float patch_get_portamento_time(int patch_id)
 {
-    if (!isok(id))
-        return PATCH_ID_INVALID;
-
-    return patches[id]->porta_secs.assign;
+    assert(patchok(patch_id));
+    return patches[patch_id]->porta_secs.val;
 }
 
 
 /* get the filter's resonance amount */
-float patch_get_resonance(int id)
+float patch_get_resonance(int patch_id)
 {
-    if (!isok(id))
-        return PATCH_ID_INVALID;
-
-    return patches[id]->freso.val;
+    assert(patchok(patch_id));
+    return patches[patch_id]->freso.val;
 }
 
 /* get a pointer to the sample data */
-const float *patch_get_sample (int id)
+const float *patch_get_sample(int patch_id)
 {
-    if (!isok(id))
-        return NULL;
-
-    return patches[id]->sample->sp;
+    assert(patchok(patch_id));
+    return patches[patch_id]->sample->sp;
 }
 
 /* get the name of the sample file */
-const char *patch_get_sample_name (int id)
+const char *patch_get_sample_name(int patch_id)
 {
-    if (!isok(id))
-        return 0;
-
-    return patches[id]->sample->filename;
+    assert(patchok(patch_id));
+    return patches[patch_id]->sample->filename;
 }
 
-/* get the upper note */
-int patch_get_upper_note (int id)
-{
-    if (!isok(id))
-        return PATCH_ID_INVALID;
-
-    return patches[id]->upper_note;
-}
-
-/* get the upper velocity trigger */
-int patch_get_upper_vel (int id)
-{
-    if (!isok(id))
-        return PATCH_ID_INVALID;
-
-    return patches[id]->upper_vel;
-}
-
-/* get the lower velocity trigger */
-int patch_get_lower_vel (int id)
-{
-    if (!isok(id))
-        return PATCH_ID_INVALID;
-
-    return patches[id]->lower_vel;
-}
 
 /* get the amplitude */
-float patch_get_amplitude (int id)
+float patch_get_amplitude(int patch_id)
 {
-    if (!isok(id))
-        return PATCH_ID_INVALID;
-
-    return patches[id]->vol.val;
+    assert(patchok(patch_id));
+    return patches[patch_id]->amp.val;
 }
 
 
-int patch_get_fade_samples(int id)
+int patch_get_fade_samples(int patch_id)
 {
-    if (!isok (id))
-        return PATCH_ID_INVALID;
-
-    return patches[id]->fade_samples;
+    assert(patchok(patch_id));
+    return patches[patch_id]->fade_samples;
 }
 
 
-int patch_get_xfade_samples(int id)
+int patch_get_xfade_samples(int patch_id)
 {
-    if (!isok(id))
-        return PATCH_ID_INVALID;
-
-    return patches[id]->xfade_samples;
+    assert(patchok(patch_id));
+    return patches[patch_id]->xfade_samples;
 }
 
 
-int patch_get_max_fade_samples(int id)
+int patch_get_max_fade_samples(int patch_id)
 {
-    return (patches[id]->play_stop - patches[id]->play_start) / 2;
+    assert(patchok(patch_id));
+    return (patches[patch_id]->play_stop - patches[patch_id]->play_start) / 2;
 }
 
 
-int patch_get_max_xfade_samples(int id)
+int patch_get_max_xfade_samples(int patch_id)
 {
-    int min = patches[id]->sample->frames;
+    int min;
     int tmp;
 
-    tmp = patches[id]->loop_stop - patches[id]->loop_start;
+    assert(patchok(patch_id));
+
+    min = patches[patch_id]->sample->frames;
+
+    tmp = patches[patch_id]->loop_stop - patches[patch_id]->loop_start;
     min = (tmp < min) ? tmp : min;
 
-    tmp = patches[id]->play_stop - patches[id]->loop_stop;
+    tmp = patches[patch_id]->play_stop - patches[patch_id]->loop_stop;
     min = (tmp < min) ? tmp : min;
 
-    tmp = patches[id]->loop_start - patches[id]->play_start;
+    tmp = patches[patch_id]->loop_start - patches[patch_id]->play_start;
     min = (tmp < min) ? tmp : min;
 
     return min;
@@ -1468,43 +914,37 @@ int patch_get_max_xfade_samples(int id)
 /*************************** PARAM ********************************/
 /******************************************************************/
 
-int patch_param_get_value(int patch_id, PatchParamType param, float* v)
+float patch_param_get_value(int patch_id, PatchParamType param)
 {
-    if (!isok(patch_id))
-        return PATCH_ID_INVALID;
+    assert(patchok(patch_id));
 
     switch(param)
     {
-    case PATCH_PARAM_AMPLITUDE: *v = patches[patch_id]->vol.val;    break;
-    case PATCH_PARAM_PANNING:   *v = patches[patch_id]->pan.val;    break;
-    case PATCH_PARAM_CUTOFF:    *v = patches[patch_id]->ffreq.val;  break;
-    case PATCH_PARAM_RESONANCE: *v = patches[patch_id]->freso.val;  break;
-    case PATCH_PARAM_PITCH:     *v = patches[patch_id]->pitch.val;  break;
+    case PATCH_PARAM_AMPLITUDE: return patches[patch_id]->amp.val;
+    case PATCH_PARAM_PANNING:   return patches[patch_id]->pan.val;
+    case PATCH_PARAM_CUTOFF:    return patches[patch_id]->ffreq.val;
+    case PATCH_PARAM_RESONANCE: return patches[patch_id]->freso.val;
+    case PATCH_PARAM_PITCH:     return patches[patch_id]->pitch.val;
     default:
-        return PATCH_PARAM_INVALID;
+        assert(0);
     }
-
-    return 0;
 }
 
 
-int patch_param_set_value(int patch_id, PatchParamType param, float v)
+void patch_param_set_value(int patch_id, PatchParamType param, float v)
 {
-    if (!isok(patch_id))
-        return PATCH_ID_INVALID;
+    assert(patchok(patch_id));
 
     switch(param)
     {
-    case PATCH_PARAM_AMPLITUDE: patches[patch_id]->vol.val = v;     break;
+    case PATCH_PARAM_AMPLITUDE: patches[patch_id]->amp.val = v;     break;
     case PATCH_PARAM_PANNING:   patches[patch_id]->pan.val = v;     break;
     case PATCH_PARAM_CUTOFF:    patches[patch_id]->ffreq.val = v;   break;
     case PATCH_PARAM_RESONANCE: patches[patch_id]->freso.val = v;   break;
     case PATCH_PARAM_PITCH:     patches[patch_id]->pitch.val = v;   break;
     default:
-        return PATCH_PARAM_INVALID;
+        assert(0);
     }
-
-    return 0;
 }
 
 
@@ -1512,25 +952,17 @@ int patch_param_set_value(int patch_id, PatchParamType param, float v)
 /*********************** MODULATION SETTERS *******************************/
 /**************************************************************************/
 
-#define PATCH_PARAM_CHECKS                                  \
-    PatchParam* p;                                          \
-    int err;                                                \
-    if (!isok(patch_id))                                    \
-        return PATCH_ID_INVALID;                            \
-    if ((err = get_patch_param(patch_id, param, &p)) < 0)   \
-        return err;
-
-#define PATCH_SLOT_CHECKS                         \
-    if (slot < 0 || slot > MAX_MOD_SLOTS)   \
-        return PATCH_MOD_SLOT_INVALID;      \
-
+#define PATCH_PARAM_CHECKS  \
+    PatchParam* p;          \
+    assert(patchok(patch_id)); \
+    p = get_patch_param(patch_id, param);
 
 int
 patch_param_set_mod_src(int patch_id, PatchParamType param, int slot,
                                                             int id)
 {
     PATCH_PARAM_CHECKS
-    PATCH_SLOT_CHECKS
+    assert(slot >=0 && slot <= MAX_MOD_SLOTS);
     p->mod_id[slot] = id;
     return 0;
 }
@@ -1541,10 +973,13 @@ patch_param_set_mod_amt(int patch_id, PatchParamType param, int slot,
                                                             float amt)
 {
     PATCH_PARAM_CHECKS
-    PATCH_SLOT_CHECKS
+    assert(slot >=0 && slot <= MAX_MOD_SLOTS);
 
     if (amt < -1.0 || amt > 1.0)
-        return PATCH_MOD_AMOUNT_INVALID;
+    {
+        pf_error(PF_ERR_PATCH_PARAM_VALUE);
+        return -1;
+    }
 
     p->mod_amt[slot] = amt;
 
@@ -1560,217 +995,176 @@ patch_param_set_mod_amt(int patch_id, PatchParamType param, int slot,
 }
 
 
-int
-patch_param_set_vel_amount(int patch_id, PatchParamType param, float amt)
-{
-    PATCH_PARAM_CHECKS
-
-    if (amt < -1.0 || amt > 1.0)
-        return PATCH_PARAM_INVALID;
-
-    p->vel_amt = amt;
-    return 0;
+#define PATCH_PARAM_SET_AMOUNT( _PARAM )            \
+int patch_param_set_##_PARAM##_amount               \
+    (int patch_id, PatchParamType param, float amt) \
+{                                           \
+    PATCH_PARAM_CHECKS                      \
+    if (amt < -1.0 || amt > 1.0)            \
+    {                                       \
+        pf_error(PF_ERR_PATCH_PARAM_VALUE); \
+        return -1;          \
+    }                       \
+    p->_PARAM##_amt = amt;  \
+    return 0;               \
 }
 
+PATCH_PARAM_SET_AMOUNT( vel )
+PATCH_PARAM_SET_AMOUNT( key )
 
-int
-patch_param_set_key_amount(int patch_id, PatchParamType param, float amt)
-{
-    PATCH_PARAM_CHECKS
-
-    if (amt < -1.0 || amt > 1.0)
-        return PATCH_PARAM_INVALID;
-
-    p->key_amt = amt;
-    return 0;
-}
 
 
 /**************************************************************************/
 /********************** MODULATION GETTERS ********************************/
 /**************************************************************************/
 
-int
-patch_param_get_mod_src(int patch_id, PatchParamType param, int slot,
-                                                            int* src_id)
+int patch_param_get_mod_src(int patch_id, PatchParamType param, int slot)
 {
     PATCH_PARAM_CHECKS
-    PATCH_SLOT_CHECKS
-    *src_id = p->mod_id[slot];
-    return 0;
+    assert(slot >=0 && slot <= MAX_MOD_SLOTS);
+    return p->mod_id[slot];
 }
 
 
-int
-patch_param_get_mod_amt(int patch_id, PatchParamType param, int slot,
-                                                            float* amt)
+float patch_param_get_mod_amt(int patch_id, PatchParamType param, int slot)
 {
     PATCH_PARAM_CHECKS
-    PATCH_SLOT_CHECKS
-    *amt = p->mod_amt[slot];
-    return 0;
+    assert(slot >=0 && slot <= MAX_MOD_SLOTS);
+    return p->mod_amt[slot];
 }
 
 
-int patch_param_get_vel_amount(int patch_id, PatchParamType param,
-                                                            float* val)
+float patch_param_get_vel_amount(int patch_id, PatchParamType param)
 {
     PATCH_PARAM_CHECKS
-    *val = p->vel_amt;
-    return 0;
+    return p->vel_amt;
 }
 
 
-int patch_param_get_key_amount(int patch_id, PatchParamType param,
-                                                            float* val)
+float patch_param_get_key_amount(int patch_id, PatchParamType param)
 {
     PATCH_PARAM_CHECKS
-    *val = p->key_amt;
-    return 0;
+    return p->key_amt;
 }
 
 
-#define PATCH_BOOL_CHECKS                                   \
-    PatchBool* b;                                           \
-    int err;                                                \
-    if (!isok(patch_id))                                    \
-        return PATCH_ID_INVALID;                            \
-    if ((err = get_patch_bool(patch_id, booltype, &b)) < 0) \
-        return err;
-
+#define PATCH_BOOL_GET                      \
+    PatchBool* b;                           \
+    assert(patchok(patch_id));                 \
+    b = get_patch_bool(patch_id, booltype); \
 
 
 /* PatchBool set/get */
-int patch_bool_set_on(int patch_id, PatchBoolType booltype, bool val)
+void patch_bool_set_active(int patch_id, PatchBoolType booltype, bool val)
 {
-    PATCH_BOOL_CHECKS
-    b->on = val;
-    return 0;
+    PATCH_BOOL_GET
+    b->active = val;
 }
 
 
-int patch_bool_set_thresh(int patch_id, PatchBoolType booltype, float val)
+void patch_bool_set_thresh(int patch_id, PatchBoolType booltype, float val)
 {
-    PATCH_BOOL_CHECKS
+    PATCH_BOOL_GET
     b->thresh = val;
-    return 0;
 }
 
 
-int patch_bool_set_mod_src(int patch_id, PatchBoolType booltype, int mod_id)
+void patch_bool_set_mod_src(int patch_id, PatchBoolType booltype,int mod_id)
 {
-    PATCH_BOOL_CHECKS
+    PATCH_BOOL_GET
     b->mod_id = mod_id;
-    return 0;
 }
 
 
-int patch_bool_get_all(int patch_id, PatchBoolType booltype,
-                        bool* on, float* thresh, int* mod_id)
+void patch_bool_get_all(int patch_id, PatchBoolType booltype,
+                        bool* active, float* thresh, int* mod_id)
 {
-    PATCH_BOOL_CHECKS
-    *on =       b->on;
-    *thresh =   b->thresh;
-    *mod_id =   b->mod_id;
-    return 0;
+    PATCH_BOOL_GET
+    *active = b->active;
+    *thresh = b->thresh;
+    *mod_id = b->mod_id;
 }
 
 
-int patch_bool_get_on(int patch_id, PatchBoolType booltype, bool* on)
+bool patch_bool_get_active(int patch_id, PatchBoolType booltype)
 {
-    PATCH_BOOL_CHECKS;
-    *on = b->on;
-    return 0;
+    PATCH_BOOL_GET
+    return b->active;
 }
 
-int
-patch_bool_get_thresh(int patch_id, PatchBoolType booltype, float* thresh)
+
+float patch_bool_get_thresh(int patch_id, PatchBoolType booltype)
 {
-    PATCH_BOOL_CHECKS
-    *thresh =   b->thresh;
-    return 0;
+    PATCH_BOOL_GET
+    return b->thresh;
 }
 
-int
-patch_bool_get_mod_src(int patch_id, PatchBoolType booltype, int* mod_id)
+
+int patch_bool_get_mod_src(int patch_id, PatchBoolType booltype)
 {
-    PATCH_BOOL_CHECKS
-    *mod_id =   b->mod_id;
-    return 0;
+    PATCH_BOOL_GET
+    return b->mod_id;
 }
 
-#define PATCH_FLOAT_CHECKS                                      \
-    PatchFloat* f;                                              \
-    int err;                                                    \
-    if (!isok(patch_id))                                        \
-        return PATCH_ID_INVALID;                                \
-    if ((err = get_patch_float(patch_id, floattype, &f)) < 0)   \
-        return err;
+#define PATCH_FLOAT_GET                     \
+    PatchFloat* f;                          \
+    assert(patchok(patch_id));                 \
+    f = get_patch_float(patch_id, floattype);
 
 
 /* PatchFloat set/get */
-int
-patch_float_set_assign(int patch_id, PatchFloatType floattype, float val)
+void
+patch_float_set_value(int patch_id, PatchFloatType floattype, float val)
 {
-    PATCH_FLOAT_CHECKS
-    f->assign = val;
-    return 0;
+    PATCH_FLOAT_GET
+    f->val = val;
 }
 
 
-int
+void
 patch_float_set_mod_amt(int patch_id, PatchFloatType floattype, float val)
 {
-    PATCH_FLOAT_CHECKS
+    PATCH_FLOAT_GET
     f->mod_amt = val;
-    return 0;
 }
 
 
-int
+void
 patch_float_set_mod_src(int patch_id, PatchFloatType floattype, int mod_id)
 {
-    PATCH_FLOAT_CHECKS
+    PATCH_FLOAT_GET
     f->mod_id = mod_id;
-    return 0;
 }
 
 
-int patch_float_get_all(int patch_id, PatchFloatType floattype,
-                        float* assign, float* mod_amt, int* mod_id)
+void patch_float_get_all(int patch_id, PatchFloatType floattype,
+                        float* value, float* mod_amt, int* mod_id)
 {
-    PATCH_FLOAT_CHECKS
-    *assign =   f->assign;
+    PATCH_FLOAT_GET
+    *value =    f->val;
     *mod_amt =  f->mod_amt;
     *mod_id =   f->mod_id;
-    return 0;
 }
 
 
-int
-patch_float_get_assign(int patch_id, PatchFloatType floattype,
-                                                float* assign)
+float patch_float_get_value(int patch_id, PatchFloatType floattype)
 {
-    PATCH_FLOAT_CHECKS;
-    *assign = f->assign;
-    return 0;
+    PATCH_FLOAT_GET
+    return f->val;
 }
 
-int
-patch_float_get_mod_amt(int patch_id, PatchFloatType floattype,
-                                                float* mod_amt)
+
+float patch_float_get_mod_amt(int patch_id, PatchFloatType floattype)
 {
-    PATCH_FLOAT_CHECKS
-    *mod_amt =   f->mod_amt;
-    return 0;
+    PATCH_FLOAT_GET
+    return f->mod_amt;
 }
 
-int
-patch_float_get_mod_src(int patch_id, PatchFloatType floattype, int* mod_id)
+
+int patch_float_get_mod_src(int patch_id, PatchFloatType floattype)
 {
-    PATCH_FLOAT_CHECKS
-    *mod_id =   f->mod_id;
-    return 0;
+    PATCH_FLOAT_GET
+    return f->mod_id;
 }
 
 
@@ -1779,18 +1173,16 @@ patch_float_get_mod_src(int patch_id, PatchFloatType floattype, int* mod_id)
 /****************** LFO FREQ MODULATION SETTERS ***************************/
 /**************************************************************************/
 
-#define PATCH_LFO_CHECKS                                        \
-    LFO* lfo;                                                   \
-    LFOParams* lfopar;                                          \
-    int err;                                                    \
-    if ((err = lfo_from_id(patch_id, lfo_id, &lfo, &lfopar)))   \
-        return err;
+#define PATCH_LFO_CHECKS                                    \
+    LFO* lfo;                                               \
+    LFOParams* lfopar;                                      \
+    if (!(lfopar = lfopar_from_id(patch_id, lfo_id, &lfo))) \
+        return -1;
 
-#define PATCH_NULL_LFO_CHECKS                                   \
-    LFOParams* lfopar;                                          \
-    int err;                                                    \
-    if ((err = lfo_from_id(patch_id, lfo_id, NULL, &lfopar)))   \
-        return err;
+#define PATCH_NULL_LFO_CHECKS                               \
+    LFOParams* lfopar;                                      \
+    if (!(lfopar = lfopar_from_id(patch_id, lfo_id, NULL))) \
+        return -1;
 
 
 int patch_set_lfo_fm1_src(int patch_id, int lfo_id, int modsrc_id)
@@ -1843,32 +1235,28 @@ int patch_set_lfo_fm2_amt(int patch_id, int lfo_id, float amount)
 /****************** LFO FREQ MODULATION GETTERS ***************************/
 /**************************************************************************/
 
-int patch_get_lfo_fm1_src(int patch_id, int lfo_id, int* modsrc_id)
+int patch_get_lfo_fm1_src(int patch_id, int lfo_id)
 {
     PATCH_NULL_LFO_CHECKS
-    *modsrc_id = lfopar->fm1_id;
-    return 0;
+    return lfopar->fm1_id;
 }
 
-int patch_get_lfo_fm2_src(int patch_id, int lfo_id, int* modsrc_id)
+int patch_get_lfo_fm2_src(int patch_id, int lfo_id)
 {
     PATCH_NULL_LFO_CHECKS
-    *modsrc_id = lfopar->fm2_id;
-    return 0;
+    return lfopar->fm2_id;
 }
 
-int patch_get_lfo_fm1_amt(int patch_id, int lfo_id, float* amount)
+float patch_get_lfo_fm1_amt(int patch_id, int lfo_id)
 {
     PATCH_NULL_LFO_CHECKS
-    *amount = lfopar->fm1_amt;
-    return 0;
+    return lfopar->fm1_amt;
 }
 
-int patch_get_lfo_fm2_amt(int patch_id, int lfo_id, float* amount)
+float patch_get_lfo_fm2_amt(int patch_id, int lfo_id)
 {
     PATCH_NULL_LFO_CHECKS
-    *amount = lfopar->fm2_amt;
-    return 0;
+    return lfopar->fm2_amt;
 }
 
 
@@ -1926,32 +1314,28 @@ int patch_set_lfo_am2_amt(int patch_id, int lfo_id, float amount)
 /******************* LFO AMP MODULATION GETTERS ***************************/
 /**************************************************************************/
 
-int patch_get_lfo_am1_src(int patch_id, int lfo_id, int* modsrc_id)
+int patch_get_lfo_am1_src(int patch_id, int lfo_id)
 {
     PATCH_NULL_LFO_CHECKS
-    *modsrc_id = lfopar->am1_id;
-    return 0;
+    return lfopar->am1_id;
 }
 
-int patch_get_lfo_am2_src(int patch_id, int lfo_id, int* modsrc_id)
+int patch_get_lfo_am2_src(int patch_id, int lfo_id)
 {
     PATCH_NULL_LFO_CHECKS
-    *modsrc_id = lfopar->am2_id;
-    return 0;
+    return lfopar->am2_id;
 }
 
-int patch_get_lfo_am1_amt(int patch_id, int lfo_id, float* amount)
+float patch_get_lfo_am1_amt(int patch_id, int lfo_id)
 {
     PATCH_NULL_LFO_CHECKS
-    *amount = lfopar->am1_amt;
-    return 0;
+    return lfopar->am1_amt;
 }
 
-int patch_get_lfo_am2_amt(int patch_id, int lfo_id, float* amount)
+float patch_get_lfo_am2_amt(int patch_id, int lfo_id)
 {
     PATCH_NULL_LFO_CHECKS
-    *amount = lfopar->am2_amt;
-    return 0;
+    return lfopar->am2_amt;
 }
 
 

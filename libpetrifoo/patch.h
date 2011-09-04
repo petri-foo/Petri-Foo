@@ -111,53 +111,33 @@ typedef enum _MOD_SRC_ID_BITMASK
 } mod_src_id_bitmask;
 
 
-/* error codes */
-enum
-{
-/*   PATCH_PARAM_INVALID =          -1,  */
-     PATCH_ID_INVALID =             -2,
-     PATCH_ALLOC_FAIL =             -3,
-     PATCH_NOTE_INVALID =           -4,
-     PATCH_PAN_INVALID =            -5,
-     PATCH_CHANNEL_INVALID =        -6,
-     PATCH_VOL_INVALID =            -7,
-     PATCH_PLAY_MODE_INVALID =      -9,
-     PATCH_LIMIT =                  -10,
-     PATCH_SAMPLE_INDEX_INVALID =   -11,
-     PATCH_ENV_ID_INVALID =         -12,
-     PATCH_LFO_ID_INVALID =         -13,
-     PATCH_MOD_SRC_INVALID =        -14,
-     PATCH_MOD_AMOUNT_INVALID =     -15,
-     PATCH_VELOCITY_INVALID =       -16,
-     PATCH_MOD_SLOT_INVALID
-};
-
-
 /* These are the bitfield constants for the different ways a patch can
    be played.  I've used comments to indicate mutual exclusion among
    groups. */
+
+/* note:    i dislike this setup, not the use of bitfields per se...
+ */
+
 enum
 {
      /* direction */
-     PATCH_PLAY_FORWARD =       1 << 0,
-     PATCH_PLAY_REVERSE =       1 << 1,
-     /************/
+     PATCH_PLAY_REVERSE =       0x0001, /* if not reverse then what!?!? */
 
      /* duration */
-     PATCH_PLAY_SINGLESHOT =    1 << 2,
-     PATCH_PLAY_TRIM =          1 << 3,
-     PATCH_PLAY_LOOP =          1 << 4,
-     /***********/
+     PATCH_PLAY_SINGLESHOT =    0x0002,
+     PATCH_PLAY_TRIM =          0x0004,
+     PATCH_PLAY_LOOP =          0x0008,
 
      /* ping pong mode can be set independently of all the other
-      * params, but it should only be tested for if PATCH_PLAY_LOOP is set */
-     PATCH_PLAY_PINGPONG =      1 << 5,
+      * params, but it should only be tested for if PATCH_PLAY_LOOP is set
+      */
+     PATCH_PLAY_PINGPONG =      0x0010,
 
     /*  patch play to end should only be tested for if PATCH_PLAY_LOOP is
         set. if active, after note_off, playback continues past loop end
         toward sample end
      */
-     PATCH_PLAY_TO_END =        1 << 6,
+     PATCH_PLAY_TO_END =        0x0020,
 };
 
 
@@ -179,8 +159,8 @@ typedef uint8_t PatchPlayMode;
 /* code names for modulatable parameters */
 typedef enum
 {
-    PATCH_PARAM_INVALID =       -1,
-    PATCH_PARAM_AMPLITUDE =    0,
+    PATCH_PARAM_INVALID =   -1,
+    PATCH_PARAM_AMPLITUDE = 0,
     PATCH_PARAM_PANNING,
     PATCH_PARAM_PITCH,
     PATCH_PARAM_CUTOFF,

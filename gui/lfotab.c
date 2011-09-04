@@ -148,7 +148,7 @@ static void idsel_cb(IDSelector* ids, LfoTabPrivate* p)
 
 static void on_cb(GtkToggleButton* button, LfoTabPrivate* p)
 {
-    patch_set_lfo_on(p->patch_id, p->lfo_id,
+    patch_set_lfo_active(p->patch_id, p->lfo_id,
                     gtk_toggle_button_get_active(button));
 }
 
@@ -201,7 +201,7 @@ static void freq_cb(PhinFanSlider* fan, LfoTabPrivate* p)
 
 static void beats_cb(PhinSliderButton* button, LfoTabPrivate* p)
 {
-    patch_set_lfo_beats(p->patch_id, p->lfo_id,
+    patch_set_lfo_sync_beats(p->patch_id, p->lfo_id,
                         phin_slider_button_get_value(button));
 }
 
@@ -514,8 +514,7 @@ static void update_lfo(LfoTabPrivate* p)
     LFOShape lfoshape;
     int shape;
     float freq, beats, delay, attack;
-    bool sync, positive;
-    bool on;
+    bool active, sync, positive;
     GtkTreeIter iter;
 
     int   fm1src, fm2src;
@@ -544,31 +543,32 @@ static void update_lfo(LfoTabPrivate* p)
     mod_src_combo_set_model(GTK_COMBO_BOX(p->am2_combo), mod_srcs);
     unblock(p);
 
-    debug("getting lfo (id:%d) data from patch\n", p->lfo_id);
+    debug("getting lfo (id:%d) data from patch:%d\n",
+                                p->lfo_id,p->patch_id);
 
-    patch_get_lfo_shape(    p->patch_id, p->lfo_id, &lfoshape);
-    patch_get_lfo_freq(     p->patch_id, p->lfo_id, &freq);
-    patch_get_lfo_beats(    p->patch_id, p->lfo_id, &beats);
+    lfoshape = patch_get_lfo_shape(     p->patch_id, p->lfo_id);
+    freq = patch_get_lfo_freq(          p->patch_id, p->lfo_id);
+    beats = patch_get_lfo_sync_beats(   p->patch_id, p->lfo_id);
 
     if (!mod_src_is_global(p->lfo_id))
     {
-        patch_get_lfo_delay(    p->patch_id, p->lfo_id, &delay);
-        patch_get_lfo_attack(   p->patch_id, p->lfo_id, &attack);
+        delay = patch_get_lfo_delay(    p->patch_id, p->lfo_id);
+        attack = patch_get_lfo_attack(  p->patch_id, p->lfo_id);
     }
 
-    patch_get_lfo_sync(     p->patch_id, p->lfo_id, &sync);
-    patch_get_lfo_positive( p->patch_id, p->lfo_id, &positive);
-    patch_get_lfo_on(       p->patch_id, p->lfo_id, &on);
+    sync = patch_get_lfo_sync(          p->patch_id, p->lfo_id);
+    positive = patch_get_lfo_positive(  p->patch_id, p->lfo_id);
+    active = patch_get_lfo_active(      p->patch_id, p->lfo_id);
 
-    patch_get_lfo_fm1_src(  p->patch_id, p->lfo_id, &fm1src);
-    patch_get_lfo_fm1_amt(  p->patch_id, p->lfo_id, &fm1amt);
-    patch_get_lfo_fm2_src(  p->patch_id, p->lfo_id, &fm2src);
-    patch_get_lfo_fm2_amt(  p->patch_id, p->lfo_id, &fm2amt);
+    fm1src = patch_get_lfo_fm1_src(  p->patch_id, p->lfo_id);
+    fm1amt = patch_get_lfo_fm1_amt(  p->patch_id, p->lfo_id);
+    fm2src = patch_get_lfo_fm2_src(  p->patch_id, p->lfo_id);
+    fm2amt = patch_get_lfo_fm2_amt(  p->patch_id, p->lfo_id);
 
-    patch_get_lfo_am1_src(  p->patch_id, p->lfo_id, &am1src);
-    patch_get_lfo_am1_amt(  p->patch_id, p->lfo_id, &am1amt);
-    patch_get_lfo_am2_src(  p->patch_id, p->lfo_id, &am2src);
-    patch_get_lfo_am2_amt(  p->patch_id, p->lfo_id, &am2amt);
+    am1src = patch_get_lfo_am1_src(  p->patch_id, p->lfo_id);
+    am1amt = patch_get_lfo_am1_amt(  p->patch_id, p->lfo_id);
+    am2src = patch_get_lfo_am2_src(  p->patch_id, p->lfo_id);
+    am2amt = patch_get_lfo_am2_amt(  p->patch_id, p->lfo_id);
 
     debug("getting mod src combo iter with id\n");
 
@@ -657,7 +657,7 @@ static void update_lfo(LfoTabPrivate* p)
     phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->am1_amount), am1amt);
     phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->am2_amount), am2amt);
 
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(p->lfo_check), on);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(p->lfo_check), active);
 
     unblock(p);
 }

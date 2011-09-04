@@ -204,17 +204,18 @@ int bank_ops_open(GtkWidget* parent_window)
         char* name = (char*) gtk_file_chooser_get_filename(
                                         GTK_FILE_CHOOSER(dialog));
 
+        msg_log(MSG_MESSAGE, "Loading bank %s\n", name);
         msg_log_reset_notification_state();
         val = dish_file_read(name);
 
         if (val < 0)
         {
-            msg_log(MSG_ERROR, "Failed to read file %s\n", name);
+            msg_log(MSG_ERROR, "Failed to read bank %s\n", name);
             GtkWidget* msg = gtk_message_dialog_new(GTK_WINDOW(dialog),
                                     GTK_DIALOG_MODAL,
                                     GTK_MESSAGE_ERROR,
                                     GTK_BUTTONS_CLOSE,
-                                    "Failed to read file %s\n.", name);
+                                    "Failed to read bank %s\n.", name);
 
             g_signal_connect_swapped(G_OBJECT(msg), "response",
                                     G_CALLBACK(gtk_widget_destroy), msg);
@@ -268,17 +269,18 @@ int bank_ops_open_recent(GtkWidget* parent_window, char* filename)
 {
     int val;
 
+    msg_log(MSG_MESSAGE, "Loading bank %s\n", filename);
     msg_log_reset_notification_state();
     val = dish_file_read(filename);
 
     if (val < 0)
     {
-         msg_log(MSG_ERROR, "Failed to read file %s\n", filename);
+         msg_log(MSG_ERROR, "Failed to read bank %s\n", filename);
          GtkWidget* msg = gtk_message_dialog_new(GTK_WINDOW(parent_window),
                                    GTK_DIALOG_MODAL,
                                    GTK_MESSAGE_ERROR,
                                    GTK_BUTTONS_CLOSE,
-                                   "Failed to read file %s\n.", filename);
+                                   "Failed to read bank %s\n.", filename);
 
          g_signal_connect_swapped(G_OBJECT(msg), "response",
                                    G_CALLBACK(gtk_widget_destroy), msg);

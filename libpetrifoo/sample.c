@@ -29,10 +29,10 @@
 #include <samplerate.h>
 
 #include "lfo.h"
-#include "msg_log.h"
 #include "petri-foo.h"
-#include "sample.h"
+#include "pf_error.h"
 #include "names.h"
+#include "sample.h"
 
 #include <stdbool.h>
 
@@ -42,7 +42,10 @@ Sample* sample_new(void)
     Sample* sample = malloc(sizeof(*sample));
 
     if (!sample)
+    {
+        pf_error(PF_ERR_SAMPLE_ALLOC);
         return 0;
+    }
 
     sample->sp = 0;
     sample->frames = 0;
@@ -92,12 +95,11 @@ int sample_default(Sample* sample, int rate)
 
     float const*    lfo_out;
 
-    msg_log(MSG_MESSAGE, "Creating default sample\n");
+    debug("Creating default sample\n");
 
     if (!(tmp = malloc(frames * 2 * sizeof(*tmp))))
     {
-        msg_log(MSG_ERROR,
-                "Unable to allocate space for default sample!\n");
+        pf_error(PF_ERR_SAMPLE_DEFAULT_ALLOC);
         return -1;
     }
 
@@ -139,8 +141,7 @@ static float* resample(float* samples, int rate, SF_INFO* sfinfo)
 
     ratio = rate / (sfinfo->samplerate * 1.0);
 
-    msg_log(MSG_MESSAGE, "Resampling from %d to %d\n",
-                            rate, sfinfo->samplerate);
+    debug("Resampling from %d to %d\n", rate, sfinfo->samplerate);
 
     src.src_ratio = ratio;
     src.data_in = samples;
@@ -149,7 +150,7 @@ static float* resample(float* samples, int rate, SF_INFO* sfinfo)
 
     if (src.output_frames >= MAX_SAMPLE_FRAMES)
     {
-        msg_log(MSG_ERROR, "resampled sample would be too long\n");
+        pf_error(PF_ERR_SAMPLE_RESAMPLE_MAX_FRAMES);
         return 0;
     }
 
@@ -157,7 +158,7 @@ static float* resample(float* samples, int rate, SF_INFO* sfinfo)
                 * sfinfo->frames * sfinfo->channels * ratio);
     if (!tmp)
     {
-        msg_log(MSG_ERROR, "Out of memory for resampling\n");
+        pf_error(PF_ERR_SAMPLE_RESAMPLE_ALLOC);
         return 0;
     }
 
@@ -166,7 +167,7 @@ static float* resample(float* samples, int rate, SF_INFO* sfinfo)
     err = src_simple(&src, SRC_SINC_BEST_QUALITY, sfinfo->channels);
     if (err)
     {
-        msg_log(MSG_ERROR, "Failed to resample (%s)\n", src_strerror(err));
+        pf_error(PF_ERR_SAMPLE_SRC_SIMPLE);
         free(tmp);
         return 0;
     }
@@ -179,15 +180,14 @@ static float* resample(float* samples, int rate, SF_INFO* sfinfo)
 
 static float* mono_to_stereo(float* samples, SF_INFO* sfinfo)
 {
-    msg_log(MSG_MESSAGE, "Converting mono to stereo...\n");
+    debug("Converting mono to stereo...\n");
 
     int i;
     float* tmp = malloc(sizeof(float) * sfinfo->frames * 2);
 
     if (!tmp)
     {
-        msg_log(MSG_ERROR,
-                "Out of memory for mono to stereo conversion.\n");
+        pf_error(PF_ERR_SAMPLE_CHANNEL_ALLOC);
         return 0;
     }
 
@@ -204,13 +204,13 @@ static float* read_audio(SNDFILE* sfp, SF_INFO* sfinfo)
 
     if (sfinfo->frames >= MAX_SAMPLE_FRAMES)
     {
-        msg_log(MSG_ERROR, "sample is too long\n");
+        pf_error(PF_ERR_SAMPLE_MAX_FRAMES);
         return 0;
     }
 
     if (sfinfo->channels > 2)
     {
-        msg_log(MSG_ERROR, "Can't handle more than 2 channels\n");
+        pf_error(PF_ERR_SAMPLE_CHANNEL_COUNT);
         sf_close (sfp);
         return 0;
     }
@@ -218,7 +218,7 @@ static float* read_audio(SNDFILE* sfp, SF_INFO* sfinfo)
     /* set aside space for samples */
     if (!(tmp = malloc(sfinfo->frames * sfinfo->channels * sizeof(*tmp))))
     {
-        msg_log(MSG_ERROR, "Unable to allocate space for samples!\n");
+        pf_error(PF_ERR_SAMPLE_ALLOC);
         sf_close (sfp);
         return 0;
     }
@@ -226,14 +226,12 @@ static float* read_audio(SNDFILE* sfp, SF_INFO* sfinfo)
     /* load sample file into memory */
     if (sf_readf_float(sfp, tmp, sfinfo->frames) != sfinfo->frames)
     {
-        msg_log(MSG_ERROR,
-                "libsndfile had problems reading file, aborting\n");
+        pf_error(PF_ERR_SAMPLE_SNDFILE_READ);
         free(tmp);
         return 0;
     }
 
-    msg_log(MSG_MESSAGE, "Read %d frames into memory.\n",
-                                    (int) sfinfo->frames);
+    debug("Read %d frames into memory.\n", (int) sfinfo->frames);
 
     return tmp;
 }
@@ -269,23 +267,23 @@ static SNDFILE* open_sample(SF_INFO* sfinfo, const char* name,
         sfinfo->channels =   raw_channels;
         sfinfo->format =     sndfile_format;
 
-        msg_log(MSG_MESSAGE, "Reading raw sample %s as %d %s %s\n",
+        debug("Reading raw sample %s as %d %s %s\n",
                                 name, raw_samplerate,
                                 (raw_channels == 2)? "stereo" : "mono",
                                 fmt_name);
 
         if (!sf_format_check(sfinfo))
         {
-            msg_log(MSG_ERROR, "LIBSNDFILE format error\n");
+            pf_error(PF_ERR_SAMPLE_SNDFILE_FORMAT);
             return 0;
         }
     }
     else
-        msg_log(MSG_MESSAGE, "Reading sample %s\n", name);
+        debug("Reading sample %s\n", name);
 
     if ((sfp = sf_open(name, SFM_READ, sfinfo)) == NULL)
     {
-        msg_log(MSG_ERROR, "libsndfile failed to open %s\n", name);
+        pf_error(PF_ERR_SAMPLE_SNDFILE_OPEN);
         return 0;
     }
 
@@ -420,7 +418,7 @@ int sample_deep_copy(Sample* dest, const Sample* src)
 
     if (!dest->sp)
     {
-        debug("Failed to allocate memory for sample data copy\n");
+        pf_error(PF_ERR_SAMPLE_ALLOC_COPY);
         return -1;
     }
 

@@ -42,8 +42,8 @@
 #include "petri-foo.h"
 #include "driver.h"
 #include "patch.h"
+#include "pf_error.h"
 #include "mixer.h"
-#include "msg_log.h"
 #include "sync.h"
 #include "lfo.h"
 #include "midi_control.h"
@@ -198,7 +198,7 @@ static int buffer_size_change(jack_nframes_t b, void* arg)
 
     if ((new = malloc(sizeof(float) * b * 2)) == NULL)
     {
-        errmsg("Failed to change buffer size\n");
+        pf_error(PF_ERR_JACK_BUF_SIZE_CHANGE);
         stop();
     }
 
@@ -213,7 +213,7 @@ static int buffer_size_change(jack_nframes_t b, void* arg)
     /* let the rest of the world know the good news */
     driver_set_buffersize (b);
 
-     return 0;
+    return 0;
 }
 
 
@@ -237,7 +237,7 @@ static int start(void)
     const char** ports;
     char* instancename = strdup (get_instance_name());
 
-    msg_log(MSG_MESSAGE, "JACK initializing driver...\n");
+    debug("JACK initializing driver...\n");
     pthread_mutex_lock (&running_mutex);
     running = 0;
 
@@ -250,8 +250,7 @@ static int start(void)
 
     if (client == 0)
     {
-        msg_log(MSG_ERROR,  "JACK failed to open client: %s\n",
-                            instancename);
+        pf_error(PF_ERR_JACK_OPEN_CLIENT);
         pthread_mutex_unlock (&running_mutex);
         return -1;
     }
@@ -265,7 +264,10 @@ static int start(void)
     if (jack_set_session_callback)
     {
         if (jack_set_session_callback(client, session_cb, 0))
-            msg_log(MSG_ERROR, "JACK failed to set session callback\n");
+        {
+            pf_error(PF_ERR_JACK_SESSION_CB);
+            return -1;
+        }
     }
 #endif
 
@@ -299,7 +301,7 @@ static int start(void)
 
     if ((buffer = malloc (sizeof (float) * periodsize * 2)) == NULL)
     {
-        msg_log(MSG_ERROR, "JACK failed to allocate buffer\n");
+        pf_error(PF_ERR_JACK_BUF_ALLOC);
         jack_client_close (client);
         pthread_mutex_unlock (&running_mutex);
         return -1;
@@ -309,7 +311,7 @@ static int start(void)
 
     if (jack_activate(client) != 0)
     {
-        msg_log(MSG_ERROR, "JACK failed to activate client\n");
+        pf_error(PF_ERR_JACK_ACTIVATE);
         jack_client_close(client);
         pthread_mutex_unlock(&running_mutex);
         return -1;
@@ -322,28 +324,24 @@ static int start(void)
     {
         if (ports[0] != NULL)
         {
-            if (jack_connect(client, jack_port_name(lport), ports[0]) != 0)
-                msg_log(MSG_WARNING,
-                    "JACK failed to connect left output port\n");
+            if (jack_connect(client, jack_port_name(lport), ports[0]) == 0)
+                debug("JACK failed to connect left output port\n");
 
             if (ports[1] != NULL)
             {
                 if (jack_connect(client, jack_port_name (rport), ports[1]))
-                    msg_log(MSG_WARNING,
-                    "JACK failed to connect right output port\n");
+                    debug("JACK failed to connect right output port\n");
             }
             else
-                msg_log(MSG_WARNING,
-                    "JACK failed to connect right output port\n");
+                debug("JACK failed to connect right output port\n");
 
             free (ports);
         }
         else
-            msg_log(MSG_WARNING,
-                "JACK failed to connect output ports\n");
+            debug("JACK failed to connect output ports\n");
     }
 
-    msg_log(MSG_MESSAGE, "JACK Initialization complete\n");
+    debug("JACK Initialization complete\n");
     running = 1;
     pthread_mutex_unlock (&running_mutex);
 
@@ -357,7 +355,7 @@ static int stop(void)
 
     if (running)
     {
-        msg_log(MSG_MESSAGE, "JACK shutting down...\n");
+        debug("JACK shutting down...\n");
         jack_deactivate (client);
         jack_client_close (client);
 
