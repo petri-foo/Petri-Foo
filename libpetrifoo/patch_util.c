@@ -450,7 +450,8 @@ int patch_sample_load(int id, const char *name,
                                             patch_samplerate,
                                             raw_samplerate,
                                             raw_channels,
-                                            sndfile_format);
+                                            sndfile_format,
+                                            1);
 
     if (val < 0)
         frames = 0;
@@ -517,7 +518,8 @@ int patch_sample_load_from(int dest_id, int src_id)
                                 name, patch_samplerate,
                                 patches[src_id]->sample->raw_samplerate,
                                 patches[src_id]->sample->raw_channels,
-                                patches[src_id]->sample->sndfile_format);
+                                patches[src_id]->sample->sndfile_format,
+                                1);
 /*
     patches[dest_id].sample_stop =  patches[dest_id].sample->frames - 1;
     patches[dest_id].play_start =   patches[src_id].play_start;

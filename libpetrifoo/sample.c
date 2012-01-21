@@ -325,7 +325,8 @@ int sample_load_file(Sample* sample, const char* name,
                                         int rate,
                                         int raw_samplerate,
                                         int raw_channels,
-                                        int sndfile_format)
+                                        int sndfile_format,
+                                        int resample_sndfile)
 {
     float* tmp;
     SF_INFO sfinfo;
@@ -356,20 +357,22 @@ int sample_load_file(Sample* sample, const char* name,
         sample->sndfile_format = 0;
     }
 
-    if (sfinfo.samplerate != rate)
-    {
-        float* tmp2 = resample(tmp, rate, &sfinfo);
+	if (resample_sndfile) {
+		if (sfinfo.samplerate != rate)
+		{
+		    float* tmp2 = resample(tmp, rate, &sfinfo);
 
-        if (!tmp2)
-        {
-            free(tmp);
-            return -1;
-        }
+		    if (!tmp2)
+		    {
+		        free(tmp);
+		        return -1;
+		    }
 
-        free(tmp);
-        tmp = tmp2;
-    }
-
+		    free(tmp);
+		    tmp = tmp2;
+		}
+	}
+	
     if (sfinfo.channels == 1)
     {
         float* tmp2 = mono_to_stereo(tmp, &sfinfo);

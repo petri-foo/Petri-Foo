@@ -60,6 +60,7 @@ typedef struct _raw_box
     GtkWidget* toggle_box;
     GtkWidget* check;
     GtkWidget* auto_preview;
+    GtkWidget* resample_checkbox;	
     GtkWidget* table;
 
     /* table contains: */
@@ -191,11 +192,12 @@ static void cb_preview(raw_box* rb)
         int samplerate = gtk_spin_button_get_value_as_int(
                                     GTK_SPIN_BUTTON(rb->samplerate));
 
-        mixer_preview(name, samplerate,  rb->channels, get_format(rb));
+        mixer_preview(name, samplerate,  rb->channels, get_format(rb),1);
     }
     else
     {
-        mixer_preview(name, 0, 0, 0);
+        int resamp = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(rb->resample_checkbox));
+        mixer_preview(name, 0, 0, 0, resamp);
     }
 
     return;
@@ -299,6 +301,15 @@ static raw_box* raw_box_new(GtkWidget* dialog)
     gtk_widget_show(rb->auto_preview);
     gtk_box_pack_start(GTK_BOX(rb->toggle_box), rb->auto_preview, FALSE,
                                                                 FALSE, 0);
+
+    rb->resample_checkbox = gtk_check_button_new_with_label("Resample");
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(rb->resample_checkbox),
+                                                                FALSE);
+    gtk_widget_show(rb->resample_checkbox);
+    gtk_box_pack_start(GTK_BOX(rb->toggle_box), rb->resample_checkbox, FALSE,
+                                                                FALSE, 0);
+
+
     g_signal_connect(dialog, "selection-changed",
                                     G_CALLBACK(selection_changed_cb), rb);
 
