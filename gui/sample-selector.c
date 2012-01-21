@@ -182,6 +182,9 @@ static void cb_preview(raw_box* rb)
                                 GTK_FILE_CHOOSER(rb->dialog));
     if (!name)
         return;
+	if(strchr(name,'.')==NULL) { //the path doesn't contain a dot, so it's not a filename but a folder
+		return;
+	}
 
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(rb->check)))
     {
