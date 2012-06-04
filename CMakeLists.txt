@@ -22,6 +22,8 @@ mark_as_advanced(CMAKE_INSTALL_PREFIX)
 
 option (BuildForDebug "Include gdb debugging support" ON)
 
+#RELEASE
+set (BuildOptionsRelease "-O3" CACHE STRING "Release build flags")
 # DEBUG
 set (BuildOptionsDebug "-O0 -ggdb" CACHE STRING "Debug build flags")
 
@@ -36,7 +38,7 @@ if (BuildForDebug)
 else (BuildForDebug)
     set (CMAKE_BUILD_TYPE "Release")
     set (DEBUG 0)
-    set (CMAKE_C_FLAGS_RELEASE ${BuildOptionsBasic})
+    set (CMAKE_C_FLAGS_RELEASE ${BuildOptionsRelease})
     message (STATUS "Building for ${CMAKE_BUILD_TYPE}, flags: ${CMAKE_C_FLAGS_RELEASE}")
 endif (BuildForDebug)
 
