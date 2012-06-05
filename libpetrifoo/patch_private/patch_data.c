@@ -287,8 +287,6 @@ void patch_copy(Patch* dest, Patch* src)
 {
     int i;
 
-    dest->active = false;
-
     sample_deep_copy(dest->sample, src->sample);
 
     strcpy(dest->name, src->name);
@@ -336,5 +334,5 @@ void patch_copy(Patch* dest, Patch* src)
     for (i = 0; i < VOICE_MAX_ENVS; ++i)
         dest->env_params[i] = src->env_params[i];
 
-
+    debug("copied patch src %p to patch dest %p\n", src, dest);
 }

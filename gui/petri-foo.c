@@ -127,6 +127,11 @@ int main(int argc, char *argv[])
     gtk_main();
 
     /* shutdown... */
+
+    #if DEBUG
+    patch_summary_dump();
+    #endif
+
     midi_stop();
     driver_stop();
     patch_shutdown();

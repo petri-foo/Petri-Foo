@@ -25,6 +25,9 @@ option (BuildForDebug "Include gdb debugging support" ON)
 # DEBUG
 set (BuildOptionsDebug "-O0 -ggdb" CACHE STRING "Debug build flags")
 
+# RELEASE
+set (BuildOptionsRelease "-O2" CACHE STRING "Release build flags")
+
 # additional compiler flags
 add_definitions(-Wall -Wextra)
 
@@ -36,7 +39,7 @@ if (BuildForDebug)
 else (BuildForDebug)
     set (CMAKE_BUILD_TYPE "Release")
     set (DEBUG 0)
-    set (CMAKE_C_FLAGS_RELEASE ${BuildOptionsBasic})
+    set (CMAKE_C_FLAGS_RELEASE ${BuildOptionsRelease})
     message (STATUS "Building for ${CMAKE_BUILD_TYPE}, flags: ${CMAKE_C_FLAGS_RELEASE}")
 endif (BuildForDebug)
 

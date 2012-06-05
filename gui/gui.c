@@ -323,7 +323,7 @@ void cb_menu_patch_add_default(GtkWidget* menu_item, gpointer data)
 void cb_menu_patch_duplicate(GtkWidget* menu_item, gpointer data)
 {
     (void)menu_item;(void)data;
-    int val;
+    int id;
     int cp;
 
     if ((cp = patch_list_get_current_patch(PATCH_LIST(patch_list))) < 0)
@@ -332,14 +332,14 @@ void cb_menu_patch_duplicate(GtkWidget* menu_item, gpointer data)
         return;
     }
 
-    if ((val = patch_duplicate(cp)) < 0)
+    if ((id = patch_duplicate(cp)) < 0)
     {
         msg_log(MSG_ERROR, "Failed to duplicate patch (%s).\n",
                                             pf_error_str(pf_error_get()));
         return;
     }
 
-    patch_list_update(PATCH_LIST(patch_list), val, PATCH_LIST_PATCH);
+    patch_list_update(PATCH_LIST(patch_list), id, PATCH_LIST_PATCH);
 }
 
 

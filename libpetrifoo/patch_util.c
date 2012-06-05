@@ -89,6 +89,31 @@ void patch_trigger_global_lfos ( )
 }
 
 
+void patch_do_display_index(int id)
+{
+    int i;
+
+    debug("calculating display index for patch id:%d\n", id);
+
+    assert(patches[id]->display_index == -1);
+
+    for (i = 0; i < PATCH_COUNT; i++)
+    {
+        if (i == id)
+            continue;
+
+        if (patches[i] && patches[i]->active
+         && patches[i]->display_index >= patches[id]->display_index)
+        {
+            patches[id]->display_index = patches[i]->display_index + 1;
+        }
+    }
+
+    if (patches[id]->display_index == -1)
+        patches[id]->display_index = 0;
+
+    debug("chosen display: %d\n", patches[id]->display_index);
+}
 
 /**************************************************************************/
 /********************** UTILITY FUNCTIONS *********************************/
@@ -109,16 +134,18 @@ int patch_count()
 
 int patch_create(void)
 {
-    int id;
     Patch* p;
+    int id;
 
-    /* find unoccupied patch id */
+    /* find first unused patch */
     for (id = 0; patches[id] && patches[id]->active; ++id)
+    {
         if (id == PATCH_COUNT)
         {
             pf_error(PF_ERR_PATCH_COUNT);
             return -1;
         }
+    }
 
     if (!(p = patch_new()))
     {
@@ -126,9 +153,34 @@ int patch_create(void)
         return -1;
     }
 
+    debug("creating patch id:%d (%p)\n", id, p);
+
     patches[id] = p;
     patch_lock(id);
     p->active = true;
+    patch_do_display_index(id);
+    patch_unlock(id);
+
+    return id;
+}
+
+
+int patch_duplicate(int src_id)
+{
+    Patch* p;
+    int id;
+
+    assert(patchok(src_id));
+    assert(patches[src_id]->active);
+
+    debug("\n\nDuplicating patch %s id:%d...\n",
+                patches[src_id]->name, src_id);
+
+    if ((id = patch_create()) < 0)
+        return -1;
+
+    patch_lock(id);
+    patch_copy(patches[id], patches[src_id]);
     patch_unlock(id);
 
     return id;
@@ -335,47 +387,6 @@ int patch_dump(int **dump)
     }
 
     return count;
-}
-
-int patch_duplicate(int src_id)
-{
-    int i;
-    int dest_id;
-
-    assert(patchok(src_id));
-    assert(patches[src_id]->active);
-
-    dest_id = patch_create();
-
-    if (dest_id < 0)
-        return -1;
-
-    debug("Creating patch (%d) from patch %s (%d).\n", dest_id,
-           patches[src_id]->name, src_id);
-
-    patch_lock(dest_id);
-
-    patch_copy(patches[dest_id], patches[src_id]);
-
-    patches[dest_id]->display_index = 0;
-
-    for (i = 0; i < PATCH_COUNT; i++)
-    {
-        if (i == dest_id)
-            continue;
-
-        if (patches[i] && patches[i]->active
-         && patches[i]->display_index >= patches[dest_id]->display_index)
-        {
-            patches[dest_id]->display_index = patches[i]->display_index + 1;
-        }
-    }
-
-    debug("chosen display: %d\n", patches[dest_id]->display_index);
-
-    patch_unlock(dest_id);
-
-    return dest_id;
 }
 
 
@@ -643,4 +654,27 @@ void patch_sync (float bpm)
     patch_trigger_global_lfos();
 }
 
+
+#if DEBUG
+void patch_summary_dump(void)
+{
+    int i;
+
+    debug("Patch summary\n");
+    debug("-------------\n");
+
+    for (i = 0; i < PATCH_COUNT; ++i)
+    {
+        Patch* p = patches[i];
+        if (p)
+        {
+            debug("patch (%p), id:%d '%s' display index:%d active:%s\n",
+                            p, i, p->name, p->display_index,
+                            (p->active) ? "Y" : "N");
+        }
+    }
+    debug("End of patch summary\n");
+    debug("--------------------\n");
+}
+#endif
 

@@ -35,6 +35,7 @@ enum { USER_PATCH, DEFAULT_PATCH };
 
 /* utility functions */
 int         patch_create          (void);
+int         patch_duplicate       (int id);
 int         patch_create_default  (void);
 
 void        patch_destroy         (int id);
@@ -42,7 +43,6 @@ void        patch_destroy_all     (void);
 
 int         patch_count           (void);
 int         patch_dump            (int** dump);
-int         patch_duplicate       (int id);
 int         patch_flush           (int id);
 void        patch_flush_all       (void);
 const char* patch_strerror        (int error);
@@ -67,5 +67,10 @@ void        patch_shutdown        (void);
 void        patch_sync            (float bpm);
 int         patch_verify          (int id);
 
+
+#if DEBUG
+/*  dump (to stdout) names, id's, display_indexes of all patches */
+void        patch_summary_dump(void);
+#endif
 
 #endif /* __PATCH_UTIL_H__ */
