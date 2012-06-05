@@ -80,7 +80,8 @@ int         sample_get_resampled_size(const char* name, int rate,
 int         sample_load_file(Sample*, const char* name, int rate,
     /* zero for non-raw data */         int raw_samplerate,
     /* zero for non-raw data */         int raw_channels,
-    /* zero for non-raw data */         int sndfile_format);
+    /* zero for non-raw data */         int sndfile_format,
+                                        int resample_sndfile);
 
 
 void        sample_free_data(Sample*); /* free's samples and filename */
