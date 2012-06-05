@@ -443,14 +443,16 @@ void mixer_direct_control(int chan, int param, float value, Tick tick)
 
 void mixer_preview(char *name,  int raw_samplerate,
                                     int raw_channels,
-                                    int sndfile_format)
+                                    int sndfile_format,
+                                    int resample_sndfile)
 {
     pthread_mutex_lock(&preview.mutex);
     preview.active = 0;
     sample_load_file(preview.sample, name,  samplerate,
                                             raw_samplerate,
                                             raw_channels,
-                                            sndfile_format);
+                                            sndfile_format,
+                                            resample_sndfile);
     preview.next_frame = 0;
     preview.active = 1;
     pthread_mutex_unlock(&preview.mutex);

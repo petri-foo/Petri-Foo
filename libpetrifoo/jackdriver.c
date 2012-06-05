@@ -47,6 +47,7 @@
 #include "sync.h"
 #include "lfo.h"
 #include "midi_control.h"
+void audio_settings_session_cb(jack_session_event_t *event, void *arg);
 
 
 /* prototypes */
@@ -64,7 +65,7 @@ static jack_port_t*    midiport;
 
 #ifdef HAVE_JACK_SESSION_H
 /*static jack_session_event_t *session_event;*/
-JackSessionCallback         session_cb = 0;
+JackSessionCallback         session_cb = audio_settings_session_cb;
 #endif
 
 static jack_client_t*  client;
@@ -81,7 +82,7 @@ static bool             autoconnect = true;
 typedef jack_default_audio_sample_t jack_sample_t;
 
 #ifdef HAVE_JACK_SESSION_H
-void jackdriver_set_session_cb(JackSessionCallback jack_session_cb)
+void jackdriver_set_session_cb(JackSessionCallback jack_session_cb) //UNUSED
 {
     session_cb = jack_session_cb;
 }
