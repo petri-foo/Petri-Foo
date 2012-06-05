@@ -54,6 +54,7 @@ static void msg_log_callback(const char* msg, int msg_base_type)
     GtkTextMark*    mark;
     const char* tag = 0;
 
+#if DEBUG
 if (GTK_IS_TEXT_VIEW(textview))
 {
 printf("%p ***IS*** textview\n", textview);
@@ -62,6 +63,7 @@ else
 {
 printf("%p ***IS NOT *** textview\n", textview);
 }
+#endif
 
     switch(msg_base_type)
     {
