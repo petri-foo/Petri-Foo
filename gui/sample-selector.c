@@ -60,7 +60,7 @@ typedef struct _raw_box
     GtkWidget* toggle_box;
     GtkWidget* check;
     GtkWidget* auto_preview;
-    GtkWidget* resample_checkbox;	
+    GtkWidget* resample_checkbox;
     GtkWidget* table;
 
     /* table contains: */
@@ -183,9 +183,13 @@ static void cb_preview(raw_box* rb)
                                 GTK_FILE_CHOOSER(rb->dialog));
     if (!name)
         return;
-	if(strchr(name,'.')==NULL) { //the path doesn't contain a dot, so it's not a filename but a folder
-		return;
-	}
+
+    if (strchr(name, '.') == NULL)
+    {   /*  FIXME: silly method of distiguishing files/folders.
+            see: man 3 stat
+         */
+        return;
+    }
 
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(rb->check)))
     {
@@ -196,7 +200,8 @@ static void cb_preview(raw_box* rb)
     }
     else
     {
-        int resamp = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(rb->resample_checkbox));
+        int resamp = gtk_toggle_button_get_active(
+                            GTK_TOGGLE_BUTTON(rb->resample_checkbox));
         mixer_preview(name, 0, 0, 0, resamp);
     }
 
