@@ -27,6 +27,7 @@
 #include "mixer.h"
 #include "patch.h"
 #include "petri-foo.h"
+#include "pf_error.h"
 #include "driver.h"
 #include "sample.h"
 #include "maths.h"
@@ -148,7 +149,6 @@ inline static void preview_render(float *buf, int frames)
 
     if (preview.active && pthread_mutex_trylock(&preview.mutex) == 0)
     {
-        
         if (preview.sample->sp != NULL)
         {
             float logamp = log_amplitude(DEFAULT_AMPLITUDE);
@@ -201,7 +201,7 @@ void mixer_init(void)
     debug ("initializing...\n");
     amplitude = DEFAULT_AMPLITUDE;
     pthread_mutex_init (&preview.mutex, NULL);
-    preview.sample = sample_new ( );
+    preview.sample = sample_new();
 
     debug ("done\n");
 }
@@ -448,13 +448,40 @@ void mixer_preview(char *name,  int raw_samplerate,
 {
     pthread_mutex_lock(&preview.mutex);
     preview.active = 0;
-    sample_load_file(preview.sample, name,  samplerate,
-                                            raw_samplerate,
-                                            raw_channels,
-                                            sndfile_format,
-                                            resample_sndfile);
+
+    if (sample_load_file(preview.sample, name,  samplerate,
+                                                raw_samplerate,
+                                                raw_channels,
+                                                sndfile_format,
+                                                resample_sndfile) == -1)
+    {
+        /*  sample_load_file might call pf_error via sample_open etc
+            so we must call pf_error_get to reset any error that
+            might have occurred :-/
+        */
+        pf_error_get();
+        pthread_mutex_unlock(&preview.mutex);
+        return;
+    }
+
     preview.next_frame = 0;
     preview.active = 1;
+    pthread_mutex_unlock(&preview.mutex);
+}
+
+
+void mixer_flush_preview(void)
+{
+    /* stop any previews */
+    pthread_mutex_lock(&preview.mutex);
+
+    if (preview.active && preview.sample->sp)
+    {
+        /* this will "mark" the preview sample for deletion next
+         * mixdown */
+        preview.next_frame = preview.sample->frames;
+    }
+
     pthread_mutex_unlock(&preview.mutex);
 }
 
@@ -489,7 +516,7 @@ void mixer_set_samplerate(int rate)
 void mixer_shutdown(void)
 {
     debug ("shutting down...\n");
-    sample_free (preview.sample);
+    sample_free(preview.sample);
     debug ("done\n");
 }
 

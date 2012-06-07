@@ -1,6 +1,11 @@
 #ifndef PF_ERROR_H
 #define PF_ERROR_H
 
+/*  when in debug mode, this error system has an annoying habit of
+    causing assertion failures when pf_error is called repeatedly
+    without pf_error_get being called.
+ */
+
 enum
 {
     PF_ERR_INVALID_ERROR = -1,

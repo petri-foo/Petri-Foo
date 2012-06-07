@@ -1,3 +1,7 @@
+2012-06-06 James Morris <james@jwm-art.net>
+
+        * sample-selector auto-preview fixes
+
 2011-08-06 Brendan Jones <brendan.jones.it@gmail.com>
 
 	* gui/global_settings.[ch]

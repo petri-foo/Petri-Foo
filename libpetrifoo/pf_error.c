@@ -8,6 +8,10 @@ static int last_error_no = PF_ERR_INVALID_ERROR;
 
 void pf_error(int pf_error_no)
 {
+    #if DEBUG
+    if (last_error_no != PF_ERR_INVALID_ERROR)
+        debug("previous error not reset, about to abort...\n");
+    #endif
     assert (last_error_no == PF_ERR_INVALID_ERROR);
     last_error_no = pf_error_no;
 }
@@ -17,6 +21,7 @@ int pf_error_get(void)
 {
     int errno = last_error_no;
     last_error_no = PF_ERR_INVALID_ERROR;
+    return errno;
 }
 
 const char* pf_error_str(int pf_error_no)

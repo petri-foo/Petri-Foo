@@ -88,4 +88,7 @@ void        sample_free_data(Sample*); /* free's samples and filename */
 int         sample_default  (Sample*, int rate);
 
 
+/* ok... so this is not strictly sample-file specific... */
+bool         is_valid_file(const char* path);
+
 #endif /* __SAMPLE_H__ */

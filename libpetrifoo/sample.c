@@ -34,7 +34,7 @@
 #include "names.h"
 #include "sample.h"
 
-#include <stdbool.h>
+#include <sys/stat.h>
 
 
 Sample* sample_new(void)
@@ -357,22 +357,23 @@ int sample_load_file(Sample* sample, const char* name,
         sample->sndfile_format = 0;
     }
 
-	if (resample_sndfile) {
-		if (sfinfo.samplerate != rate)
-		{
-		    float* tmp2 = resample(tmp, rate, &sfinfo);
+    if (resample_sndfile)
+    {
+        if (sfinfo.samplerate != rate)
+        {
+            float* tmp2 = resample(tmp, rate, &sfinfo);
 
-		    if (!tmp2)
-		    {
-		        free(tmp);
-		        return -1;
-		    }
+            if (!tmp2)
+            {
+                free(tmp);
+                return -1;
+            }
 
-		    free(tmp);
-		    tmp = tmp2;
-		}
-	}
-	
+            free(tmp);
+            tmp = tmp2;
+        }
+    }
+
     if (sfinfo.channels == 1)
     {
         float* tmp2 = mono_to_stereo(tmp, &sfinfo);
@@ -428,4 +429,14 @@ int sample_deep_copy(Sample* dest, const Sample* src)
     memcpy(dest->sp, src->sp, bytes);
 
     return 0;
+}
+
+bool is_valid_file(const char* path)
+{
+    struct stat st_buf;
+
+    if (stat(path, &st_buf) != 0)
+        return false;
+
+    return (S_ISREG(st_buf.st_mode)  || S_ISLNK(st_buf.st_mode));
 }

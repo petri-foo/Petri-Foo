@@ -103,6 +103,8 @@ static void cb_load(raw_box* rb)
             gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(rb->dialog));
     global_settings* settings = settings_get();
 
+    mixer_flush_preview();
+
     if (!name)
         goto fail;
 
@@ -184,12 +186,8 @@ static void cb_preview(raw_box* rb)
     if (!name)
         return;
 
-    if (strchr(name, '.') == NULL)
-    {   /*  FIXME: silly method of distiguishing files/folders.
-            see: man 3 stat
-         */
+    if (!is_valid_file(name))
         return;
-    }
 
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(rb->check)))
     {
@@ -211,6 +209,8 @@ static void cb_preview(raw_box* rb)
 
 static void cb_cancel(void)
 {
+    mixer_flush_preview();
+
     if (!last_sample->filename)
     {
         patch_sample_unload(patch);

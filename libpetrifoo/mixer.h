@@ -50,6 +50,7 @@ void    mixer_preview           (char* name,
         /* zero for non-raw data */ int raw_channels,
         /* zero for non-raw data */ int sndfile_format,
                                     int resample_sndfile);
+void    mixer_flush_preview     (void);
 
 int     mixer_set_amplitude     (float amplitude);
 float   mixer_get_amplitude     (void);
