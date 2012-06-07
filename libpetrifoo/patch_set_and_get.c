@@ -947,8 +947,6 @@ void patch_param_set_value(int patch_id, PatchParamType param, float v)
     default:
         assert(0);
     }
-
-    return 0;
 }
 
 

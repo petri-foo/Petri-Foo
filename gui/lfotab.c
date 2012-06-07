@@ -228,6 +228,7 @@ static void attack_cb(PhinFanSlider* fan, LfoTabPrivate* p)
 static void mod_src_cb(GtkComboBox* combo, LfoTabPrivate* p)
 {
     int input_id;
+    bool sens;
 
     if (combo == GTK_COMBO_BOX(p->fm1_combo))
         input_id = FM1;
@@ -243,7 +244,18 @@ static void mod_src_cb(GtkComboBox* combo, LfoTabPrivate* p)
         return;
     }
 
-    mod_src_callback_helper_lfo(p->patch_id, input_id, combo, p->lfo_id);
+    sens = mod_src_callback_helper_lfo(p->patch_id, input_id,
+                                                    combo, p->lfo_id);
+
+    switch(input_id)
+    {
+    case FM1:   gtk_widget_set_sensitive(p->fm1_amount, sens);  break;
+    case FM2:   gtk_widget_set_sensitive(p->fm2_amount, sens);  break;
+    case AM1:   gtk_widget_set_sensitive(p->am1_amount, sens);  break;
+    case AM2:   gtk_widget_set_sensitive(p->am2_amount, sens);  break;
+    default:
+        break;
+    }
 }
 
 static void mod_amount_cb(GtkWidget* w, LfoTabPrivate* p)
@@ -656,6 +668,11 @@ static void update_lfo(LfoTabPrivate* p)
     phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->fm2_amount), fm2amt);
     phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->am1_amount), am1amt);
     phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->am2_amount), am2amt);
+
+    gtk_widget_set_sensitive(p->fm1_amount, fm1src != MOD_SRC_NONE);
+    gtk_widget_set_sensitive(p->fm2_amount, fm2src != MOD_SRC_NONE);
+    gtk_widget_set_sensitive(p->am1_amount, am1src != MOD_SRC_NONE);
+    gtk_widget_set_sensitive(p->am2_amount, am2src != MOD_SRC_NONE);
 
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(p->lfo_check), active);
 
