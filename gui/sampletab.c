@@ -95,7 +95,6 @@ static void update_file_button(SampleTabPrivate* p)
 
 static void update_to_end_check(SampleTabPrivate* p)
 {
-    PatchPlayMode mode = patch_get_play_mode(p->patch);
     int index = basic_combo_get_active(p->mode_opt);
 
     if (index != -1)
@@ -111,13 +110,6 @@ static void update_to_end_check(SampleTabPrivate* p)
             break;
         }
     }
-
-    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(p->to_end_check)))
-        mode |= PATCH_PLAY_TO_END;
-    else
-        mode &= ~PATCH_PLAY_TO_END;
-
-    patch_set_play_mode(p->patch, mode);
 }
 
 
@@ -149,10 +141,11 @@ static void set_mode(SampleTabPrivate* p)
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(p->reverse_check)))
         mode |= PATCH_PLAY_REVERSE;
 
-    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(p->to_end_check)))
+    if (mode & PATCH_PLAY_LOOP
+     && gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(p->to_end_check)))
+    {
         mode |= PATCH_PLAY_TO_END;
-    else
-        mode &= ~PATCH_PLAY_TO_END;
+    }
 
     update_to_end_check(p);
     patch_set_play_mode(p->patch, mode);
