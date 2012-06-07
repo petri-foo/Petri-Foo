@@ -1,19 +1,25 @@
 #include "pf_error.h"
-
-#include <assert.h>
 #include "petri-foo.h"
 
 static int last_error_no = PF_ERR_INVALID_ERROR;
 
+/* FIXME: still not happy with this... */
 
-void pf_error(int pf_error_no)
+
+int pf_error_set(int pf_error_no)
 {
-    #if DEBUG
+    int ret = 0;
+
     if (last_error_no != PF_ERR_INVALID_ERROR)
-        debug("previous error not reset, about to abort...\n");
-    #endif
-    assert (last_error_no == PF_ERR_INVALID_ERROR);
+    {
+        ret = 1;
+        debug("previous error (%d:'%s') not reset, about to abort...\n",
+                            last_error_no, pf_error_str(last_error_no));
+    }
+
     last_error_no = pf_error_no;
+
+    return ret;
 }
 
 
@@ -23,6 +29,7 @@ int pf_error_get(void)
     last_error_no = PF_ERR_INVALID_ERROR;
     return errno;
 }
+
 
 const char* pf_error_str(int pf_error_no)
 {
@@ -67,8 +74,13 @@ const char* pf_error_str(int pf_error_no)
         return "Invalid channel number";
     case PF_ERR_PATCH_NOTE:
         return "Invalid note";
+    case PF_ERR_PATCH_VALUE_NEGATIVE:
+        return "Invalid negative value";
+    case PF_ERR_PATCH_VALUE_LEVEL:
+        return "Invalid value out of range 0.0 ~ 1.0";
+
     case PF_ERR_PATCH_PARAM_VALUE:
-        return "Invalud parameter value";
+        return "Invalid parameter value";
 
     /* Sample errors */
     case PF_ERR_SAMPLE_ALLOC:

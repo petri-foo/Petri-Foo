@@ -1,10 +1,9 @@
 #ifndef PF_ERROR_H
 #define PF_ERROR_H
 
-/*  when in debug mode, this error system has an annoying habit of
-    causing assertion failures when pf_error is called repeatedly
-    without pf_error_get being called.
- */
+
+#include <assert.h>
+
 
 enum
 {
@@ -54,9 +53,14 @@ enum
 };
 
 
-void        pf_error(int pf_error_no);
 int         pf_error_get(void);
 const char* pf_error_str(int pf_error_no);
+
+#define     pf_error(pf_error_no) \
+            assert(pf_error_set(pf_error_no) == 0)
+
+/*  pf_error_set should be called via the macro above */
+int         pf_error_set(int pf_error_no);
 
 
 #endif

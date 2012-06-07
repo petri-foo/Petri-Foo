@@ -237,9 +237,9 @@ int patch_set_env_release (int patch_id, int eg, float secs)
 int patch_set_env_key_amt(int patch_id, int eg, float val)
 {
     assert(patchok(patch_id));
-    if (val < 0.0 || val > 1.0)
+    if (val < -1.0 || val > 1.0)
     {
-        pf_error(PF_ERR_PATCH_VALUE_LEVEL);
+        pf_error(PF_ERR_PATCH_PARAM_VALUE);
         return -1;
     }
     eg = mod_src_to_eg_index(eg);

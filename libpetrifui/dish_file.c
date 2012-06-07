@@ -352,7 +352,7 @@ dish_file_write_lfo(xmlNodePtr nodeparent, int patch_id, int lfo_id)
     snprintf(buf, CHARBUFSIZE, "%f", val);
     xmlNewProp(node2,   BAD_CAST "beats", BAD_CAST buf);
 
-    val = patch_get_lfo_sync(patch_id, lfo_id);
+    state = patch_get_lfo_sync(patch_id, lfo_id);
     xmlNewProp(node2,   BAD_CAST "sync",
                         BAD_CAST (state ? "true" : "false"));
 

@@ -1,3 +1,16 @@
+2012-06-08 James Morris <james@jwm-art.net>
+
+	* libpetrifoo/patch_set_and_get.c: fix assertion
+	  range check for envelope key tracking.
+
+	* libpetriui/dish_file.c: fix saving of LFO sync
+	  setting.
+
+	* libpetrifoo/pf_error.c: add missing enum cases
+	  to switch, modify handling of unacknowledged
+	  errors to be more informative.
+
+
 2012-06-07 James Morris <james@jwm-art.net>
 
 	* gui/sampletab.c, fix for play mode assertion failure.
