@@ -4,6 +4,8 @@
 	  Fixed logic for handling play modes where the to-end
 	  checkbox should sometimes be ignored.
 
+	* fixed "program returns random data in a function".
+
 
 2012-06-06 James Morris <james@jwm-art.net>
 

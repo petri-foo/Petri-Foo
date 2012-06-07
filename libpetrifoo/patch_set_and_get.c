@@ -928,6 +928,8 @@ float patch_param_get_value(int patch_id, PatchParamType param)
     default:
         assert(0);
     }
+    /* prevent "program returns random data in a function" */
+    return 0;
 }
 
 
@@ -945,6 +947,8 @@ void patch_param_set_value(int patch_id, PatchParamType param, float v)
     default:
         assert(0);
     }
+
+    return 0;
 }
 
 

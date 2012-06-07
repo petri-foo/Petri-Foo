@@ -26,11 +26,13 @@
 
 int patch_event_set(int patch_id, EvType evtype, ...)
 {
+    return 0;
 }
 
 
 BaseEvent* patch_event_get(int patch_id, EvType evtype, ...)
 {
+    return 0;
 }
 
 
@@ -38,16 +40,19 @@ BaseEvent* patch_event_get(int patch_id, EvType evtype, ...)
 /* assertions on these to make sure correct type used */
 bool base_event_get_bool(BaseEvent* ev)
 {
+    return false;
 }
 
 
 float base_event_get_float(BaseEvent* ev)
 {
+    return 0;
 }
 
 
 int base_event_get_int(BaseEvent* ev)
 {
+    return 0;
 }
 
 
