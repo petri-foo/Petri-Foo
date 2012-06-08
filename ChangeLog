@@ -10,6 +10,16 @@
 	  to switch, modify handling of unacknowledged
 	  errors to be more informative.
 
+	* gui/lfotab.c: only sensitize relevant widgets when
+	  changing LFO between tempo-synced frequency and
+	  non-synced frequency.
+
+	* gui/lfotab.c: finish dynamically sensitizing LFO
+	  amount sliders (this time for when switching between
+	  different LFOs).
+
+	* gui/idselector.c: change debug statement to output
+	  BEFORE signal emmission.
 
 2012-06-07 James Morris <james@jwm-art.net>
 
@@ -20,7 +30,7 @@
 	* fixed "program returns random data in a function".
 	  (oops added an unneeded return statement).
 
-	* dynamically set amount sliders sensitivity to reflect
+	* dynamically set LFO amount sliders sensitivity to reflect
 	  state of appropriate modulation source.
 
 	* remove ***IS*** textview message

@@ -1,0 +1,40 @@
+If you want to contribute to Petri-Foo please take a moment to read these
+loose guidelines.
+
+
+General Guidelines
+------------------
+
+* Do join the petri-foo-devel mailing list
+* Do not be afraid to pester me into action
+* Use of the word awesome is banned (whether applicable or not)
+
+
+Patches
+-------
+
+* You may email me patches as attachments
+* Very simple patches may be emailed inline to me or the list
+* Try to avoid making whitespace changes in patches
+
+
+Code Contributions via Git
+--------------------------
+
+* Try not to group unrelated bug fixes into a single commit
+* Try not to group unrelated commits into a single pull request
+
+
+Rough Coding Style
+------------------
+
+* Line width <= 76 characters
+* Do not use tab characters
+* Do not leave trailing spaces
+* Indents four spaces
+* Braces always go on newline
+* Space after comma (unless the line becomes 77 characters)
+* Keywords such as if, for, have space before open bracket
+* Function calls do not have space before open bracket
+* Function declarations in headers should be aligned and parameters should
+  only be named when clarity demands

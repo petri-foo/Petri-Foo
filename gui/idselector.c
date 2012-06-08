@@ -126,11 +126,11 @@ press_cb(GtkToggleButton* button, GdkEvent* event, IDSelectorPrivate* p)
             p->index = i;
             gtk_toggle_button_set_active(
                 GTK_TOGGLE_BUTTON(p->buttons[p->index]), TRUE);
-            g_signal_emit_by_name(G_OBJECT(p->self), "changed");
 
             debug("selected index:%d id:%d name:%s\n",
                     i, p->ids_names[i].id, p->ids_names[i].name);
 
+            g_signal_emit_by_name(G_OBJECT(p->self), "changed");
             return TRUE;
         }
     }

@@ -106,7 +106,7 @@ static void lfo_tab_class_init(LfoTabClass* klass)
 }
 
 
-static void set_sensitive(LfoTabPrivate* p, gboolean val)
+static void set_lfo_sensitive(LfoTabPrivate* p, gboolean val)
 {
     gboolean active = gtk_toggle_button_get_active(
                                 GTK_TOGGLE_BUTTON(p->sync_radio));
@@ -126,13 +126,32 @@ static void set_sensitive(LfoTabPrivate* p, gboolean val)
 
     gtk_widget_set_sensitive(p->fm1_combo,  val);
     gtk_widget_set_sensitive(p->fm2_combo,  val);
-    gtk_widget_set_sensitive(p->fm1_amount, val);
-    gtk_widget_set_sensitive(p->fm2_amount, val);
 
     gtk_widget_set_sensitive(p->am1_combo,  val);
     gtk_widget_set_sensitive(p->am2_combo,  val);
-    gtk_widget_set_sensitive(p->am1_amount, val);
-    gtk_widget_set_sensitive(p->am2_amount, val);
+
+    if (val)
+    {
+        gtk_widget_set_sensitive(p->fm1_amount,
+            mod_src_callback_helper_lfo(p->patch_id, FM1,
+                                GTK_COMBO_BOX(p->fm1_combo), p->lfo_id));
+        gtk_widget_set_sensitive(p->fm2_amount,
+            mod_src_callback_helper_lfo(p->patch_id, FM2,
+                                GTK_COMBO_BOX(p->fm2_combo), p->lfo_id));
+        gtk_widget_set_sensitive(p->am1_amount,
+            mod_src_callback_helper_lfo(p->patch_id, AM1,
+                                GTK_COMBO_BOX(p->am1_combo), p->lfo_id));
+        gtk_widget_set_sensitive(p->am2_amount,
+            mod_src_callback_helper_lfo(p->patch_id, AM2,
+                                GTK_COMBO_BOX(p->am2_combo), p->lfo_id));
+    }
+    else
+    {
+        gtk_widget_set_sensitive(p->fm1_amount, FALSE);
+        gtk_widget_set_sensitive(p->fm2_amount, FALSE);
+        gtk_widget_set_sensitive(p->am1_amount, FALSE);
+        gtk_widget_set_sensitive(p->am2_amount, FALSE);
+    }
 
     gtk_widget_set_sensitive(p->freq_fan, !active && val);
     gtk_widget_set_sensitive(p->beats_sb,  active && val);
@@ -155,7 +174,7 @@ static void on_cb(GtkToggleButton* button, LfoTabPrivate* p)
 
 static void on_cb2(GtkToggleButton* button, LfoTabPrivate* p)
 {
-    set_sensitive(p, gtk_toggle_button_get_active(button));
+    set_lfo_sensitive(p, gtk_toggle_button_get_active(button));
 }
 
 
@@ -186,9 +205,10 @@ static void sync_cb(GtkToggleButton* button, LfoTabPrivate* p)
 
 static void sync_cb2(GtkToggleButton* button, LfoTabPrivate* p)
 {
-    (void)button;
-    set_sensitive(p,
-            gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(p->lfo_check)));
+    gboolean active = gtk_toggle_button_get_active(
+                                GTK_TOGGLE_BUTTON(button));
+    gtk_widget_set_sensitive(p->freq_fan, !active);
+    gtk_widget_set_sensitive(p->beats_sb,  active);
 }
 
 
@@ -516,7 +536,7 @@ static void lfo_tab_init(LfoTab* self)
     ++y;
 
     /* done */
-    set_sensitive(p, FALSE);
+    set_lfo_sensitive(p, FALSE);
     connect(p);
 }
 
@@ -544,9 +564,6 @@ static void update_lfo(LfoTabPrivate* p)
     int mod_srcs = (mod_src_is_global(p->lfo_id)
                         ? MOD_SRC_GLOBALS
                         : MOD_SRC_ALL);
-
-
-    debug("setting combo model\n");
 
     block(p);
     mod_src_combo_set_model(GTK_COMBO_BOX(p->fm1_combo), mod_srcs);

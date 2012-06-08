@@ -44,17 +44,4 @@ http://petri-foo.sourceforge.net
 Coding/Contributions
 --------------------
 
-* Do join the petri-foo-devel mailing list
-* Don't be afraid to pester me into action
-* Do not use tab characters
-* Do not leave trailing spaces
-* Indents four spaces
-* Braces always go on newline
-* Line width <= 76 characters
-* Space after comma (unless the line becomes 77 characters)
-* No space before ( except for function declarations in header files
-* Don't be one of those tarts that use the word awesome[ness]
-
-
-
-
+See the HACKING file.
