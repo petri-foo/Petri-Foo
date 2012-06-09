@@ -1,3 +1,9 @@
+2012-06-09 James Morris <james@jwm-art.net>
+
+	* libpetrifoo/patch_private/patch_data.c, patch_copy:
+	  add call to lfo_update_params for GLFOs (VLFOs are
+	  updated on voice trigger).
+
 2012-06-08 James Morris <james@jwm-art.net>
 
 	* libpetrifoo/patch_set_and_get.c: fix assertion

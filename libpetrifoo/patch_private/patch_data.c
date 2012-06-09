@@ -326,10 +326,14 @@ void patch_copy(Patch* dest, Patch* src)
     }
 
     for (i = 0; i < PATCH_MAX_LFOS; ++i)
+    {
         dest->glfo_params[i] = src->glfo_params[i];
+        lfo_update_params(dest->glfo[i], &dest->glfo_params[i]);
+    }
 
     for (i = 0; i < VOICE_MAX_LFOS; ++i)
         dest->vlfo_params[i] = src->vlfo_params[i];
+        /* VLFO updated when voice triggered */
 
     for (i = 0; i < VOICE_MAX_ENVS; ++i)
         dest->env_params[i] = src->env_params[i];
