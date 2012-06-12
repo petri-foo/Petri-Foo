@@ -438,10 +438,10 @@ GtkWidget* mod_section_new(void)
 void mod_section_set_patch(ModSection* self, int patch_id)
 {
     ModSectionPrivate* p = MOD_SECTION_GET_PRIVATE(self);
-    float param1;
+    float param1 = 0;
     float param2 = 0;
-    float vel_amt;
-    float key_trk;
+    float vel_amt = 0;
+    float key_trk = 0;
 
     int     i;
     int     last_slot = MAX_MOD_SLOTS;

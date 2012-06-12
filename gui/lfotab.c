@@ -545,7 +545,7 @@ static void update_lfo(LfoTabPrivate* p)
 {
     LFOShape lfoshape;
     int shape;
-    float freq, beats, delay, attack;
+    float freq, beats, delay = 0, attack = 0;
     bool active, sync, positive;
     GtkTreeIter iter;
 

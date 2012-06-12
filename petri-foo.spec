@@ -1,10 +1,10 @@
 Summary: A midi controlled audio sampler
 Name: petri-foo
-Version: 0.0.2
+Version: 0.1.3
 Release: 1
 License: GPL
 Group: Applications/Multimedia
-URL: http://www.gazuga.net
+URL: http://petri-foo.sourceforge.net
 Source0: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 Requires: libsamplerate libsndfile gtk2 libxml2 alsa-lib jack-audio-connection-kit

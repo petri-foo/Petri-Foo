@@ -167,7 +167,6 @@ int patch_create(void)
 
 int patch_duplicate(int src_id)
 {
-    Patch* p;
     int id;
 
     assert(patchok(src_id));

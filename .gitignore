@@ -15,6 +15,7 @@ Makefile.in
 *.wav
 *.petri-foo
 *.orig
+*.bz2
 
 aclocal.m4
 autom4te.cache/

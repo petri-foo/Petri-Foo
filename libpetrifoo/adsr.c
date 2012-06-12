@@ -123,6 +123,7 @@ void adsr_init(ADSR* env)
 
 void adsr_trigger(ADSR* env, float key, float vel)
 {
+    (void)vel; /* why is this still here? */
     env->state = ADSR_STATE_DELAY;
     env->ticks = 0;
     env->aval = env->val;

@@ -491,6 +491,7 @@ pitchscale (Patch * p, PatchVoice * v, float *l, float *r)
 inline static void
 pan (Patch * p, PatchVoice * v, int index, float *l, float *r)
 {
+    (void)index; /* how come this is no longer used? why is it here? */
     int i;
     float pan;
 
@@ -535,8 +536,9 @@ pan (Patch * p, PatchVoice * v, int index, float *l, float *r)
 inline static void
 filter (Patch* p, PatchVoice* v, int index,  float* l, float* r)
 {
+    (void)index; /* how come this is no longer used? why is it here? */
     int i;
-    float ffreq, freso, logreso;
+    float ffreq, freso;
 
     /* get filter cutoff frequency */
     ffreq = p->ffreq.val;
@@ -612,9 +614,10 @@ filter (Patch* p, PatchVoice* v, int index,  float* l, float* r)
 inline static int
 gain (Patch* p, PatchVoice* v, int index, float* l, float* r)
 {
+    (void)index; /* how come this is no longer used? why is it here? */
     int i;
     float amp = 0.0;
-    float logamp = 0.0;
+    /*float logamp = 0.0;*/
 
     /* first, we use our set value as a base */
     amp = p->amp.val;
@@ -717,6 +720,7 @@ inline static void advance_fwd(int* posi,  uint32_t* posf,
  * returned if we are out of samples after doing our work) */
 inline static int advance (Patch* p, PatchVoice* v, int index)
 {
+    (void)index; /* how come this is no longer used? why is it here? */
     int i,j;
     double pitch;
     double scale;

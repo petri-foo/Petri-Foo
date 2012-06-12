@@ -89,6 +89,7 @@ void log_display_hide(void)
 
 void log_display_init(GtkWidget* parent)
 {
+    (void)parent; /* why is this still here? */
     GtkWidget* swindow;
     GtkWidget* vbox;
 

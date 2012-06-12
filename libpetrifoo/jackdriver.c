@@ -326,20 +326,28 @@ static int start(void)
         if (ports[0] != NULL)
         {
             if (jack_connect(client, jack_port_name(lport), ports[0]) == 0)
+            {
                 debug("JACK failed to connect left output port\n");
+            }
 
             if (ports[1] != NULL)
             {
                 if (jack_connect(client, jack_port_name (rport), ports[1]))
+                {
                     debug("JACK failed to connect right output port\n");
+                }
             }
             else
+            {
                 debug("JACK failed to connect right output port\n");
+            }
 
             free (ports);
         }
         else
+        {
             debug("JACK failed to connect output ports\n");
+        }
     }
 
     debug("JACK Initialization complete\n");

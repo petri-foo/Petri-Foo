@@ -6,7 +6,7 @@ endif (COMMAND CMAKE_POLICY)
 
 project(Petri-Foo)
 
-set(Petri-Foo_VERSION_MAJOR 0)
+set(Petri-Foo_VERSION_MAJOR 1)
 set(Petri-Foo_VERSION_MINOR 3)
 set(BINDIR  "bin" CACHE STRING "Where to install binaries")
 set(DATADIR "share/petri-foo" CACHE STRING "Where to install data files")
@@ -15,12 +15,15 @@ set(PIXMAPS_DIR "share/pixmaps" CACHE STRING "Where to install icons")
 set(MIME_DIR "share/mime" CACHE STRING "Where MIME definitions are located")
 set(UpdateMime "ON" CACHE BOOL "Update Mime Database")
 
+set(PROJECT_VERSION "0.2.3")
+set(ARCHIVE_NAME petri-foo-0.${Petri-Foo_VERSION_MAJOR}.${Petri-Foo_VERSION_MINOR})
+
 mark_as_advanced(EXECUTABLE_OUTPUT_PATH)
 mark_as_advanced(LIBRARY_OUTPUT_PATH)
 mark_as_advanced(CMAKE_BUILD_TYPE)
 mark_as_advanced(CMAKE_INSTALL_PREFIX)
 
-option (BuildForDebug "Include gdb debugging support" ON)
+option (BuildForDebug "Include gdb debugging support" OFF)
 
 # DEBUG
 set (BuildOptionsDebug "-O0 -ggdb" CACHE STRING "Debug build flags")
@@ -156,4 +159,8 @@ if (UpdateMime)
     )
 endif (UpdateMime)
 
+add_custom_target(dist
+    COMMAND git archive --prefix=${ARCHIVE_NAME}/ HEAD
+        | bzip2 > ${CMAKE_BINARY_DIR}/${ARCHIVE_NAME}.tar.bz2
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 

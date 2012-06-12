@@ -417,7 +417,6 @@ void cb_menu_patch_remove(GtkWidget* menu_item, gpointer data)
 {
     (void)menu_item;(void)data;
 
-    int val;
     int cp;
     int index;
 
@@ -448,6 +447,8 @@ void cb_menu_view_log_display_showing(gboolean active)
 
 static void cb_menu_view_log_display(GtkWidget* widget, gpointer data)
 {
+    (void)widget; (void)data;
+
     if (gtk_check_menu_item_get_active(
         GTK_CHECK_MENU_ITEM(menu_view_log_display)))
     {
@@ -803,7 +804,6 @@ gui_menu_check_add(GtkWidget* menu, const char* label,  gboolean active,
                                                         gpointer data)
 {
     GtkWidget* item = 0;
-    GtkWidget* submenu = 0;
 
     item = gtk_check_menu_item_new_with_label(label);
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), active);
@@ -816,12 +816,12 @@ gui_menu_check_add(GtkWidget* menu, const char* label,  gboolean active,
 /* recent items menu */
 void gui_recent_files_load(void) 
 {
-    GtkWidget* menuitem_to_append_to = NULL;
     GtkRecentFilter *recent_filter;
     GtkWidget *menuitem_file_recent_items;
     recent_manager = gtk_recent_manager_get_default();
     recent_filter = gtk_recent_filter_new();
-    gtk_recent_filter_add_mime_type(recent_filter, "application/x-petri-foo");
+    gtk_recent_filter_add_mime_type(recent_filter,
+                                    "application/x-petri-foo");
     menuitem_file_recent_items = 
             gtk_recent_chooser_menu_new_for_manager(recent_manager);
     gtk_recent_chooser_add_filter(
@@ -837,7 +837,8 @@ void gui_recent_files_load(void)
             GTK_RECENT_CHOOSER(menuitem_file_recent_items), FALSE);
     gtk_recent_chooser_menu_set_show_numbers(
             GTK_RECENT_CHOOSER_MENU(menuitem_file_recent_items), TRUE);
-    g_signal_connect(GTK_OBJECT(menuitem_file_recent_items), "item-activated",
+    g_signal_connect(GTK_OBJECT(menuitem_file_recent_items),
+                    "item-activated",
                      G_CALLBACK(cb_recent_chooser_item_activated), window);
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(menuitem_file_recent), 
             menuitem_file_recent_items);

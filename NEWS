@@ -1,1 +1,13 @@
-See the Changelog and/or mailing list.
+After some time a new release of Petri-Foo is now available...
+
+Petri-Foo-0.1.3
+
+* Moved build configuration system to cmake
+* Removed external dependency on PHAT and replaced with a custom
+  version called Phin included with Petri-Foo
+* Mousewheel waveform zooming
+* Auto-preview (with optional resampling) in sample selector dialog
+* Numerous bugs squashed unsquashed and squashed again
+* Minor GUI updates/fixes
+* Removed obsolete source files
+

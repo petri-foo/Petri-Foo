@@ -1,3 +1,15 @@
+2012-06-11 James Morris <james@jwm-art.net>
+
+	Preparatory Work for 0.1.3 Release
+	==================================
+
+	* added dist target
+	* removed obsolete source files
+	* changed default build to release
+	* fixed some warnings caused by not-#defined debug
+	* fixed some warnings about unused variables/parameters
+	  (grep why is this still here)
+
 2012-06-09 James Morris <james@jwm-art.net>
 
 	* libpetrifoo/patch_private/patch_data.c, patch_copy:
