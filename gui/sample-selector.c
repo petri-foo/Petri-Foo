@@ -79,6 +79,35 @@ typedef struct _raw_box
 } raw_box;
 
 
+/*
+snd_fmt const_sound_formats[] = {
+    {   "*.wav",    "Microsoft WAV files"                       },
+    {   "*.aif",    "Apple/SGI AIFF files"                      },
+    {   "*.au",     "Sun/NeXT AU files"                         },
+    {   "*.raw",    "RAW PCM files"                             },
+    {   "*.paf",    "Ensoniq PARIS files"                       },
+    {   "*.svx",    "Amiga IFF/SVX files"                       },
+    {   "*.sph",    "NIST SPHERE files"                         },
+    {   "*.voc",    "VOC files"                                 },
+    {   "*.sf",     "IRCAM files"                               },
+    {   "*.w64",    "64bit WAV files"                           },
+    {   "*.pvf",    "Portable Voice Format files"               },
+    {   "*.xi",     "Fasttracker 2 Extended Instrument files"   },
+    {   "*.sds",    "MIDI Sample Dump files"                    },
+    {   "*.avr",    "Audio VIsual Research files"               },
+    {   "*.sd2",    "Sound Designer 2 files"                    },
+    {   "*.sd2f",   "Sound Designer 2 files"                    },
+    {   "*.flac",   "FLAC files"                                },
+    {   "*.caf",    "Core Audio files"                          },
+    {   "*.caff",   "Core Audio files"                          },
+    {   "*.wve",    "Psion WVE files"                           },
+    {   "*.oga",    "Ogg Vorbis files"                          },
+    {   "*.ogg",    "Ogg Vorbis files"                          },
+    {   "*.snd",    "SND files"                                 },
+    {   0, 0 }};
+*/
+
+
 static int get_format(raw_box* rb)
 {
     int format = basic_combo_get_active(rb->format);
@@ -311,8 +340,8 @@ static raw_box* raw_box_new(GtkWidget* dialog)
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(rb->resample_checkbox),
                                                                 FALSE);
     gtk_widget_show(rb->resample_checkbox);
-    gtk_box_pack_start(GTK_BOX(rb->toggle_box), rb->resample_checkbox, FALSE,
-                                                                FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(rb->toggle_box), rb->resample_checkbox,
+                                                        FALSE, FALSE, 0);
 
 
     g_signal_connect(dialog, "selection-changed",
@@ -374,17 +403,128 @@ static raw_box* raw_box_new(GtkWidget* dialog)
 }
 
 
+void create_filters(GtkWidget* chooser)
+{
+    typedef struct snd_fmt_names
+    {
+        int sf_fmt;
+        char* ext;
+        char* name;
+    } snd_fmt;
+
+    snd_fmt alt_exts[] = {
+    /*  libsndfile only provides a single 'most common' extension for
+     *  each format it is capable of reading. Here are some additional
+     *  extensions for selected formats:
+     *  (followed by sndfile provided extension in comments)
+     */ 
+        { SF_FORMAT_AIFF,   "aif",    0}, /* aiff */
+        { SF_FORMAT_CAF,    "caff",   0}, /* caf */
+        { SF_FORMAT_OGG,    "ogg",    0}, /* oga */
+        { SF_FORMAT_SD2,    "sd2f",   0}, /* sd2 */
+        { SF_FORMAT_NIST,   "sph",    0}, /* wav */
+        { 0, 0, 0 }};
+
+    /* stuff for accessing soundfile format information */
+    snd_fmt sound_formats[99];
+    SF_FORMAT_INFO  sf_fmt;
+    int             sf_fmt_count;
+    int             n;
+
+    /* stuff for improving format information */
+    snd_fmt* fmt;
+    snd_fmt* n_fmt;
+    snd_fmt* alt;
+    char pat[10];
+
+    GtkFileFilter* filter = 0;
+
+    /* generate format information */
+    sf_command(0, SFC_GET_FORMAT_MAJOR_COUNT, &sf_fmt_count, sizeof(int));
+
+    for (fmt = sound_formats, n = 0; n < sf_fmt_count; ++n, ++fmt)
+    {
+        sf_fmt.format = n;
+        sf_command(0, SFC_GET_FORMAT_MAJOR, &sf_fmt, sizeof(sf_fmt));
+        snprintf(pat, 10, "*.%s", sf_fmt.extension);
+        pat[9] = '\0';
+        fmt->sf_fmt = sf_fmt.format;
+        fmt->name = strdup(sf_fmt.name);
+        fmt->ext = strdup(pat);
+
+        for (n_fmt = fmt, alt = alt_exts; alt->sf_fmt != 0; ++alt)
+        {
+            if (alt->sf_fmt == n_fmt->sf_fmt)
+            {
+                snprintf(pat, 10, "*.%s", alt->ext);
+                pat[9] = '\0';
+                ++fmt;
+                fmt->sf_fmt = sf_fmt.format;
+                fmt->name = strdup(n_fmt->name);
+                fmt->ext = strdup(pat);
+            }
+        }
+    }
+
+    fmt->name = 0;
+    fmt->ext = 0;
+
+    /* Audio files filter (specifically: files loadable by sndfile) */
+    filter = gtk_file_filter_new();
+    gtk_file_filter_set_name(filter, "All Audio files");
+    for (fmt = sound_formats; fmt->name != 0 && fmt->ext != 0; ++fmt)
+        gtk_file_filter_add_pattern(filter, fmt->ext);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(chooser), filter);
+
+    /* Individual filters for formats loadable by sndfile
+     * NOTE: most formats have one file extension, but some have to be
+     * arkward and have alternative extensions...
+     */
+
+    for (fmt = sound_formats; fmt->name != 0 && fmt->ext != 0; fmt = n_fmt)
+    {
+        n_fmt = fmt;
+        filter = gtk_file_filter_new();
+        gtk_file_filter_set_name(filter, fmt->name);
+
+        while (strcmp(fmt->name, n_fmt->name) == 0)
+        {
+            gtk_file_filter_add_pattern(filter, n_fmt->ext);
+            ++n_fmt;
+            if (n_fmt->name == 0)
+                break;
+        }
+
+        gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(chooser), filter);
+    }
+
+    /* All files filter */
+    filter = gtk_file_filter_new();
+    gtk_file_filter_set_name(filter, "All files");
+    gtk_file_filter_add_pattern(filter, "*");
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(chooser), filter);
+
+    for (fmt = sound_formats; fmt->name != 0 && fmt->ext != 0; fmt = n_fmt)
+    {
+        free(fmt->name);
+        free(fmt->ext);
+    }
+}
+
+
+
+
+
 int sample_selector_show(int id, GtkWidget* parent_window,
                                  SampleTab* sampletab)
 {
+    enum {  RESPONSE_LOAD = 1,  RESPONSE_PREVIEW = 2 };
+
     GtkWidget* dialog;
     raw_box* rawbox;
     global_settings* settings = settings_get();
 
-    enum {
-        RESPONSE_LOAD = 1,
-        RESPONSE_PREVIEW = 2
-    };
+
 
     last_sample = sample_new();
     patch = id;
@@ -400,6 +540,8 @@ int sample_selector_show(int id, GtkWidget* parent_window,
         gtk_file_chooser_set_extra_widget(GTK_FILE_CHOOSER(dialog),
                                                             rawbox->box);
     }
+
+    create_filters(dialog);
 
     sample_shallow_copy(last_sample, patch_sample_data(patch));
 
