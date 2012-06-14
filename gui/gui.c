@@ -38,6 +38,7 @@
 #include "channelsection.h"
 #include "config.h"
 #include "driver.h"
+#include "global_settings.h"
 #include "gui.h"
 #include "log_display.h"
 #include "mastersection.h"
@@ -78,6 +79,7 @@ static GtkWidget* menu_view_log_display = 0;
 
 /* settings */
 static GtkWidget* menu_settings_fans = 0;
+static GtkWidget* menu_settings_auto_preview = 0;
 
 /* current patch, makes passing patch id to sample editor easier */
 static int cur_patch = -1;
@@ -511,6 +513,14 @@ static void cb_menu_settings_fans(GtkWidget* widget, gpointer data)
 }
 
 
+static void cb_menu_settings_auto_preview(GtkWidget* widget, gpointer data)
+{
+    (void)widget;(void)data;
+    global_settings* settings = settings_get();
+    settings->sample_auto_preview = gtk_check_menu_item_get_active(
+                        GTK_CHECK_MENU_ITEM(menu_settings_auto_preview));
+}
+
 static void cb_menu_help_stfu (GtkWidget* widget, gpointer data)
 {
     (void)widget;(void)data;
@@ -587,6 +597,7 @@ int gui_init(void)
     GtkWidget* window_vbox;
     GtkWidget* master_hbox;
     GtkWidget* vbox;
+    global_settings* settings = settings_get();
 
     debug ("Initializing GUI\n");
 
@@ -646,24 +657,35 @@ int gui_init(void)
             G_CALLBACK(cb_menu_view_log_display), window);
 
     /* settings menu */
+
+    /* use slider fans */
     menu_settings = gui_menu_add(menubar, "Settings", NULL, NULL);
     gui_menu_add(menu_settings, "Audio...",
             G_CALLBACK(cb_menu_settings_audio),     NULL);
-
     menu_settings_fans =
         gtk_check_menu_item_new_with_label("Use slider fans");
-
     gtk_check_menu_item_set_active(
-        GTK_CHECK_MENU_ITEM(menu_settings_fans), 
+        GTK_CHECK_MENU_ITEM(menu_settings_fans),
             phin_fan_slider_get_fans_active());
-
     g_signal_connect(GTK_OBJECT(menu_settings_fans), "toggled",
         G_CALLBACK(cb_menu_settings_fans), NULL);
-
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_settings),
                                         menu_settings_fans);
-
     gtk_widget_show(menu_settings_fans);
+
+    /* auto-preview */
+    menu_settings_auto_preview =
+        gtk_check_menu_item_new_with_label("Sample auto-preview");
+    gtk_check_menu_item_set_active(
+        GTK_CHECK_MENU_ITEM(menu_settings_auto_preview),
+            settings->sample_auto_preview);
+
+    g_signal_connect(GTK_OBJECT(menu_settings_auto_preview), "toggled",
+        G_CALLBACK(cb_menu_settings_auto_preview), NULL);
+
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu_settings),
+                                        menu_settings_auto_preview);
+    gtk_widget_show(menu_settings_auto_preview);
 
     /* help menu */
     menu_help = gui_menu_add(menubar, "Help", NULL, NULL);

@@ -22,6 +22,8 @@
 #define SETTINGS_H
 
 
+#include <stdbool.h>
+
 /*  global settings
     
  */
@@ -41,6 +43,11 @@ typedef struct global_settings_def
     int     abs_max_sample_size;
     int     max_sample_size;
  */
+
+    char*   sample_file_filter;
+    bool    sample_auto_preview;
+    float   sample_preview_length;
+
 } global_settings;
 
 

@@ -47,6 +47,10 @@ void settings_init()
     gbl_settings->last_sample_dir = strdup(getenv("HOME"));
     gbl_settings->last_bank_dir = strdup(getenv("HOME"));
 
+    gbl_settings->sample_file_filter = strdup("All Audio files");
+    gbl_settings->sample_auto_preview = true;
+    gbl_settings->sample_preview_length = 10.0f;
+
     gbl_settings->filename = (char*) g_build_filename(
                              g_get_user_config_dir(),
                              g_get_prgname(),
@@ -153,7 +157,36 @@ int settings_read(const char* path)
                     xmlChar* vprop = xmlGetProp(node2, BAD_CAST "value");
 
                     if (sscanf((const char*)vprop, "%d", &n) == 1)
-                        gbl_settings->log_lines = n;
+                    {   /* arbitrary value alert */
+                        if (n > 0 && n < 65536)
+                            gbl_settings->log_lines = n;
+                    }
+                }
+
+                if (xmlStrcmp(prop, BAD_CAST "sample-file-filter") == 0)
+                {
+                    free(gbl_settings->sample_file_filter);
+                    gbl_settings->sample_file_filter =
+                        (char*) xmlGetProp(node2, BAD_CAST "value");
+                }
+
+                if (xmlStrcmp(prop, BAD_CAST "sample-auto-preview") == 0)
+                {
+                    gbl_settings->sample_auto_preview =
+                        xmlstr_to_gboolean(xmlGetProp(node2,
+                                                        BAD_CAST "value"));
+                }
+
+                if (xmlStrcmp(prop, BAD_CAST "sample-preview-length") == 0)
+                {
+                    float f;
+                    xmlChar* vprop = xmlGetProp(node2, BAD_CAST "value");
+
+                    if (sscanf((const char*)vprop, "%f", &f) == 1)
+                    {
+                        if (f > 0.0f && f < 60.0f)
+                            gbl_settings->sample_preview_length = f;
+                    }
                 }
             }
         }
@@ -247,9 +280,29 @@ int settings_write()
     node2 = xmlNewTextChild(node1, NULL, BAD_CAST "property", NULL);
     xmlNewProp(node2, BAD_CAST "name", BAD_CAST "log-lines");
     xmlNewProp(node2, BAD_CAST "type", BAD_CAST "int");
-
     snprintf(buf, CHARBUFSIZE, "%d", gbl_settings->log_lines);
+    xmlNewProp(node2, BAD_CAST "value", BAD_CAST buf);
 
+
+    node2 = xmlNewTextChild(node1, NULL, BAD_CAST "property", NULL);
+    xmlNewProp(node2, BAD_CAST "name", BAD_CAST "sample-file-filter");
+    xmlNewProp(node2, BAD_CAST "type", BAD_CAST "string");
+    xmlNewProp(node2, BAD_CAST "value",
+                      BAD_CAST gbl_settings->sample_file_filter);
+
+    node2 = xmlNewTextChild(node1, NULL, BAD_CAST "property", NULL);
+    xmlNewProp(node2, BAD_CAST "name", BAD_CAST "sample-auto-preview");
+    xmlNewProp(node2, BAD_CAST "type", BAD_CAST "boolean");
+    xmlNewProp(node2, BAD_CAST "value",
+                      BAD_CAST (gbl_settings->sample_auto_preview
+                                    ? "true"
+                                    : "false"));
+
+    node2 = xmlNewTextChild(node1, NULL, BAD_CAST "property", NULL);
+    xmlNewProp(node2, BAD_CAST "name", BAD_CAST "sample-preview-length");
+    xmlNewProp(node2, BAD_CAST "type", BAD_CAST "float");
+    snprintf(buf, CHARBUFSIZE, "%0.3f",
+                      gbl_settings->sample_preview_length);
     xmlNewProp(node2, BAD_CAST "value", BAD_CAST buf);
 
     debug("attempting to write file:%s\n",gbl_settings->filename);

@@ -76,36 +76,9 @@ typedef struct _raw_box
     int channels;   /* 1 or 2 */
     int endian;     /* 0 == file, 1 == little, 2 == big */
 
+    gboolean dont_preview;
+
 } raw_box;
-
-
-/*
-snd_fmt const_sound_formats[] = {
-    {   "*.wav",    "Microsoft WAV files"                       },
-    {   "*.aif",    "Apple/SGI AIFF files"                      },
-    {   "*.au",     "Sun/NeXT AU files"                         },
-    {   "*.raw",    "RAW PCM files"                             },
-    {   "*.paf",    "Ensoniq PARIS files"                       },
-    {   "*.svx",    "Amiga IFF/SVX files"                       },
-    {   "*.sph",    "NIST SPHERE files"                         },
-    {   "*.voc",    "VOC files"                                 },
-    {   "*.sf",     "IRCAM files"                               },
-    {   "*.w64",    "64bit WAV files"                           },
-    {   "*.pvf",    "Portable Voice Format files"               },
-    {   "*.xi",     "Fasttracker 2 Extended Instrument files"   },
-    {   "*.sds",    "MIDI Sample Dump files"                    },
-    {   "*.avr",    "Audio VIsual Research files"               },
-    {   "*.sd2",    "Sound Designer 2 files"                    },
-    {   "*.sd2f",   "Sound Designer 2 files"                    },
-    {   "*.flac",   "FLAC files"                                },
-    {   "*.caf",    "Core Audio files"                          },
-    {   "*.caff",   "Core Audio files"                          },
-    {   "*.wve",    "Psion WVE files"                           },
-    {   "*.oga",    "Ogg Vorbis files"                          },
-    {   "*.ogg",    "Ogg Vorbis files"                          },
-    {   "*.snd",    "SND files"                                 },
-    {   0, 0 }};
-*/
 
 
 static int get_format(raw_box* rb)
@@ -127,10 +100,12 @@ static int get_format(raw_box* rb)
 static void cb_load(raw_box* rb)
 {
     GtkWidget *msg;
+    GtkFileFilter* filter;
     int err;
     char *name = (char *)
             gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(rb->dialog));
     global_settings* settings = settings_get();
+    const char* filtername;
 
     mixer_flush_preview();
 
@@ -178,6 +153,24 @@ static void cb_load(raw_box* rb)
         }
     }
 
+    /*  propagate certain user-set characteristics of the chooser
+     *  into the global settings
+     */
+
+    filter = gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(rb->dialog));
+    filtername = gtk_file_filter_get_name(filter);
+
+    if (filtername != 0 && settings->sample_file_filter != 0
+     && strcmp(settings->sample_file_filter, filtername) != 0)
+    {
+        free(settings->sample_file_filter);
+        settings->sample_file_filter = strdup(filtername);
+    }
+
+    /* the main menu not the chooser sets the global auto-preview on/off
+    settings->sample_auto_preview =
+        gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(rb->auto_preview));
+    */
     return;
 
 fail:
@@ -210,7 +203,9 @@ fail:
 
 static void cb_preview(raw_box* rb)
 {
-    char *name = gtk_file_chooser_get_filename(
+    char *name;
+
+    name = gtk_file_chooser_get_filename(
                                 GTK_FILE_CHOOSER(rb->dialog));
     if (!name)
         return;
@@ -291,21 +286,11 @@ static void raw_toggled_cb(GtkToggleButton* raw_toggle, gpointer data)
 }
 
 
-static void selection_changed_cb(GtkFileChooser* dialog, gpointer data)
-{
-    (void)dialog;
-
-    raw_box* rb = (raw_box*)data;
-
-    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(rb->auto_preview)))
-        cb_preview(rb);
-}
-
-
 static raw_box* raw_box_new(GtkWidget* dialog)
 {
     GtkTable* t;
     int y = 0;
+    global_settings* settings = settings_get();
 
     raw_box* rb = malloc(sizeof(*rb));
 
@@ -326,12 +311,10 @@ static raw_box* raw_box_new(GtkWidget* dialog)
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(rb->check), FALSE);
     gtk_widget_show(rb->check);
     gtk_box_pack_start(GTK_BOX(rb->toggle_box), rb->check, FALSE, FALSE, 0);
-    g_signal_connect(GTK_OBJECT(rb->check), "toggled",
-                                            G_CALLBACK(raw_toggled_cb), rb);
 
     rb->auto_preview = gtk_check_button_new_with_label("Auto Preview");
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(rb->auto_preview),
-                                                                FALSE);
+                                        settings->sample_auto_preview);
     gtk_widget_show(rb->auto_preview);
     gtk_box_pack_start(GTK_BOX(rb->toggle_box), rb->auto_preview, FALSE,
                                                                 FALSE, 0);
@@ -342,10 +325,6 @@ static raw_box* raw_box_new(GtkWidget* dialog)
     gtk_widget_show(rb->resample_checkbox);
     gtk_box_pack_start(GTK_BOX(rb->toggle_box), rb->resample_checkbox,
                                                         FALSE, FALSE, 0);
-
-
-    g_signal_connect(dialog, "selection-changed",
-                                    G_CALLBACK(selection_changed_cb), rb);
 
     gtk_box_pack_start(GTK_BOX(rb->box), rb->toggle_box, TRUE, TRUE, 0);
     gtk_widget_show(rb->toggle_box);
@@ -399,6 +378,8 @@ static raw_box* raw_box_new(GtkWidget* dialog)
     /* table should be hidden by default */
     gtk_widget_hide(rb->table);
 
+    g_signal_connect(GTK_OBJECT(rb->check), "toggled",
+                                            G_CALLBACK(raw_toggled_cb), rb);
     return rb;
 }
 
@@ -439,6 +420,10 @@ void create_filters(GtkWidget* chooser)
 
     GtkFileFilter* filter = 0;
 
+    GSList* f_list;
+    GSList* f_item;
+    global_settings* settings = settings_get();
+
     /* generate format information */
     sf_command(0, SFC_GET_FORMAT_MAJOR_COUNT, &sf_fmt_count, sizeof(int));
 
@@ -473,7 +458,12 @@ void create_filters(GtkWidget* chooser)
     filter = gtk_file_filter_new();
     gtk_file_filter_set_name(filter, "All Audio files");
     for (fmt = sound_formats; fmt->name != 0 && fmt->ext != 0; ++fmt)
+    {
+        #if DEBUG
+        printf("format ext:%s \tname:%s\n", fmt->ext, fmt->name);
+        #endif
         gtk_file_filter_add_pattern(filter, fmt->ext);
+    }
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(chooser), filter);
 
     /* Individual filters for formats loadable by sndfile
@@ -509,10 +499,71 @@ void create_filters(GtkWidget* chooser)
         free(fmt->name);
         free(fmt->ext);
     }
+
+    f_list = gtk_file_chooser_list_filters(GTK_FILE_CHOOSER(chooser));
+
+    f_item = f_list;
+
+    while(f_item)
+    {
+        filter = GTK_FILE_FILTER(f_item->data);
+
+        if (strcmp(gtk_file_filter_get_name(filter),
+                    settings->sample_file_filter) == 0)
+        {
+            gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(chooser), filter);
+            break;
+        }
+
+        f_item = f_item->next;
+    }
+
+    g_slist_free(f_list);
 }
 
 
+static gboolean timeout_cancel_dont_preview(gpointer data)
+{
+    raw_box* rb = (raw_box*)data;
+    rb->dont_preview = false;
+    return false;
+}
 
+
+static void selection_changed_cb(GtkFileChooser* dialog, gpointer data)
+{
+    (void)dialog;
+
+    raw_box* rb = (raw_box*)data;
+
+    debug("selection changed... dont_preview:%s\n",
+                    (rb->dont_preview ? "T" : "F"));
+
+    if (rb->dont_preview)
+        return;
+
+    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(rb->auto_preview)))
+        cb_preview(rb);
+}
+
+
+static void folder_changed_cb(GtkFileChooser* dialog, gpointer data)
+{
+    (void)dialog;
+
+    raw_box* rb = (raw_box*)data;
+
+    debug("folder changed... dont_preview:%s\n",
+                    (rb->dont_preview ? "T" : "F"));
+
+    mixer_flush_preview();
+
+    if (!rb->dont_preview)
+    {
+        rb->dont_preview = true;
+        g_timeout_add(250, timeout_cancel_dont_preview, rb);
+    }
+}
 
 
 int sample_selector_show(int id, GtkWidget* parent_window,
@@ -523,8 +574,6 @@ int sample_selector_show(int id, GtkWidget* parent_window,
     GtkWidget* dialog;
     raw_box* rawbox;
     global_settings* settings = settings_get();
-
-
 
     last_sample = sample_new();
     patch = id;
@@ -565,7 +614,21 @@ int sample_selector_show(int id, GtkWidget* parent_window,
     gtk_dialog_add_button(GTK_DIALOG(dialog),
                                 "Pre_view", RESPONSE_PREVIEW);
 
+    /*  we don't always want to auto-preview when the "selection-changed"
+        signal is emitted on a) when the dialog is created, b) when the
+        current-folder is changed.
+     */
+    rawbox->dont_preview = true;
+    g_timeout_add(250, timeout_cancel_dont_preview, rawbox);
+
+    g_signal_connect(rawbox->dialog, "current-folder-changed",
+                                G_CALLBACK(folder_changed_cb), rawbox);
+
+    g_signal_connect(rawbox->dialog, "selection-changed",
+                                G_CALLBACK(selection_changed_cb), rawbox);
+
 again:
+
     switch(gtk_dialog_run(GTK_DIALOG(dialog)))
     {
     case GTK_RESPONSE_ACCEPT:
