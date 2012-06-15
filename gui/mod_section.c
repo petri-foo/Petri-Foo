@@ -107,7 +107,9 @@ static void mod_src_cb(GtkComboBox* combo, ModSectionPrivate* p)
     }
 
     active = mod_src_callback_helper(p->patch_id, i, combo, p->param);
-    gtk_widget_set_sensitive(p->mod_amount[i], active);
+
+    if (p->mod_amount[i])
+        gtk_widget_set_sensitive(p->mod_amount[i], active);
 }
 
 static void mod_amount_cb(GtkWidget* w, ModSectionPrivate* p)
@@ -401,6 +403,9 @@ create_mod_srcs:
         gui_attach(t, p->mod_amount[i], c1, c2, y, y + 1);
         ++y;
     }
+
+    if (last_mod_slot < MAX_MOD_SLOTS)
+        p->mod_amount[last_mod_slot] = 0;
 
     connect(p);
 }

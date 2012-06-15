@@ -1075,7 +1075,7 @@ static gboolean phin_slider_button_expose (GtkWidget*      widget,
             if (p->postfix_label)
             {
                 GtkAllocation post_a;
-                gtk_widget_get_allocation(p->prefix_label, &post_a);
+                gtk_widget_get_allocation(p->postfix_label, &post_a);
                 width += post_a.width;
             }
 
