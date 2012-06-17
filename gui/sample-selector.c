@@ -160,10 +160,11 @@ static void cb_load(raw_box* rb)
     filter = gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(rb->dialog));
     filtername = gtk_file_filter_get_name(filter);
 
-    if (filtername != 0 && settings->sample_file_filter != 0
-     && strcmp(settings->sample_file_filter, filtername) != 0)
+    if (filtername != 0)
     {
-        free(settings->sample_file_filter);
+        if (settings->sample_file_filter)
+            free(settings->sample_file_filter);
+
         settings->sample_file_filter = strdup(filtername);
     }
 
@@ -494,7 +495,7 @@ void create_filters(GtkWidget* chooser)
     gtk_file_filter_add_pattern(filter, "*");
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(chooser), filter);
 
-    for (fmt = sound_formats; fmt->name != 0 && fmt->ext != 0; fmt = n_fmt)
+    for (fmt = sound_formats; fmt->name != 0 && fmt->ext != 0; ++fmt)
     {
         free(fmt->name);
         free(fmt->ext);

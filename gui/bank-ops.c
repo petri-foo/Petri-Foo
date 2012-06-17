@@ -28,7 +28,6 @@
 #include <string.h>
 
 #include "dish_file.h"
-#include "log_display.h"
 #include "patch.h"
 #include "patch_util.h"
 #include "petri-foo.h"
@@ -226,7 +225,6 @@ int bank_ops_open(GtkWidget* parent_window)
             if (msg_log_get_notification_state())
             {
                 msg_log(MSG_WARNING, "Bank %s read with errors\n", name);
-                log_display_show();
             }
             else
                 msg_log(MSG_MESSAGE, "Succesfully read bank %s\n", name);
@@ -291,7 +289,6 @@ int bank_ops_open_recent(GtkWidget* parent_window, char* filename)
         if (msg_log_get_notification_state())
         {
             msg_log(MSG_WARNING, "Bank %s read with errors\n", filename);
-            log_display_show();
         }
         else
             msg_log(MSG_MESSAGE, "Succesfully read bank %s\n", filename);
