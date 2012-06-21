@@ -7,7 +7,7 @@ endif (COMMAND CMAKE_POLICY)
 project(Petri-Foo)
 
 set(Petri-Foo_VERSION_MAJOR 1)
-set(Petri-Foo_VERSION_MINOR 3)
+set(Petri-Foo_VERSION_MINOR 4)
 set(BINDIR  "bin" CACHE STRING "Where to install binaries")
 set(DATADIR "share/petri-foo" CACHE STRING "Where to install data files")
 set(APPLICATIONS_DIR "share/applications" CACHE STRING "Where to install desktop files")
@@ -15,7 +15,6 @@ set(PIXMAPS_DIR "share/pixmaps" CACHE STRING "Where to install icons")
 set(MIME_DIR "share/mime" CACHE STRING "Where MIME definitions are located")
 set(UpdateMime "ON" CACHE BOOL "Update Mime Database")
 
-set(PROJECT_VERSION "0.2.3")
 set(ARCHIVE_NAME petri-foo-0.${Petri-Foo_VERSION_MAJOR}.${Petri-Foo_VERSION_MINOR})
 
 mark_as_advanced(EXECUTABLE_OUTPUT_PATH)
@@ -24,6 +23,7 @@ mark_as_advanced(CMAKE_BUILD_TYPE)
 mark_as_advanced(CMAKE_INSTALL_PREFIX)
 
 option (BuildForDebug "Include gdb debugging support" OFF)
+option (GtkDeprecatedChecks "Check against use of API deprecated in GTK3" OFF)
 
 # DEBUG
 set (BuildOptionsDebug "-O0 -ggdb" CACHE STRING "Debug build flags")
@@ -46,6 +46,9 @@ else (BuildForDebug)
     message (STATUS "Building for ${CMAKE_BUILD_TYPE}, flags: ${CMAKE_C_FLAGS_RELEASE}")
 endif (BuildForDebug)
 
+if (GtkDeprecatedChecks)
+    add_definitions(-DGTK_DISABLE_DEPRECATED -DGDK_DISABLE_DEPRECATED -DGSEAL_ENABLE -DGTK_DISABLE_SINGLE_INCLUDES)
+endif (GtkDeprecatedChecks)
 
 # PKG-CONFIG
 find_package(PkgConfig REQUIRED)
@@ -132,7 +135,7 @@ INCLUDE (CheckIncludeFiles)
 CHECK_INCLUDE_FILES (malloc.h HAVE_MALLOC_H)
 CHECK_INCLUDE_FILES (jack/session.h HAVE_JACK_SESSION_H)
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
-                ${CMAKE_CURRENT_BINARY_DIR}/config.h )
+                ${CMAKE_CURRENT_SOURCE_DIR}/config.h )
 
 link_libraries(m)
 

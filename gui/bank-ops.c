@@ -141,7 +141,7 @@ int bank_ops_save_as (GtkWidget* parent_window)
 
             gtk_recent_manager_add_item (recent_manager, 
                 g_filename_to_uri(name, NULL, NULL));
-            msg_log(MSG_MESSAGE, "Succesfully wrote file %s\n", name);
+            msg_log(MSG_MESSAGE, "Successfully wrote file %s\n", name);
             free(last_bank);
             last_bank = strdup(name);
             set_bankname(name);
@@ -227,7 +227,7 @@ int bank_ops_open(GtkWidget* parent_window)
                 msg_log(MSG_WARNING, "Bank %s read with errors\n", name);
             }
             else
-                msg_log(MSG_MESSAGE, "Succesfully read bank %s\n", name);
+                msg_log(MSG_MESSAGE, "Successfully read bank %s\n", name);
 
             gtk_recent_manager_add_item(recent_manager,
                                     g_filename_to_uri(name, NULL, NULL));
@@ -291,7 +291,7 @@ int bank_ops_open_recent(GtkWidget* parent_window, char* filename)
             msg_log(MSG_WARNING, "Bank %s read with errors\n", filename);
         }
         else
-            msg_log(MSG_MESSAGE, "Succesfully read bank %s\n", filename);
+            msg_log(MSG_MESSAGE, "Successfully read bank %s\n", filename);
 
         gtk_recent_manager_add_item (recent_manager, 
              g_filename_to_uri(filename, NULL, NULL));

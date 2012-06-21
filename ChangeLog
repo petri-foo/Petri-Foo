@@ -1,3 +1,8 @@
+2012-06-21 James Morris <james@jwm-art.net>
+
+	* not kept up with the ChangeLog as usual...
+
+
 2012-06-15 James Morris <james@jwm-art.net>
 
 	* gui/mod_section.c: prevent change of env mod source
