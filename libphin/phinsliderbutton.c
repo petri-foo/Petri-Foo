@@ -1106,7 +1106,7 @@ static gboolean phin_slider_button_expose (GtkWidget*      widget,
                       a.x, a.y, a.width, a.height);
 
     /* paint the focus if we have it */
-    if (gtk_widget_get_can_focus (widget))
+    if (gtk_widget_has_focus (widget))
     {
         int x, y;
         int width, height;

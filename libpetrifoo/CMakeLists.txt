@@ -1,4 +1,4 @@
-include_directories ( . )
+include_directories ( . .. )
 
 ADD_SUBDIRECTORY( patch_private )
 

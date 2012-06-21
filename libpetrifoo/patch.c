@@ -859,7 +859,7 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
         if (v->fade_posi >= p->fade_samples)
         {
             v->playstate = PLAYSTATE_OFF;
-            debug("fadeout end at %f\n", v->fade_declick);
+            /*debug("fadeout end at %f\n", v->fade_declick);*/
             v->fade_declick = 0.0;
             return -1;
         }

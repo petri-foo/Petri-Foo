@@ -1,7 +1,10 @@
 The github tracker is now the preffered bug tracker for issues relating to
-the git version of Petri-Foo
+the git version of Petri-Foo.
 
-https://github.com/jwm-art-net/Petri-Foo/issues?state=open
+For petri-foo-0.1.3 (as downloaded from sourceforge.net) please use the
+sourceforge.net bug tracker at:
+
+http://sourceforge.net/tracker/?group_id=404816&atid=1677234
 
 
 

@@ -128,8 +128,8 @@ static gboolean phin_fan_slider_expose      (GtkWidget* widget,
 static gboolean phin_fan_slider_button_press(GtkWidget* widget,
                                             GdkEventButton* event);
 
-static gboolean phin_fan_slider_button_release  (GtkWidget* widget,
-                                                GdkEventButton* event);
+static gboolean phin_fan_slider_button_release(GtkWidget* widget,
+                                            GdkEventButton* event);
 
 static gboolean phin_fan_slider_key_press   (GtkWidget* widget,
                                             GdkEventKey* event);
@@ -137,14 +137,14 @@ static gboolean phin_fan_slider_key_press   (GtkWidget* widget,
 static gboolean phin_fan_slider_scroll      (GtkWidget* widget,
                                             GdkEventScroll* event);
 
-static gboolean phin_fan_slider_motion_notify   (GtkWidget* widget,
-                                                GdkEventMotion* event);
+static gboolean phin_fan_slider_motion_notify(GtkWidget* widget,
+                                            GdkEventMotion* event);
 
-static gboolean phin_fan_slider_enter_notify    (GtkWidget* widget,
-                                                GdkEventCrossing* event);
+static gboolean phin_fan_slider_enter_notify(GtkWidget* widget,
+                                            GdkEventCrossing* event);
 
-static gboolean phin_fan_slider_leave_notify    (GtkWidget* widget,
-                                                GdkEventCrossing* event);
+static gboolean phin_fan_slider_leave_notify(GtkWidget* widget,
+                                            GdkEventCrossing* event);
 
 static void phin_fan_slider_calc_layout     (PhinFanSlider* slider,
                                             int* x, int* y, int* w, int* h);
@@ -152,22 +152,21 @@ static void phin_fan_slider_calc_layout     (PhinFanSlider* slider,
 static void phin_fan_slider_update_value    (PhinFanSlider* slider,
                                             int x_root, int y_root);
 
-static void phin_fan_slider_update_fan      (PhinFanSlider* slider,
+static void phin_fan_slider_update_fan(PhinFanSlider* slider,
                                             int x, int y);
 
 static gboolean phin_fan_slider_fan_expose (GtkWidget*      widget,
                                             GdkEventExpose* event,
                                             PhinFanSlider*  slider);
 
-static void phin_fan_slider_fan_show (GtkWidget* widget,
-                                      GtkWidget* slider);
+static void phin_fan_slider_fan_show(GtkWidget* widget, GtkWidget* slider);
 
 static gboolean phin_fan_slider_hint_expose (GtkWidget* widget,
-                                             GdkEventExpose* event,
-                                             GtkWidget* slider);
+                                            GdkEventExpose* event,
+                                            GtkWidget* slider);
 
-static void phin_fan_slider_adjustment_changed (GtkAdjustment* adjustment,
-                                                PhinFanSlider* slider);
+static void phin_fan_slider_adjustment_changed(GtkAdjustment* adjustment,
+                                            PhinFanSlider* slider);
 
 static void phin_fan_slider_adjustment_value_changed(   GtkAdjustment*,
                                                         PhinFanSlider*);
@@ -706,6 +705,7 @@ static void phin_fan_slider_realize (GtkWidget* widget)
     attributes.window_type = GDK_WINDOW_CHILD;
     attributes.wclass      = GDK_INPUT_ONLY;
     attributes.event_mask  = gtk_widget_get_events (widget);
+
     attributes.event_mask |= (GDK_BUTTON_PRESS_MASK
                               | GDK_BUTTON_RELEASE_MASK
                               | GDK_POINTER_MOTION_MASK
@@ -713,11 +713,13 @@ static void phin_fan_slider_realize (GtkWidget* widget)
                               | GDK_ENTER_NOTIFY_MASK
                               | GDK_LEAVE_NOTIFY_MASK
                               | GDK_SCROLL_MASK);
-    phin_fan_slider_calc_layout (slider,
+
+    phin_fan_slider_calc_layout(slider,
                                  &attributes.x,
                                  &attributes.y,
                                  &attributes.width,
                                  &attributes.height);
+
     attributes_mask = GDK_WA_X | GDK_WA_Y;
 
     p->event_window = gdk_window_new (gtk_widget_get_parent_window (widget),
@@ -764,6 +766,8 @@ static void phin_fan_slider_realize (GtkWidget* widget)
 
     /* a priming call */
     phin_fan_slider_update_hints (slider);
+
+    gtk_widget_queue_draw(widget);
 }
 
 static void phin_fan_slider_unrealize (GtkWidget *widget)
@@ -859,8 +863,7 @@ static void phin_fan_slider_size_allocate (GtkWidget*     widget,
 {
     PhinFanSlider* slider = PHIN_FAN_SLIDER (widget);
     PhinFanSliderPrivate* p = PHIN_FAN_SLIDER_GET_PRIVATE (widget);;
-    int x, y;
-    int w, h;
+    int x, y, w, h;
 
     debug ("size allocate\n");
 
@@ -885,8 +888,7 @@ static void phin_fan_slider_size_allocate (GtkWidget*     widget,
 
     if (gtk_widget_get_realized(widget))
     {
-        gdk_window_move_resize (p->event_window,
-                                x, y, w, h);
+        gdk_window_move_resize (p->event_window, x, y, w, h);
     }
 }
 
@@ -908,9 +910,13 @@ static gboolean phin_fan_slider_expose (GtkWidget*      widget,
 {
     PhinFanSliderPrivate* p = PHIN_FAN_SLIDER_GET_PRIVATE (widget);
     PhinFanSlider* slider;
+    gboolean V = (p->orientation == GTK_ORIENTATION_VERTICAL);
+debug("expose");
     int x, y;
     int w, h;
-    int fx, fy;                /* "filled" coordinates */
+    int cx, cy;     /* center line if applicable*/
+    int vx, vy;     /* value line */
+    int fx, fy;     /* "filled" coordinates */
     int fw, fh;
 
     GtkStyle* style;
@@ -927,17 +933,27 @@ static gboolean phin_fan_slider_expose (GtkWidget*      widget,
 
     style = gtk_widget_get_style(widget);
     cr = gdk_cairo_create(gtk_widget_get_window(widget));
+    cairo_set_line_width(cr, 1.0);
 
-    phin_fan_slider_calc_layout (slider, &x, &y, &w, &h);
-     
-    if (p->orientation == GTK_ORIENTATION_VERTICAL)
+    phin_fan_slider_calc_layout(slider, &x, &y, &w, &h);
+
+
+    /* decrement probably due to offset x and y each by 0.5 to gain
+       hard edged lines. */
+    --w;
+    --h;
+
+    if (V)
     {
+        vy = y + p->val * h;
+        vx = cx = fx = x;
+        fw = w;
+
         if (p->center_val >= 0)
         {
-            fw = w;
-            fh = ABS (p->val - p->center_val) * h;
-            fx = x;
-            fy = y + h - (p->center_val * h);
+            fh = ABS(p->val - p->center_val) * h;
+            fy = y + h - p->center_val * h;
+            cy = fy;
 
             if ((p->val > p->center_val && !p->inverted)
              || (p->val < p->center_val &&  p->inverted))
@@ -948,20 +964,23 @@ static gboolean phin_fan_slider_expose (GtkWidget*      widget,
         }
         else
         {
-            fw = w;
+            cy = 0; /* silence warning */
             fh = p->val * h;
-            fx = x;
-            fy = (p->inverted)? y: y + h - fh;
+            fy = p->inverted ? y : y + h - fh;
         }
     }
-    else
+    else /* H */
     {
+        vx = x + p->val * w;
+        vy = cy = fy = y;
+        fh = h;
+
         if (p->center_val >= 0)
         {
-            fw = ABS (p->val - p->center_val) * w;
-            fh = h;
-            fx = x + (p->center_val * w);
-            fy = y;
+            fw = ABS(p->val - p->center_val) * w;
+            fx = x + p->center_val * w;
+
+            cx = fx;
 
             if ((p->val < p->center_val && !p->inverted)
              || (p->val > p->center_val &&  p->inverted))
@@ -971,26 +990,39 @@ static gboolean phin_fan_slider_expose (GtkWidget*      widget,
         }
         else
         {
+            cx = 0; /* silence warning */
             fw = p->val * w;
-            fh = h;
-            fx = (p->inverted)? x + w - fw: x;
-            fy = y;
+            fx = p->inverted ? x + w - fw : x;
         }
     }
 
     if (!gtk_widget_is_sensitive(widget))
     {
-        draw_fan_rectangle(cr, x, y, w, h,
+        draw_fan_rectangle(cr, x + 0.5,     y + 0.5,    w, h,
                                 &style->dark[GTK_STATE_INSENSITIVE]);
-        draw_fan_rectangle(cr, fx, fy, fw, fh,
+        draw_fan_rectangle(cr, fx + 0.5,    fy + 0.5,   fw, fh,
                                 &style->fg[GTK_STATE_INSENSITIVE]);
     }
     else
     {
-        draw_fan_rectangle(cr, x, y, w, h,
+        draw_fan_rectangle(cr, x + 0.5,     y + 0.5,    w, h,
                                 &style->dark[GTK_STATE_NORMAL]);
-        draw_fan_rectangle(cr, fx, fy, fw, fh,
+        draw_fan_rectangle(cr, fx + 0.5,    fy + 0.5,   fw, fh,
                                 &style->base[GTK_STATE_SELECTED]);
+
+        if (p->center_val >= 0)
+        {   /* draw zero/center line */
+            cairo_set_source_rgb(cr, 1, 1, 1);
+            cairo_move_to(cr, cx + 0.5, cy + 0.5);
+            cairo_line_to(cr, cx + 0.5 + (V ? w : 0),
+                              cy + 0.5 + (V ? 0 : h));
+            cairo_stroke(cr);
+        }
+
+        cairo_set_source_rgb(cr, 0, 0, 0);
+        cairo_move_to(cr, vx + 0.5, vy + 0.5);
+        cairo_line_to(cr, vx + 0.5 + (V ? w : 0), vy + 0.5 + (V ? 0 : h));
+        cairo_stroke(cr);
     }
 
     cairo_destroy(cr);
@@ -1009,8 +1041,8 @@ static gboolean phin_fan_slider_expose (GtkWidget*      widget,
 
         x -= pad;
         y -= pad;
-        w += 2*pad;
-        h += 2*pad;
+        w += 2 * pad + 1;
+        h += 2 * pad + 1;
 
         gtk_paint_focus (style, gtk_widget_get_window(widget),
                                 gtk_widget_get_state (widget),
@@ -1441,7 +1473,8 @@ static gboolean phin_fan_slider_leave_notify (GtkWidget* widget,
 /* helper to reduce copy & paste */
 static void
 fan_slider_draw(cairo_t* cr, GdkPixmap* bitmap, PhinFanSlider* slider,
-                    int x, int y, int w, int h, int length, gdouble value)
+                             double x, double y, double w, double h,
+                             double length, gdouble value)
 {
     PhinFanSliderPrivate* p = PHIN_FAN_SLIDER_GET_PRIVATE (slider);
     int offset;
@@ -1479,6 +1512,8 @@ fan_slider_draw(cairo_t* cr, GdkPixmap* bitmap, PhinFanSlider* slider,
     cairo_set_source_rgba (cr, 0, 0, 0, 0);
     cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
     cairo_paint (cr);
+
+    cairo_set_line_width(cr, 1.0);
 
     if (p->orientation == GTK_ORIENTATION_VERTICAL)
     {
@@ -1524,7 +1559,9 @@ fan_slider_draw(cairo_t* cr, GdkPixmap* bitmap, PhinFanSlider* slider,
         {
             /*  a bitmap is used as a mask so that when the fan slider is
                 drawn on a non-composited display it does not wipe out the
-                rest of the display for the duration of its showing */
+                rest of the display for the duration of its showing.
+                at least, that was the idea, unfortunately work it
+                does not... */
             return;
         }
 
@@ -1548,10 +1585,8 @@ fan_slider_draw(cairo_t* cr, GdkPixmap* bitmap, PhinFanSlider* slider,
     }
     else /* (p->orientation == GTK_ORIENTATION_HORIZONTAL) */
     {
-        int     sign_cur_fan_h;
-        float   cv = (p->center_val >= 0.0f)
-                        ? p->center_val
-                        : 0.0f;
+        int   sign_cur_fan_h;
+        float cv = (p->center_val >= 0.0f) ? p->center_val : 0.0f;
 
         int fan_left_x =    x - length / 2 + w / 2;
         int fan_val_x =     length * value;
@@ -1571,14 +1606,14 @@ fan_slider_draw(cairo_t* cr, GdkPixmap* bitmap, PhinFanSlider* slider,
         /* fan background */
         cairo_move_to (     cr, x,          y + offset);
         /* left-hand line from slider */
-        cairo_line_to ( cr, fan_left_x,     y + offset + sign_cur_fan_h);
+        cairo_line_to (     cr, fan_left_x, y + offset + sign_cur_fan_h);
         /* horizontal fan line */
         cairo_rel_line_to ( cr, length,     0);
         /* right-hand line back to slider */
         cairo_line_to(      cr, x + w,      y + offset);
 
         if (supports_alpha)
-            cairo_set_source_rgba( cr, r1, g1, b1, a1);
+            cairo_set_source_rgba(cr, r1, g1, b1, a1);
         else
             cairo_set_source_rgb( cr, r1, g1, b1);
 
@@ -1604,12 +1639,33 @@ fan_slider_draw(cairo_t* cr, GdkPixmap* bitmap, PhinFanSlider* slider,
         cairo_line_to (cr,  x + w * value,  y + offset);
 
         if (supports_alpha)
-            cairo_set_source_rgba( cr, r2, g2, b2, a2);
+            cairo_set_source_rgba(cr, r2, g2, b2, a2);
         else
             cairo_set_source_rgb( cr, r2, g2, b2);
 
         cairo_fill(cr);
 
+        if (p->center_val >= 0)
+        {
+            if (supports_alpha)
+                cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, a2);
+            else
+                cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+            cairo_move_to(cr, x + cv * w, y + offset);
+            cairo_line_to(cr, fan_left_x + fan_cv_x,
+                              y + offset + sign_cur_fan_h);
+            cairo_stroke(cr);
+        }
+
+        cairo_set_line_width(cr, 0.5);
+        if (supports_alpha)
+            cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, a2);
+        else
+            cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+        cairo_move_to(cr, x + w * value, y + offset);
+        cairo_line_to(cr,   fan_left_x + fan_val_x,
+                            y + offset + sign_cur_fan_h);
+        cairo_stroke(cr);
     }
 }
 
@@ -1656,15 +1712,22 @@ static void phin_fan_slider_draw_fan (PhinFanSlider* slider)
 
     cr = gdk_cairo_create(gtk_widget_get_window(p->fan_window));
 
-    fan_slider_draw(cr, NULL, slider, x, y, w, h, length, value);
+    fan_slider_draw(cr, NULL, slider, x + 0.5, y + 0.5, w, h,
+                                                        length, value);
 
     cairo_destroy(cr);
 }
 
 
 static void phin_fan_slider_calc_layout (PhinFanSlider* slider,
-                                         int* x, int* y, int* w, int* h)
+                                         int* x, int* y,
+                                         int* w, int* h)
 {
+    /*  this routine calculates coordinates for cairo drawing
+        and if clean crisp pixel perfect lines are desired (they
+        are) then we're forced to add 0.5 to the coordinates.
+     */
+
     PhinFanSliderPrivate* p = PHIN_FAN_SLIDER_GET_PRIVATE (slider);
     GtkWidget* widget = GTK_WIDGET (slider);
     int focus_width, focus_pad;
@@ -1888,14 +1951,12 @@ static int phin_fan_slider_get_fan_length (PhinFanSlider* slider)
     if (p->orientation == GTK_ORIENTATION_VERTICAL)
     {
         return 2 * (FAN_RISE / FAN_RUN)
-            * p->cur_fan.width
-            + slider_alloc.height;
+                 * p->cur_fan.width + slider_alloc.height;
     }
     else
     {
         return 2 * (FAN_RISE / FAN_RUN)
-            * p->cur_fan.height
-            + slider_alloc.width;
+                 * p->cur_fan.height + slider_alloc.width;
     }
 }
 
