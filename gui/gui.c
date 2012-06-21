@@ -40,7 +40,6 @@
 #include "driver.h"
 #include "global_settings.h"
 #include "gui.h"
-#include "log_display.h"
 #include "mastersection.h"
 #include "midisection.h"
 #include "mixer.h"
@@ -70,11 +69,7 @@ static GtkWidget* menu_file = 0;
 static GtkWidget* menu_settings = 0;
 static GtkWidget* menu_patch = 0;
 static GtkWidget* menu_help = 0;
-static GtkWidget* menu_view = 0;
 static GtkWidget* menuitem_file_recent = 0;
-
-/* view menu */
-static GtkWidget* menu_view_log_display = 0;
 
 
 /* settings */
@@ -440,27 +435,6 @@ void cb_menu_patch_remove(GtkWidget* menu_item, gpointer data)
 }
 
 
-void cb_menu_view_log_display_showing(gboolean active)
-{
-    gtk_check_menu_item_set_active(
-        GTK_CHECK_MENU_ITEM(menu_view_log_display), active);
-}
-
-
-static void cb_menu_view_log_display(GtkWidget* widget, gpointer data)
-{
-    (void)widget; (void)data;
-
-    if (gtk_check_menu_item_get_active(
-        GTK_CHECK_MENU_ITEM(menu_view_log_display)))
-    {
-        log_display_show();
-    }
-    else
-        log_display_hide();
-}
-
-
 static void cb_menu_file_new_bank (GtkWidget * widget, gpointer data)
 {
     (void)widget;(void)data;
@@ -546,7 +520,7 @@ static void cb_menu_help_about (GtkWidget* widget, gpointer data)
         "version", VERSION,
         "copyright",    "(C) 2004-2005 Pete Bessman\n"
                         "(C) 2006-2007 others\n"
-                        "(C) 2011 James Morris\n",
+                        "(C) 2011-2012 James Morris\n",
         NULL);
 }
 
@@ -649,13 +623,6 @@ int gui_init(void)
     gui_menu_add(menu_patch, "Remove",
             G_CALLBACK(cb_menu_patch_remove),       NULL);
 
-    /* view menu */
-    menu_view = gui_menu_add(menubar, "View", NULL, NULL);
-
-    menu_view_log_display =
-        gui_menu_check_add(menu_view, "Message Log", FALSE,
-            G_CALLBACK(cb_menu_view_log_display), window);
-
     /* settings menu */
 
     /* use slider fans */
@@ -750,7 +717,6 @@ int gui_init(void)
     /* intialize children */
     sample_editor_init(window);
     audio_settings_init(window);
-    log_display_init(window);
 
     /* priming updates */
     master_section_update(MASTER_SECTION(master_section));
