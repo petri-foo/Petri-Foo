@@ -1,3 +1,9 @@
+2012-06-22 James Morris <james@jwm-art.net>
+
+	* Restored sliders visual aspect to pre-cairo days.
+	* Fixed bug in vertical slider mark drawing.
+
+
 2012-06-21 James Morris <james@jwm-art.net>
 
 	* not kept up with the ChangeLog as usual...

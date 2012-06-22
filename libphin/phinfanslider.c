@@ -698,9 +698,10 @@ static void phin_fan_slider_realize (GtkWidget* widget)
     gtk_widget_set_window(widget, window);
     g_object_ref (window);
 
+
     style = gtk_widget_get_style(widget);
     style = gtk_style_attach(style, window);
-    gtk_widget_set_style(widget, style);
+/*    gtk_widget_set_style(widget, style);*/
 
     attributes.window_type = GDK_WINDOW_CHILD;
     attributes.wclass      = GDK_INPUT_ONLY;
@@ -945,7 +946,7 @@ debug("expose");
 
     if (V)
     {
-        vy = y + p->val * h;
+        vy = y + h - p->val * h;
         vx = cx = fx = x;
         fw = w;
 
@@ -1012,33 +1013,32 @@ debug("expose");
 
         if (p->center_val >= 0)
         {   /* draw zero/center line */
-            cairo_set_source_rgb(cr, 1, 1, 1);
+            gdk_cairo_set_source_color(cr, &style->base[GTK_STATE_NORMAL]);
             cairo_move_to(cr, cx + 0.5, cy + 0.5);
             cairo_line_to(cr, cx + 0.5 + (V ? w : 0),
                               cy + 0.5 + (V ? 0 : h));
             cairo_stroke(cr);
         }
 
-        cairo_set_source_rgb(cr, 0, 0, 0);
+        gdk_cairo_set_source_color(cr, &style->fg[GTK_STATE_NORMAL]);
         cairo_move_to(cr, vx + 0.5, vy + 0.5);
         cairo_line_to(cr, vx + 0.5 + (V ? w : 0), vy + 0.5 + (V ? 0 : h));
         cairo_stroke(cr);
     }
 
     cairo_destroy(cr);
+    gtk_paint_shadow(style, gtk_widget_get_window(widget),
+                            gtk_widget_get_state(widget),
+                            GTK_SHADOW_IN,  NULL, widget, NULL,
+                            x - 1, y - 1, w + 3, h + 3);
 
     if (gtk_widget_has_focus (widget))
     {
-        int focus_width, focus_pad;
-        int pad;
-          
-        gtk_widget_style_get (widget,
-                              "focus-line-width", &focus_width,
-                              "focus-padding", &focus_pad,
-                              NULL);
+        int focus_width, focus_pad, pad;
 
+        gtk_widget_style_get (widget, "focus-line-width", &focus_width,
+                                      "focus-padding", &focus_pad, NULL);
         pad = focus_width + focus_pad;
-
         x -= pad;
         y -= pad;
         w += 2 * pad + 1;
