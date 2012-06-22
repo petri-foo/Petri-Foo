@@ -1257,12 +1257,6 @@ static gboolean phin_fan_slider_motion_notify (GtkWidget*      widget,
     if (fans_active && !(event->state & GDK_CONTROL_MASK))
         phin_fan_slider_update_fan (slider, event->x, event->y);
 
-/*
-    if (!(event->state & GDK_SHIFT_MASK))
-        phin_fan_slider_update_value (slider, event->x_root, event->y_root);
-*/
-
-
     /* shift no longer locks value */
     if ((event->state & GDK_SHIFT_MASK))
         p->value_update_ratio = VALUE_RATIO_SHIFT;
@@ -1287,34 +1281,27 @@ static gboolean phin_fan_slider_motion_notify (GtkWidget*      widget,
             {
                 if (event->state & GDK_CONTROL_MASK)
                 {
-                    destx = (p->xclick_root
-                             + width
-                             - p->xclick
-                             + fan_alloc.width);
+                    destx = p->xclick_root + width - p->xclick
+                                            + fan_alloc.width;
                 }
                 else
                 {
-                    destx = MIN (event->x_root,
-                                 p->xclick_root
-                                 + width
-                                 - p->xclick
-                                 + fan_alloc.width);
+                    destx = MIN(event->x_root,
+                                p->xclick_root + width - p->xclick
+                                                + fan_alloc.width);
                 }
             }
             else
             {
                 if (event->state & GDK_CONTROL_MASK)
                 {
-                    destx = (p->xclick_root
-                             - p->xclick
-                             - fan_alloc.width);
+                    destx = p->xclick_root - p->xclick - fan_alloc.width;
                 }
                 else
                 {
-                    destx = MAX (event->x_root,
-                                 p->xclick_root
-                                 - p->xclick
-                                 - fan_alloc.width);
+                    destx = MAX(event->x_root,
+                                p->xclick_root - p->xclick 
+                                                - fan_alloc.width);
                 }
             }
         }
@@ -1323,10 +1310,8 @@ static gboolean phin_fan_slider_motion_notify (GtkWidget*      widget,
             destx = p->xclick_root;
         }
 
-        phin_warp_pointer (event->x_root,
-                           event->y_root,
-                           destx,
-                           p->yclick_root);
+        phin_warp_pointer (event->x_root, event->y_root, destx,
+                                                p->yclick_root);
     }
     else
     {
@@ -1342,34 +1327,27 @@ static gboolean phin_fan_slider_motion_notify (GtkWidget*      widget,
             {
                 if (event->state & GDK_CONTROL_MASK)
                 {
-                    desty = (p->yclick_root
-                             + height
-                             - p->yclick
-                             + fan_alloc.height);
+                    desty = p->yclick_root + height - p->yclick
+                                            + fan_alloc.height;
                 }
                 else
                 {
-                    desty = MIN (event->y_root,
-                                 p->yclick_root
-                                 + height
-                                 - p->yclick
-                                 + fan_alloc.height);
+                    desty = MIN(event->y_root,
+                                p->yclick_root + height - p->yclick
+                                                + fan_alloc.height);
                 }
             }
             else
             {
                 if (event->state & GDK_CONTROL_MASK)
                 {
-                    desty = (p->yclick_root
-                             - p->yclick
-                             - fan_alloc.height);
+                    desty = p->yclick_root - p->yclick - fan_alloc.height;
                 }
                 else
                 {
-                    desty = MAX (event->y_root,
-                                 p->yclick_root
-                                 - p->yclick
-                                 - fan_alloc.height);
+                    desty = MAX(event->y_root,
+                                p->yclick_root - p->yclick
+                                        - fan_alloc.height);
                 }
             }
         }
@@ -1378,10 +1356,8 @@ static gboolean phin_fan_slider_motion_notify (GtkWidget*      widget,
             desty = p->yclick_root;
         }
                
-        phin_warp_pointer (event->x_root,
-                           event->y_root,
-                           p->xclick_root,
-                           desty);
+        phin_warp_pointer (event->x_root, event->y_root, p->xclick_root,
+                                                                desty);
     }
 
     gtk_widget_queue_draw (widget);
@@ -1472,7 +1448,7 @@ static gboolean phin_fan_slider_leave_notify (GtkWidget* widget,
 
 /* helper to reduce copy & paste */
 static void
-fan_slider_draw(cairo_t* cr, GdkPixmap* bitmap, PhinFanSlider* slider,
+fan_slider_draw(cairo_t* cr, PhinFanSlider* slider,
                              double x, double y, double w, double h,
                              double length, gdouble value)
 {
@@ -1480,34 +1456,15 @@ fan_slider_draw(cairo_t* cr, GdkPixmap* bitmap, PhinFanSlider* slider,
     int offset;
 
     GtkWidget*  widget = GTK_WIDGET(slider);
-    GtkStyle*   style = (bitmap) ? NULL : gtk_widget_get_style(widget);
+    GtkStyle*   style = gtk_widget_get_style(widget);
 
     double r1, g1, b1, a1; /* slider bg */
     double r2, g2, b2, a2; /* slider fg */
 
-    /*  length: (orientation dependent, orientation as slider length)
-            length = fan length, so dependant on size of fan */
-
-    /*  p->center_val: dependant on range of slider and if zero is
-        within the range.
-            == ratio in range 0.0 to 1.0 of where zero in the value range
-            appears within the slider
-                or
-            == -1 if zero is not within the value range
-    */
-
-    if (bitmap)
-    {
-        r1 = g1 = b1 = a1 = 0.0;
-        r2 = g2 = b2 = a2 = 1.0;
-    }
-    else
-    {
-        gdk_col_to_double(&style->dark[GTK_STATE_NORMAL], &r1, &g1, &b1);
-        gdk_col_to_double(&style->base[GTK_STATE_SELECTED], &r2, &g2, &b2);
-        a1 = 0.35;
-        a2 = 0.75;
-    }
+    gdk_col_to_double(&style->dark[GTK_STATE_NORMAL], &r1, &g1, &b1);
+    gdk_col_to_double(&style->base[GTK_STATE_SELECTED], &r2, &g2, &b2);
+    a1 = 0.35;
+    a2 = 0.75;
 
     cairo_set_source_rgba (cr, 0, 0, 0, 0);
     cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
@@ -1554,16 +1511,6 @@ fan_slider_draw(cairo_t* cr, GdkPixmap* bitmap, PhinFanSlider* slider,
             cairo_set_source_rgb( cr, r1, g1, b1);
 
         cairo_fill( cr);
-
-        if (bitmap)
-        {
-            /*  a bitmap is used as a mask so that when the fan slider is
-                drawn on a non-composited display it does not wipe out the
-                rest of the display for the duration of its showing.
-                at least, that was the idea, unfortunately work it
-                does not... */
-            return;
-        }
 
         /*  fan value foreground...
             starting at slider */
@@ -1619,14 +1566,6 @@ fan_slider_draw(cairo_t* cr, GdkPixmap* bitmap, PhinFanSlider* slider,
 
         cairo_fill(cr);
 
-        if (bitmap)
-        {
-            /*  a bitmap is used as a mask so that when the fan slider is
-                drawn on a non-composited display it does not wipe out the
-                rest of the display for the duration of its showing */
-            return;
-        }
-
         /*  fan value foreground...
             starting at slider */
         cairo_move_to ( cr, x + cv * w,     y + offset);
@@ -1647,10 +1586,13 @@ fan_slider_draw(cairo_t* cr, GdkPixmap* bitmap, PhinFanSlider* slider,
 
         if (p->center_val >= 0)
         {
+            gdk_col_to_double(&style->base[GTK_STATE_NORMAL],&r2, &g2, &b2);
+
             if (supports_alpha)
-                cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, a2);
+                cairo_set_source_rgba(cr, r2, g2, b2, a2);
             else
-                cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+                cairo_set_source_rgb(cr, r2, g2, b2);
+
             cairo_move_to(cr, x + cv * w, y + offset);
             cairo_line_to(cr, fan_left_x + fan_cv_x,
                               y + offset + sign_cur_fan_h);
@@ -1658,10 +1600,13 @@ fan_slider_draw(cairo_t* cr, GdkPixmap* bitmap, PhinFanSlider* slider,
         }
 
         cairo_set_line_width(cr, 0.5);
+        gdk_col_to_double(&style->fg[GTK_STATE_NORMAL], &r2, &g2, &b2);
+
         if (supports_alpha)
-            cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, a2);
+            cairo_set_source_rgba(cr, r2, g2, b2, a2);
         else
-            cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+            cairo_set_source_rgb(cr, r2, g2, b2);
+
         cairo_move_to(cr, x + w * value, y + offset);
         cairo_line_to(cr,   fan_left_x + fan_val_x,
                             y + offset + sign_cur_fan_h);
@@ -1712,8 +1657,7 @@ static void phin_fan_slider_draw_fan (PhinFanSlider* slider)
 
     cr = gdk_cairo_create(gtk_widget_get_window(p->fan_window));
 
-    fan_slider_draw(cr, NULL, slider, x + 0.5, y + 0.5, w, h,
-                                                        length, value);
+    fan_slider_draw(cr, slider, x + 0.5, y + 0.5, w, h, length, value);
 
     cairo_destroy(cr);
 }
@@ -1965,7 +1909,7 @@ static gboolean phin_fan_slider_fan_expose (GtkWidget*      widget,
                                             PhinFanSlider*  slider)
 {
     (void)widget; (void)event;
-    phin_fan_slider_draw_fan (slider);
+    phin_fan_slider_draw_fan(slider);
 
     return TRUE;
 }
