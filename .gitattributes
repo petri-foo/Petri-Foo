@@ -1,5 +1,5 @@
 .gitignore export-ignore
 .gitattributes export-ignore
-sandbox/ export-ignore
+/sandbox export-ignore
 
 
