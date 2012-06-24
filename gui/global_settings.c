@@ -144,14 +144,14 @@ int settings_read(const char* path)
                     gbl_settings->last_bank_dir =
                         (char*) xmlGetProp(node2, BAD_CAST "value");
                 }
-
+/*
                 if (xmlStrcmp(prop, BAD_CAST "sliders-use-fans") == 0)
                 {
                     phin_fan_slider_set_fans_active(
                         xmlstr_to_gboolean(xmlGetProp(node2,
                                                     BAD_CAST "value")));
                 }
-
+ */
                 if (xmlStrcmp(prop, BAD_CAST "log-lines") == 0)
                 {
                     xmlChar* vprop = xmlGetProp(node2, BAD_CAST "value");
@@ -263,6 +263,7 @@ int settings_write()
     xmlNewProp(node2, BAD_CAST "value",
                       BAD_CAST gbl_settings->last_bank_dir);
 
+/*
     node2 = xmlNewTextChild(node1, NULL, BAD_CAST "property", NULL);
     xmlNewProp(node2, BAD_CAST "name", BAD_CAST "sliders-use-fans");
     xmlNewProp(node2, BAD_CAST "type", BAD_CAST "boolean");
@@ -270,7 +271,7 @@ int settings_write()
                       BAD_CAST (phin_fan_slider_get_fans_active()
                                     ? "true"
                                     : "false"));
-
+*/
     node2 = xmlNewTextChild(node1, NULL, BAD_CAST "property", NULL);
     xmlNewProp(node2, BAD_CAST "name", BAD_CAST "last-bank-directory");
     xmlNewProp(node2, BAD_CAST "type", BAD_CAST "string");

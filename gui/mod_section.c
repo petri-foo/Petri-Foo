@@ -65,7 +65,7 @@ static void mod_section_class_init(ModSectionClass* klass)
 
 static void param1_cb(GtkWidget* w, ModSectionPrivate* p)
 {
-    float val = phin_fan_slider_get_value(PHIN_FAN_SLIDER(w));
+    float val = phin_slider_get_value(PHIN_SLIDER(w));
     patch_param_set_value(p->patch_id, p->param, val);
 }
 
@@ -80,13 +80,13 @@ static void param2_cb(GtkWidget* w, ModSectionPrivate* p)
 
 static void vel_sens_cb(GtkWidget* w, ModSectionPrivate* p)
 {
-    float val  = phin_fan_slider_get_value(PHIN_FAN_SLIDER(w));
+    float val  = phin_slider_get_value(PHIN_SLIDER(w));
     patch_param_set_vel_amount(p->patch_id, p->param, val);
 }
 
 static void key_track_cb(GtkWidget* w, ModSectionPrivate* p)
 {
-    float val  = phin_fan_slider_get_value(PHIN_FAN_SLIDER(w));
+    float val  = phin_slider_get_value(PHIN_SLIDER(w));
     patch_param_set_key_amount(p->patch_id, p->param, val);
 }
 
@@ -125,7 +125,7 @@ static void mod_amount_cb(GtkWidget* w, ModSectionPrivate* p)
         val = phin_slider_button_get_value(PHIN_SLIDER_BUTTON(w))
                                                 / PATCH_MAX_PITCH_STEPS;
     else
-        val = phin_fan_slider_get_value(PHIN_FAN_SLIDER(w));
+        val = phin_slider_get_value(PHIN_SLIDER(w));
 
     for (i = 0; i < last_slot; ++i)
         if (w == p->mod_amount[i])
@@ -348,9 +348,9 @@ debug("creating mod section...\n");
 
     gui_label_attach(lstr, t, a1, a2, y, y + 1);
 
-    p->param1 = phin_hfan_slider_new_with_range(0.0, range_low,
+    p->param1 = phin_hslider_new_with_range(0.0, range_low,
                                                         range_hi,   0.1);
-    phin_fan_slider_set_log(PHIN_FAN_SLIDER(p->param1), logscale);
+    phin_slider_set_log(PHIN_SLIDER(p->param1), logscale);
 
     gui_attach(t, p->param1, b1, b2, y, y + 1);
 
@@ -363,13 +363,13 @@ debug("creating mod section...\n");
 
     /* velocity sensitivity */
     gui_label_attach("Vel.Sens:", t, a1, a2, y, y + 1);
-    p->vel_sens = phin_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
+    p->vel_sens = phin_hslider_new_with_range(0.0, -1.0, 1.0, 0.1);
     gui_attach(t, p->vel_sens, b1, b2, y, y + 1);
     ++y;
 
     /* key tracking */
     gui_label_attach("Key Track:", t, a1, a2, y, y + 1);
-    p->key_track = phin_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
+    p->key_track = phin_hslider_new_with_range(0.0, -1.0, 1.0, 0.1);
     gui_attach(t, p->key_track, b1, b2, y, y + 1);
     ++y;
 
@@ -398,7 +398,7 @@ create_mod_srcs:
         if (param == PATCH_PARAM_PITCH)
             p->mod_amount[i] = mod_src_new_pitch_adjustment();
         else
-            p->mod_amount[i] = phin_hfan_slider_new_with_range(0.0, -1.0,
+            p->mod_amount[i] = phin_hslider_new_with_range(0.0, -1.0,
                                                             1.0, 0.1);
         gui_attach(t, p->mod_amount[i], c1, c2, y, y + 1);
         ++y;
@@ -494,13 +494,13 @@ get_mod_srcs:
     if (p->mod_only)
         goto set_mod_srcs;
 
-    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->param1), param1);
+    phin_slider_set_value(PHIN_SLIDER(p->param1), param1);
 
     if (p->param == PATCH_PARAM_PITCH)
         phin_slider_button_set_value(PHIN_SLIDER_BUTTON(p->param2), param2);
 
-    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->key_track), key_trk);
-    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->vel_sens),  vel_amt);
+    phin_slider_set_value(PHIN_SLIDER(p->key_track), key_trk);
+    phin_slider_set_value(PHIN_SLIDER(p->vel_sens),  vel_amt);
 
 set_mod_srcs:
 
@@ -518,7 +518,7 @@ set_mod_srcs:
         }
         else if (i < last_slot)
         {
-            phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->mod_amount[i]),
+            phin_slider_set_value(PHIN_SLIDER(p->mod_amount[i]),
                                                             modamt[i]);
             gtk_widget_set_sensitive(p->mod_amount[i],
                                         modsrc[i] != MOD_SRC_NONE);

@@ -41,7 +41,7 @@ struct _FloatSectionPrivate
     int             patch_id;
     PatchFloatType  float_type;
 
-    GtkWidget*      float_fan;
+    GtkWidget*      floatval;
     GtkWidget*      mod_combo;
     GtkWidget*      mod_amt;
 };
@@ -60,7 +60,7 @@ static void float_section_class_init(FloatSectionClass* klass)
 
 static void float_cb(GtkWidget* w, FloatSectionPrivate* p)
 {
-    float val = phin_fan_slider_get_value(PHIN_FAN_SLIDER(w));
+    float val = phin_slider_get_value(PHIN_SLIDER(w));
     patch_float_set_value(p->patch_id, p->float_type, val);
 }
 
@@ -77,13 +77,13 @@ static void mod_amt_cb(GtkWidget* w, FloatSectionPrivate* p)
 {
     patch_float_set_mod_amt(p->patch_id,
                             p->float_type,
-                            phin_fan_slider_get_value(PHIN_FAN_SLIDER(w)));
+                            phin_slider_get_value(PHIN_SLIDER(w)));
 }
 
 
 static void block(FloatSectionPrivate* p)
 {
-    g_signal_handlers_block_by_func(p->float_fan,   float_cb,       p);
+    g_signal_handlers_block_by_func(p->floatval,   float_cb,       p);
     g_signal_handlers_block_by_func(p->mod_amt,     mod_amt_cb,     p);
     g_signal_handlers_block_by_func(p->mod_combo,   mod_combo_cb,   p);
 }
@@ -91,7 +91,7 @@ static void block(FloatSectionPrivate* p)
 
 static void unblock(FloatSectionPrivate* p)
 {
-    g_signal_handlers_unblock_by_func(p->float_fan, float_cb,       p);
+    g_signal_handlers_unblock_by_func(p->floatval, float_cb,       p);
     g_signal_handlers_unblock_by_func(p->mod_amt,   mod_amt_cb,     p);
     g_signal_handlers_unblock_by_func(p->mod_combo, mod_combo_cb,   p);
 }
@@ -103,7 +103,7 @@ static void float_section_init(FloatSection* self)
     FloatSectionPrivate* p = FLOAT_SECTION_GET_PRIVATE(self);
     p->patch_id = -1;
     p->float_type = PATCH_FLOAT_INVALID;
-    p->float_fan = 0;
+    p->floatval = 0;
     p->mod_combo = 0;
     p->mod_amt = 0;
 }
@@ -160,10 +160,10 @@ void float_section_set_float( FloatSection* self, PatchFloatType float_type)
     gui_attach(t, gui_hpad_new(GUI_TEXTSPACE), c1, c2, y, y + 1);
     ++y;
 
-    p->float_fan = phin_hfan_slider_new_with_range(0.0, floatmin,
+    p->floatval = phin_hslider_new_with_range(0.0, floatmin,
                                                         floatmax,
                                                         floatstep);
-    gui_attach(t, p->float_fan, b1, b2, y, y + 1);
+    gui_attach(t, p->floatval, b1, b2, y, y + 1);
     ++y;
 
     gui_label_attach("Mod:", t, a1, a2, y, y + 1);
@@ -172,11 +172,11 @@ void float_section_set_float( FloatSection* self, PatchFloatType float_type)
     mod_src_combo_set_model(GTK_COMBO_BOX(p->mod_combo), MOD_SRC_GLOBALS);
     gui_attach(t, p->mod_combo, b1, b2, y, y + 1);
 
-    p->mod_amt = phin_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
+    p->mod_amt = phin_hslider_new_with_range(0.0, -1.0, 1.0, 0.1);
     gui_attach(t, p->mod_amt, c1, c2, y, y + 1);
     ++y;
 
-    g_signal_connect(G_OBJECT(p->float_fan),        "value-changed",
+    g_signal_connect(G_OBJECT(p->floatval),        "value-changed",
                         G_CALLBACK(float_cb),       (gpointer)p);
 
     g_signal_connect(G_OBJECT(p->mod_amt),          "value-changed",
@@ -229,8 +229,8 @@ void float_section_set_patch(FloatSection* self, int patch_id)
                                                     &modsrc);
     block(p);
 
-    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->float_fan), assign);
-    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->mod_amt), mod_amt);
+    phin_slider_set_value(PHIN_SLIDER(p->floatval), assign);
+    phin_slider_set_value(PHIN_SLIDER(p->mod_amt), mod_amt);
 
     if (!mod_src_combo_get_iter_with_id(GTK_COMBO_BOX(p->mod_combo),
                                         modsrc,

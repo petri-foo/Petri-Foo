@@ -75,10 +75,10 @@ struct _LfoTabPrivate
     GtkWidget* sync_radio;
     GtkWidget* beats_sb;
     GtkWidget* pos_check;
-    GtkWidget* freq_fan;
-    GtkWidget* delay_fan;
+    GtkWidget* freq;
+    GtkWidget* delay;
     GtkWidget* delay_label;
-    GtkWidget* attack_fan;
+    GtkWidget* attack;
     GtkWidget* attack_label;
 
     GtkWidget* fm1_combo;
@@ -121,8 +121,8 @@ static void set_lfo_sensitive(LfoTabPrivate* p, gboolean val)
     gtk_widget_set_sensitive(p->sync_radio, val);
     gtk_widget_set_sensitive(p->beats_sb,   val);
     gtk_widget_set_sensitive(p->pos_check,  val);
-    gtk_widget_set_sensitive(p->delay_fan,  val);
-    gtk_widget_set_sensitive(p->attack_fan, val);
+    gtk_widget_set_sensitive(p->delay,  val);
+    gtk_widget_set_sensitive(p->attack, val);
 
     gtk_widget_set_sensitive(p->fm1_combo,  val);
     gtk_widget_set_sensitive(p->fm2_combo,  val);
@@ -153,7 +153,7 @@ static void set_lfo_sensitive(LfoTabPrivate* p, gboolean val)
         gtk_widget_set_sensitive(p->am2_amount, FALSE);
     }
 
-    gtk_widget_set_sensitive(p->freq_fan, !active && val);
+    gtk_widget_set_sensitive(p->freq, !active && val);
     gtk_widget_set_sensitive(p->beats_sb,  active && val);
 }
 
@@ -207,15 +207,15 @@ static void sync_cb2(GtkToggleButton* button, LfoTabPrivate* p)
 {
     gboolean active = gtk_toggle_button_get_active(
                                 GTK_TOGGLE_BUTTON(button));
-    gtk_widget_set_sensitive(p->freq_fan, !active);
+    gtk_widget_set_sensitive(p->freq, !active);
     gtk_widget_set_sensitive(p->beats_sb,  active);
 }
 
 
-static void freq_cb(PhinFanSlider* fan, LfoTabPrivate* p)
+static void freq_cb(PhinSlider* sl, LfoTabPrivate* p)
 {
     patch_set_lfo_freq( p->patch_id, p->lfo_id,
-                        phin_fan_slider_get_value(fan));
+                        phin_slider_get_value(sl));
 }
 
 
@@ -232,17 +232,17 @@ static void positive_cb(GtkToggleButton* button, LfoTabPrivate* p)
 }
 
 
-static void delay_cb(PhinFanSlider* fan, LfoTabPrivate* p)
+static void delay_cb(PhinSlider* sl, LfoTabPrivate* p)
 {
     patch_set_lfo_delay(p->patch_id, p->lfo_id,
-                        phin_fan_slider_get_value(fan));
+                        phin_slider_get_value(sl));
 }
 
 
-static void attack_cb(PhinFanSlider* fan, LfoTabPrivate* p)
+static void attack_cb(PhinSlider* sl, LfoTabPrivate* p)
 {
     patch_set_lfo_attack(p->patch_id, p->lfo_id,
-                        phin_fan_slider_get_value(fan));
+                        phin_slider_get_value(sl));
 }
 
 static void mod_src_cb(GtkComboBox* combo, LfoTabPrivate* p)
@@ -280,7 +280,7 @@ static void mod_src_cb(GtkComboBox* combo, LfoTabPrivate* p)
 
 static void mod_amount_cb(GtkWidget* w, LfoTabPrivate* p)
 {
-    float val = phin_fan_slider_get_value(PHIN_FAN_SLIDER(w));
+    float val = phin_slider_get_value(PHIN_SLIDER(w));
 
     if (w == p->fm1_amount)
         patch_set_lfo_fm1_amt(p->patch_id, p->lfo_id, val);
@@ -306,7 +306,7 @@ static void connect(LfoTabPrivate* p)
                     G_CALLBACK(on_cb2), (gpointer)p);
     g_signal_connect(G_OBJECT(p->shape_combo), "changed",
                     G_CALLBACK(shape_cb), (gpointer)p);
-    g_signal_connect(G_OBJECT(p->freq_fan), "value-changed",
+    g_signal_connect(G_OBJECT(p->freq), "value-changed",
                     G_CALLBACK(freq_cb), (gpointer)p);
     g_signal_connect(G_OBJECT(p->sync_radio), "toggled",
                     G_CALLBACK(sync_cb), (gpointer)p);
@@ -316,9 +316,9 @@ static void connect(LfoTabPrivate* p)
                     G_CALLBACK(positive_cb), (gpointer)p);
     g_signal_connect(G_OBJECT(p->beats_sb), "value-changed",
                     G_CALLBACK(beats_cb), (gpointer)p);
-    g_signal_connect(G_OBJECT(p->delay_fan), "value-changed",
+    g_signal_connect(G_OBJECT(p->delay), "value-changed",
                     G_CALLBACK(delay_cb), (gpointer)p);
-    g_signal_connect(G_OBJECT(p->attack_fan), "value-changed",
+    g_signal_connect(G_OBJECT(p->attack), "value-changed",
                     G_CALLBACK(attack_cb), (gpointer)p);
 
     g_signal_connect(G_OBJECT(p->fm1_combo),    "changed",
@@ -351,12 +351,12 @@ static void block(LfoTabPrivate* p)
 {
     g_signal_handlers_block_by_func(p->lfo_check,   on_cb,      p);
     g_signal_handlers_block_by_func(p->shape_combo, shape_cb,   p);
-    g_signal_handlers_block_by_func(p->freq_fan,    freq_cb,    p);
+    g_signal_handlers_block_by_func(p->freq,        freq_cb,    p);
     g_signal_handlers_block_by_func(p->sync_radio,  sync_cb,    p);
     g_signal_handlers_block_by_func(p->pos_check,   positive_cb,p);
     g_signal_handlers_block_by_func(p->beats_sb,    beats_cb,   p);
-    g_signal_handlers_block_by_func(p->delay_fan,   delay_cb,   p);
-    g_signal_handlers_block_by_func(p->attack_fan,  attack_cb,  p);
+    g_signal_handlers_block_by_func(p->delay,       delay_cb,   p);
+    g_signal_handlers_block_by_func(p->attack,      attack_cb,  p);
 }
 
 
@@ -364,12 +364,12 @@ static void unblock(LfoTabPrivate* p)
 {
     g_signal_handlers_unblock_by_func(p->lfo_check,  on_cb,      p);
     g_signal_handlers_unblock_by_func(p->shape_combo,shape_cb,   p);
-    g_signal_handlers_unblock_by_func(p->freq_fan,   freq_cb,    p);
+    g_signal_handlers_unblock_by_func(p->freq,       freq_cb,    p);
     g_signal_handlers_unblock_by_func(p->sync_radio, sync_cb,    p);
     g_signal_handlers_unblock_by_func(p->pos_check,  positive_cb,p);
     g_signal_handlers_unblock_by_func(p->beats_sb,   beats_cb,   p);
-    g_signal_handlers_unblock_by_func(p->delay_fan,  delay_cb,   p);
-    g_signal_handlers_unblock_by_func(p->attack_fan, attack_cb,  p);
+    g_signal_handlers_unblock_by_func(p->delay,      delay_cb,   p);
+    g_signal_handlers_unblock_by_func(p->attack,     attack_cb,  p);
 }
 
 
@@ -439,9 +439,9 @@ static void lfo_tab_init(LfoTab* self)
     /* freq */
     gui_label_attach("Hrtz:", t, a1, a2, y, y + 1);
     p->free_radio = gtk_radio_button_new(NULL);
-    p->freq_fan = phin_hfan_slider_new_with_range(5.0, 0.0, 50.0, 0.1);
+    p->freq = phin_hslider_new_with_range(5.0, 0.0, 50.0, 0.1);
     gui_attach(t, p->free_radio, b1, b2, y, y + 1);
-    gui_attach(t, p->freq_fan, c1, c2, y, y + 1);
+    gui_attach(t, p->freq, c1, c2, y, y + 1);
     ++y;
 
     /* sync */
@@ -464,7 +464,7 @@ static void lfo_tab_init(LfoTab* self)
     ++y;
 
     gui_label_attach("Amount:", t, a1, a2, y, y + 1);
-    p->fm1_amount = phin_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
+    p->fm1_amount = phin_hslider_new_with_range(0.0, -1.0, 1.0, 0.1);
     gui_attach(t, p->fm1_amount, c1, c2, y, y + 1);
     ++y;
 
@@ -475,7 +475,7 @@ static void lfo_tab_init(LfoTab* self)
     ++y;
 
     gui_label_attach("Amount:", t, a1, a2, y, y + 1);
-    p->fm2_amount = phin_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
+    p->fm2_amount = phin_hslider_new_with_range(0.0, -1.0, 1.0, 0.1);
     gui_attach(t, p->fm2_amount, c1, c2, y, y + 1);
     ++y;
 
@@ -501,16 +501,16 @@ static void lfo_tab_init(LfoTab* self)
     gui_attach(t, p->pos_check, a1, a2, y, y + 1);
     ++y;
 
-    /* delay fan */
+    /* delay */
     p->delay_label = label = gui_label_attach("Delay:", t, a1, a2, y, y+1);
-    p->delay_fan = phin_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
-    gui_attach(t, p->delay_fan, c1, c2, y, y + 1);
+    p->delay = phin_hslider_new_with_range(0.1, 0.0, 1.0, 0.01);
+    gui_attach(t, p->delay, c1, c2, y, y + 1);
     ++y;
 
-    /* attack fan */
+    /* attack */
     p->attack_label = label = gui_label_attach("Attack:", t, a1, a2, y,y+1);
-    p->attack_fan = phin_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
-    gui_attach(t, p->attack_fan, c1, c2, y, y + 1);
+    p->attack = phin_hslider_new_with_range(0.1, 0.0, 1.0, 0.01);
+    gui_attach(t, p->attack, c1, c2, y, y + 1);
     ++y;
 
     /* mod1 input source */
@@ -520,7 +520,7 @@ static void lfo_tab_init(LfoTab* self)
     ++y;
 
     gui_label_attach("Amount:", t, a1, a2, y, y + 1);
-    p->am1_amount = phin_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
+    p->am1_amount = phin_hslider_new_with_range(0.0, -1.0, 1.0, 0.1);
     gui_attach(t, p->am1_amount, c1, c2, y, y + 1);
     ++y;
 
@@ -531,7 +531,7 @@ static void lfo_tab_init(LfoTab* self)
     ++y;
 
     gui_label_attach("Amount:", t, a1, a2, y, y + 1);
-    p->am2_amount = phin_hfan_slider_new_with_range(0.0, -1.0, 1.0, 0.1);
+    p->am2_amount = phin_hslider_new_with_range(0.0, -1.0, 1.0, 0.1);
     gui_attach(t, p->am2_amount, c1, c2, y, y + 1);
     ++y;
 
@@ -630,23 +630,23 @@ static void update_lfo(LfoTabPrivate* p)
 
     block(p);
 
-    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->freq_fan), freq);
+    phin_slider_set_value(PHIN_SLIDER(p->freq), freq);
 
 
     if (mod_src_is_global(p->lfo_id))
     {
-        gtk_widget_hide(p->delay_fan);
+        gtk_widget_hide(p->delay);
         gtk_widget_hide(p->delay_label);
-        gtk_widget_hide(p->attack_fan);
+        gtk_widget_hide(p->attack);
         gtk_widget_hide(p->attack_label);
     }
     else
     {
-        phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->delay_fan), delay);
-        phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->attack_fan), attack);
-        gtk_widget_show(p->delay_fan);
+        phin_slider_set_value(PHIN_SLIDER(p->delay), delay);
+        phin_slider_set_value(PHIN_SLIDER(p->attack), attack);
+        gtk_widget_show(p->delay);
         gtk_widget_show(p->delay_label);
-        gtk_widget_show(p->attack_fan);
+        gtk_widget_show(p->attack);
         gtk_widget_show(p->attack_label);
     }
 
@@ -672,8 +672,7 @@ static void update_lfo(LfoTabPrivate* p)
 
     if (basic_combo_get_iter_at_index(p->shape_combo, shape, &iter))
     {
-        gtk_combo_box_set_active_iter(GTK_COMBO_BOX(p->shape_combo),
-                                                                &iter); 
+        gtk_combo_box_set_active_iter(GTK_COMBO_BOX(p->shape_combo), &iter);
     }
 
     gtk_combo_box_set_active_iter(GTK_COMBO_BOX(p->fm1_combo), &fm1iter);
@@ -681,10 +680,10 @@ static void update_lfo(LfoTabPrivate* p)
     gtk_combo_box_set_active_iter(GTK_COMBO_BOX(p->am1_combo), &am1iter);
     gtk_combo_box_set_active_iter(GTK_COMBO_BOX(p->am2_combo), &am2iter);
 
-    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->fm1_amount), fm1amt);
-    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->fm2_amount), fm2amt);
-    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->am1_amount), am1amt);
-    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->am2_amount), am2amt);
+    phin_slider_set_value(PHIN_SLIDER(p->fm1_amount), fm1amt);
+    phin_slider_set_value(PHIN_SLIDER(p->fm2_amount), fm2amt);
+    phin_slider_set_value(PHIN_SLIDER(p->am1_amount), am1amt);
+    phin_slider_set_value(PHIN_SLIDER(p->am2_amount), am2amt);
 
     gtk_widget_set_sensitive(p->fm1_amount, fm1src != MOD_SRC_NONE);
     gtk_widget_set_sensitive(p->fm2_amount, fm2src != MOD_SRC_NONE);

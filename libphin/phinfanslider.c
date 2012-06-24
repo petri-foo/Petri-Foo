@@ -33,7 +33,7 @@ enum
     FAN_RISE = 3,
     FAN_RUN = 1,
     SLIDER_WIDTH = 16,
-    SLIDER_LENGTH = 32,
+    SLIDER_LENGTH = 48,
     THRESHOLD = 4,
 };
 
@@ -89,8 +89,8 @@ struct _PhinFanSliderPrivate
     GdkCursor*     arrow_cursor;
     GdkCursor*     empty_cursor;
     GdkWindow*     event_window;
-    GtkWidget*     hint_window0;
-    GtkWidget*     hint_window1;
+/*  GtkWidget*     hint_window0;
+    GtkWidget*     hint_window1; */
     GdkRectangle   cur_fan;
     gboolean       use_default_value;
     gdouble        default_value;
@@ -161,10 +161,11 @@ static gboolean phin_fan_slider_fan_expose (GtkWidget*      widget,
 
 static void phin_fan_slider_fan_show(GtkWidget* widget, GtkWidget* slider);
 
+/*
 static gboolean phin_fan_slider_hint_expose (GtkWidget* widget,
                                             GdkEventExpose* event,
                                             GtkWidget* slider);
-
+*/
 static void phin_fan_slider_adjustment_changed(GtkAdjustment* adjustment,
                                             PhinFanSlider* slider);
 
@@ -566,8 +567,8 @@ static void phin_fan_slider_init (PhinFanSlider* slider)
     p->arrow_cursor = NULL;
     p->empty_cursor = NULL;
     p->event_window = NULL;
-    p->hint_window0 = NULL;
-    p->hint_window1 = NULL;
+/*  p->hint_window0 = NULL;
+    p->hint_window1 = NULL;*/
     p->is_log = 0;
     p->use_default_value = FALSE;
 
@@ -620,7 +621,7 @@ static void phin_fan_slider_dispose (GObject* object)
         gtk_widget_destroy (p->fan_window);
         p->fan_window = NULL;
     }
-
+/*
     if (p->hint_window0 != NULL)
     {
         gtk_widget_destroy (p->hint_window0);
@@ -632,7 +633,7 @@ static void phin_fan_slider_dispose (GObject* object)
         gtk_widget_destroy (p->hint_window1);
         p->hint_window1 = NULL;
     }
-
+*/
     if (p->adjustment)
     {
         g_signal_handlers_disconnect_by_func(
@@ -751,6 +752,7 @@ static void phin_fan_slider_realize (GtkWidget* widget)
 
     phin_screen_changed(p->fan_window, NULL, NULL);
 
+    /* these aren't working yet
     p->hint_window0 = gtk_window_new (GTK_WINDOW_POPUP);
     gtk_widget_realize (p->hint_window0);
     g_signal_connect (G_OBJECT (p->hint_window0),
@@ -765,8 +767,8 @@ static void phin_fan_slider_realize (GtkWidget* widget)
                       G_CALLBACK (phin_fan_slider_hint_expose),
                       (gpointer) slider);
 
-    /* a priming call */
     phin_fan_slider_update_hints (slider);
+    */
 
     gtk_widget_queue_draw(widget);
 }
@@ -791,11 +793,12 @@ static void phin_fan_slider_unrealize (GtkWidget *widget)
     gtk_widget_destroy (p->fan_window);
     p->fan_window = NULL;
 
+    /*
     gtk_widget_destroy (p->hint_window0);
     p->hint_window0 = NULL;
-
     gtk_widget_destroy (p->hint_window1);
     p->hint_window1 = NULL;
+    */
 
     if (klass->unrealize)
         klass->unrealize (widget);
@@ -1120,14 +1123,14 @@ static gboolean phin_fan_slider_button_release (GtkWidget*      widget,
 
         if (gtk_widget_get_visible (p->fan_window))
             gtk_widget_hide (p->fan_window);
-
+        /*
         if (gtk_widget_get_visible (p->hint_window0))
             gtk_widget_hide (p->hint_window0);
 
         if (gtk_widget_get_visible (p->hint_window1))
-            gtk_widget_hide (p->hint_window1);
+            gtk_widget_hide (p->hint_window1); */
     }
-     
+
     return FALSE;
 }
 
@@ -1183,7 +1186,7 @@ static gboolean phin_fan_slider_key_press (GtkWidget* widget,
 
     if (p->inverted)
         inc = -inc;
-     
+
     gtk_adjustment_set_value (adj, gtk_adjustment_get_value(adj) + inc);
 
     return TRUE;
@@ -1205,7 +1208,9 @@ static gboolean phin_fan_slider_scroll (GtkWidget* widget,
     p->xclick = event->x;
     p->yclick = event->y;
 
-    gdk_window_set_cursor (p->event_window, p->empty_cursor);
+    /*  doesn't seem intuitive to me that the cursor disappears
+        when using the scroll wheel to adjust the slider.
+    gdk_window_set_cursor (p->event_window, p->empty_cursor); */
 
     val = gtk_adjustment_get_value(p->adjustment_prv);
     pinc = gtk_adjustment_get_page_increment(p->adjustment_prv);
@@ -1377,6 +1382,8 @@ skip:
 static gboolean phin_fan_slider_enter_notify (GtkWidget* widget,
                                               GdkEventCrossing* event)
 {
+    return FALSE;
+    /*
     PhinFanSliderPrivate* p = PHIN_FAN_SLIDER_GET_PRIVATE (widget);
     GtkAllocation win0_alloc;
     GtkAllocation win1_alloc;
@@ -1399,35 +1406,37 @@ static gboolean phin_fan_slider_enter_notify (GtkWidget* widget,
     if (p->orientation == GTK_ORIENTATION_VERTICAL)
     {
         gtk_window_move (GTK_WINDOW (p->hint_window0),
-                        event->x_root - event->x - win0_alloc.width,
-                        (event->y_root - event->y)
-                        + (height - win0_alloc.height) / 2);
+                            event->x_root - event->x - win0_alloc.width,
+                            (event->y_root - event->y)
+                            + (height - win0_alloc.height) / 2);
 
         gtk_window_move (GTK_WINDOW (p->hint_window1),
-                        event->x_root - event->x + width,
-                        (event->y_root - event->y)
-                        + (height - win1_alloc.height) / 2);
+                            event->x_root - event->x + width,
+                            (event->y_root - event->y)
+                            + (height - win1_alloc.height) / 2);
     }
     else
     {
         gtk_window_move (GTK_WINDOW (p->hint_window0),
-                        (event->x_root - event->x)
-                        + (width - win0_alloc.width) / 2,
-                        event->y_root - event->y - win0_alloc.height);
+                            (event->x_root - event->x)
+                            + (width - win0_alloc.width) / 2,
+                            event->y_root - event->y - win0_alloc.height);
 
         gtk_window_move (GTK_WINDOW (p->hint_window1),
-                        (event->x_root - event->x)
-                        + (width - win1_alloc.width) / 2,
-                        event->y_root - event->y + height);
+                            (event->x_root - event->x)
+                            + (width - win1_alloc.width) / 2,
+                            event->y_root - event->y + height);
     }
 
     return FALSE;
+    */
 }
 
 static gboolean phin_fan_slider_leave_notify (GtkWidget* widget,
                                               GdkEventCrossing* event)
 {
-    (void)event;
+    return FALSE;
+ /*   (void)event;
     PhinFanSliderPrivate* p = PHIN_FAN_SLIDER_GET_PRIVATE (widget);
 
     if (p->state == STATE_SCROLL)
@@ -1443,6 +1452,7 @@ static gboolean phin_fan_slider_leave_notify (GtkWidget* widget,
         gtk_widget_hide (p->hint_window1);
 
     return FALSE;
+    */
 }
 
 
@@ -1810,12 +1820,12 @@ static void phin_fan_slider_update_fan (PhinFanSlider* slider,
 
             if (!gtk_widget_get_visible (p->fan_window))
                 gtk_window_present (GTK_WINDOW (p->fan_window));
-
+            /*
             if (gtk_widget_get_visible (p->hint_window0))
                 gtk_widget_hide (p->hint_window0);
 
             if (gtk_widget_get_visible (p->hint_window1))
-                gtk_widget_hide (p->hint_window1);
+                gtk_widget_hide (p->hint_window1); */
         }
         else if (x < 0)
         {
@@ -1827,12 +1837,12 @@ static void phin_fan_slider_update_fan (PhinFanSlider* slider,
 
             if (!gtk_widget_get_visible (p->fan_window))
                 gtk_window_present (GTK_WINDOW (p->fan_window));
-
+            /*
             if (gtk_widget_get_visible (p->hint_window0))
                 gtk_widget_hide (p->hint_window0);
 
             if (gtk_widget_get_visible (p->hint_window1))
-                gtk_widget_hide (p->hint_window1);
+                gtk_widget_hide (p->hint_window1); */
         }
         else if (gtk_widget_get_visible (p->fan_window))
         {
@@ -1851,12 +1861,12 @@ static void phin_fan_slider_update_fan (PhinFanSlider* slider,
 
             if (!gtk_widget_get_visible (p->fan_window))
                 gtk_window_present (GTK_WINDOW (p->fan_window));
-
+            /*
             if (gtk_widget_get_visible (p->hint_window0))
                 gtk_widget_hide (p->hint_window0);
 
             if (gtk_widget_get_visible (p->hint_window1))
-                gtk_widget_hide (p->hint_window1);
+                gtk_widget_hide (p->hint_window1); */
         }
         else if (y < 0)
         {
@@ -1868,12 +1878,12 @@ static void phin_fan_slider_update_fan (PhinFanSlider* slider,
 
             if (!gtk_widget_get_visible (p->fan_window))
                 gtk_window_present (GTK_WINDOW (p->fan_window));
-
+            /*
             if (gtk_widget_get_visible (p->hint_window0))
                 gtk_widget_hide (p->hint_window0);
 
             if (gtk_widget_get_visible (p->hint_window1))
-                gtk_widget_hide (p->hint_window1);
+                gtk_widget_hide (p->hint_window1); */
         }
         else if (gtk_widget_get_visible (p->fan_window))
         {
@@ -1919,7 +1929,7 @@ static void phin_fan_slider_fan_show (GtkWidget* widget,
 {
     (void)widget; (void)slider;
 }
-
+/*
 static gboolean phin_fan_slider_hint_expose (GtkWidget* widget,
                                              GdkEventExpose* event,
                                              GtkWidget* slider)
@@ -1927,7 +1937,7 @@ static gboolean phin_fan_slider_hint_expose (GtkWidget* widget,
     (void)widget; (void)slider; (void)event;
     return TRUE;
 }
-
+*/
 
 /*  setup the hint arrows. these should hint to the user to move the
  *  mouse in such a direction as to bring the fans out.

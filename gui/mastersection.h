@@ -53,7 +53,7 @@ typedef struct _MasterSection MasterSection;
 struct _MasterSection
 {
     GtkVBox parent_instance;
-    GtkWidget* amplitude_fan; /* <private> */
+    GtkWidget* amp; /* <private> */
 };
 
 

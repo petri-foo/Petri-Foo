@@ -32,7 +32,7 @@ stamp-h1
 
 petri-foo
 core
-
+test
 
 # CMake
 
@@ -42,3 +42,4 @@ cmake_install.cmake
 
 Makefile.am
 
+sandbox/test

@@ -43,11 +43,11 @@ static void master_section_class_init(MasterSectionClass* klass)
 }
 
 
-static void amplitude_changed_cb(PhinFanSlider* slider, gpointer data)
+static void amp_changed_cb(PhinSlider* sl, gpointer data)
 {
     (void)data;
     float val;
-    val = phin_fan_slider_get_value(slider);
+    val = phin_slider_get_value(sl);
     mixer_set_amplitude(val);
 }
 
@@ -63,17 +63,17 @@ static void master_section_init(MasterSection* self)
     
     /* amplitude */
     label = gtk_label_new(NULL);
-    self->amplitude_fan =
-        phin_hfan_slider_new_with_range(DEFAULT_AMPLITUDE, 0.0, 1.0, 0.1);
+    self->amp = phin_hslider_new_with_range(DEFAULT_AMPLITUDE,
+                                            0.0, 1.0, 0.1);
     hbox = gtk_hbox_new(FALSE, GUI_TEXTSPACE);
 
     gtk_label_set_markup(GTK_LABEL(label), "<b>Master</b>");
     gtk_box_pack_start(GTK_BOX(hbox), label, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(hbox), self->amplitude_fan, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), self->amp, TRUE, TRUE, 0);
     gtk_box_pack_start(box, hbox, FALSE, FALSE, 0);
 
     gtk_widget_show(label);
-    gtk_widget_show(self->amplitude_fan);
+    gtk_widget_show(self->amp);
     gtk_widget_show(hbox);
 
     /* pad */
@@ -82,8 +82,8 @@ static void master_section_init(MasterSection* self)
     gtk_widget_show(pad);
     
     /* signal */
-    g_signal_connect(self->amplitude_fan, "value-changed",
-		     G_CALLBACK(amplitude_changed_cb), NULL);
+    g_signal_connect(self->amp, "value-changed",
+                    G_CALLBACK(amp_changed_cb), NULL);
 }
 
 
@@ -95,14 +95,13 @@ GtkWidget* master_section_new(void)
 
 void master_section_update(MasterSection* self)
 {
-    float amplitude;
+    float amp;
 
-    amplitude = mixer_get_amplitude();
+    amp = mixer_get_amplitude();
 
-    g_signal_handlers_block_by_func(self->amplitude_fan, 
-                                    (gpointer)amplitude_changed_cb, NULL);
+    g_signal_handlers_block_by_func(self->amp, 
+                                    G_CALLBACK(amp_changed_cb), NULL);
 
-    phin_fan_slider_set_value(PHIN_FAN_SLIDER(self->amplitude_fan), amplitude);
-    g_signal_handlers_unblock_by_func(self->amplitude_fan, amplitude_changed_cb, NULL);
+    phin_slider_set_value(PHIN_SLIDER(self->amp), amp);
+    g_signal_handlers_unblock_by_func(self->amp, amp_changed_cb, NULL);
 }
-    

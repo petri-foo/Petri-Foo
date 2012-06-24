@@ -24,6 +24,9 @@
 #ifndef __PHIN_H__
 #define __PHIN_H__
 
+#include <phinhslider.h>
+#include <phinvslider.h>
+#include <phinslider.h>
 #include <phinvfanslider.h>
 #include <phinhfanslider.h>
 #include <phinfanslider.h>

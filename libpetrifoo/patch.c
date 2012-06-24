@@ -937,7 +937,7 @@ inline static int advance (Patch* p, PatchVoice* v, int index)
         default:
             if (v->relset == 0)
             {
-                debug("release mode: CUTOFF\n");
+                /*debug("release mode: CUTOFF\n");*/
                 playstate_init_fade_out(p, v);
             }
 

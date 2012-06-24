@@ -54,14 +54,14 @@ struct _EnvelopeTabPrivate
     GtkWidget* idsel;
     GtkWidget* env_check;
     GtkWidget* env_table;
-    GtkWidget* delay_fan;
-    GtkWidget* attack_fan;
-    GtkWidget* hold_fan;
-    GtkWidget* decay_fan;
-    GtkWidget* sustain_fan;
-    GtkWidget* release_fan;
-    GtkWidget* key_fan;
-/*  GtkWidget* vel_fan; - not well implemented */
+    GtkWidget* delay;
+    GtkWidget* attack;
+    GtkWidget* hold;
+    GtkWidget* decay;
+    GtkWidget* sustain;
+    GtkWidget* release;
+    GtkWidget* key;
+/*  GtkWidget* vel; - not well implemented */
 };
 
 
@@ -84,14 +84,14 @@ static void set_sensitive(EnvelopeTabPrivate* p, gboolean val)
      *  but still need to set the phin widgets...
      */
     gtk_widget_set_sensitive(p->env_table, val);
-    gtk_widget_set_sensitive(p->delay_fan, val);
-    gtk_widget_set_sensitive(p->attack_fan, val);
-    gtk_widget_set_sensitive(p->hold_fan, val);
-    gtk_widget_set_sensitive(p->decay_fan, val);
-    gtk_widget_set_sensitive(p->sustain_fan, val);
-    gtk_widget_set_sensitive(p->release_fan, val);
-    gtk_widget_set_sensitive(p->key_fan, val);
-/*  gtk_widget_set_sensitive(p->vel_fan, val); */
+    gtk_widget_set_sensitive(p->delay, val);
+    gtk_widget_set_sensitive(p->attack, val);
+    gtk_widget_set_sensitive(p->hold, val);
+    gtk_widget_set_sensitive(p->decay, val);
+    gtk_widget_set_sensitive(p->sustain, val);
+    gtk_widget_set_sensitive(p->release, val);
+    gtk_widget_set_sensitive(p->key, val);
+/*  gtk_widget_set_sensitive(p->vel, val); */
 }
 
 
@@ -118,65 +118,65 @@ static void on_cb2(GtkToggleButton* button, EnvelopeTabPrivate* p)
 }
 
 
-static void delay_cb(PhinFanSlider* fan, EnvelopeTabPrivate* p)
+static void delay_cb(PhinSlider* sl, EnvelopeTabPrivate* p)
 {
-    float val = phin_fan_slider_get_value(fan);
+    float val = phin_slider_get_value(sl);
     patch_set_env_delay(p->patch,
         id_selector_get_id(ID_SELECTOR(p->idsel)),val);
 }
 
 
-static void attack_cb(PhinFanSlider* fan, EnvelopeTabPrivate* p)
+static void attack_cb(PhinSlider* sl, EnvelopeTabPrivate* p)
 {
-    float val = phin_fan_slider_get_value(fan);
+    float val = phin_slider_get_value(sl);
     patch_set_env_attack(p->patch,
         id_selector_get_id(ID_SELECTOR(p->idsel)), val);
 }
 
 
-static void hold_cb(PhinFanSlider* fan, EnvelopeTabPrivate* p)
+static void hold_cb(PhinSlider* sl, EnvelopeTabPrivate* p)
 {
-    float val = phin_fan_slider_get_value(fan);
+    float val = phin_slider_get_value(sl);
     patch_set_env_hold(p->patch,
         id_selector_get_id(ID_SELECTOR(p->idsel)), val);
 }
 
 
-static void decay_cb(PhinFanSlider* fan, EnvelopeTabPrivate* p)
+static void decay_cb(PhinSlider* sl, EnvelopeTabPrivate* p)
 {
-    float val = phin_fan_slider_get_value(fan);
+    float val = phin_slider_get_value(sl);
     patch_set_env_decay(p->patch,
         id_selector_get_id(ID_SELECTOR(p->idsel)), val);
 }
 
 
-static void sustain_cb(PhinFanSlider* fan, EnvelopeTabPrivate* p)
+static void sustain_cb(PhinSlider* sl, EnvelopeTabPrivate* p)
 {
-    float val = phin_fan_slider_get_value(fan);
+    float val = phin_slider_get_value(sl);
     patch_set_env_sustain(p->patch,
         id_selector_get_id(ID_SELECTOR(p->idsel)), val);
 }
 
 
-static void release_cb(PhinFanSlider* fan, EnvelopeTabPrivate* p)
+static void release_cb(PhinSlider* sl, EnvelopeTabPrivate* p)
 {
-    float val = phin_fan_slider_get_value(fan);
+    float val = phin_slider_get_value(sl);
     patch_set_env_release(p->patch,
         id_selector_get_id(ID_SELECTOR(p->idsel)), val);
 }
 
 
-static void key_cb(PhinFanSlider* fan, EnvelopeTabPrivate* p)
+static void key_cb(PhinSlider* sl, EnvelopeTabPrivate* p)
 {
-    float val = phin_fan_slider_get_value(fan);
+    float val = phin_slider_get_value(sl);
     patch_set_env_key_amt(p->patch,
         id_selector_get_id(ID_SELECTOR(p->idsel)), val);
 }
 
 /*
-static void vel_cb(PhinFanSlider* fan, EnvelopeTabPrivate* p)
+static void vel_cb(PhinSlider* sl, EnvelopeTabPrivate* p)
 {
-    float val = phin_fan_slider_get_value(fan);
+    float val = phin_slider_get_value(sl);
     patch_set_env_vel_amt(p->patch,
         id_selector_get_id(ID_SELECTOR(p->idsel)), val);
 }
@@ -190,21 +190,21 @@ static void connect(EnvelopeTabPrivate* p)
                     G_CALLBACK(on_cb), (gpointer)p);
     g_signal_connect(G_OBJECT(p->env_check), "toggled",
                     G_CALLBACK(on_cb2), (gpointer)p);
-    g_signal_connect(G_OBJECT(p->delay_fan), "value-changed",
+    g_signal_connect(G_OBJECT(p->delay), "value-changed",
                     G_CALLBACK(delay_cb), (gpointer) p);
-    g_signal_connect(G_OBJECT(p->attack_fan), "value-changed",
+    g_signal_connect(G_OBJECT(p->attack), "value-changed",
                     G_CALLBACK(attack_cb), (gpointer) p);
-    g_signal_connect(G_OBJECT(p->hold_fan), "value-changed",
+    g_signal_connect(G_OBJECT(p->hold), "value-changed",
                     G_CALLBACK(hold_cb), (gpointer) p);
-    g_signal_connect(G_OBJECT(p->decay_fan), "value-changed",
+    g_signal_connect(G_OBJECT(p->decay), "value-changed",
                     G_CALLBACK(decay_cb), (gpointer) p);
-    g_signal_connect(G_OBJECT(p->sustain_fan), "value-changed",
+    g_signal_connect(G_OBJECT(p->sustain), "value-changed",
                     G_CALLBACK(sustain_cb), (gpointer) p);
-    g_signal_connect(G_OBJECT(p->release_fan), "value-changed",
+    g_signal_connect(G_OBJECT(p->release), "value-changed",
                     G_CALLBACK(release_cb), (gpointer) p);
-    g_signal_connect(G_OBJECT(p->key_fan), "value-changed",
+    g_signal_connect(G_OBJECT(p->key), "value-changed",
                     G_CALLBACK(key_cb), (gpointer) p);
-/*  g_signal_connect(G_OBJECT(p->vel_fan), "value-changed",
+/*  g_signal_connect(G_OBJECT(p->vel), "value-changed",
                     G_CALLBACK(vel_cb), (gpointer) p); */
 }
 
@@ -212,28 +212,28 @@ static void connect(EnvelopeTabPrivate* p)
 static void block(EnvelopeTabPrivate* p)
 {
     g_signal_handlers_block_by_func(p->env_check,   on_cb,      p);
-    g_signal_handlers_block_by_func(p->delay_fan,   delay_cb,   p);
-    g_signal_handlers_block_by_func(p->attack_fan,  attack_cb,  p);
-    g_signal_handlers_block_by_func(p->hold_fan,    hold_cb,    p);
-    g_signal_handlers_block_by_func(p->decay_fan,   decay_cb,   p);
-    g_signal_handlers_block_by_func(p->sustain_fan, sustain_cb, p);
-    g_signal_handlers_block_by_func(p->release_fan, release_cb, p);
-    g_signal_handlers_block_by_func(p->key_fan,     key_cb,     p);
-/*  g_signal_handlers_block_by_func(p->vel_fan,     vel_cb,     p); */
+    g_signal_handlers_block_by_func(p->delay,   delay_cb,   p);
+    g_signal_handlers_block_by_func(p->attack,  attack_cb,  p);
+    g_signal_handlers_block_by_func(p->hold,    hold_cb,    p);
+    g_signal_handlers_block_by_func(p->decay,   decay_cb,   p);
+    g_signal_handlers_block_by_func(p->sustain, sustain_cb, p);
+    g_signal_handlers_block_by_func(p->release, release_cb, p);
+    g_signal_handlers_block_by_func(p->key,     key_cb,     p);
+/*  g_signal_handlers_block_by_func(p->vel,     vel_cb,     p); */
 }
 
 
 static void unblock(EnvelopeTabPrivate* p)
 {
     g_signal_handlers_unblock_by_func(p->env_check,     on_cb,      p);
-    g_signal_handlers_unblock_by_func(p->delay_fan,     delay_cb,   p);
-    g_signal_handlers_unblock_by_func(p->attack_fan,    attack_cb,  p);
-    g_signal_handlers_unblock_by_func(p->hold_fan,      hold_cb,    p);
-    g_signal_handlers_unblock_by_func(p->decay_fan,     decay_cb,   p);
-    g_signal_handlers_unblock_by_func(p->sustain_fan,   sustain_cb, p);
-    g_signal_handlers_unblock_by_func(p->release_fan,   release_cb, p);
-    g_signal_handlers_unblock_by_func(p->key_fan,       key_cb,     p);
-/*  g_signal_handlers_unblock_by_func(p->vel_fan,       vel_cb,     p); */
+    g_signal_handlers_unblock_by_func(p->delay,     delay_cb,   p);
+    g_signal_handlers_unblock_by_func(p->attack,    attack_cb,  p);
+    g_signal_handlers_unblock_by_func(p->hold,      hold_cb,    p);
+    g_signal_handlers_unblock_by_func(p->decay,     decay_cb,   p);
+    g_signal_handlers_unblock_by_func(p->sustain,   sustain_cb, p);
+    g_signal_handlers_unblock_by_func(p->release,   release_cb, p);
+    g_signal_handlers_unblock_by_func(p->key,       key_cb,     p);
+/*  g_signal_handlers_unblock_by_func(p->vel,       vel_cb,     p); */
 }
 
 
@@ -279,52 +279,52 @@ static void envelope_tab_init(EnvelopeTab* self)
     t = (GtkTable*) p->env_table;
     gui_pack(box, p->env_table);
 
-    /* delay fan */
+    /* delay */
     gui_label_attach("Delay:", t, a1, a2, y, y + 1);
-    p->delay_fan = phin_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
-    gui_attach(t, p->delay_fan, b1, b2, y, y + 1);
+    p->delay = phin_hslider_new_with_range(0.1, 0.0, 1.0, 0.01);
+    gui_attach(t, p->delay, b1, b2, y, y + 1);
     ++y;
 
-    /* attack fan */
+    /* attack */
     gui_label_attach("Attack:", t, a1, a2, y, y + 1);
-    p->attack_fan = phin_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
-    gui_attach(t, p->attack_fan, b1, b2, y, y + 1);
+    p->attack = phin_hslider_new_with_range(0.1, 0.0, 1.0, 0.01);
+    gui_attach(t, p->attack, b1, b2, y, y + 1);
     ++y;
 
-    /* hold fan */
+    /* hold */
     gui_label_attach("Hold:", t, a1, a2, y, y + 1);
-    p->hold_fan = phin_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
-    gui_attach(t, p->hold_fan, b1, b2, y, y + 1);
+    p->hold = phin_hslider_new_with_range(0.1, 0.0, 1.0, 0.01);
+    gui_attach(t, p->hold, b1, b2, y, y + 1);
     ++y;
 
-    /* decay fan */
+    /* decay */
     gui_label_attach("Decay:", t, a1, a2, y, y + 1);
-    p->decay_fan = phin_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
-    gui_attach(t, p->decay_fan, b1, b2, y, y + 1);
+    p->decay = phin_hslider_new_with_range(0.1, 0.0, 1.0, 0.01);
+    gui_attach(t, p->decay, b1, b2, y, y + 1);
     ++y;
 
-    /* sustain fan */
+    /* sustain */
     gui_label_attach("Sustain:", t, a1, a2, y, y + 1);
-    p->sustain_fan = phin_hfan_slider_new_with_range(0.7, 0.0, 1.0, 0.01);
-    gui_attach(t, p->sustain_fan, b1, b2, y, y + 1);
+    p->sustain = phin_hslider_new_with_range(0.7, 0.0, 1.0, 0.01);
+    gui_attach(t, p->sustain, b1, b2, y, y + 1);
     ++y;
 
-    /* release fan */
+    /* release */
     gui_label_attach("Release:", t, a1, a2, y, y  + 1);
-    p->release_fan = phin_hfan_slider_new_with_range(0.1, 0.0, 1.0, 0.01);
-    gui_attach(t, p->release_fan, b1, b2, y, y + 1);
+    p->release = phin_hslider_new_with_range(0.1, 0.0, 1.0, 0.01);
+    gui_attach(t, p->release, b1, b2, y, y + 1);
     ++y;
 
-    /* key fan */
+    /* key */
     gui_label_attach("Key Track:", t, a1, a2, y, y + 1);
-    p->key_fan = phin_hfan_slider_new_with_range(0.1, -1.0, 1.0, 0.01);
-    gui_attach(t, p->key_fan, b1, b2, y, y + 1);
+    p->key = phin_hslider_new_with_range(0.1, -1.0, 1.0, 0.01);
+    gui_attach(t, p->key, b1, b2, y, y + 1);
     ++y;
 
-    /* vel fan
+    /* vel
     gui_label_attach("Vel.Sens:", t, a1, a2, y, y + 1);
-    p->vel_fan = phin_hfan_slider_new_with_range(0.1, -1.0, 1.0, 0.01);
-    gui_attach(t, p->vel_fan, b1, b2, y, y + 1);
+    p->vel = phin_hslider_new_with_range(0.1, -1.0, 1.0, 0.01);
+    gui_attach(t, p->vel, b1, b2, y, y + 1);
     ++y;
     */
 
@@ -355,14 +355,14 @@ static void update_env(EnvelopeTabPrivate* p)
 
     block(p);
 
-    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->delay_fan), l);
-    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->attack_fan), a);
-    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->hold_fan), h);
-    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->decay_fan), d);
-    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->sustain_fan), s);
-    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->release_fan), r);
-    phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->key_fan), key);
-/*  phin_fan_slider_set_value(PHIN_FAN_SLIDER(p->vel_fan), vel); */
+    phin_slider_set_value(PHIN_SLIDER(p->delay), l);
+    phin_slider_set_value(PHIN_SLIDER(p->attack), a);
+    phin_slider_set_value(PHIN_SLIDER(p->hold), h);
+    phin_slider_set_value(PHIN_SLIDER(p->decay), d);
+    phin_slider_set_value(PHIN_SLIDER(p->sustain), s);
+    phin_slider_set_value(PHIN_SLIDER(p->release), r);
+    phin_slider_set_value(PHIN_SLIDER(p->key), key);
+/*  phin_slider_set_value(PHIN_SLIDER(p->vel), vel); */
 
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(p->env_check), on);
 

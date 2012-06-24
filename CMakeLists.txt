@@ -148,6 +148,11 @@ ADD_SUBDIRECTORY( libpetrifui )
 ADD_SUBDIRECTORY( libphin )
 ADD_SUBDIRECTORY( gui )
 
+if (BuildForDebug)
+    ADD_SUBDIRECTORY( sandbox )
+endif (BuildForDebug)
+
+
 #ADD_SUBDIRECTORY( pixmaps )
 
 install (DIRECTORY pixmaps/ DESTINATION ${DATADIR}/pixmaps

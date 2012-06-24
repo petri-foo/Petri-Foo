@@ -73,7 +73,7 @@ static GtkWidget* menuitem_file_recent = 0;
 
 
 /* settings */
-static GtkWidget* menu_settings_fans = 0;
+/*static GtkWidget* menu_settings_fans = 0;*/
 static GtkWidget* menu_settings_auto_preview = 0;
 
 /* current patch, makes passing patch id to sample editor easier */
@@ -478,6 +478,7 @@ static void cb_menu_settings_audio (GtkWidget * widget, gpointer data)
 }
 
 
+/*
 static void cb_menu_settings_fans(GtkWidget* widget, gpointer data)
 {
     (void)widget;(void)data;
@@ -485,7 +486,7 @@ static void cb_menu_settings_fans(GtkWidget* widget, gpointer data)
         gtk_check_menu_item_get_active(
             GTK_CHECK_MENU_ITEM(menu_settings_fans)));
 }
-
+*/
 
 static void cb_menu_settings_auto_preview(GtkWidget* widget, gpointer data)
 {
@@ -624,11 +625,11 @@ int gui_init(void)
             G_CALLBACK(cb_menu_patch_remove),       NULL);
 
     /* settings menu */
-
-    /* use slider fans */
     menu_settings = gui_menu_add(menubar, "Settings", NULL, NULL);
     gui_menu_add(menu_settings, "Audio...",
             G_CALLBACK(cb_menu_settings_audio),     NULL);
+
+    /* use slider fans
     menu_settings_fans =
         gtk_check_menu_item_new_with_label("Use slider fans");
     gtk_check_menu_item_set_active(
@@ -639,6 +640,7 @@ int gui_init(void)
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_settings),
                                         menu_settings_fans);
     gtk_widget_show(menu_settings_fans);
+*/
 
     /* auto-preview */
     menu_settings_auto_preview =
