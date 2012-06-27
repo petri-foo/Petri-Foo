@@ -1,9 +1,12 @@
-tar -xjf petri-foo-0.1.3.tar.bz2
-cd petri-foo-0.1.3
+tar -xjf petri-foo-0.1.4.tar.bz2
+cd petri-foo-0.1.4
 cmake .
 make
 
-to run:
+to run without installation:
 gui/petri-foo
+
+to install:
+make install
 
 

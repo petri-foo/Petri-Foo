@@ -248,7 +248,8 @@ static void envelope_tab_init(EnvelopeTab* self)
 
     int y = 0;
     int a1 = 0, a2 = 1;
-    int b1 = 1, b2 = 2;
+    int b1 = 1, b2 = 4;
+    int cols = 5;
 
     p->patch = -1;
     gtk_container_set_border_width(GTK_CONTAINER(self), GUI_BORDERSPACE);
@@ -275,9 +276,11 @@ static void envelope_tab_init(EnvelopeTab* self)
     gtk_widget_show(title); /* title requires additional showing */
 
     /* table */
-    p->env_table = gtk_table_new(9, 3, FALSE);
+    p->env_table = gtk_table_new(9, cols, FALSE);
     t = (GtkTable*) p->env_table;
     gui_pack(box, p->env_table);
+/*    gtk_table_set_row_spacings(t, 2);*/
+
 
     /* delay */
     gui_label_attach("Delay:", t, a1, a2, y, y + 1);

@@ -27,9 +27,6 @@
 #include <phinhslider.h>
 #include <phinvslider.h>
 #include <phinslider.h>
-#include <phinvfanslider.h>
-#include <phinhfanslider.h>
-#include <phinfanslider.h>
 #include <phinsliderbutton.h>
 #include <phinkeyboard.h>
 #include <phinvkeyboard.h>

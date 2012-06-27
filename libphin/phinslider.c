@@ -137,12 +137,6 @@ static gboolean phin_slider_scroll          (GtkWidget* widget,
 static gboolean phin_slider_motion_notify   (GtkWidget* widget,
                                             GdkEventMotion* event);
 
-static gboolean phin_slider_enter_notify    (GtkWidget* widget,
-                                            GdkEventCrossing* event);
-
-static gboolean phin_slider_leave_notify    (GtkWidget* widget,
-                                            GdkEventCrossing* event);
-
 static void phin_slider_calc_layout         (PhinSlider* slider,
                                             int* x, int* y, int* w, int* h);
 
@@ -457,8 +451,6 @@ static void phin_slider_class_init (PhinSliderClass* klass)
     widget_class->key_press_event =         phin_slider_key_press;
     widget_class->scroll_event =            phin_slider_scroll;
     widget_class->motion_notify_event =     phin_slider_motion_notify;
-    widget_class->enter_notify_event =      phin_slider_enter_notify;
-    widget_class->leave_notify_event =      phin_slider_leave_notify;
 
     /**
      * PhinSlider::value-changed:
@@ -933,10 +925,6 @@ static gboolean phin_slider_expose (GtkWidget*      widget,
     }
 
     cairo_destroy(cr);
-    gtk_paint_shadow(style, gtk_widget_get_window(widget),
-                            gtk_widget_get_state(widget),
-                            GTK_SHADOW_IN,  NULL, widget, NULL,
-                            x - 2, y - 2, w + 5, h + 5);
 
     if (gtk_widget_has_focus (widget))
     {
@@ -1194,34 +1182,6 @@ skip:
     /* signal that we want more motion events */
     gdk_window_get_pointer (NULL, NULL, NULL, NULL);
 
-    return FALSE;
-}
-
-
-static gboolean phin_slider_enter_notify (GtkWidget* widget,
-                                              GdkEventCrossing* event)
-{
-    /* FIXME: seems to have no effect
-    PhinSliderPrivate* p = PHIN_SLIDER_GET_PRIVATE (widget);
-
-    if (p->state == STATE_NORMAL)
-        gdk_window_set_cursor (p->event_window, p->arrow_cursor);
-    */
-    return FALSE;
-}
-
-static gboolean phin_slider_leave_notify (GtkWidget* widget,
-                                              GdkEventCrossing* event)
-{
- /* FIXME: seems to have no effect
-    PhinSliderPrivate* p = PHIN_SLIDER_GET_PRIVATE (widget);
-
-    if (p->state == STATE_SCROLL)
-    {
-        gdk_window_set_cursor (p->event_window, NULL);
-        p->state = STATE_NORMAL;
-    }
-    */
     return FALSE;
 }
 
