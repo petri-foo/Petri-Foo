@@ -480,35 +480,38 @@ int dish_file_write(const char *name)
         /* raw samplerate, raw channels, sndfile format */
         dish_file_write_sample_raw(node1, patch_id[i]);
 
-        /* sample play */
-        node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Play", NULL);
+        if (patch_get_sample(patch_id[i]))
+        {
+            /* sample play */
+            node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Play", NULL);
 
-        snprintf(buf, CHARBUFSIZE, "%d",
+            snprintf(buf, CHARBUFSIZE, "%d",
                     patch_get_mark_frame(patch_id[i], WF_MARK_PLAY_START));
-        xmlNewProp(node2,   BAD_CAST "start", BAD_CAST buf);
+            xmlNewProp(node2,   BAD_CAST "start", BAD_CAST buf);
 
-        snprintf(buf, CHARBUFSIZE, "%d",
+            snprintf(buf, CHARBUFSIZE, "%d",
                     patch_get_mark_frame(patch_id[i], WF_MARK_PLAY_STOP));
-        xmlNewProp(node2,   BAD_CAST "stop", BAD_CAST buf);
+            xmlNewProp(node2,   BAD_CAST "stop", BAD_CAST buf);
 
-        snprintf(buf, CHARBUFSIZE, "%d",
+            snprintf(buf, CHARBUFSIZE, "%d",
                                 patch_get_fade_samples(patch_id[i]));
-        xmlNewProp(node2,   BAD_CAST "fade_samples", BAD_CAST buf);
+            xmlNewProp(node2,   BAD_CAST "fade_samples", BAD_CAST buf);
 
-        /* sample loop */
-        node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Loop", NULL);
+            /* sample loop */
+            node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Loop", NULL);
 
-        snprintf(buf, CHARBUFSIZE, "%d",
+            snprintf(buf, CHARBUFSIZE, "%d",
                     patch_get_mark_frame(patch_id[i], WF_MARK_LOOP_START));
-        xmlNewProp(node2,   BAD_CAST "start", BAD_CAST buf);
+            xmlNewProp(node2,   BAD_CAST "start", BAD_CAST buf);
 
-        snprintf(buf, CHARBUFSIZE, "%d",
+            snprintf(buf, CHARBUFSIZE, "%d",
                     patch_get_mark_frame(patch_id[i], WF_MARK_LOOP_STOP));
-        xmlNewProp(node2,   BAD_CAST "stop", BAD_CAST buf);
+            xmlNewProp(node2,   BAD_CAST "stop", BAD_CAST buf);
 
-        snprintf(buf, CHARBUFSIZE, "%d",
+            snprintf(buf, CHARBUFSIZE, "%d",
                     patch_get_xfade_samples(patch_id[i]));
-        xmlNewProp(node2,   BAD_CAST "xfade_samples", BAD_CAST buf);
+            xmlNewProp(node2,   BAD_CAST "xfade_samples", BAD_CAST buf);
+        }
 
         /* sample note */
         node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Note", NULL);
@@ -633,12 +636,15 @@ int dish_file_read_sample(xmlNodePtr node, int patch_id)
      && dish_file_samplerate != patch_get_samplerate())
         sr_ratio = patch_get_samplerate() / (double)dish_file_samplerate;
 
-debug("sr_ratio:%f\n",sr_ratio);
+    debug("sr_ratio:%f\n",sr_ratio);
 
     int mode = PATCH_PLAY_SINGLESHOT;
 
-    if ((prop = xmlGetProp(node, BAD_CAST "file")))
+    if ((prop = xmlGetProp(node, BAD_CAST "file"))
+     && strlen((const char*)prop) > 0)
+    {
         filename = strdup((const char*)prop);
+    }
 
     if ((prop = xmlGetProp(node, BAD_CAST "mode")))
     {
@@ -673,7 +679,7 @@ debug("sr_ratio:%f\n",sr_ratio);
         if (node1->type != XML_ELEMENT_NODE)
             continue;
 
-        if (!sample_loaded)
+        if (!sample_loaded && filename)
         {
             int n;
             int raw_samplerate = 0;

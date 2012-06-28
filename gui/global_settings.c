@@ -93,7 +93,7 @@ int settings_read(const char* path)
 
     if (doc == NULL)
     {
-        msg_log(MSG_ERROR, "Failed to parse %s\n", path);
+        msg_log(MSG_WARNING, "Failed to parse %s\n", path);
         return -1;
     }
 

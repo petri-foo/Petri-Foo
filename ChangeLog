@@ -1,3 +1,12 @@
+2012-06-28 James Morris <james@jwm-art.net>
+
+	* Fixed dish-file load of a bank containing a patch
+	  without a sample file specified.
+
+	* Change status from error to warning for "Failed to
+	  parse" message. 
+
+
 2012-06-27 James Morris <james@jwm-art.net>
 
 	* Fixed build for older Cairo versions which do
