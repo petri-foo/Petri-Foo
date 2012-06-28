@@ -47,7 +47,10 @@
 #include "sync.h"
 #include "lfo.h"
 #include "midi_control.h"
+
+#ifdef HAVE_JACK_SESSION_H
 void audio_settings_session_cb(jack_session_event_t *event, void *arg);
+#endif /* HAVE_JACK_SESSION_H */
 
 
 /* prototypes */

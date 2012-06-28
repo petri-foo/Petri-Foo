@@ -7,7 +7,7 @@ endif (COMMAND CMAKE_POLICY)
 project(Petri-Foo)
 
 set(Petri-Foo_VERSION_MAJOR 1)
-set(Petri-Foo_VERSION_MINOR 4)
+set(Petri-Foo_VERSION_MINOR 5)
 set(BINDIR  "bin" CACHE STRING "Where to install binaries")
 set(DATADIR "share/petri-foo" CACHE STRING "Where to install data files")
 set(APPLICATIONS_DIR "share/applications" CACHE STRING "Where to install desktop files")
@@ -16,6 +16,8 @@ set(MIME_DIR "share/mime" CACHE STRING "Where MIME definitions are located")
 set(UpdateMime "ON" CACHE BOOL "Update Mime Database")
 
 set(ARCHIVE_NAME petri-foo-0.${Petri-Foo_VERSION_MAJOR}.${Petri-Foo_VERSION_MINOR})
+
+include (CheckCSourceCompiles)
 
 mark_as_advanced(EXECUTABLE_OUTPUT_PATH)
 mark_as_advanced(LIBRARY_OUTPUT_PATH)
@@ -130,6 +132,19 @@ else (LIBXML2_FOUND)
     message(FATAL_ERROR "libxml2 was not found")
 endif (LIBXML2_FOUND)
 
+# Check for CAIRO_OPERATOR_HSL_LUMINOSITY
+check_c_source_compiles (
+    "#include <cairo/cairo.h>
+    int main(int argc, char **argv)
+    {
+        cairo_operator_t op = CAIRO_OPERATOR_HSL_LUMINOSITY;
+        return 0;
+    }" HasCairoOperatorHSL
+)
+
+if (HasCairoOperatorHSL)
+    add_definitions (-DCAIRO_HAS_OPERATOR_HSL)
+endif (HasCairoOperatorHSL)
 
 INCLUDE (CheckIncludeFiles)
 CHECK_INCLUDE_FILES (malloc.h HAVE_MALLOC_H)

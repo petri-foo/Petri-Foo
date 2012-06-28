@@ -312,7 +312,7 @@ patch_trigger_patch (Patch* p, int note, float vel, Tick ticks)
     }
     else /* mono w/o legato, or poly */
     {    
-        int oldest;
+        int oldest = 0;
         Tick oldestticks = ticks;
 
         /* find a free voice slot and determine the oldest running voice */

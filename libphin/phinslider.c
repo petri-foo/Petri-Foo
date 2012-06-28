@@ -799,8 +799,12 @@ static void draw_rectangle(cairo_t* cr, double x, double y,
     cairo_stroke_preserve(cr);
     cairo_fill(cr);
 
+    #ifdef CAIRO_HAS_OPERATOR_HSL
     cairo_set_operator(cr, CAIRO_OPERATOR_HSL_LUMINOSITY);
     cairo_set_source_rgb(cr, f, f, f);
+    #else
+    cairo_set_source_rgb(cr, r * f, g * f, b * f);
+    #endif
     cairo_rectangle(cr, x, y, w, h);
     cairo_stroke(cr);
     cairo_set_operator(cr, CAIRO_OPERATOR_OVER);

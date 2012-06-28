@@ -1,3 +1,14 @@
+2012-06-27 James Morris <james@jwm-art.net>
+
+	* Fixed build for older Cairo versions which do
+	  not support CAIRO_OPERATOR_HSL_LUMINOSITY.
+
+	* Fixed build for older JACK versions without
+	  session support.
+
+	* Fixed a few uninitialized warnings.
+
+
 2012-06-22 James Morris <james@jwm-art.net>
 
 	* Restored sliders visual aspect to pre-cairo days.

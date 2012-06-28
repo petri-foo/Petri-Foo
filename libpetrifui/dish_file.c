@@ -110,8 +110,8 @@ dish_file_write_param(xmlNodePtr nodeparent, int patch_id,
     const char* prop1 = 0;
     const char* prop2 = 0;
 
-    float   val1;
-    float   val2;
+    float   val1 = 0;
+    float   val2 = 0;
     float   vel_amt;
     float   key_trk;
     int     modsrc;
