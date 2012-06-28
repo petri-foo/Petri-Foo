@@ -163,10 +163,13 @@ ADD_SUBDIRECTORY( libpetrifui )
 ADD_SUBDIRECTORY( libphin )
 ADD_SUBDIRECTORY( gui )
 
-if (BuildForDebug)
-    ADD_SUBDIRECTORY( sandbox )
-endif (BuildForDebug)
 
+if (BuildForDebug)
+    if (IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/sandbox )
+        message( STATUS "Will build sandbox test target" )
+        ADD_SUBDIRECTORY( sandbox )
+    endif (IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/sandbox )
+endif (BuildForDebug)
 
 #ADD_SUBDIRECTORY( pixmaps )
 

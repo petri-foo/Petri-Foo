@@ -6,6 +6,8 @@
 	* Change status from error to warning for "Failed to
 	  parse" message. 
 
+	* Add check for sandbox directory for debug build.
+
 
 2012-06-27 James Morris <james@jwm-art.net>
 
