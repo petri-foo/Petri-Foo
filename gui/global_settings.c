@@ -53,7 +53,7 @@ void settings_init()
 
     gbl_settings->filename = (char*) g_build_filename(
                              g_get_user_config_dir(),
-                             g_get_prgname(),
+                             "petri-foo",
                              SETTINGS_BASENAME,
                              NULL);
 

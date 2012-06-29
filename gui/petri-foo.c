@@ -64,6 +64,7 @@ int main(int argc, char *argv[])
 {
     int opt;
     int longopt_index;
+    int argc_gtk = argc;
 
     static struct option long_options[] =
     {
@@ -114,6 +115,9 @@ int main(int argc, char *argv[])
     patch_control_init();
     driver_start();
     midi_start();
+
+    if (argc < argc_gtk)
+        optind -= argc_gtk - argc;
 
     if (optind < argc)
         dish_file_read(argv[optind]);
