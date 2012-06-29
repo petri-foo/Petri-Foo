@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
     };
 
 
-    while((opt = getopt_long(argc, argv, "n:uU:h",
+    while((opt = getopt_long(argc, argv, "n:uh",
                                         long_options, &longopt_index)) > 0)
     {
         switch (opt)
