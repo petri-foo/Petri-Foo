@@ -33,7 +33,7 @@ static char *instance_name = 0;
 
 const char* get_instance_name(void)
 {
-    return (instance_name) ? instance_name : PACKAGE;
+    return instance_name;
 }
 
 

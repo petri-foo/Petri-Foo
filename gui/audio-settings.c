@@ -21,9 +21,9 @@
     This file is a derivative of a Specimen original, modified 2011
 */
 
-
 #include <gtk/gtk.h>
 
+#include "instance.h"
 #include "audio-settings.h"
 #include "gui.h"
 #include "petri-foo.h"
@@ -45,7 +45,8 @@ static gboolean gui_session_cb(void *data)
     const char bank[] = "bank";
     char* bankfilename;
     char* filename;
-    char command[256];
+    char command_buf[8192];
+    const char* instancename = get_instance_name();
     jack_session_event_t *ev = (jack_session_event_t *)data;
 
     len = strlen(bank);
@@ -61,15 +62,24 @@ static gboolean gui_session_cb(void *data)
 
     debug("filename:%s\n",filename);
 
-    snprintf(command,   sizeof(command),
-                        "petri-foo --unconnected -U %s ${SESSION_DIR}%s",
-                        ev->client_uuid, bankfilename);
+    if (instancename)
+        snprintf(command_buf,   sizeof(command_buf),
+                                "petri-foo --name %s --unconnected "
+                                "-U %s ${SESSION_DIR}%s",
+                                instancename,
+                                ev->client_uuid, bankfilename);
+    else
+        snprintf(command_buf,   sizeof(command_buf),
+                                "petri-foo --unconnected "
+                                "-U %s ${SESSION_DIR}%s",
+                                ev->client_uuid, bankfilename);
 
-    debug("command:%s\n",command);
+
+    debug("command:%s\n",command_buf);
 
     dish_file_write(filename);
 
-    ev->command_line = strdup(command);
+    ev->command_line = strdup(command_buf);
     jack_session_reply(jackdriver_get_client(), ev);
 
     if (ev->type == JackSessionSaveAndQuit)

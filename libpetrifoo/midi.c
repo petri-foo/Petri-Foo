@@ -159,6 +159,10 @@ static void* poll_events(void* arg)
 static int open_seq(snd_seq_t** handle)
 {
     int portid;
+    const char* instancename = get_instance_name();
+
+    if (!instancename)
+        instancename = PACKAGE;
 
     if (snd_seq_open(handle, "default", SND_SEQ_OPEN_INPUT, 0) < 0)
     {
@@ -166,10 +170,10 @@ static int open_seq(snd_seq_t** handle)
         return MIDI_ERR_SEQ;
     }
 
-    snd_seq_set_client_name(*handle, get_instance_name());
+    snd_seq_set_client_name(*handle, instancename);
 
     if ((portid = snd_seq_create_simple_port(   *handle,
-                                                driver_get_client_name(),
+                                                "midi_input",
                                 SND_SEQ_PORT_CAP_WRITE |
                                 SND_SEQ_PORT_CAP_SUBS_WRITE,
                                 SND_SEQ_PORT_TYPE_APPLICATION)) < 0)

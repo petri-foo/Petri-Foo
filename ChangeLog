@@ -1,3 +1,23 @@
+2012-06-29 James Morris <james@jwm-art.net>
+
+	* Changed alsa midi port name from instance name to
+	  "midi_input".
+
+	* Tell jack session when --name command option is
+	  used.
+
+	* Change get_instance_name to only return something
+	  when --name command option used.
+
+
+2012-06-29 Kaspa Bumke <kaspar.bumke@gmail.com>
+
+	* Documented -U option in --help (for the case of
+	  accidental discovery by user).
+
+	* Fixed --unconnected option to not take argument.
+
+
 2012-06-28 James Morris <james@jwm-art.net>
 
 	* Fixed dish-file load of a bank containing a patch

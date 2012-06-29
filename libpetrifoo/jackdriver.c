@@ -48,11 +48,6 @@
 #include "lfo.h"
 #include "midi_control.h"
 
-#ifdef HAVE_JACK_SESSION_H
-void audio_settings_session_cb(jack_session_event_t *event, void *arg);
-#endif /* HAVE_JACK_SESSION_H */
-
-
 /* prototypes */
 static int start(void);
 static int stop(void);
@@ -68,6 +63,8 @@ static jack_port_t*    midiport;
 
 #ifdef HAVE_JACK_SESSION_H
 /*static jack_session_event_t *session_event;*/
+extern void audio_settings_session_cb(jack_session_event_t *event,
+                                                            void *arg);
 JackSessionCallback         session_cb = audio_settings_session_cb;
 #endif
 
@@ -239,7 +236,10 @@ static void init(void)
 static int start(void)
 {
     const char** ports;
-    char* instancename = strdup (get_instance_name());
+    const char* instancename = get_instance_name();
+
+    if (!instancename)
+        instancename = PACKAGE;
 
     debug("JACK initializing driver...\n");
     pthread_mutex_lock (&running_mutex);
