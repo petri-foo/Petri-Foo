@@ -53,6 +53,7 @@ void show_usage (void)
     printf("  -n, --name <name>  Specify instance name, "
                                 "defaults to \"petri-foo\"\n" );
     printf("  -u, --unconnected  Don't auto-connect to JACK\n");
+    printf("  -U, --uuid <uuid>  Set UUID for JACK session\n");
     printf("  -h, --help         Display this help message\n\n");
     printf ("For more information, please see:\n");
     printf ("http://petri-foo.sourceforge.net/\n");
@@ -74,7 +75,7 @@ int main(int argc, char *argv[])
     };
 
 
-    while((opt = getopt_long(argc, argv, "n:u:U:h",
+    while((opt = getopt_long(argc, argv, "n:uU:h",
                                         long_options, &longopt_index)) > 0)
     {
         switch (opt)
