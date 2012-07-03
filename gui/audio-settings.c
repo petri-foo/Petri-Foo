@@ -177,6 +177,9 @@ void audio_settings_init (GtkWidget* parent)
 
     tmp = gtk_check_button_new_with_label
                             ("Sync to JACK Transport instead of MIDI");
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(tmp),
+                    sync_get_method() == SYNC_METHOD_JACK ? TRUE : FALSE);
+
     gtk_box_pack_start(GTK_BOX(vbox), tmp, FALSE, FALSE, 0);
     g_signal_connect(G_OBJECT(tmp), "toggled",
                                 G_CALLBACK(sync_cb), NULL);

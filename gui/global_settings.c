@@ -26,10 +26,10 @@
 #include <errno.h>
 
 
-#include "phin.h"
 #include "global_settings.h"
 #include "petri-foo.h"
 #include "msg_log.h"
+#include "sync.h"
 
 
 #define SETTINGS_BASENAME "rc.xml"
@@ -49,7 +49,6 @@ void settings_init()
 
     gbl_settings->sample_file_filter = strdup("All Audio files");
     gbl_settings->sample_auto_preview = true;
-    gbl_settings->sample_preview_length = 10.0f;
 
     gbl_settings->filename = (char*) g_build_filename(
                              g_get_user_config_dir(),
@@ -144,14 +143,7 @@ int settings_read(const char* path)
                     gbl_settings->last_bank_dir =
                         (char*) xmlGetProp(node2, BAD_CAST "value");
                 }
-/*
-                if (xmlStrcmp(prop, BAD_CAST "sliders-use-fans") == 0)
-                {
-                    phin_fan_slider_set_fans_active(
-                        xmlstr_to_gboolean(xmlGetProp(node2,
-                                                    BAD_CAST "value")));
-                }
- */
+
                 if (xmlStrcmp(prop, BAD_CAST "log-lines") == 0)
                 {
                     xmlChar* vprop = xmlGetProp(node2, BAD_CAST "value");
@@ -177,17 +169,16 @@ int settings_read(const char* path)
                                                         BAD_CAST "value"));
                 }
 
-                if (xmlStrcmp(prop, BAD_CAST "sample-preview-length") == 0)
+                if (xmlStrcmp(prop, BAD_CAST "sync-method") == 0)
                 {
-                    float f;
                     xmlChar* vprop = xmlGetProp(node2, BAD_CAST "value");
 
-                    if (sscanf((const char*)vprop, "%f", &f) == 1)
-                    {
-                        if (f > 0.0f && f < 60.0f)
-                            gbl_settings->sample_preview_length = f;
-                    }
+                    if (xmlStrcmp(vprop, BAD_CAST "jack") == 0)
+                        sync_set_method(SYNC_METHOD_JACK);
+                    else
+                        sync_set_method(SYNC_METHOD_MIDI);
                 }
+
             }
         }
     }
@@ -263,15 +254,6 @@ int settings_write()
     xmlNewProp(node2, BAD_CAST "value",
                       BAD_CAST gbl_settings->last_bank_dir);
 
-/*
-    node2 = xmlNewTextChild(node1, NULL, BAD_CAST "property", NULL);
-    xmlNewProp(node2, BAD_CAST "name", BAD_CAST "sliders-use-fans");
-    xmlNewProp(node2, BAD_CAST "type", BAD_CAST "boolean");
-    xmlNewProp(node2, BAD_CAST "value",
-                      BAD_CAST (phin_fan_slider_get_fans_active()
-                                    ? "true"
-                                    : "false"));
-*/
     node2 = xmlNewTextChild(node1, NULL, BAD_CAST "property", NULL);
     xmlNewProp(node2, BAD_CAST "name", BAD_CAST "last-bank-directory");
     xmlNewProp(node2, BAD_CAST "type", BAD_CAST "string");
@@ -300,11 +282,12 @@ int settings_write()
                                     : "false"));
 
     node2 = xmlNewTextChild(node1, NULL, BAD_CAST "property", NULL);
-    xmlNewProp(node2, BAD_CAST "name", BAD_CAST "sample-preview-length");
-    xmlNewProp(node2, BAD_CAST "type", BAD_CAST "float");
-    snprintf(buf, CHARBUFSIZE, "%0.3f",
-                      gbl_settings->sample_preview_length);
-    xmlNewProp(node2, BAD_CAST "value", BAD_CAST buf);
+    xmlNewProp(node2, BAD_CAST "name", BAD_CAST "sync-method");
+    xmlNewProp(node2, BAD_CAST "type", BAD_CAST "string");
+    xmlNewProp(node2, BAD_CAST "value",
+                      BAD_CAST (sync_get_method() == SYNC_METHOD_JACK
+                                    ? "jack"
+                                    : "midi"));
 
     debug("attempting to write file:%s\n",gbl_settings->filename);
 

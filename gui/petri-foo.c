@@ -27,6 +27,7 @@
 #include <getopt.h>
 #include <string.h>
 
+#include "audio-settings.h"
 #include "instance.h"
 #include "petri-foo.h"
 #include "gui.h"
@@ -108,6 +109,8 @@ int main(int argc, char *argv[])
 
     settings_init();
     gui_init();
+
+    jackdriver_set_session_cb(audio_settings_session_cb);
 
     driver_init();
     lfo_tables_init();

@@ -1,3 +1,19 @@
+2012-07-02 James Morris <james@jwm-art.net>
+
+	* 0.1.6
+
+	* Sync to JACK setting is now persistant, saved
+	  in global settings (~/.config/petri-foo/rc.xml)
+
+	* Use jackdriver_set_session_cb rather than declare
+	  a GUI function extern in jackdriver.c
+
+	* Fix false debug report of failed left port connect.
+
+	* Global LFOs are now synced (when appropriate) rather
+	  than merely having their parameters updated.
+
+
 2012-06-29 James Morris <james@jwm-art.net>
 
 	* Changed alsa midi port name from instance name to

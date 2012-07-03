@@ -49,7 +49,7 @@ patch_trigger_global_lfo(int patch_id, LFO* lfo, LFOParams* lfopar) \
     lfo_set_am1(lfo, src);                                  \
     src = patch_mod_id_to_pointer(lfopar->am2_id, p, NULL); \
     lfo_set_am2(lfo, src);                                  \
-    lfo_update_params(lfo, lfopar);                         \
+    lfo_trigger(lfo, lfopar);                               \
 }
 
 

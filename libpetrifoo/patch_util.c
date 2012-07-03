@@ -56,7 +56,7 @@
 
 
 /*  inline definitions shared by patch and patch_util:
- *                          (see private/patch_data.h)
+ *                          (see private/patch_macros.h)
  */
 INLINE_PATCHOK_DEF
 INLINE_PATCH_LOCK_DEF
@@ -635,7 +635,7 @@ int patch_get_samplerate(void)
 
 
 /* destructor */
-void patch_shutdown ( )
+void patch_shutdown(void)
 {
     int i;
      
@@ -648,7 +648,7 @@ void patch_shutdown ( )
 }
 
 /* re-sync all global lfos to new tempo */
-void patch_sync (float bpm)
+void patch_sync(float bpm)
 {
     debug("syncing global LFOs\n");
     lfo_set_tempo(bpm);

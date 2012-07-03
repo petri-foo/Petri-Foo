@@ -37,9 +37,10 @@ typedef enum
 }
 SyncMethod;
 
-void sync_start_midi (float bpm);
-void sync_start_jack (float bpm);
-void sync_set_method (SyncMethod method);
+void        sync_start_midi(float bpm);
+void        sync_start_jack(float bpm);
+void        sync_set_method(SyncMethod method);
+SyncMethod  sync_get_method(void);
 
 #endif /* __SYNC_H__ */
 

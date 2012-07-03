@@ -61,12 +61,6 @@ static jack_port_t*    lport;
 static jack_port_t*    rport;
 static jack_port_t*    midiport;
 
-#ifdef HAVE_JACK_SESSION_H
-/*static jack_session_event_t *session_event;*/
-extern void audio_settings_session_cb(jack_session_event_t *event,
-                                                            void *arg);
-JackSessionCallback         session_cb = audio_settings_session_cb;
-#endif
 
 static jack_client_t*  client;
 static float*          buffer;
@@ -81,12 +75,16 @@ static bool             autoconnect = true;
 /* working together to stop CTS */
 typedef jack_default_audio_sample_t jack_sample_t;
 
+
 #ifdef HAVE_JACK_SESSION_H
-void jackdriver_set_session_cb(JackSessionCallback jack_session_cb) //UNUSED
+JackSessionCallback session_cb = 0;
+
+void jackdriver_set_session_cb(JackSessionCallback jack_session_cb)
 {
     session_cb = jack_session_cb;
 }
 #endif
+
 
 static int process(jack_nframes_t frames, void* arg)
 {
@@ -264,7 +262,6 @@ static int start(void)
     jack_set_process_callback (client, process, 0);
 
 #ifdef HAVE_JACK_SESSION_H
-
     if (jack_set_session_callback)
     {
         if (jack_set_session_callback(client, session_cb, 0))
@@ -328,7 +325,7 @@ static int start(void)
     {
         if (ports[0] != NULL)
         {
-            if (jack_connect(client, jack_port_name(lport), ports[0]) == 0)
+            if (jack_connect(client, jack_port_name(lport), ports[0]))
             {
                 debug("JACK failed to connect left output port\n");
             }
