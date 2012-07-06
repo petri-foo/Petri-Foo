@@ -51,16 +51,17 @@
 #include "patch_util.h"
 #include "sample-editor.h"
 #include "sample-selector.h"
+#include "session.h"
 #include "waveform.h"
 
 
 /* windows */
-static GtkWidget* window;
-static GtkWidget* patch_section;
-static GtkWidget* master_section;
-static GtkWidget* midi_section;
-static GtkWidget* channel_section;
-static GtkWidget* patch_list;
+static GtkWidget* window = 0;
+static GtkWidget* patch_section = 0;
+static GtkWidget* master_section = 0;
+static GtkWidget* midi_section = 0;
+static GtkWidget* channel_section = 0;
+static GtkWidget* patch_list = 0;
 
 
 /* main menu */
@@ -478,16 +479,6 @@ static void cb_menu_settings_audio (GtkWidget * widget, gpointer data)
 }
 
 
-/*
-static void cb_menu_settings_fans(GtkWidget* widget, gpointer data)
-{
-    (void)widget;(void)data;
-    phin_fan_slider_set_fans_active(
-        gtk_check_menu_item_get_active(
-            GTK_CHECK_MENU_ITEM(menu_settings_fans)));
-}
-*/
-
 static void cb_menu_settings_auto_preview(GtkWidget* widget, gpointer data)
 {
     (void)widget;(void)data;
@@ -530,8 +521,6 @@ static void cb_patch_list_changed(PatchList* list, gpointer data)
 {
     (void)data;
     cur_patch = patch_list_get_current_patch(list);
-
-    debug("patch list changed patch:%d!\n",cur_patch);
 
     if (cur_patch < 0)
         sample_editor_hide();
@@ -595,17 +584,26 @@ int gui_init(void)
 
     menu_file = gui_menu_add(menubar, "File", NULL, NULL);
 
-    gui_menu_add(menu_file, "New Bank",
+    if (session_get_type() != SESSION_TYPE_NSM)
+    {
+        gui_menu_add(menu_file, "New Bank",
             G_CALLBACK(cb_menu_file_new_bank),      window);
-    gui_menu_add(menu_file, "Open Bank...",
+        gui_menu_add(menu_file, "Open Bank...",
             G_CALLBACK(cb_menu_file_open_bank),     window);
 
-    menuitem_file_recent = gtk_menu_item_new_with_label("Open Recent");
-    gtk_menu_shell_append(GTK_MENU_SHELL(menu_file), menuitem_file_recent);   
+        menuitem_file_recent = gtk_menu_item_new_with_label("Open Recent");
+        gtk_menu_shell_append(GTK_MENU_SHELL(menu_file),
+                                                    menuitem_file_recent);
+    }
+
     gui_menu_add(menu_file, "Save Bank",
             G_CALLBACK(cb_menu_file_save_bank),     window);
-    gui_menu_add(menu_file, "Save Bank As...",
+
+    if (session_get_type() != SESSION_TYPE_NSM)
+    {
+        gui_menu_add(menu_file, "Save Bank As...",
             G_CALLBACK(cb_menu_file_save_bank_as),  window);
+    }
  
     /* seperator */
     gui_menu_add(menu_file, NULL, NULL, NULL);
@@ -629,19 +627,6 @@ int gui_init(void)
     gui_menu_add(menu_settings, "Audio...",
             G_CALLBACK(cb_menu_settings_audio),     NULL);
 
-    /* use slider fans
-    menu_settings_fans =
-        gtk_check_menu_item_new_with_label("Use slider fans");
-    gtk_check_menu_item_set_active(
-        GTK_CHECK_MENU_ITEM(menu_settings_fans),
-            phin_fan_slider_get_fans_active());
-    g_signal_connect(GTK_OBJECT(menu_settings_fans), "toggled",
-        G_CALLBACK(cb_menu_settings_fans), NULL);
-    gtk_menu_shell_append(GTK_MENU_SHELL(menu_settings),
-                                        menu_settings_fans);
-    gtk_widget_show(menu_settings_fans);
-*/
-
     /* auto-preview */
     menu_settings_auto_preview =
         gtk_check_menu_item_new_with_label("Sample auto-preview");
@@ -663,7 +648,8 @@ int gui_init(void)
     gui_menu_add(menu_help, "About...",
             G_CALLBACK(cb_menu_help_about),         window);
 
-    gui_recent_files_load();
+    if (session_get_type() != SESSION_TYPE_NSM)
+        gui_recent_files_load();
 
     gtk_widget_show_all(menubar);
 
@@ -730,11 +716,13 @@ int gui_init(void)
 
 void gui_refresh(void)
 {
-    gui_set_window_title(bank_ops_bank());
+    gui_set_window_title_bank(bank_ops_bank());
     master_section_update(MASTER_SECTION(master_section));
     patch_list_update(PATCH_LIST(patch_list), 0, PATCH_LIST_INDEX);
     cb_patch_list_changed(PATCH_LIST(patch_list), NULL);
-    gui_recent_files_load();
+
+    if (session_get_type() != SESSION_TYPE_NSM)
+        gui_recent_files_load();
 }
 
 
@@ -744,20 +732,27 @@ PatchList* gui_get_patch_list(void)
 }
 
 
-void gui_set_window_title(const char* title)
+void gui_set_window_title_bank(const char* title)
 {
-    const char* name = driver_get_client_name();
+    static char* banktitle = 0;
+    const char* instancename = get_instance_name();
+    char buf[80];
 
-    if (name)
+    if (!instancename)
+        instancename = PACKAGE;
+
+    if (title)
     {
-        char buf[80];
-        sprintf(buf, "%s - %s", name, (title) ? title : "Untitled");
-
-        gtk_window_set_title (GTK_WINDOW (window), buf);
+        free(banktitle);
+        banktitle = strdup(title);
     }
-    else
-        gtk_window_set_title (GTK_WINDOW (window), PACKAGE);
 
+    snprintf(buf, 79, "%s - %s", instancename, (banktitle) ? banktitle
+                                                           : "Untitled");
+    buf[79] = '\0';
+
+    if (window)
+        gtk_window_set_title(GTK_WINDOW(window), buf);
 }
 
 

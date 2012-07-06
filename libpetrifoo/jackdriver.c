@@ -32,7 +32,7 @@
 #include <jack/midiport.h>
 #include <jack/transport.h>
 
-#ifdef HAVE_JACK_SESSION_H
+#if HAVE_JACK_SESSION_H
 #include <jack/session.h>
 #endif /* HAVE_JACK_SESSION_H */
 
@@ -57,26 +57,26 @@ MIDI_CONTROL_H__CC_MAP_DEF
 
 
 /* file-global variables */
-static jack_port_t*    lport;
-static jack_port_t*    rport;
-static jack_port_t*    midiport;
+static jack_port_t*     lport;
+static jack_port_t*     rport;
+static jack_port_t*     midiport;
 
 
-static jack_client_t*  client;
-static float*          buffer;
-static int             rate = 44100;
-static int             periodsize = 2048;
-static int             running = 0;
-static pthread_mutex_t running_mutex = PTHREAD_MUTEX_INITIALIZER;
-static char*           session_uuid = NULL;
+static jack_client_t*   client;
+static float*           buffer;
+static int              rate = 44100;
+static int              periodsize = 2048;
+static int              running = 0;
+static pthread_mutex_t  running_mutex = PTHREAD_MUTEX_INITIALIZER;
+static char*            session_uuid = NULL;
 
-static bool             autoconnect = true;
+static bool             autoconnect = false;
 
 /* working together to stop CTS */
 typedef jack_default_audio_sample_t jack_sample_t;
 
 
-#ifdef HAVE_JACK_SESSION_H
+#if HAVE_JACK_SESSION_H
 JackSessionCallback session_cb = 0;
 
 void jackdriver_set_session_cb(JackSessionCallback jack_session_cb)
@@ -243,7 +243,7 @@ static int start(void)
     pthread_mutex_lock (&running_mutex);
     running = 0;
 
-#ifdef HAVE_JACK_SESSION_H
+#if HAVE_JACK_SESSION_H
     client = jack_client_open(instancename,
                                JackSessionID, NULL, session_uuid);
 #else
@@ -261,7 +261,7 @@ static int start(void)
 
     jack_set_process_callback (client, process, 0);
 
-#ifdef HAVE_JACK_SESSION_H
+#if HAVE_JACK_SESSION_H
     if (jack_set_session_callback)
     {
         if (jack_set_session_callback(client, session_cb, 0))
@@ -400,13 +400,13 @@ static void* getid(void)
 }
 
 
-void jackdriver_set_unconnected(void)
+void jackdriver_set_autoconnect(bool ac)
 {
-    autoconnect = false;
+    autoconnect = ac;
 }
 
 
-void jackdriver_set_uuid      (char *uuid)
+void jackdriver_set_uuid(char *uuid)
 {
     session_uuid = uuid;
 }

@@ -1,3 +1,10 @@
+2012-07-06 James Morris <james@jwm-art.net>
+
+    ***** Non Session Manager preliminary support *****
+
+	* shed load of changes look in the diff on github ;-P
+
+
 2012-07-02 James Morris <james@jwm-art.net>
 
 	* 0.1.6

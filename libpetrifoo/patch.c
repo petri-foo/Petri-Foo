@@ -1176,8 +1176,6 @@ void patch_control_init(void)
         for (p = 0; p < CC_ARR_SIZE + 1; ++p)
             cc[c][p] = 0.0f;
     }
-
-    debug("done\n");
 }
 
 

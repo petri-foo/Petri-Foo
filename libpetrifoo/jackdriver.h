@@ -28,14 +28,14 @@
 #include "config.h"
 
 #include <jack/jack.h>
+#include <stdbool.h>
 
-#ifdef HAVE_JACK_SESSION_H
+#if HAVE_JACK_SESSION_H
 #include <jack/session.h>
-void            jackdriver_set_session_cb(JackSessionCallback jacksession_cb);
+void jackdriver_set_session_cb(JackSessionCallback jacksession_cb);
 #endif
 
-
-void            jackdriver_set_unconnected(void);
+void            jackdriver_set_autoconnect(bool);
 void            jackdriver_set_uuid(char *uuid);
 jack_client_t*  jackdriver_get_client(void);
 

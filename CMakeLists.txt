@@ -17,7 +17,13 @@ set(UpdateMime "ON" CACHE BOOL "Update Mime Database")
 
 set(ARCHIVE_NAME petri-foo-0.${Petri-Foo_VERSION_MAJOR}.${Petri-Foo_VERSION_MINOR})
 
+# two #defines to aid stripping path info from debug message output:
+# see config.h.in
+set(SRC_DIR $PROJECT_SOURCE_DIR)
+string( LENGTH "${PROJECT_SOURCE_DIR}" SRC_DIR_STRLEN)
+
 include (CheckCSourceCompiles)
+INCLUDE (CheckIncludeFiles)
 
 mark_as_advanced(EXECUTABLE_OUTPUT_PATH)
 mark_as_advanced(LIBRARY_OUTPUT_PATH)
@@ -132,6 +138,16 @@ else (LIBXML2_FOUND)
     message(FATAL_ERROR "libxml2 was not found")
 endif (LIBXML2_FOUND)
 
+# LIBLO
+pkg_check_modules (LIBLO liblo)
+if (LIBLO_FOUND)
+    message(STATUS "Found liblo ${LIBLO_VERSION}, support for NSM will be built")
+    set (HAVE_LIBLO 1)
+else (LIBLO_FOUND)
+    message(STATUS "liblo was not found, support for NSM will not be built")
+    set (HAVE_LIBLO 0)
+endif (LIBLO_FOUND)
+
 # Check for CAIRO_OPERATOR_HSL_LUMINOSITY
 check_c_source_compiles (
     "#include <cairo/cairo.h>
@@ -139,14 +155,9 @@ check_c_source_compiles (
     {
         cairo_operator_t op = CAIRO_OPERATOR_HSL_LUMINOSITY;
         return 0;
-    }" HasCairoOperatorHSL
+    }" HAVE_CAIRO_OPERATOR_HSL
 )
 
-if (HasCairoOperatorHSL)
-    add_definitions (-DCAIRO_HAS_OPERATOR_HSL)
-endif (HasCairoOperatorHSL)
-
-INCLUDE (CheckIncludeFiles)
 CHECK_INCLUDE_FILES (malloc.h HAVE_MALLOC_H)
 CHECK_INCLUDE_FILES (jack/session.h HAVE_JACK_SESSION_H)
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/config.h.in

@@ -48,7 +48,6 @@ const char* dish_file_extension(void)
     return dish_file_ext;
 }
 
-
 static int dish_file_write_sample_mode_props(xmlNodePtr node, int patch_id)
 {
     const char* mode = 0;

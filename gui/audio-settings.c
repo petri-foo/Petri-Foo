@@ -38,66 +38,6 @@
 static GtkWidget* window;
 
 
-#ifdef HAVE_JACK_SESSION_H
-static gboolean gui_session_cb(void *data)
-{
-    size_t len;
-    const char bank[] = "bank";
-    char* bankfilename;
-    char* filename;
-    char command_buf[8192];
-    const char* instancename = get_instance_name();
-    jack_session_event_t *ev = (jack_session_event_t *)data;
-
-    len = strlen(bank);
-    len += strlen(dish_file_extension());
-    bankfilename = malloc(len + 1);
-    sprintf(bankfilename, "%s%s", bank, dish_file_extension());
-
-    debug("bankfilename:%s\n", bankfilename);
-
-    len+= strlen(ev->session_dir);
-    filename = malloc(len + 1);
-    sprintf(filename, "%s%s", ev->session_dir, bankfilename);
-
-    debug("filename:%s\n",filename);
-
-    if (instancename)
-        snprintf(command_buf,   sizeof(command_buf),
-                                "petri-foo --name %s --unconnected "
-                                "-U %s ${SESSION_DIR}%s",
-                                instancename,
-                                ev->client_uuid, bankfilename);
-    else
-        snprintf(command_buf,   sizeof(command_buf),
-                                "petri-foo --unconnected "
-                                "-U %s ${SESSION_DIR}%s",
-                                ev->client_uuid, bankfilename);
-
-
-    debug("command:%s\n",command_buf);
-
-    dish_file_write(filename);
-
-    ev->command_line = strdup(command_buf);
-    jack_session_reply(jackdriver_get_client(), ev);
-
-    if (ev->type == JackSessionSaveAndQuit)
-         gtk_main_quit();
-
-    jack_session_event_free(ev);
-
-    return FALSE;
-}
-
-void audio_settings_session_cb(jack_session_event_t *event, void *arg )
-{
-    (void)arg;
-    debug("adding g_idle_add thingy\n");
-    g_idle_add(gui_session_cb, event);
-}
-#endif
-
 
 static void sync_cb(GtkToggleButton* button, gpointer data)
 {

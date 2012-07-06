@@ -289,8 +289,6 @@ void mod_section_set_param(ModSection* self, PatchParamType param)
     int b1 = 1, b2 = 2;
     int c1 = 2, c2 = 3;
 
-debug("creating mod section...\n");
-
     box = GTK_BOX(self);
     p->param = param;
 

@@ -553,27 +553,22 @@ static void update_lfo(LfoTabPrivate* p)
     float fm1amt, fm2amt;
     int   am1src, am2src;
     float am1amt, am2amt;
+    int mod_srcs;
 
     GtkTreeIter fm1iter, fm2iter;
     GtkTreeIter am1iter, am2iter;
 
     p->lfo_id = id_selector_get_id(ID_SELECTOR(p->idsel));
 
-    debug("UPDATE LFO\t\tgot lfo id:%d\n", p->lfo_id);
-
-    int mod_srcs = (mod_src_is_global(p->lfo_id)
+    mod_srcs = (mod_src_is_global(p->lfo_id)
                         ? MOD_SRC_GLOBALS
                         : MOD_SRC_ALL);
-
     block(p);
     mod_src_combo_set_model(GTK_COMBO_BOX(p->fm1_combo), mod_srcs);
     mod_src_combo_set_model(GTK_COMBO_BOX(p->fm2_combo), mod_srcs);
     mod_src_combo_set_model(GTK_COMBO_BOX(p->am1_combo), mod_srcs);
     mod_src_combo_set_model(GTK_COMBO_BOX(p->am2_combo), mod_srcs);
     unblock(p);
-
-    debug("getting lfo (id:%d) data from patch:%d\n",
-                                p->lfo_id,p->patch_id);
 
     lfoshape = patch_get_lfo_shape(     p->patch_id, p->lfo_id);
     freq = patch_get_lfo_freq(          p->patch_id, p->lfo_id);
@@ -599,8 +594,6 @@ static void update_lfo(LfoTabPrivate* p)
     am2src = patch_get_lfo_am2_src(  p->patch_id, p->lfo_id);
     am2amt = patch_get_lfo_am2_amt(  p->patch_id, p->lfo_id);
 
-    debug("getting mod src combo iter with id\n");
-
     if (!mod_src_combo_get_iter_with_id(GTK_COMBO_BOX(p->fm1_combo),
                                                         fm1src, &fm1iter))
     {
@@ -625,13 +618,8 @@ static void update_lfo(LfoTabPrivate* p)
         debug("failed to get lfo fm2 source id from combo box\n");
     }
 
-
-    debug("...\n");
-
     block(p);
-
     phin_slider_set_value(PHIN_SLIDER(p->freq), freq);
-
 
     if (mod_src_is_global(p->lfo_id))
     {
@@ -691,7 +679,6 @@ static void update_lfo(LfoTabPrivate* p)
     gtk_widget_set_sensitive(p->am2_amount, am2src != MOD_SRC_NONE);
 
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(p->lfo_check), active);
-
     unblock(p);
 }
 

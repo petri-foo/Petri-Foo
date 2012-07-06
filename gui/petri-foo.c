@@ -21,28 +21,27 @@
     This file is a derivative of a Specimen original, modified 2011
 */
 
-
-#include <pthread.h>
-#include <gtk/gtk.h>
 #include <getopt.h>
+#include <gtk/gtk.h>
+#include <pthread.h>
 #include <string.h>
 
-#include "audio-settings.h"
-#include "instance.h"
-#include "petri-foo.h"
-#include "gui.h"
-#include "midi.h"
+#include "dish_file.h"
 #include "driver.h"
+#include "global_settings.h"
+#include "gui.h"
+#include "instance.h"
+#include "jackdriver.h"
 #include "lfo.h"
-#include "patch.h"
-#include "patch_util.h"
+#include "midi.h"
 #include "mixer.h"
 #include "mod_src.h"
-#include "names.h"
-#include "dish_file.h"
-#include "jackdriver.h"
-#include "global_settings.h"
 #include "msg_log.h"
+#include "names.h"
+#include "patch.h"
+#include "patch_util.h"
+#include "petri-foo.h"
+#include "session.h"
 
 
 void show_usage (void)
@@ -51,87 +50,42 @@ void show_usage (void)
     printf("(Bank files use .petri-foo extension)\n\n");
 
     printf ("Options:\n");
-    printf("  -n, --name <name>  Specify instance name, "
-                                "defaults to \"petri-foo\"\n" );
-    printf("  -u, --unconnected  Don't auto-connect to JACK\n");
-    printf("  -U, --uuid <uuid>  Set UUID for JACK session\n");
-    printf("  -h, --help         Display this help message\n\n");
-    printf ("For more information, please see:\n");
-    printf ("http://petri-foo.sourceforge.net/\n");
+    printf("  -a, --autoconnect         Auto-connect through JACK to "
+                                        "system playback ports\n");
+    printf("  -j, --jack-name <name>    Specify JACK client name, "
+                                        "defaults to \"Petri-Foo\"\n" );
+    printf("  -u, --unconnected         Don't auto-connect to JACK system "
+                                        "playback ports (deprecated)\n");
+    printf("  -U, --uuid <uuid>         Set UUID for JACK session\n");
+    printf("  -h, --help                Display this help message\n\n");
+    printf("For more information, please see:"
+            "http://petri-foo.sourceforge.net/\n");
 }
 
 
 int main(int argc, char *argv[])
 {
     int opt;
-    int longopt_index;
-    int argc_gtk = argc;
 
-    static struct option long_options[] =
+    for (opt = 1; opt < argc; ++opt)
     {
-        { "name",           1, 0, 'n'},
-        { "unconnected",    0, 0, 'u'},
-        { "uuid",           1, 0, 'U'},
-        { "help",           0, 0, 'h'},
-        { 0, 0, 0, 0}
-    };
-
-
-    while((opt = getopt_long(argc, argv, "n:uU:h",
-                                        long_options, &longopt_index)) > 0)
-    {
-        switch (opt)
+        if (strcmp(argv[opt], "-h") == 0
+         || strcmp(argv[opt], "--help") == 0)
         {
-        case 'n':
-            set_instance_name(optarg);
-            break;
-
-        case 'u':
-            jackdriver_set_unconnected();
-            break;
-
-        case 'U':
-            jackdriver_set_uuid(strdup(optarg) );
-            break;
-
-        case 'h':
             show_usage();
             return 0;
-
-        default:
-            show_usage();
-            return 1;
         }
     }
 
     mod_src_create();
     gtk_init(&argc, &argv);
-
     settings_init();
-    gui_init();
-
-    jackdriver_set_session_cb(audio_settings_session_cb);
-
     driver_init();
     lfo_tables_init();
     mixer_init();
     patch_control_init();
-    driver_start();
-    midi_start();
-
-    if (argc < argc_gtk)
-        optind -= argc_gtk - argc;
-
-    if (optind < argc)
-        dish_file_read(argv[optind]);
-    else
-        patch_create_default();
-
-    gui_refresh();
-
-    if (optind < argc)
-        gui_set_window_title(argv[optind]);
-
+    session_init(argc, argv);
+    gui_init();
     gtk_main();
 
     /* shutdown... */

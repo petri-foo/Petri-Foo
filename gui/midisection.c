@@ -216,8 +216,7 @@ static void unblock(MidiSectionPrivate* p)
 static void set_sensitive(MidiSectionPrivate* p, gboolean val)
 {
     (void)p;(void)val;
-    debug("we're here where it does nothing what so ever!\n");
-    /* nada */
+    /*debug("we're here where it does nothing what so ever!\n");*/
 }
 
 

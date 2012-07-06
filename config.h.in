@@ -6,6 +6,12 @@
 #define PIXMAPS_DIR "${CMAKE_INSTALL_PREFIX}/${DATADIR}/pixmaps"
 #endif
 
+#cmakedefine SRC_DIR "${PROJECT_SOURCE_DIR}"
+#cmakedefine SRC_DIR_STRLEN ${SRC_DIR_STRLEN}
+
+#cmakedefine DEBUG 1
+
 #cmakedefine HAVE_MALLOC_H 1
 #cmakedefine HAVE_JACK_SESSION_H 1
-#cmakedefine DEBUG 1
+#cmakedefine HAVE_CAIRO_OPERATOR_HSL 1
+#cmakedefine HAVE_LIBLO 1

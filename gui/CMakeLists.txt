@@ -13,6 +13,10 @@ link_directories (
     ${GTK2_LIBRARY_DIRS}
     )
 
+if (HAVE_LIBLO)
+    link_libraries(lo)
+endif (HAVE_LIBLO)
+
 add_definitions (
     ${GTK2_CFLAGS_OTHER}
     )

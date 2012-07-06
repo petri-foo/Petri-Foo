@@ -54,7 +54,7 @@ static void set_bankname(const char* name)
         free(bankname);
 
     bankname = (name) ? strdup(name) : NULL;
-    gui_set_window_title(bankname);
+    gui_set_window_title_bank(bankname);
 }
 
 /* unused... reason/purpose ???
@@ -74,6 +74,7 @@ static char* get_file_filter(void)
     return filter;
 }
 */
+
 
 static void file_chooser_add_filter(GtkWidget* chooser, const char* name,
                                                  const char* pattern)
@@ -105,10 +106,10 @@ int bank_ops_save_as (GtkWidget* parent_window)
     gtk_file_chooser_set_do_overwrite_confirmation(
                                     GTK_FILE_CHOOSER(dialog), TRUE);
 
-    if ( last_bank == 0)   
+    if (last_bank == 0)
         gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),
                                     settings->last_bank_dir);
-    else 
+    else
         gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),
                                     g_path_get_dirname(last_bank));
  
@@ -188,7 +189,7 @@ int bank_ops_open(GtkWidget* parent_window)
                                           GTK_RESPONSE_CANCEL,
                                           GTK_STOCK_OPEN,
                                           GTK_RESPONSE_ACCEPT, NULL);
-    if (last_bank) 
+    if (last_bank)
        gtk_file_chooser_select_filename(GTK_FILE_CHOOSER(dialog),
                                                         last_bank);
     else
@@ -263,6 +264,7 @@ int bank_ops_new(void)
     return 0;
 }
 
+
 int bank_ops_open_recent(GtkWidget* parent_window, char* filename)
 {
     int val;
@@ -299,7 +301,13 @@ int bank_ops_open_recent(GtkWidget* parent_window, char* filename)
         last_bank = strdup(filename);
         set_bankname(filename);
     }
-    
+
     return val;
 }
 
+
+void bank_ops_force_name(const char* name)
+{
+    set_bankname(name);
+    last_bank = strdup(name);
+}

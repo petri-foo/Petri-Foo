@@ -34,7 +34,12 @@ int         bank_ops_open    (GtkWidget* parent_window);
 int         bank_ops_save_as (GtkWidget* parent_window);
 int         bank_ops_save    (GtkWidget* parent_window);
 const char* bank_ops_bank    (void);
-int         bank_ops_open_recent (GtkWidget* parent_window
-                , char* filename);
+int         bank_ops_open_recent(GtkWidget* parent_window, char* filename);
+
+/*  make "save" not request filename when a bank has been
+    loaded by other means
+ */
+void        bank_ops_force_name(const char*);
+
 
 #endif /* __BANK_OPS_H__ */

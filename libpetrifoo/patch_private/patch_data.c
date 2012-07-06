@@ -145,11 +145,7 @@ Patch* patch_new(void)
     for (i = 0; i < PATCH_MAX_LFOS; ++i)
     {
         lfo_params_init(&p->glfo_params[i], 1.0, LFO_SHAPE_SINE);
-
         p->glfo[i] = lfo_new();
-
-        debug("creating global lfo:%d %p\n", i, p->glfo[i]);
-
         /* init tables to NULL */
         p->glfo_table[i] = 0;
     }
@@ -219,9 +215,6 @@ void patch_set_control_array(float (*ccs)[16][CC_ARR_SIZE])
 void patch_set_global_lfo_buffers(Patch* p, int buffersize)
 {
     int i;
-
-    debug("setting global LFO buffers (patch:%p bufsize:%d)\n",
-                                                p, buffersize);
 
     if (buffersize <= 0)
         return;

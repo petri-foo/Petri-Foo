@@ -18,44 +18,29 @@
     You should have received a copy of the GNU General Public License
     along with Petri-Foo.  If not, see <http://www.gnu.org/licenses/>.
 
-    This file is a derivative of a Specimen original, modified 2011
 */
 
 
-#ifndef __SPECIMEN_H__
-#define __SPECIMEN_H__
-
-#include "config.h"
-#include <stdio.h>
-#include <signal.h>
+#ifndef __SESSION_H__
+#define __SESSION_H__
 
 
-#define DEFAULT_AMPLITUDE 0.7
+enum {
+    SESSION_TYPE_NONE,
+    SESSION_TYPE_JACK,
+    SESSION_TYPE_NSM,
+    SESSION_STATE_OPEN,
+    SESSION_STATE_CLOSED
+};
 
 
-#define CHARBUFSIZE 256
+/* session_init returns 0 on sucess */
+int     session_init(int argc, char* argv[]);
+
+int     session_cleanup(void);
+
+int     session_get_type(void);
+char*   session_get_path(void);
 
 
-#ifndef DEBUG
-#define DEBUG 0
-#endif
-
-#define errmsg(...)                         \
-{                                           \
-    fprintf(stderr, "%40s:%5d  %-35s: ",    \
-            __FILE__ + SRC_DIR_STRLEN + 1,  \
-            __LINE__, __FUNCTION__);        \
-    fprintf(stderr, __VA_ARGS__);           \
-}
-
-#if DEBUG
-# define debug(...) errmsg(__VA_ARGS__)
-#else
-# define debug(...)
-#endif
-
-
-typedef sig_atomic_t Atomic;
-
-
-#endif /* __SPECIMEN_H__ */
+#endif /* __SESSION_H__ */

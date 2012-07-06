@@ -83,8 +83,10 @@ void gui_recent_files_load(void);
 /* get the gui's PatchList widget */
 PatchList* gui_get_patch_list(void);
 
-/* set petri-foo window title */
-void gui_set_window_title(const char* title);
+/*  add bank name to window title, or send NULL to update
+    instance name in window title
+ */
+void gui_set_window_title_bank(const char*);
 
 /* callbacks for use by context menu ( see patchlist.[ch] ) */
 void cb_menu_patch_add(         GtkWidget* menu_item, gpointer data);

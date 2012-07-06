@@ -28,6 +28,8 @@
 
 const char* dish_file_extension(void);
 
+char*       dish_file_name(const char* path, const char* basename);
+
 int         dish_file_read(const char* name);
 int         dish_file_write(const char* name);
 
