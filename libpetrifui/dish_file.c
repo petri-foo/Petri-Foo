@@ -27,6 +27,7 @@
 #include <libxml/parser.h>
 
 
+#include "config.h"
 #include "mixer.h"
 #include "mod_src.h"
 #include "msg_log.h"
@@ -953,8 +954,6 @@ int dish_file_read_lfo(xmlNodePtr node, int patch_id)
 
     lfo_id = mod_src_id((const char*)node->name, MOD_SRC_LFOS);
 
-debug("lfo id:%d\n", lfo_id);
-
     if (lfo_id < 0)
     {
         errmsg("invalid LFO:%s\n", (const char*)node->name);
@@ -1350,6 +1349,10 @@ int dish_file_read(const char *path)
                                     (const char*)node1->name);
         }
     }
+
+    #if DEBUG
+    patch_summary_dump();
+    #endif
 
     return 0;
 }

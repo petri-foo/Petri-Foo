@@ -33,6 +33,7 @@
 #include "config.h"
 #include "dish_file.h"
 #include "driver.h"
+#include "gui.h"
 #include "instance.h"
 #include "jackdriver.h"
 #include "midi.h"
@@ -89,7 +90,26 @@ static void session_nsm_is_loaded_cb(void* userdata);
 static int  session_nsm_broadcast_cb(const char*,
                                      lo_message m,
                                      void* userdata);
+
+static gboolean session_poll_nsm_events(gpointer data)
+{
+    nsm_check_wait((nsm_client_t*)data, 0);
+    return TRUE;
+}
 #endif
+
+
+void session_idle_add_event_poll(void)
+{
+    debug("session_type:'%s'\n", session_names[_session->type]);
+    #if HAVE_LIBLO
+    if (_session->type == SESSION_TYPE_NSM)
+    {
+        debug("Adding NSM event poll\n");
+        g_idle_add(session_poll_nsm_events, _session->nsm_client);
+    }
+    #endif
+}
 
 
 static char* bankname(const char* path)
@@ -97,6 +117,9 @@ static char* bankname(const char* path)
     char* filename;
     const char* bank = "/bank.petri-foo";
     size_t len = strlen(path);
+
+debug("path:'%s'\n",path);
+debug("bank:'%s'\n",bank);
 
     if (path[len - 1] == '/')
         ++bank;
@@ -112,6 +135,7 @@ int session_init(int argc, char* argv[])
 {
     assert(_session == 0);
     pf_session* s;
+    gboolean possibly_autoconnect = FALSE;
 
     #if HAVE_LIBLO
     const char* nsm_url;
@@ -133,12 +157,24 @@ int session_init(int argc, char* argv[])
     debug("processing command line options...\n");
     nsm_url = getenv( "NSM_URL" );
 
+    if (!(_session = malloc(sizeof(*_session))))
+    {
+        msg_log(MSG_TYPE_ERROR, "Failed to create session support data\n");
+        return -1;
+    }
+
+    s = _session;
+    s->type = SESSION_TYPE_NONE;
+    s->state = SESSION_STATE_CLOSED;
+    s->path = 0;
+    s->bank = 0;
+
     while((opt = getopt_long(argc, argv, "aj:uU:", opts, &opt_ix)) > 0)
     {
         switch (opt)
         {
         case 'a':
-            if (!nsm_url) jackdriver_set_autoconnect(true);
+            if (!nsm_url) possibly_autoconnect = TRUE;
             else msg_log(MSG_TYPE_WARNING,
                         "Ignoring --autoconnect option\n");
             break;
@@ -151,7 +187,6 @@ int session_init(int argc, char* argv[])
         case 'u':
             if (!nsm_url)
             {
-                jackdriver_set_autoconnect(false);
                 msg_log(MSG_TYPE_WARNING, "--unconnected option is "
                                          "deprecated for future removal\n");
             }
@@ -160,7 +195,11 @@ int session_init(int argc, char* argv[])
             break;
 
         case 'U':
-            if (!nsm_url) jackdriver_set_uuid(strdup(optarg));
+            if (!nsm_url)
+            {
+                jackdriver_set_uuid(strdup(optarg));
+                s->type = SESSION_TYPE_JACK;
+            }
             else msg_log(MSG_TYPE_WARNING, "Ignoring --uuid option\n");
             break;
 
@@ -171,18 +210,6 @@ int session_init(int argc, char* argv[])
     }
 
     debug("Initializing session support data\n");
-
-    if (!(_session = malloc(sizeof(*_session))))
-    {
-        msg_log(MSG_TYPE_ERROR, "Failed to create session support data\n");
-        return -1;
-    }
-
-    s = _session;
-    s->type = SESSION_TYPE_NONE;
-    s->state = SESSION_STATE_CLOSED;
-    s->path = 0;
-    s->bank = 0;
 
     #if HAVE_LIBLO
     s->nsm_client = 0;
@@ -228,7 +255,12 @@ int session_init(int argc, char* argv[])
     }
     #endif
 
-    if (s->type == SESSION_TYPE_NONE)
+    if (possibly_autoconnect && s->type == SESSION_TYPE_NONE)
+        jackdriver_set_autoconnect(true);
+
+    #if HAVE_LIBLO
+    if (!nsm_url)
+    #endif
     {
         jackdriver_set_session_cb(session_jack_cb);
     }
@@ -257,31 +289,33 @@ int session_init(int argc, char* argv[])
             patch_create_default();
     }
 
+debug("bankname(\"test/\"):'%s'\n", bankname("test/"));
+
     session_idle_add_event_poll();
 
     return 0;
 }
 
 
-#if HAVE_LIBLO
-static gboolean session_poll_nsm_events(gpointer data)
+void session_cleanup(void)
 {
-    nsm_check_wait((nsm_client_t*)data, 0);
-    return TRUE;
-}
-#endif
-
-
-void session_idle_add_event_poll(void)
-{
-    debug("session_type:'%s'\n", session_names[_session->type]);
-    #if HAVE_LIBLO
-    if (_session->type == SESSION_TYPE_NSM)
+    if (_session)
     {
-        debug("Adding NSM event poll\n");
-        g_idle_add(session_poll_nsm_events, _session->nsm_client);
+        debug("cleaning up session data\n");
+
+        free(_session->path);
+        free(_session->bank);
+
+        #if HAVE_LIBLO
+        free(_session->nsm_client_id);
+
+        if (_session->nsm_client)
+            nsm_free(_session->nsm_client);
+        #endif
+
+        free(_session);
+        _session = 0;
     }
-    #endif
 }
 
 
@@ -295,7 +329,6 @@ char* session_get_path(void)
 {
     return strdup(_session->path);
 }
-
 
 
 #if HAVE_LIBLO
@@ -389,7 +422,6 @@ int session_nsm_broadcast_cb(const char* str, lo_message m, void* userdata)
 void session_jack_cb(jack_session_event_t *event, void *arg )
 {
     (void)arg;
-    assert(_session->type == SESSION_TYPE_JACK);
     /*  use g_idle_add to save state from within main thread
         rather than JACK session thread here.
      */
@@ -415,20 +447,22 @@ static gboolean gui_jack_session_cb(void *data)
         return FALSE;
     }
 
+    _session->type = SESSION_TYPE_JACK;
+
+    /*  FIXME: tell the GUI to switch to session support mode
+        (that is, remove particular menu items/functionality).
+     */
+
     filename = bankname(ev->session_dir);
 
     if (instancename)
-        snprintf(command_buf,   sizeof(command_buf),
-                                "petri-foo --name %s --unconnected "
-                                "-U %s ${SESSION_DIR}%s",
-                                instancename,
-                                ev->client_uuid, filename);
+        snprintf(   command_buf, sizeof(command_buf),
+                    "petri-foo --jack-name %s --unconnected -U %s %s",
+                    instancename, ev->client_uuid, filename);
     else
-        snprintf(command_buf,   sizeof(command_buf),
-                                "petri-foo --unconnected "
-                                "-U %s ${SESSION_DIR}%s",
-                                ev->client_uuid, filename);
-
+        snprintf(   command_buf, sizeof(command_buf),
+                    "petri-foo --unconnected -U %s %s",
+                    ev->client_uuid, filename);
 
     debug("command:%s\n", command_buf);
 

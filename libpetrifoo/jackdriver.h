@@ -39,6 +39,8 @@ void            jackdriver_set_autoconnect(bool);
 void            jackdriver_set_uuid(char *uuid);
 jack_client_t*  jackdriver_get_client(void);
 
+/*  if this needs to be called do so before starting jack */
+void            jackdriver_disable_jacksession(void);
 
 
 #endif /* __JACKDRIVER_H__ */

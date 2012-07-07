@@ -24,6 +24,8 @@
 #include <getopt.h>
 #include <gtk/gtk.h>
 #include <pthread.h>
+#include <signal.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "dish_file.h"
@@ -63,9 +65,40 @@ void show_usage (void)
 }
 
 
+void cleanup()
+{
+    puts("\n");
+    debug("Shutting down...\n");
+
+    session_cleanup();
+    midi_stop();
+    driver_stop();
+    patch_shutdown();
+    mixer_shutdown();
+    settings_write();
+    settings_free();
+    free_instance_name();
+    mod_src_destroy();
+
+    msg_log(MSG_MESSAGE, "Goodbye!\n");
+
+    exit(0);
+}
+
+
 int main(int argc, char *argv[])
 {
-    int opt;
+    int opt, n;
+    int sigs[4] = { SIGINT, SIGHUP, SIGTERM, SIGKILL };
+    struct sigaction s[4];
+
+    for (n = 0; n < 4; ++n)
+    {
+        s[n].sa_handler = SIG_IGN;
+        sigfillset(&s[n].sa_mask);
+        s[n].sa_flags = 0;
+        sigaction(sigs[n], &s[n], NULL);
+    }
 
     for (opt = 1; opt < argc; ++opt)
     {
@@ -86,23 +119,18 @@ int main(int argc, char *argv[])
     patch_control_init();
     session_init(argc, argv);
     gui_init();
+
+    for (n = 0; n < 4; ++n)
+    {
+        s[n].sa_handler = cleanup;
+        sigfillset(&s[n].sa_mask);
+        s[n].sa_flags = 0;
+        sigaction(sigs[n], &s[n], NULL);
+    }
+
     gtk_main();
 
-    /* shutdown... */
-
-    #if DEBUG
-    patch_summary_dump();
-    #endif
-
-    midi_stop();
-    driver_stop();
-    patch_shutdown();
-    mixer_shutdown();
-    settings_write();
-    settings_free();
-    free_instance_name();
-    mod_src_destroy();
-    msg_log(MSG_MESSAGE, "Goodbye!\n");
+    cleanup();
 
     return 0;
 }

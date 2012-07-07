@@ -72,6 +72,12 @@ static char*            session_uuid = NULL;
 
 static bool             autoconnect = false;
 
+#if HAVE_JACK_SESSION_H
+static bool             disable_jacksession = false;
+#else
+static bool             disable_jacksession = true;
+#endif
+
 /* working together to stop CTS */
 typedef jack_default_audio_sample_t jack_sample_t;
 
@@ -84,6 +90,11 @@ void jackdriver_set_session_cb(JackSessionCallback jack_session_cb)
     session_cb = jack_session_cb;
 }
 #endif
+
+void jackdriver_disable_jacksession(void)
+{
+    disable_jacksession = true;
+}
 
 
 static int process(jack_nframes_t frames, void* arg)
@@ -243,12 +254,17 @@ static int start(void)
     pthread_mutex_lock (&running_mutex);
     running = 0;
 
-#if HAVE_JACK_SESSION_H
-    client = jack_client_open(instancename,
-                               JackSessionID, NULL, session_uuid);
-#else
-    client = jack_client_open(instancename, JackNullOption, NULL);
-#endif
+    if (disable_jacksession)
+    {
+        client = jack_client_open(instancename, JackNullOption, NULL);
+    }
+    else
+    {
+        #if HAVE_JACK_SESSION_H
+        client = jack_client_open(instancename, JackSessionID, NULL,
+                                                        session_uuid);
+        #endif
+    }
 
     if (client == 0)
     {
@@ -261,8 +277,8 @@ static int start(void)
 
     jack_set_process_callback (client, process, 0);
 
-#if HAVE_JACK_SESSION_H
-    if (jack_set_session_callback)
+    #if HAVE_JACK_SESSION_H
+    if (!disable_jacksession && jack_set_session_callback)
     {
         if (jack_set_session_callback(client, session_cb, 0))
         {
@@ -270,7 +286,7 @@ static int start(void)
             return -1;
         }
     }
-#endif
+    #endif
 
     jack_on_shutdown (client, shutdown, 0);
 

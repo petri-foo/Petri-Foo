@@ -37,7 +37,7 @@ enum {
 /* session_init returns 0 on sucess */
 int     session_init(int argc, char* argv[]);
 
-int     session_cleanup(void);
+void    session_cleanup(void);
 
 int     session_get_type(void);
 char*   session_get_path(void);

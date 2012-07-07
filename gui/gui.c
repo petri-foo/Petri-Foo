@@ -441,8 +441,7 @@ static void cb_menu_file_new_bank (GtkWidget * widget, gpointer data)
     (void)widget;(void)data;
     if (bank_ops_new ( ) == 0)
     {
-        patch_list_update (PATCH_LIST(patch_list), 0, PATCH_LIST_INDEX);
-        master_section_update(MASTER_SECTION(master_section));
+        gui_refresh();
     }
 }
 
@@ -452,8 +451,7 @@ static void cb_menu_file_open_bank (GtkWidget * widget, gpointer data)
     (void)widget;(void)data;
     if (bank_ops_open(window) == 0)
     {
-        patch_list_update (PATCH_LIST(patch_list), 0, PATCH_LIST_INDEX);
-        master_section_update(MASTER_SECTION(master_section));
+        gui_refresh();
     }
 }
 
@@ -546,15 +544,16 @@ static void cb_recent_chooser_item_activated (GtkRecentChooser *chooser
     recentInfo = gtk_recent_chooser_get_current_item(chooser);
     gtk_recent_manager_add_item(recent_manager, uri);
     gtk_recent_info_unref(recentInfo);
+
     if (bank_ops_open_recent(window, (char*) filename) == 0)
     {
-        patch_list_update (PATCH_LIST(patch_list), 0, PATCH_LIST_INDEX);
-        master_section_update(MASTER_SECTION(master_section));
+        gui_refresh();
     }
-     
+
     g_free(uri);
     g_free(filename);
 }
+
 
 int gui_init(void)
 {
@@ -707,8 +706,7 @@ int gui_init(void)
     audio_settings_init(window);
 
     /* priming updates */
-    master_section_update(MASTER_SECTION(master_section));
-    patch_list_update(PATCH_LIST(patch_list), 0, PATCH_LIST_INDEX);
+    gui_refresh();
 
     return 0;
 }
@@ -736,10 +734,16 @@ void gui_set_window_title_bank(const char* title)
 {
     static char* banktitle = 0;
     const char* instancename = get_instance_name();
-    char buf[80];
+    char buf[8000];
 
     if (!instancename)
         instancename = PACKAGE;
+
+    if (session_get_type() == SESSION_TYPE_NSM)
+    {
+        gtk_window_set_title(GTK_WINDOW(window), instancename);
+        return;
+    }
 
     if (title)
     {
@@ -747,9 +751,9 @@ void gui_set_window_title_bank(const char* title)
         banktitle = strdup(title);
     }
 
-    snprintf(buf, 79, "%s - %s", instancename, (banktitle) ? banktitle
+    snprintf(buf, 7999, "%s - %s", instancename, (banktitle) ? banktitle
                                                            : "Untitled");
-    buf[79] = '\0';
+    buf[7999] = '\0';
 
     if (window)
         gtk_window_set_title(GTK_WINDOW(window), buf);

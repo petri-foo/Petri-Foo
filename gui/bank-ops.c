@@ -54,7 +54,6 @@ static void set_bankname(const char* name)
         free(bankname);
 
     bankname = (name) ? strdup(name) : NULL;
-    gui_set_window_title_bank(bankname);
 }
 
 /* unused... reason/purpose ???

@@ -4,6 +4,9 @@
 
 	* shed load of changes look in the diff on github ;-P
 
+	* added signal handlers for clean exit
+	* a mist of tweaks
+
 
 2012-07-02 James Morris <james@jwm-art.net>
 
