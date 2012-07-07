@@ -70,8 +70,15 @@ static GtkWidget* menu_file = 0;
 static GtkWidget* menu_settings = 0;
 static GtkWidget* menu_patch = 0;
 static GtkWidget* menu_help = 0;
-static GtkWidget* menuitem_file_recent = 0;
 
+/* file menu */
+static GtkWidget* menu_file_new = 0;
+static GtkWidget* menu_file_open = 0;
+static GtkWidget* menu_file_import = 0;
+static GtkWidget* menu_file_recent = 0;
+static GtkWidget* menu_file_save = 0;
+static GtkWidget* menu_file_save_as = 0;
+static GtkWidget* menu_file_export = 0;
 
 /* settings */
 /*static GtkWidget* menu_settings_fans = 0;*/
@@ -436,37 +443,43 @@ void cb_menu_patch_remove(GtkWidget* menu_item, gpointer data)
 }
 
 
-static void cb_menu_file_new_bank (GtkWidget * widget, gpointer data)
+static void cb_menu_file_new_bank(GtkWidget * widget, gpointer data)
 {
     (void)widget;(void)data;
-    if (bank_ops_new ( ) == 0)
-    {
+    if (bank_ops_new() == 0)
         gui_refresh();
-    }
 }
 
-
-static void cb_menu_file_open_bank (GtkWidget * widget, gpointer data)
+static void cb_menu_file_open_bank(GtkWidget * widget, gpointer data)
 {
     (void)widget;(void)data;
     if (bank_ops_open(window) == 0)
-    {
         gui_refresh();
-    }
 }
 
+static void cb_menu_file_import(GtkWidget * widget, gpointer data)
+{
+    (void)widget;(void)data;
+    if (bank_ops_import(window) == 0)
+        gui_refresh();
+}
 
-static void cb_menu_file_save_bank (GtkWidget * widget, gpointer data)
+static void cb_menu_file_save_bank(GtkWidget * widget, gpointer data)
 {
     (void)widget;(void)data;
     bank_ops_save(window);
 }
 
-
-static void cb_menu_file_save_bank_as (GtkWidget * widget, gpointer data)
+static void cb_menu_file_save_bank_as(GtkWidget * widget, gpointer data)
 {
     (void)widget;(void)data;
     bank_ops_save_as(window);
+}
+
+static void cb_menu_file_export(GtkWidget * widget, gpointer data)
+{
+    (void)widget;(void)data;
+    bank_ops_export(window);
 }
 
 
@@ -583,27 +596,24 @@ int gui_init(void)
 
     menu_file = gui_menu_add(menubar, "File", NULL, NULL);
 
-    if (session_get_type() != SESSION_TYPE_NSM)
-    {
-        gui_menu_add(menu_file, "New Bank",
+    menu_file_new = gui_menu_add(menu_file, "New Bank",
             G_CALLBACK(cb_menu_file_new_bank),      window);
-        gui_menu_add(menu_file, "Open Bank...",
+    menu_file_open = gui_menu_add(menu_file, "Open Bank...",
             G_CALLBACK(cb_menu_file_open_bank),     window);
+    menu_file_import = gui_menu_add(menu_file, "Import...",
+            G_CALLBACK(cb_menu_file_import),        window);
 
-        menuitem_file_recent = gtk_menu_item_new_with_label("Open Recent");
-        gtk_menu_shell_append(GTK_MENU_SHELL(menu_file),
-                                                    menuitem_file_recent);
-    }
+    menu_file_recent = gtk_menu_item_new_with_label("Open Recent");
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu_file), menu_file_recent);
 
-    gui_menu_add(menu_file, "Save Bank",
+    menu_file_save = gui_menu_add(menu_file, "Save Bank",
             G_CALLBACK(cb_menu_file_save_bank),     window);
-
-    if (session_get_type() != SESSION_TYPE_NSM)
-    {
-        gui_menu_add(menu_file, "Save Bank As...",
+    menu_file_save_as = gui_menu_add(menu_file, "Save Bank As...",
             G_CALLBACK(cb_menu_file_save_bank_as),  window);
-    }
- 
+    menu_file_export = gui_menu_add(menu_file,"Export bank from session...",
+            G_CALLBACK(cb_menu_file_export),       window);
+    gtk_widget_set_sensitive(menu_file_export, FALSE);
+
     /* seperator */
     gui_menu_add(menu_file, NULL, NULL, NULL);
     gui_menu_add(menu_file, "Quit", G_CALLBACK(cb_quit), NULL);
@@ -706,6 +716,10 @@ int gui_init(void)
     audio_settings_init(window);
 
     /* priming updates */
+
+    if (session_get_type() != SESSION_TYPE_NONE)
+        gui_set_session_mode();
+
     gui_refresh();
 
     return 0;
@@ -802,34 +816,47 @@ gui_menu_check_add(GtkWidget* menu, const char* label,  gboolean active,
     return item;
 }
 
+
+void gui_set_session_mode(void)
+{
+    debug("GUI entering session mode\n");
+    gtk_widget_set_sensitive(menu_file_open, FALSE);
+    gtk_widget_set_sensitive(menu_file_recent, FALSE);
+    gtk_widget_set_sensitive(menu_file_save_as, FALSE);
+    gtk_menu_item_set_label(GTK_MENU_ITEM(menu_file_save),
+                            "Save session bank");
+    gtk_widget_set_sensitive(menu_file_export, TRUE);
+}
+
+
 /* recent items menu */
 void gui_recent_files_load(void) 
 {
     GtkRecentFilter *recent_filter;
-    GtkWidget *menuitem_file_recent_items;
+    GtkWidget *menu_file_recent_items;
     recent_manager = gtk_recent_manager_get_default();
     recent_filter = gtk_recent_filter_new();
     gtk_recent_filter_add_mime_type(recent_filter,
                                     "application/x-petri-foo");
-    menuitem_file_recent_items = 
+    menu_file_recent_items = 
             gtk_recent_chooser_menu_new_for_manager(recent_manager);
     gtk_recent_chooser_add_filter(
-            GTK_RECENT_CHOOSER(menuitem_file_recent_items), recent_filter);
+            GTK_RECENT_CHOOSER(menu_file_recent_items), recent_filter);
     gtk_recent_chooser_set_show_tips(
-            GTK_RECENT_CHOOSER(menuitem_file_recent_items), TRUE);
+            GTK_RECENT_CHOOSER(menu_file_recent_items), TRUE);
     gtk_recent_chooser_set_sort_type(
-            GTK_RECENT_CHOOSER(menuitem_file_recent_items),
+            GTK_RECENT_CHOOSER(menu_file_recent_items),
             GTK_RECENT_SORT_MRU);
     gtk_recent_chooser_set_limit(
-            GTK_RECENT_CHOOSER(menuitem_file_recent_items), 10);
+            GTK_RECENT_CHOOSER(menu_file_recent_items), 10);
     gtk_recent_chooser_set_local_only(
-            GTK_RECENT_CHOOSER(menuitem_file_recent_items), FALSE);
+            GTK_RECENT_CHOOSER(menu_file_recent_items), FALSE);
     gtk_recent_chooser_menu_set_show_numbers(
-            GTK_RECENT_CHOOSER_MENU(menuitem_file_recent_items), TRUE);
-    g_signal_connect(GTK_OBJECT(menuitem_file_recent_items),
+            GTK_RECENT_CHOOSER_MENU(menu_file_recent_items), TRUE);
+    g_signal_connect(GTK_OBJECT(menu_file_recent_items),
                     "item-activated",
                      G_CALLBACK(cb_recent_chooser_item_activated), window);
-    gtk_menu_item_set_submenu(GTK_MENU_ITEM(menuitem_file_recent), 
-            menuitem_file_recent_items);
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(menu_file_recent), 
+            menu_file_recent_items);
 
 }

@@ -49,6 +49,102 @@ const char* dish_file_extension(void)
     return dish_file_ext;
 }
 
+
+static int sanitize_sample_points(  int* play_start, int* play_stop,
+                                    int* loop_start, int* loop_stop,
+    /* oh this is fun... */         int* fade_samples,
+                                    int* xfade_samples,
+                                    int sample_stop)
+{
+    /*  the sanity check procedure goes like this:
+
+            1) check start above zero
+            2) check end below sample_stop (ie length - 1)
+            3) check start before end
+            4) check fade < end - start*
+
+        this is done first for the play marks
+        and secondly for the loop marks.
+
+        precedence goes to the marks themselves before
+        the fades so that the fades are adjusted to
+        accomadate the mark positions.
+
+        *note:  the fade check is different to this
+                for both play points and loop points.
+     */
+
+    if (*play_start < 0)
+    {
+        msg_log(MSG_WARNING, "Sanitizing play start mark\n");
+        *play_start = 0;
+    }
+
+    if (*play_stop < *play_start)
+    {
+        msg_log(MSG_WARNING, "Sanitizing play stop mark\n");
+        *play_stop = *play_start + 1;
+    }
+
+    if (*play_stop > sample_stop)
+    {
+        msg_log(MSG_WARNING, "Sanitizing play stop mark\n");
+
+        if ((*play_stop = sample_stop) < 0)
+        {
+            msg_log(MSG_ERROR, "Can't sanitize sample points\n");
+            return -1;
+        }
+    }
+
+    if (*fade_samples < 0)
+    {
+        msg_log(MSG_WARNING, "Sanitizing fade samples\n");
+        *fade_samples = 0;
+    }
+
+    if (*play_start + *fade_samples * 2 > *play_stop)
+    {
+        msg_log(MSG_WARNING, "Sanitizing fade samples\n");
+        *fade_samples = (*play_stop - *play_start) / 2;
+    }
+
+    /* LOOP POINT SANITY */
+
+    if (*loop_start < *play_start)
+    {
+        msg_log(MSG_WARNING, "Sanitizing loop start mark\n");
+        *loop_start = *play_start;
+    }
+
+    if (*loop_stop > *play_stop)
+    {
+        msg_log(MSG_WARNING, "Sanitizing loop stop mark\n");
+        *loop_stop = *play_stop;
+    }
+
+    if (*play_start + *xfade_samples > *loop_start)
+    {
+        msg_log(MSG_WARNING, "Sanitizing xfade samples\n");
+        *xfade_samples = *loop_start - *play_start;
+    }
+
+    if (*loop_start + *xfade_samples > *loop_stop)
+    {
+        msg_log(MSG_WARNING, "Sanitizing xfade samples\n");
+        *xfade_samples = *loop_stop - *loop_start;
+    }
+
+    if (*loop_stop + *xfade_samples > *play_stop)
+    {
+        msg_log(MSG_WARNING, "Sanitizing xfade samples\n");
+        *xfade_samples = *play_stop - *loop_stop;
+    }
+
+    return 0;
+}
+
+
 static int dish_file_write_sample_mode_props(xmlNodePtr node, int patch_id)
 {
     const char* mode = 0;
@@ -630,6 +726,13 @@ int dish_file_read_sample(xmlNodePtr node, int patch_id)
     char* filename = 0;
     bool sample_loaded = false;
 
+    int play_start = -1;
+    int play_stop = -1;
+    int loop_start = -1;
+    int loop_stop = -1;
+    int fade_samples = -1;
+    int xfade_samples = -1;
+
     double sr_ratio = 1.0;
 
     if (dish_file_samplerate
@@ -709,6 +812,9 @@ int dish_file_read_sample(xmlNodePtr node, int patch_id)
                 msg_log(MSG_ERROR, "failed to load sample: %s error (%s)\n",
                     filename, pf_error_str(pf_error_get()));
             }
+            else
+                msg_log(MSG_MESSAGE, "loaded sample %s into patch %d\n",
+                                     filename, patch_id);
 
             free(filename);
             filename = 0;
@@ -720,37 +826,29 @@ int dish_file_read_sample(xmlNodePtr node, int patch_id)
             if ((prop = xmlGetProp(node1, BAD_CAST "start")))
             {
                 if (sscanf((const char*)prop, "%d", &s) == 1)
-                    patch_set_mark_frame_expand(patch_id,
-                                                WF_MARK_PLAY_START,
-                                                s * sr_ratio, NULL);
+                    play_start = s * sr_ratio;
             }
             if ((prop = xmlGetProp(node1, BAD_CAST "stop")))
                 if (sscanf((const char*)prop, "%d", &s) == 1)
-                    patch_set_mark_frame_expand(patch_id,
-                                                WF_MARK_PLAY_STOP,
-                                                s * sr_ratio, NULL);
+                    play_stop = s * sr_ratio;
 
             if ((prop = xmlGetProp(node1, BAD_CAST "fade_samples")))
                 if (sscanf((const char*)prop, "%d", &s) == 1)
-                    patch_set_fade_samples(patch_id, s * sr_ratio);
+                    fade_samples = s * sr_ratio;
         }
         else if (xmlStrcmp(node1->name, BAD_CAST "Loop") == 0)
         {
             if ((prop = xmlGetProp(node1, BAD_CAST "start")))
                 if (sscanf((const char*)prop, "%d", &s) == 1)
-                    patch_set_mark_frame_expand(patch_id,
-                                                WF_MARK_LOOP_START,
-                                                s * sr_ratio, NULL);
+                    loop_start = s * sr_ratio;
 
             if ((prop = xmlGetProp(node1, BAD_CAST "stop")))
                 if (sscanf((const char*)prop, "%d", &s) == 1)
-                    patch_set_mark_frame_expand(patch_id,
-                                                WF_MARK_LOOP_STOP,
-                                                s * sr_ratio, NULL);
+                    loop_stop = s * sr_ratio;
 
             if ((prop = xmlGetProp(node1, BAD_CAST "xfade_samples")))
                 if (sscanf((const char*)prop, "%d", &s) == 1)
-                    patch_set_xfade_samples(patch_id, s * sr_ratio);
+                    xfade_samples = s * sr_ratio;
         }
         else if (xmlStrcmp(node1->name, BAD_CAST "Note") == 0)
         {
@@ -783,8 +881,21 @@ int dish_file_read_sample(xmlNodePtr node, int patch_id)
         }
     }
 
+    if (sanitize_sample_points( &play_start,    &play_stop,
+                                &loop_start,    &loop_stop,
+                                &fade_samples,  &xfade_samples,
+                    patch_get_mark_frame(patch_id, WF_MARK_STOP)) < 0)
+    {
+        /* it's all so borked that sanity becomes impossible */
+        return -1;
+    }
+
+    patch_sample_set_points(patch_id,   play_start,     play_stop,
+                                        loop_start,     loop_stop,
+                                        fade_samples,   xfade_samples);
     return 0;
 }
+
 
 int dish_file_read_eg(xmlNodePtr node, int patch_id)
 {
@@ -1232,8 +1343,6 @@ int dish_file_read(const char *path)
         return -1;
     }
 
-    patch_destroy_all();
-
     for (node1 = noderoot->children;
          node1 != NULL;
          node1 = node1->next)
@@ -1273,6 +1382,9 @@ int dish_file_read(const char *path)
                 if (sscanf((const char*)prop, "%d", &c))
                     patch_set_channel(patch_id, c);
             }
+
+            msg_log(MSG_MESSAGE, "Reading data for patch %d '%s'\n",
+                                 patch_id, patch_get_name(patch_id));
 
             for (node2 = nodepatch->children;
                  node2 != NULL;

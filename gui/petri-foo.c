@@ -65,11 +65,9 @@ void show_usage (void)
 }
 
 
-void cleanup()
+void cleanup(void)
 {
-    puts("\n");
-    debug("Shutting down...\n");
-
+    msg_log(MSG_MESSAGE, "Cleanup...\n");
     session_cleanup();
     midi_stop();
     driver_stop();
@@ -86,13 +84,39 @@ void cleanup()
 }
 
 
+void sigint_handler()
+{
+    puts("\n");
+    msg_log(MSG_MESSAGE, "Caught SIGINT signal\n");
+    cleanup();
+}
+
+void sighup_handler()
+{
+    puts("\n");
+    msg_log(MSG_MESSAGE, "Caught SIGHUP signal\n");
+    cleanup();
+}
+
+void sigterm_handler()
+{
+    puts("\n");
+    msg_log(MSG_MESSAGE, "Caught SIGTERM signal\n");
+    cleanup();
+}
+
+
 int main(int argc, char *argv[])
 {
+    enum { SC = 3 };
     int opt, n;
-    int sigs[4] = { SIGINT, SIGHUP, SIGTERM, SIGKILL };
-    struct sigaction s[4];
+    int sigs[] = { SIGINT, SIGHUP, SIGTERM };
+    void (*sighandlers[])() = { sigint_handler,
+                                sighup_handler,
+                                sigterm_handler };
+    struct sigaction s[SC];
 
-    for (n = 0; n < 4; ++n)
+    for (n = 0; n < SC; ++n)
     {
         s[n].sa_handler = SIG_IGN;
         sigfillset(&s[n].sa_mask);
@@ -120,9 +144,9 @@ int main(int argc, char *argv[])
     session_init(argc, argv);
     gui_init();
 
-    for (n = 0; n < 4; ++n)
+    for (n = 0; n < SC; ++n)
     {
-        s[n].sa_handler = cleanup;
+        s[n].sa_handler = sighandlers[n];
         sigfillset(&s[n].sa_mask);
         s[n].sa_flags = 0;
         sigaction(sigs[n], &s[n], NULL);

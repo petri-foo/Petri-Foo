@@ -118,9 +118,6 @@ static char* bankname(const char* path)
     const char* bank = "/bank.petri-foo";
     size_t len = strlen(path);
 
-debug("path:'%s'\n",path);
-debug("bank:'%s'\n",bank);
-
     if (path[len - 1] == '/')
         ++bank;
 
@@ -159,7 +156,7 @@ int session_init(int argc, char* argv[])
 
     if (!(_session = malloc(sizeof(*_session))))
     {
-        msg_log(MSG_TYPE_ERROR, "Failed to create session support data\n");
+        msg_log(MSG_ERROR, "Failed to create session support data\n");
         return -1;
     }
 
@@ -175,22 +172,27 @@ int session_init(int argc, char* argv[])
         {
         case 'a':
             if (!nsm_url) possibly_autoconnect = TRUE;
-            else msg_log(MSG_TYPE_WARNING,
+            else msg_log(MSG_WARNING,
                         "Ignoring --autoconnect option\n");
             break;
 
         case 'j':
-            if (!nsm_url) set_instance_name(optarg);
-            else msg_log(MSG_TYPE_WARNING, "Ignoring --jack-name option\n");
+            if (!nsm_url)
+            {
+                set_instance_name(optarg);
+                msg_log(MSG_MESSAGE, "Setting JACK client name to '%s'\n",
+                                    optarg);
+            }
+            else msg_log(MSG_WARNING, "Ignoring --jack-name option\n");
             break;
 
         case 'u':
             if (!nsm_url)
             {
-                msg_log(MSG_TYPE_WARNING, "--unconnected option is "
+                msg_log(MSG_WARNING, "--unconnected option is "
                                          "deprecated for future removal\n");
             }
-            else msg_log(MSG_TYPE_WARNING,
+            else msg_log(MSG_WARNING,
                         "Ignoring --unconnected option\n");
             break;
 
@@ -198,13 +200,15 @@ int session_init(int argc, char* argv[])
             if (!nsm_url)
             {
                 jackdriver_set_uuid(strdup(optarg));
+                msg_log(MSG_MESSAGE, "Setting JACK session UUID to '%s'\n",
+                                    optarg);
                 s->type = SESSION_TYPE_JACK;
             }
-            else msg_log(MSG_TYPE_WARNING, "Ignoring --uuid option\n");
+            else msg_log(MSG_WARNING, "Ignoring --uuid option\n");
             break;
 
         default:
-            msg_log(MSG_TYPE_WARNING, "Ignoring unknown option '--%s'\n",
+            msg_log(MSG_WARNING, "Ignoring unknown option '--%s'\n",
                                                         opts[opt_ix].name);
         }
     }
@@ -255,6 +259,16 @@ int session_init(int argc, char* argv[])
     }
     #endif
 
+    if (s->type == SESSION_TYPE_NONE)
+    {
+        msg_log(MSG_MESSAGE, "Session management not running\n");
+    }
+    else
+    {
+        msg_log(MSG_MESSAGE, "Session mangement running under %s\n",
+                                    session_names[s->type]);
+    }
+
     if (possibly_autoconnect && s->type == SESSION_TYPE_NONE)
         jackdriver_set_autoconnect(true);
 
@@ -272,10 +286,9 @@ int session_init(int argc, char* argv[])
     if (nsm_url)
     {
         if (optind < argc)
-            msg_log(MSG_TYPE_WARNING, "Ignoring bank file option\n");
+            msg_log(MSG_WARNING, "Ignoring bank file option\n");
 
         dish_file_read(s->bank);
-        bank_ops_force_name(s->bank);
     }
     else
     #endif
@@ -288,8 +301,6 @@ int session_init(int argc, char* argv[])
         else
             patch_create_default();
     }
-
-debug("bankname(\"test/\"):'%s'\n", bankname("test/"));
 
     session_idle_add_event_poll();
 
@@ -325,9 +336,14 @@ int session_get_type(void)
 }
 
 
-char* session_get_path(void)
+const char* session_get_path(void)
 {
-    return strdup(_session->path);
+    return _session->path;
+}
+
+const char* session_get_bank(void)
+{
+    return _session->bank;
 }
 
 
@@ -432,42 +448,41 @@ void session_jack_cb(jack_session_event_t *event, void *arg )
 static gboolean gui_jack_session_cb(void *data)
 {
     size_t len;
-    char* filename;
     char command_buf[8192];
     const char* instancename = get_instance_name();
     jack_session_event_t *ev = (jack_session_event_t *)data;
+    pf_session* s = _session;
 
-    if (_session->type != SESSION_TYPE_JACK
-     && _session->type != SESSION_TYPE_NONE)
+    if (s->type != SESSION_TYPE_JACK
+     && s->type != SESSION_TYPE_NONE)
     {
         msg_log(MSG_ERROR,  "Already under %s session management, "
                             "refusing simultaneous management by %s\n",
-                            session_names[_session->type],
+                            session_names[s->type],
                             session_names[SESSION_TYPE_JACK]);
         return FALSE;
     }
 
-    _session->type = SESSION_TYPE_JACK;
+    s->type = SESSION_TYPE_JACK;
 
     /*  FIXME: tell the GUI to switch to session support mode
         (that is, remove particular menu items/functionality).
      */
 
-    filename = bankname(ev->session_dir);
+    s->bank = bankname(ev->session_dir);
 
     if (instancename)
         snprintf(   command_buf, sizeof(command_buf),
                     "petri-foo --jack-name %s --unconnected -U %s %s",
-                    instancename, ev->client_uuid, filename);
+                    instancename, ev->client_uuid, s->bank);
     else
         snprintf(   command_buf, sizeof(command_buf),
                     "petri-foo --unconnected -U %s %s",
-                    ev->client_uuid, filename);
+                    ev->client_uuid, s->bank);
 
     debug("command:%s\n", command_buf);
 
-    dish_file_write(filename);
-    free(filename);
+    dish_file_write(s->bank);
 
     ev->command_line = strdup(command_buf);
     jack_session_reply(jackdriver_get_client(), ev);
@@ -476,6 +491,8 @@ static gboolean gui_jack_session_cb(void *data)
          gtk_main_quit();
 
     jack_session_event_free(ev);
+
+    gui_set_session_mode();
 
     return FALSE;
 }

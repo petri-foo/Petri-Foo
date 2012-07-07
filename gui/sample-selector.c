@@ -185,8 +185,7 @@ fail:
     }
     else
     {
-        msg_log(MSG_TYPE_ERROR, /*  Unlike MSG_ERROR, MSG_TYPE_ERROR does
-                                    not set the log notification flag */
+        msg_log(MSG_ERROR,
                 "Failed to load sample %s for patch %d (%s)\n",
                 name, patch, pf_error_str(err));
 

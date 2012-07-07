@@ -44,40 +44,44 @@ typedef void (*msg_log_cb)(const char* msg, int msg_base_type);
 enum
 {
 /* invalid message type */
-    MSG_INVALID =       -1,
+    MSG___INVALID =     -1,
 
 /* base message types: */
-    MSG_TYPE_DEBUG =    0,
-    MSG_TYPE_MESSAGE,
-    MSG_TYPE_WARNING,
-    MSG_TYPE_ERROR,
-    MSG_TYPE_CRITICAL,
+    MSG___TYPE_DEBUG =  0,
+    MSG___TYPE_MESSAGE,
+    MSG___TYPE_WARNING,
+    MSG___TYPE_ERROR,
+    MSG___TYPE_CRITICAL,
 
 /* used for checking valid base message types */
-    MSG_TYPE_XXX,
+    MSG___TYPE_XXX,
 
 /* message type mask */
-    MSG_TYPE_MASK =         0x000f,
+    MSG___TYPE_MASK =       0x000f,
 
 /* message flags: */
-    MSG_FLAG_NOTIFY =       0x0010, /* sets notification state */
+    MSG___FLAG_NOTIFY =     0x0010, /* sets notification state */
 
-    MSG_FLAG_STDOUT =       0x0100, /* output to stdout */
-    MSG_FLAG_STDERR =       0x0200, /* output to stderr */
-    MSG_FLAG_STDUI =        0x0400, /* output to ie gui */
+    MSG___FLAG_STDOUT =     0x0100, /* output to stdout */
+    MSG___FLAG_STDERR =     0x0200, /* output to stderr */
+    MSG___FLAG_STDUI =      0x0400, /* output to ie gui */
 
-    MSG_FLAG_OUTPUT_MASK =  0x0f00,
+    MSG___FLAG_OUTPUT_MASK = 0x0f00,
 
 /* the actual message types generally used */
-    MSG_DEBUG =     MSG_TYPE_DEBUG      | MSG_FLAG_STDOUT,
-    MSG_MESSAGE =   MSG_TYPE_MESSAGE    | MSG_FLAG_STDOUT | MSG_FLAG_STDUI,
-    MSG_WARNING =   MSG_TYPE_WARNING    | MSG_FLAG_STDOUT | MSG_FLAG_STDUI,
+    MSG_DEBUG =     MSG___TYPE_DEBUG |      MSG___FLAG_STDOUT,
 
-    MSG_ERROR =     MSG_TYPE_ERROR      | MSG_FLAG_NOTIFY 
-                  | MSG_FLAG_STDERR     | MSG_FLAG_STDUI,
+    MSG_MESSAGE =   MSG___TYPE_MESSAGE |    MSG___FLAG_STDOUT
+                  | MSG___FLAG_STDUI,
 
-    MSG_CRITICAL =  MSG_TYPE_CRITICAL   | MSG_FLAG_NOTIFY
-                  | MSG_FLAG_STDERR     | MSG_FLAG_STDUI,
+    MSG_WARNING =   MSG___TYPE_WARNING |    MSG___FLAG_STDOUT
+                  | MSG___FLAG_STDUI,
+
+    MSG_ERROR =     MSG___TYPE_ERROR    | MSG___FLAG_NOTIFY
+                  | MSG___FLAG_STDERR   | MSG___FLAG_STDUI,
+
+    MSG_CRITICAL =  MSG___TYPE_CRITICAL | MSG___FLAG_NOTIFY
+                  | MSG___FLAG_STDERR   | MSG___FLAG_STDUI,
 };
 
 

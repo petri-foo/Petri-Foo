@@ -30,19 +30,18 @@
 
 enum
 {
-    GUI_SPACING = 6, 		/* space between widgets */
-    GUI_INDENT = 18,		/* how much to indent sections by */
-    GUI_SECSPACE = 18, 		/* space between sections */
-    GUI_SCROLLSPACE = 3,	/* space between a scrollbar and its scrollie thingie */
-    GUI_TITLESPACE = 12,	/* space between a section title and its contents */
-    GUI_TEXTSPACE = 12,		/* space between a label and its control */
-    GUI_BORDERSPACE = 12,	/* space between a border and its guts */
-    GUI_THRESHOLD = 20,		/* threshold used for sliderbuttons */
-    GUI_REFRESH_TIMEOUT = 100,	/* time in milliseconds between controller refreshes */
-    GUI_MAX_RECENT_FILES = 5 /* maximum recent files in Open Recent Bank menu */
+    GUI_SPACING = 6,        /* space between widgets */
+    GUI_INDENT = 18,        /* how much to indent sections by */
+    GUI_SECSPACE = 18,      /* space between sections */
+    GUI_SCROLLSPACE = 3,    /* space between a scrollbar and its thingie */
+    GUI_TITLESPACE = 12,    /* space between section title and contents */
+    GUI_TEXTSPACE = 12,     /* space between a label and its control */
+    GUI_BORDERSPACE = 12,   /* space between a border and its guts */
+    GUI_THRESHOLD = 20,     /* threshold used for sliderbuttons */
+ GUI_REFRESH_TIMEOUT = 100, /* milliseconds controller refreshes */
+   GUI_MAX_RECENT_FILES = 5 /* number of files in Open Recent menu */
 };
 
-/* Recent Manager */
 
 /* returns a titlefied label */
 GtkWidget*  gui_title_new(const char* msg);
@@ -105,6 +104,8 @@ GtkWidget*
      gui_menu_check_add(GtkWidget* menu, const char* label, gboolean active,
                                                             GCallback cb,
                                                             gpointer data);
+
+void gui_set_session_mode(void);
 
 GtkRecentManager *recent_manager;
  

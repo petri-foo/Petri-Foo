@@ -54,6 +54,10 @@ int         patch_sample_load     (int id, const char* file,
 
 int         patch_sample_load_from(int dest_id, int src_id);
 
+int         patch_sample_set_points(int id, int play_start, int play_stop,
+                                            int loop_start, int loop_stop,
+                                            int fade_samples,
+                                            int xfade_samples);
 const Sample* patch_sample_data(int id);
 
 void        patch_sample_unload   (int id);

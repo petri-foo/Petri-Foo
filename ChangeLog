@@ -1,3 +1,22 @@
+2012-07-07 James Morris <james@jwm-art.net>
+
+	* dish_file_read no longer destroys existing patches
+	  (it's now a decision for the (G)UI to make).
+
+	* usage of patch_set_mark_frame and/or
+	  patch_set_mark_frame_expand by dish_file_read_sample
+	  was broken as these functions sanitize the input
+	  against existing input. the fix is to only sanitize
+	  the values once all are known, sanitize_sample_points
+	  does this. patch_sample_set_points then sets all the
+	  points in one go to avoid the checks (which could
+	  wrongly fail) performed by patch_set_mark_frame*.
+
+	* fix minor msg_log problems
+
+	* file menu sensitive to session management
+
+
 2012-07-06 James Morris <james@jwm-art.net>
 
     ***** Non Session Manager preliminary support *****

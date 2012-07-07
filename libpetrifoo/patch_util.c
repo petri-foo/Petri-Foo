@@ -530,18 +530,24 @@ int patch_sample_load_from(int dest_id, int src_id)
                                 patches[src_id]->sample->raw_channels,
                                 patches[src_id]->sample->sndfile_format,
                                 1);
-/*
-    patches[dest_id].sample_stop =  patches[dest_id].sample->frames - 1;
-    patches[dest_id].play_start =   patches[src_id].play_start;
-    patches[dest_id].play_stop =    patches[src_id].play_stop;
-    patches[dest_id].loop_start =   patches[src_id].loop_start;
-    patches[dest_id].loop_stop =    patches[src_id].loop_stop;
-    patches[dest_id].fade_samples = patches[src_id].fade_samples;
-    patches[dest_id].xfade_samples= patches[src_id].xfade_samples;
-*/
     patch_unlock(dest_id);
     return val;
 }
+
+int patch_sample_set_points(int id, int play_start,     int play_stop,
+                                    int loop_start,     int loop_stop,
+                                    int fade, int xfade)
+{
+    assert(patchok(id));
+    patches[id]->play_start = play_start;
+    patches[id]->play_stop = play_stop;
+    patches[id]->loop_start = loop_start;
+    patches[id]->loop_stop = loop_stop;
+    patches[id]->fade_samples = fade;
+    patches[id]->xfade_samples = xfade;
+    return 0;
+}
+
 
 const Sample* patch_sample_data(int id)
 {

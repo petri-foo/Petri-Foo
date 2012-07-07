@@ -94,13 +94,13 @@ int msg_log(int type, const char* fmt, ...)
     va_list ap;
 
     int rc = 0;
-    int base_type = type & MSG_TYPE_MASK;
-    int out_type = type & MSG_FLAG_OUTPUT_MASK;
+    int base_type = type & MSG___TYPE_MASK;
+    int out_type = type & MSG___FLAG_OUTPUT_MASK;
 
     if (!out_type)
         goto skip;
 
-    if (base_type <= MSG_INVALID || base_type >= MSG_TYPE_XXX)
+    if (base_type <= MSG___INVALID || base_type >= MSG___TYPE_XXX)
     {
         char* newfmt;
         newfmt = strconcat("Invalid log message: ", fmt);
@@ -123,7 +123,7 @@ int msg_log(int type, const char* fmt, ...)
 
     va_end(ap);
 
-    rc = snprintf(msg, 1023, "%s %s: %s ", tm, types[base_type], tmp);
+    rc = snprintf(msg, 1023, "%s %s: %s", tm, types[base_type], tmp);
 
     if (rc >= 1023)
     {
@@ -131,18 +131,18 @@ int msg_log(int type, const char* fmt, ...)
         msg[rc] = '\0';
     }
 
-    if (out_type & MSG_FLAG_STDOUT)
+    if (out_type & MSG___FLAG_STDOUT)
         fprintf(stdout, "%s", msg);
 
-    if (out_type & MSG_FLAG_STDERR)
+    if (out_type & MSG___FLAG_STDERR)
         fprintf(stderr, "%s", msg);
 
-    if ((out_type & MSG_FLAG_STDUI) && msg_log_callback)
+    if ((out_type & MSG___FLAG_STDUI) && msg_log_callback)
         msg_log_callback(msg, base_type);
 
 skip:
 
-    if (type & MSG_FLAG_NOTIFY)
+    if (type & MSG___FLAG_NOTIFY)
         msg_log_notification_state = true;
 
     return rc;

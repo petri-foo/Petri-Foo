@@ -24,16 +24,18 @@
 
 #include "bank-ops.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "dish_file.h"
+#include "global_settings.h"
+#include "gui.h"
 #include "patch.h"
 #include "patch_util.h"
 #include "petri-foo.h"
 #include "msg_log.h"
-#include "gui.h"
-#include "global_settings.h"
+#include "session.h"
 
 
 static char *last_bank = 0;
@@ -44,7 +46,10 @@ char* bankname = 0;
 
 const char* bank_ops_bank(void)
 {
-    return (bankname) ? bankname : untitled_bank;
+    if (session_get_type() == SESSION_TYPE_NONE)
+        return (bankname) ? bankname : untitled_bank;
+
+    return session_get_bank();
 }
 
 
@@ -55,24 +60,6 @@ static void set_bankname(const char* name)
 
     bankname = (name) ? strdup(name) : NULL;
 }
-
-/* unused... reason/purpose ???
-static char* get_file_filter(void)
-{
-    char* filter = 0;
-
-    if (!filter)
-    {
-        const char* ext = dish_file_extension();
-        size_t l = strlen(ext) + 1;
-        filter = malloc(l + 1);
-        filter[0] = '*';
-        strcat(filter, ext);
-    }
-
-    return filter;
-}
-*/
 
 
 static void file_chooser_add_filter(GtkWidget* chooser, const char* name,
@@ -85,17 +72,22 @@ static void file_chooser_add_filter(GtkWidget* chooser, const char* name,
 }
 
 
-int bank_ops_save_as (GtkWidget* parent_window)
+static int save_as(GtkWidget* parent_window, gboolean not_export)
 {
     GtkWidget *dialog;
     int val;
-
+    const char* title;
     char* filter = strconcat("*", dish_file_extension());
     char* untitled_dish = strconcat("untitled", dish_file_extension());
     
     global_settings* settings = settings_get();
 
-    dialog = gtk_file_chooser_dialog_new("Save Bank",
+    if (not_export)
+        title = "Save bank as";
+    else
+        title = "Export bank from session as";
+
+    dialog = gtk_file_chooser_dialog_new(title,
                                     GTK_WINDOW(parent_window),
                                     GTK_FILE_CHOOSER_ACTION_SAVE,
                                     GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
@@ -107,13 +99,13 @@ int bank_ops_save_as (GtkWidget* parent_window)
 
     if (last_bank == 0)
         gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),
-                                    settings->last_bank_dir);
+                                            settings->last_bank_dir);
     else
         gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),
-                                    g_path_get_dirname(last_bank));
- 
+                                            g_path_get_dirname(last_bank));
+
     gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(dialog),
-                    (last_bank != 0) ? last_bank : untitled_dish);
+                        (last_bank != 0) ? last_bank : untitled_dish);
 
     file_chooser_add_filter(dialog, "Petri-Foo files", filter);
     file_chooser_add_filter(dialog, "All files", "*");
@@ -138,12 +130,16 @@ int bank_ops_save_as (GtkWidget* parent_window)
         }
         else
         {
-
             gtk_recent_manager_add_item (recent_manager, 
                 g_filename_to_uri(name, NULL, NULL));
             msg_log(MSG_MESSAGE, "Successfully wrote file %s\n", name);
-            free(last_bank);
-            last_bank = strdup(name);
+
+            if (not_export)
+            {
+                free(last_bank);
+                last_bank = strdup(name);
+            }
+
             set_bankname(name);
         }
     }
@@ -161,27 +157,20 @@ int bank_ops_save_as (GtkWidget* parent_window)
 }
 
 
-int bank_ops_save(GtkWidget* parent_window)
-{
-     int val;
-
-     if (!last_bank)
-        val = bank_ops_save_as(parent_window);
-     else
-        val = dish_file_write(last_bank);
-
-     return val;
-}
-
-
-int bank_ops_open(GtkWidget* parent_window)
+static int open(GtkWidget* parent_window, gboolean not_import)
 {
     GtkWidget* dialog;
     int val;
+    const char* title;
     char* filter = strconcat("*", dish_file_extension());
     global_settings* settings = settings_get();
 
-    dialog = gtk_file_chooser_dialog_new("Open Bank",
+    if (not_import)
+        title = "Open bank";
+    else
+        title = "Import bank";
+
+    dialog = gtk_file_chooser_dialog_new( title,
                                           GTK_WINDOW(parent_window),
                                           GTK_FILE_CHOOSER_ACTION_OPEN,
                                           GTK_STOCK_CANCEL,
@@ -189,7 +178,7 @@ int bank_ops_open(GtkWidget* parent_window)
                                           GTK_STOCK_OPEN,
                                           GTK_RESPONSE_ACCEPT, NULL);
     if (last_bank)
-       gtk_file_chooser_select_filename(GTK_FILE_CHOOSER(dialog),
+        gtk_file_chooser_select_filename(GTK_FILE_CHOOSER(dialog),
                                                         last_bank);
     else
         gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),
@@ -264,12 +253,30 @@ int bank_ops_new(void)
 }
 
 
+int bank_ops_open(GtkWidget* parent_window)
+{
+    assert(session_get_type() == SESSION_TYPE_NONE);
+    patch_destroy_all();
+    return open(parent_window, TRUE);
+}
+
+
+int bank_ops_import(GtkWidget* parent_window)
+{
+    return open(parent_window, FALSE);
+}
+
+
 int bank_ops_open_recent(GtkWidget* parent_window, char* filename)
 {
     int val;
+    assert(session_get_type() == SESSION_TYPE_NONE);
 
     msg_log(MSG_MESSAGE, "Loading bank %s\n", filename);
     msg_log_reset_notification_state();
+
+    patch_destroy_all();
+
     val = dish_file_read(filename);
 
     if (val < 0)
@@ -302,6 +309,32 @@ int bank_ops_open_recent(GtkWidget* parent_window, char* filename)
     }
 
     return val;
+}
+
+
+int bank_ops_save_as(GtkWidget* parent_window)
+{
+    assert(session_get_type() == SESSION_TYPE_NONE);
+    return save_as(parent_window, TRUE);
+}
+
+
+int bank_ops_save(GtkWidget* parent_window)
+{
+    if (session_get_type() == SESSION_TYPE_NONE)
+    {
+        return (last_bank != 0)
+                    ? dish_file_write(last_bank)
+                    : save_as(parent_window, TRUE);
+    }
+
+    return dish_file_write(session_get_bank());
+}
+
+
+int bank_ops_export(GtkWidget* parent_window)
+{
+    return save_as(parent_window, FALSE);
 }
 
 
