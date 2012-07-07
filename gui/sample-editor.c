@@ -451,6 +451,7 @@ void sample_editor_show(int id)
                                                 WF_MARK_PLAY_START);
     }
 
+    update_mark_spin();
     update_fade_spins();
     gtk_widget_show(se->window);
 }

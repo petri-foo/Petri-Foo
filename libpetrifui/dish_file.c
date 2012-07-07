@@ -881,6 +881,9 @@ int dish_file_read_sample(xmlNodePtr node, int patch_id)
         }
     }
 
+    if (!sample_loaded)
+        return 0;
+
     if (sanitize_sample_points( &play_start,    &play_stop,
                                 &loop_start,    &loop_stop,
                                 &fade_samples,  &xfade_samples,

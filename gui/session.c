@@ -84,18 +84,18 @@ static int  session_nsm_open_cb(const char* name, const char* display_name,
 
 static int  session_nsm_save_cb(char** out_msg, void* userdata);
 
-static void session_nsm_active_cb(int b, void* userdata);
-static void session_nsm_is_loaded_cb(void* userdata);
-
-static int  session_nsm_broadcast_cb(const char*,
-                                     lo_message m,
-                                     void* userdata);
-
 static gboolean session_poll_nsm_events(gpointer data)
 {
     nsm_check_wait((nsm_client_t*)data, 0);
     return TRUE;
 }
+
+/*
+static void msg_log_to_nsm(const char* msg, int msg_base_type)
+{
+    nsm_send_message(_session->nsm_client, 3, msg);
+}
+*/
 #endif
 
 
@@ -246,7 +246,7 @@ int session_init(int argc, char* argv[])
 
         nsm_send_announce(  s->nsm_client,
                             "Petri-Foo",
-                            ":switch:",
+                            ":switch:", /*message:",*/
                             "petri-foo");
 
         s->type = SESSION_TYPE_NSM;
@@ -256,6 +256,8 @@ int session_init(int argc, char* argv[])
         {
             nsm_check_wait(s->nsm_client, 10);
         }
+
+        /*msg_log_set_message_cb(msg_log_to_nsm);*/
     }
     #endif
 
@@ -353,6 +355,7 @@ int session_nsm_open_cb(const char* name, const char* display_name,
                         const char* client_id, char** out_msg,
                         void* userdata)
 {
+    (void)display_name;(void)out_msg;
     struct stat st;
     pf_session* s = (pf_session*)userdata;
     gboolean session_switch = FALSE;
@@ -396,6 +399,7 @@ int session_nsm_open_cb(const char* name, const char* display_name,
     {
         debug("re-initializing driver, and reading '%s'\n", s->bank);
         driver_start();
+        patch_destroy_all();
         dish_file_read(s->bank);
         bank_ops_force_name(s->bank);
         gui_refresh();
@@ -407,28 +411,11 @@ int session_nsm_open_cb(const char* name, const char* display_name,
 
 int session_nsm_save_cb(char** out_msg, void* userdata)
 {
+    (void)out_msg;
     pf_session* s = (pf_session*)userdata;
     debug("NSM Save\n");
     dish_file_write(s->bank);
     return ERR_OK;
-}
-
-
-void session_nsm_active_cb(int b, void* userdata)
-{
-    debug("NSM Active\n");
-}
-
-
-void session_nsm_is_loaded_cb(void* userdata)
-{
-    debug("NSM Is Loaded\n");
-}
-
-
-int session_nsm_broadcast_cb(const char* str, lo_message m, void* userdata)
-{
-    debug("NSM Broadcast\n");
 }
 
 
@@ -447,7 +434,6 @@ void session_jack_cb(jack_session_event_t *event, void *arg )
 
 static gboolean gui_jack_session_cb(void *data)
 {
-    size_t len;
     char command_buf[8192];
     const char* instancename = get_instance_name();
     jack_session_event_t *ev = (jack_session_event_t *)data;

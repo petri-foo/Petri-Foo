@@ -16,6 +16,9 @@
 
 	* file menu sensitive to session management
 
+	* fix update of mark position in sample-point-editor
+	  when switching between patches.
+
 
 2012-07-06 James Morris <james@jwm-art.net>
 

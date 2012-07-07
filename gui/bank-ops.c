@@ -130,8 +130,10 @@ static int save_as(GtkWidget* parent_window, gboolean not_export)
         }
         else
         {
-            gtk_recent_manager_add_item (recent_manager, 
-                g_filename_to_uri(name, NULL, NULL));
+            if (recent_manager)
+                gtk_recent_manager_add_item (recent_manager, 
+                    g_filename_to_uri(name, NULL, NULL));
+
             msg_log(MSG_MESSAGE, "Successfully wrote file %s\n", name);
 
             if (not_export)
@@ -218,7 +220,8 @@ static int open(GtkWidget* parent_window, gboolean not_import)
             else
                 msg_log(MSG_MESSAGE, "Successfully read bank %s\n", name);
 
-            gtk_recent_manager_add_item(recent_manager,
+            if (recent_manager)
+                gtk_recent_manager_add_item(recent_manager,
                                     g_filename_to_uri(name, NULL, NULL));
             free(last_bank);
             last_bank = strdup(name);

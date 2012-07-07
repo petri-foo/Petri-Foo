@@ -246,6 +246,7 @@ static int start(void)
 {
     const char** ports;
     const char* instancename = get_instance_name();
+    jack_status_t status;
 
     if (!instancename)
         instancename = PACKAGE;
@@ -256,12 +257,12 @@ static int start(void)
 
     if (disable_jacksession)
     {
-        client = jack_client_open(instancename, JackNullOption, NULL);
+        client = jack_client_open(instancename, JackNullOption, &status);
     }
     else
     {
         #if HAVE_JACK_SESSION_H
-        client = jack_client_open(instancename, JackSessionID, NULL,
+        client = jack_client_open(instancename, JackSessionID, &status,
                                                         session_uuid);
         #endif
     }
@@ -272,6 +273,10 @@ static int start(void)
         pthread_mutex_unlock (&running_mutex);
         return -1;
     }
+
+    char* n;
+    if (status & JackNameNotUnique)
+        set_instance_name(jack_get_client_name(client));
 
     mixer_set_jack_client(jackdriver_get_client());
 
