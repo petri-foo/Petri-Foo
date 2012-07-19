@@ -543,8 +543,6 @@ static int dish_write(const char *name, const char* bank_dir)
 
     if (bank_dir)
     {
-        struct stat st;
-
         if (!last_bank_dir || strcmp(last_bank_dir, bank_dir) != 0)
         {
             free(last_bank_dir);
@@ -828,11 +826,13 @@ int dish_file_read_sample(xmlNodePtr node,  int patch_id,
      && strlen((const char*)prop) > 0)
     {
         const char* p = (const char*)prop;
+        bool default_sample = (strcmp(p, "Default") == 0);
 
-        filename = (*p == '/')  ? strdup(p)
+        filename = (*p == '/' || default_sample)
+                                ? strdup(p)
                                 : file_ops_make_path(bank_dir, p);
 
-        if (last_bank_dir)
+        if (last_bank_dir && !default_sample)
         {
             char* tmp = file_ops_read_link(filename);
 

@@ -129,6 +129,7 @@ int session_init(int argc, char* argv[])
     int opt = 0;
     int opt_ix = 0;
     extern int optind;
+    struct stat st;
 
     static struct option opts[] =
     {
@@ -234,7 +235,7 @@ int session_init(int argc, char* argv[])
         nsm_send_announce(  s->nsm_client,
                             "Petri-Foo",
                             ":switch:", /*message:",*/
-                            "petri-foo");
+                            argv[0]);
 
         s->type = SESSION_TYPE_NSM;
 
@@ -273,11 +274,15 @@ int session_init(int argc, char* argv[])
         if (optind < argc)
             msg_log(MSG_WARNING, "Ignoring bank file option\n");
 
-        dish_file_read(s->bank);
+        /* provide default patch if nothing saved in session */
+        if (stat(s->bank, &st) == 0)
+            dish_file_read(s->bank);
+        else
+            patch_create_default();
     }
     else
     {
-        if (optind < argc)
+        if (optind < argc && stat(argv[optind], &st) == 0)
         {
             dish_file_read(argv[optind]);
             bank_ops_force_name(argv[optind]);
@@ -378,7 +383,12 @@ int session_nsm_open_cb(const char* name, const char* display_name,
         debug("re-initializing driver, and reading '%s'\n", s->bank);
         driver_start();
         patch_destroy_all();
-        dish_file_read(s->bank);
+
+        if (stat(s->bank, &st) == 0)
+            dish_file_read(s->bank);
+        else
+            patch_create_default();
+
         bank_ops_force_name(s->bank);
         gui_refresh();
     }
