@@ -25,8 +25,9 @@
 #include "patch_set_and_get.h"
 
 #include <assert.h>
-#include <string.h>
 #include <math.h>
+#include <string.h>
+#include <unistd.h>
 
 
 #include "sample.h"
@@ -373,6 +374,7 @@ PATCH_GET_LFO_VAR( sync,       bool )
 /**************************************************************************/
 /************************ PARAMETER SETTERS *******************************/
 /**************************************************************************/
+
 
 /* sets the cut signal this patch emits when activated */
 int patch_set_cut (int patch_id, int cut)

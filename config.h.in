@@ -14,4 +14,3 @@
 #cmakedefine HAVE_MALLOC_H 1
 #cmakedefine HAVE_JACK_SESSION_H 1
 #cmakedefine HAVE_CAIRO_OPERATOR_HSL 1
-#cmakedefine HAVE_LIBLO 1

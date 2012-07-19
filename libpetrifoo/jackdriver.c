@@ -274,7 +274,6 @@ static int start(void)
         return -1;
     }
 
-    char* n;
     if (status & JackNameNotUnique)
         set_instance_name(jack_get_client_name(client));
 

@@ -1,11 +1,12 @@
-#include <pthread.h>
-#include <gtk/gtk.h>
 #include <getopt.h>
+#include <gtk/gtk.h>
+#include <libgen.h>
+#include <pthread.h>
 #include <string.h>
 
 #include <petri-foo.h>
 #include <phin.h>
-
+#include <file_ops.h>
 
 
 void gui_attach(GtkTable* table, GtkWidget* widget, guint l, guint r,
@@ -34,6 +35,44 @@ static void cb_quit(GtkWidget* w, gpointer data)
 
 
 int main(int argc, char *argv[])
+{
+
+    char* path[] = { "/1234/noise.wav", "/noise.wav", "noise.wav", "/some/path/", "/path", 0 };
+    char* dir = 0;
+    char* file = 0;
+    int i;
+
+    for (i = 0; path[i] != 0; ++i)
+    {
+        if (file_ops_path_split(path[i], &dir, &file) == 0)
+        {
+            char* np = file_ops_make_path(dir, file);
+            debug("path:'%s' dir:'%s' file:'%s'\n", path[i], dir, file);
+            debug("reconstituted: '%s'\n", np);
+            free(dir);
+            free(file);
+            free(np);
+        }
+    }
+
+    char* p1 = "/home/sirrom/zero/samples/dir1";
+    char* p2 = "/home/sirrom/zero/samples/";
+
+    if (strstr(p1, p2) == p1)
+    {
+        debug("'%s' contains '%s' at start\n", p1, p2);
+    }
+
+    file_ops_make_relative("/home/sirrom/zero/samples/", "/home/sirrom/");
+    file_ops_make_relative("/home/sirrom/zero/samples/", "/home/sirrom");
+    file_ops_make_relative("/home/sirrom/zero/samples", "/home/sirrom/");
+    file_ops_make_relative("/home/sirrom/zero/samples", "/home/sirrom");
+
+    return 0;
+}
+
+
+int main_old(int argc, char *argv[])
 {
     GtkWidget* window;
     GtkWidget* vbox;

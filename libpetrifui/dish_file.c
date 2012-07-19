@@ -20,14 +20,17 @@
 
 #include "dish_file.h"
 
+#include <libxml/parser.h>
+#include <openssl/sha.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <libxml/parser.h>
-
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "config.h"
+#include "file_ops.h"
 #include "mixer.h"
 #include "mod_src.h"
 #include "msg_log.h"
@@ -39,9 +42,11 @@
 #include "sample.h"
 
 
-
 static const char* dish_file_ext = ".petri-foo";
 static int dish_file_samplerate = 0;
+
+
+static char* last_bank_dir = 0;
 
 
 const char* dish_file_extension(void)
@@ -508,7 +513,7 @@ dish_file_write_lfo(xmlNodePtr nodeparent, int patch_id, int lfo_id)
 }
 
 
-int dish_file_write(const char *name)
+static int dish_write(const char *name, const char* bank_dir)
 {
     int rc;
 
@@ -522,6 +527,7 @@ int dish_file_write(const char *name)
     int     i, j;
     int*    patch_id;
     int     patch_count;
+    char*   samples_dir;
 
     debug("attempting to write file:%s\n",name);
 
@@ -530,6 +536,24 @@ int dish_file_write(const char *name)
 
     noderoot = xmlNewDocNode(doc, NULL, BAD_CAST "Petri-Foo-Dish", NULL);
     if (!noderoot) { errmsg("XML error!\n"); return -1; }
+
+
+    xmlNewProp(noderoot, BAD_CAST "save-type",
+                         BAD_CAST (bank_dir ? "full" : "quick"));
+
+    if (bank_dir)
+    {
+        struct stat st;
+
+        if (!last_bank_dir || strcmp(last_bank_dir, bank_dir) != 0)
+        {
+            free(last_bank_dir);
+            last_bank_dir = strdup(bank_dir);
+        }
+
+        if (!(samples_dir = file_ops_mkdir("samples", bank_dir)))
+            return -1;
+    }
 
     xmlDocSetRootElement(doc, noderoot);
 
@@ -567,8 +591,18 @@ int dish_file_write(const char *name)
             sample
          */
         node1 = xmlNewTextChild(nodepatch, NULL, BAD_CAST "Sample", NULL);
-        xmlNewProp(node1,   BAD_CAST "file",
-                            BAD_CAST patch_get_sample_name(patch_id[i]));
+
+        if (bank_dir)
+        {
+            char * samplepath = file_ops_sample_path_mangle(
+                                        patch_get_sample_name(patch_id[i]),
+                                        bank_dir, samples_dir);
+            xmlNewProp(node1,   BAD_CAST "file", BAD_CAST samplepath);
+            free(samplepath);
+        }
+        else
+            xmlNewProp(node1, BAD_CAST "file",
+                              BAD_CAST patch_get_sample_name(patch_id[i]));
 
         /* play mode, reverse, to_end */
         dish_file_write_sample_mode_props(node1, patch_id[i]);
@@ -705,6 +739,56 @@ int dish_file_write(const char *name)
 }
 
 
+int dish_file_write(const char *name)
+{
+    if (last_bank_dir)
+        return dish_file_write_full(last_bank_dir);
+
+    return dish_write(name, 0);
+}
+
+
+int dish_file_write_full(const char* bank_dir)
+{
+    struct stat st;
+    char* bank_path;
+
+    if (stat(bank_dir, &st) != 0)
+    {
+        if (mkdir(bank_dir, 0777) != 0)
+        {
+            msg_log(MSG_ERROR, "failed to create bank dir:'%s'\n",
+                                                        bank_dir);
+            return -1;
+        }
+    }
+
+    if (!last_bank_dir || strcmp(last_bank_dir, bank_dir) != 0)
+    {
+        free(last_bank_dir);
+        last_bank_dir = strdup(bank_dir);
+    }
+
+    if (!(bank_path = file_ops_make_path(bank_dir, "bank.petri-foo")))
+    {
+        msg_log(MSG_ERROR, "failed to write bank in '%s'\n", bank_dir);
+        return -1;
+    }
+
+    dish_write(bank_path, bank_dir);
+    free(bank_path);
+
+    return 0;
+}
+
+
+void dish_file_new(void)
+{
+    free(last_bank_dir);
+    last_bank_dir = 0;
+}
+
+
 static bool xmlstr_to_bool(xmlChar* str)
 {
     if (xmlStrcasecmp(str, BAD_CAST "true") == 0
@@ -718,7 +802,8 @@ static bool xmlstr_to_bool(xmlChar* str)
 }
 
 
-int dish_file_read_sample(xmlNodePtr node, int patch_id)
+int dish_file_read_sample(xmlNodePtr node,  int patch_id,
+                                            const char* bank_dir)
 {
     xmlChar* prop;
     xmlNodePtr node1;
@@ -732,21 +817,31 @@ int dish_file_read_sample(xmlNodePtr node, int patch_id)
     int loop_stop = -1;
     int fade_samples = -1;
     int xfade_samples = -1;
-
+    int mode = PATCH_PLAY_SINGLESHOT;
     double sr_ratio = 1.0;
 
     if (dish_file_samplerate
      && dish_file_samplerate != patch_get_samplerate())
         sr_ratio = patch_get_samplerate() / (double)dish_file_samplerate;
 
-    debug("sr_ratio:%f\n",sr_ratio);
-
-    int mode = PATCH_PLAY_SINGLESHOT;
-
     if ((prop = xmlGetProp(node, BAD_CAST "file"))
      && strlen((const char*)prop) > 0)
     {
-        filename = strdup((const char*)prop);
+        const char* p = (const char*)prop;
+
+        filename = (*p == '/')  ? strdup(p)
+                                : file_ops_make_path(bank_dir, p);
+
+        if (last_bank_dir)
+        {
+            char* tmp = file_ops_read_link(filename);
+
+            if (tmp)
+            {
+                free(filename);
+                filename = tmp;
+            }
+        }
     }
 
     if ((prop = xmlGetProp(node, BAD_CAST "mode")))
@@ -805,9 +900,9 @@ int dish_file_read_sample(xmlNodePtr node, int patch_id)
             }
 
             if (patch_sample_load(patch_id, filename,
-                                              raw_samplerate,
-                                              raw_channels,
-                                              sndfile_format) < 0)
+                                            raw_samplerate,
+                                            raw_channels,
+                                            sndfile_format) < 0)
             {
                 msg_log(MSG_ERROR, "failed to load sample: %s error (%s)\n",
                     filename, pf_error_str(pf_error_get()));
@@ -1318,6 +1413,7 @@ int dish_file_read(const char *path)
     xmlNodePtr  node1;
     xmlNodePtr  node2;
     xmlChar*    prop;
+    char*   bank_dir;
     float   n;
 
     debug("Loading bank from file %s\n", path);
@@ -1329,6 +1425,8 @@ int dish_file_read(const char *path)
         errmsg("Failed to parse %s\n", path);
         return -1;
     }
+
+    file_ops_path_split(path, &bank_dir, 0);
 
     noderoot = xmlDocGetRootElement(doc);
 
@@ -1344,6 +1442,26 @@ int dish_file_read(const char *path)
         errmsg("%s is not a valid 'Petri-Foo-Dish' file\n", path);
         xmlFreeDoc(doc);
         return -1;
+    }
+
+    if ((prop = xmlGetProp(noderoot, BAD_CAST "save-type")))
+    {
+        if (xmlStrcmp(prop, BAD_CAST "full") == 0)
+        {
+            if (!last_bank_dir || strcmp(last_bank_dir, bank_dir) != 0)
+            {
+                free(last_bank_dir);
+                last_bank_dir = strdup(bank_dir);
+            }
+        }
+        else
+        {
+            if (xmlStrcmp(prop, BAD_CAST "quick") != 0)
+                msg_log(MSG_WARNING,
+                        "unknown value for save-type property\n");
+
+            dish_file_new();
+        }
     }
 
     for (node1 = noderoot->children;
@@ -1398,7 +1516,7 @@ int dish_file_read(const char *path)
 
                 if (xmlStrcmp(node2->name, BAD_CAST "Sample") == 0)
                 {
-                    dish_file_read_sample(node2, patch_id);
+                    dish_file_read_sample(node2, patch_id, bank_dir);
                 }
                 else if (xmlStrcmp(node2->name, BAD_CAST "Amplitude") ==0)
                 {
@@ -1468,6 +1586,8 @@ int dish_file_read(const char *path)
     #if DEBUG
     patch_summary_dump();
     #endif
+
+    free(bank_dir);
 
     return 0;
 }

@@ -139,14 +139,20 @@ else (LIBXML2_FOUND)
 endif (LIBXML2_FOUND)
 
 # LIBLO
-pkg_check_modules (LIBLO liblo)
+pkg_check_modules (LIBLO REQUIRED liblo>=0.26)
 if (LIBLO_FOUND)
     message(STATUS "Found liblo ${LIBLO_VERSION}, support for NSM will be built")
-    set (HAVE_LIBLO 1)
 else (LIBLO_FOUND)
     message(STATUS "liblo was not found, support for NSM will not be built")
-    set (HAVE_LIBLO 0)
 endif (LIBLO_FOUND)
+
+# LIBSSL
+pkg_check_modules (LIBSSL REQUIRED libssl>=0.9.8)
+if (LIBSSL_FOUND)
+    message(STATUS "Found libssl ${LIBSSL_VERSIOM}")
+else (LIBSSL_FOUND)
+    message(STATUS "libssl was not found")
+endif (LIBSSL_FOUND)
 
 # Check for CAIRO_OPERATOR_HSL_LUMINOSITY
 check_c_source_compiles (
@@ -163,7 +169,7 @@ CHECK_INCLUDE_FILES (jack/session.h HAVE_JACK_SESSION_H)
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
                 ${CMAKE_CURRENT_SOURCE_DIR}/config.h )
 
-link_libraries(m)
+link_libraries(m lo)
 
 include_directories ( . )
 

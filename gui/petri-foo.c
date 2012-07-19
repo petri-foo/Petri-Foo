@@ -154,7 +154,10 @@ int main(int argc, char *argv[])
 
     gtk_main();
 
+    dish_file_write_full("/home/sirrom/zero");
+
     cleanup();
+
 
     return 0;
 }

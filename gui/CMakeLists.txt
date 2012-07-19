@@ -13,10 +13,6 @@ link_directories (
     ${GTK2_LIBRARY_DIRS}
     )
 
-if (HAVE_LIBLO)
-    link_libraries(lo)
-endif (HAVE_LIBLO)
-
 add_definitions (
     ${GTK2_CFLAGS_OTHER}
     )
@@ -24,6 +20,6 @@ add_definitions (
 add_executable(petri-foo ${PETRI_FOO_SOURCES})
 
 
-target_link_Libraries(petri-foo petrifoo petrifui pthread phin )
+target_link_Libraries(petri-foo petrifoo petrifui pthread phin lo)
 
 install (TARGETS petri-foo DESTINATION ${BINDIR})

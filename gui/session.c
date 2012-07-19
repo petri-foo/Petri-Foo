@@ -40,11 +40,8 @@
 #include "msg_log.h"
 #include "patch_util.h"
 #include "petri-foo.h"
-
-
-#if HAVE_LIBLO
 #include "nsm.h"
-#endif
+
 
 const char*  session_names[] = { "None", "JACK", "NSM", "OPEN", "CLOSED" };
 
@@ -55,11 +52,9 @@ typedef struct _pf_session
     char*   path;
     char*   bank;
 
-    #if HAVE_LIBLO
     nsm_client_t*   nsm_client;
     int             nsm_state;
     char*           nsm_client_id;
-    #endif
 
 } pf_session;
 
@@ -75,9 +70,7 @@ static gboolean gui_jack_session_cb(void*);
 #endif
 
 
-#if HAVE_LIBLO
 /* Non Session Management */
-
 static int  session_nsm_open_cb(const char* name, const char* display_name,
                                 const char* client_id, char** out_msg,
                                 void* userdata);
@@ -96,19 +89,17 @@ static void msg_log_to_nsm(const char* msg, int msg_base_type)
     nsm_send_message(_session->nsm_client, 3, msg);
 }
 */
-#endif
 
 
 void session_idle_add_event_poll(void)
 {
     debug("session_type:'%s'\n", session_names[_session->type]);
-    #if HAVE_LIBLO
+
     if (_session->type == SESSION_TYPE_NSM)
     {
         debug("Adding NSM event poll\n");
         g_idle_add(session_poll_nsm_events, _session->nsm_client);
     }
-    #endif
 }
 
 
@@ -133,11 +124,7 @@ int session_init(int argc, char* argv[])
     assert(_session == 0);
     pf_session* s;
     gboolean possibly_autoconnect = FALSE;
-
-    #if HAVE_LIBLO
     const char* nsm_url;
-    #endif
-
     int opt = 0;
     int opt_ix = 0;
     extern int optind;
@@ -215,7 +202,6 @@ int session_init(int argc, char* argv[])
 
     debug("Initializing session support data\n");
 
-    #if HAVE_LIBLO
     s->nsm_client = 0;
     s->nsm_state = SESSION_STATE_CLOSED;
     s->nsm_client_id = 0;
@@ -259,7 +245,6 @@ int session_init(int argc, char* argv[])
 
         /*msg_log_set_message_cb(msg_log_to_nsm);*/
     }
-    #endif
 
     if (s->type == SESSION_TYPE_NONE)
     {
@@ -274,9 +259,7 @@ int session_init(int argc, char* argv[])
     if (possibly_autoconnect && s->type == SESSION_TYPE_NONE)
         jackdriver_set_autoconnect(true);
 
-    #if HAVE_LIBLO
     if (!nsm_url)
-    #endif
     {
         jackdriver_set_session_cb(session_jack_cb);
     }
@@ -284,7 +267,6 @@ int session_init(int argc, char* argv[])
     driver_start();
     midi_start();
 
-    #if HAVE_LIBLO
     if (nsm_url)
     {
         if (optind < argc)
@@ -293,7 +275,6 @@ int session_init(int argc, char* argv[])
         dish_file_read(s->bank);
     }
     else
-    #endif
     {
         if (optind < argc)
         {
@@ -318,13 +299,10 @@ void session_cleanup(void)
 
         free(_session->path);
         free(_session->bank);
-
-        #if HAVE_LIBLO
         free(_session->nsm_client_id);
 
         if (_session->nsm_client)
             nsm_free(_session->nsm_client);
-        #endif
 
         free(_session);
         _session = 0;
@@ -349,7 +327,6 @@ const char* session_get_bank(void)
 }
 
 
-#if HAVE_LIBLO
 /* Non Session Management */
 int session_nsm_open_cb(const char* name, const char* display_name,
                         const char* client_id, char** out_msg,
@@ -482,7 +459,6 @@ static gboolean gui_jack_session_cb(void *data)
 
     return FALSE;
 }
-#endif
 
 
 #endif
