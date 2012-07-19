@@ -98,7 +98,8 @@ void session_idle_add_event_poll(void)
     if (_session->type == SESSION_TYPE_NSM)
     {
         debug("Adding NSM event poll\n");
-        g_idle_add(session_poll_nsm_events, _session->nsm_client);
+/*      g_idle_add(session_poll_nsm_events, _session->nsm_client);*/
+        g_timeout_add(25, session_poll_nsm_events, _session->nsm_client);
     }
 }
 
