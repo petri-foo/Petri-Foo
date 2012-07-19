@@ -248,7 +248,7 @@ int session_init(int argc, char* argv[])
         nsm_send_announce(  s->nsm_client,
                             "Petri-Foo",
                             ":switch:", /*message:",*/
-                            "petri-foo");
+                            argv[0]);
 
         s->type = SESSION_TYPE_NSM;
 
