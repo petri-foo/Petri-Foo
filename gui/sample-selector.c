@@ -177,7 +177,7 @@ static void cb_load(raw_box* rb)
 fail:
     if (!name)
     {   /* I don't really think this is possible, but hey. */
-        errmsg("no file selected\n");
+        msg_log(MSG_ERROR, "no file selected\n");
         msg = gtk_message_dialog_new(GTK_WINDOW(rb->dialog),
                                      GTK_DIALOG_DESTROY_WITH_PARENT,
                                      GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE,

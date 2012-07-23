@@ -33,6 +33,53 @@
 #include "petri-foo.h"
 
 
+char* file_ops_join_str(const char* str1, char join, const char* str2)
+{
+    const char* s1lc = 0; /* dir last character */
+    size_t newlen = 0;
+    char* newstr = 0;
+
+    if (!str1)
+        return (str2 != 0) ? strdup(str2) : 0;
+
+    if (!str2)
+        return strdup(str1);
+
+    s1lc = strrchr(str1, '\0');
+    --s1lc;
+
+    if (s1lc < str1)
+        return strdup(str2);
+
+    newlen = strlen(str1) + strlen(str2);
+
+    if (*s1lc == join)
+    {
+        if (*str2 == join)
+        {
+            ++str2;
+            --newlen;
+        }
+    }
+    else if (*str2 != join)
+    {
+        ++newlen;
+    }
+
+    newstr = malloc(newlen + 1);
+    strcpy(newstr, str1);
+
+    if (*s1lc != join && *str2 != join)
+    {
+        char* n = newstr + strlen(newstr);
+        *n++ = join;
+        *n = '\0';
+    }
+
+    strcat(newstr, str2);
+    return newstr;
+}
+
 
 int file_ops_path_split(const char* path, char** retdir, char** retfile)
 {
@@ -86,11 +133,11 @@ int file_ops_path_split(const char* path, char** retdir, char** retfile)
     return 0;
 }
 
-
+/*
 char* file_ops_make_path(const char* dir, const char* file)
 {
     char* path = 0;
-    const char* dlc; /* dir last character */
+    const char* dlc;
     size_t len;
 
     if (!dir)
@@ -133,6 +180,8 @@ char* file_ops_make_path(const char* dir, const char* file)
     strcat(path, file);
     return path;
 }
+*/
+
 
 
 char* file_ops_make_relative(const char* path, const char* parent)
@@ -234,7 +283,9 @@ char* file_ops_hash_mkdir(const char* path, const char* parent)
                     {
                         if ((dfile = fopen(dfilename, "w")))
                         {
-                            fprintf(dfile, "%s\n", parent);
+                            debug("writing '%s' as path to pathinfo.txt\n",
+                                                                    path);
+                            fprintf(dfile, "%s\n", path);
                             fclose(dfile);
                         }
                         free(dfilename);
@@ -266,12 +317,14 @@ char* file_ops_sample_path_mangle(  const char* samplepath,
                                     const char* bank_dir,
                                     const char* samples_dir)
 {
-    /* this should not be called for samples already within bank_dir */
-    assert(strstr(samplepath, bank_dir) != samplepath);
-
     char* sdir;     /* sample dir */
     char* sfile;    /* sample filename */
     char* hash_dir; /* full path of hash dir */
+
+    if (strstr(samplepath, bank_dir) == samplepath)
+    {   /*  sample is located inline within bank_dir */
+        return file_ops_make_relative(samplepath, bank_dir);
+    }
 
     file_ops_path_split(samplepath, &sdir, &sfile);
 
@@ -331,6 +384,8 @@ char* file_ops_read_link(const char* path)
     char* buf = 0;
     ssize_t len = 0;
 
+    char* next = 0;
+
     if (lstat(path, &st) != 0 || !S_ISLNK(st.st_mode))
         return 0;
 
@@ -353,5 +408,10 @@ char* file_ops_read_link(const char* path)
     }
 
     buf[len] = '\0';
-    return buf;
+
+    if (!(next = file_ops_read_link(buf)))
+        return buf;
+
+    free(buf);
+    return next;
 }

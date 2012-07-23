@@ -345,7 +345,7 @@ int session_nsm_open_cb(const char* name, const char* display_name,
 
     debug("NSM Open\n");
     debug("name:'%s'\ndisplay_name:'%s'\nclient_id:'%s'\n",
-        name, display_name, client_id);
+                                name, display_name, client_id);
     debug("session callback data:%p\n", s);
 
     if (s->nsm_client_id)
@@ -401,8 +401,13 @@ int session_nsm_save_cb(char** out_msg, void* userdata)
 {
     (void)out_msg;
     pf_session* s = (pf_session*)userdata;
+
+
+    debug("\npath:'%s'\nbank:'%s'\nnsm_client_id:'%s'\n",
+            s->path,s->bank,s->nsm_client_id);
+
     debug("NSM Save\n");
-    dish_file_write(s->bank);
+/*    dish_file_write_full(s->path);*/
     return ERR_OK;
 }
 

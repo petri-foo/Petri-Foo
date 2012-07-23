@@ -22,10 +22,34 @@
 #define FILE_OPS_H
 
 
+/*  file_ops_join_str:
+        joins two strings ensuring only a single ocurrence of
+        the join between them.
+
+    return value:
+            new string on success
+            0 on failure.
+
+    notes:
+        if str1 is 0 then return duplicate of str2 if set
+        if str2 is 0 then return duplicate of str1 if set
+ */
+char*   file_ops_join_str(const char* str1, char join, const char* str2);
+
 int     file_ops_path_split(const char* path,   char** return_dir,
                                                 char** return_file);
 
+
+#define file_ops_make_path(dir, file) \
+        file_ops_join_str((dir), '/', (file))
+
+#define file_ops_add_ext(file, ext) \
+        file_ops_join_str((file), '.', (ext))
+
+/*
 char*   file_ops_make_path(const char* dir, const char* file);
+char*   file_ops_add_extension(const char* file, const char* ext);
+*/
 char*   file_ops_make_relative(const char* path, const char* parent);
 char*   file_ops_dir_to_hash(const char* path);
 

@@ -28,32 +28,36 @@
 
 const char* dish_file_extension(void);
 
-char*   dish_file_name(const char* path, const char* basename);
+void    dish_file_state_init(void);
+
+/*  dish_file_state_reset resets internal implementation state. it should
+    not be called unless all patches have been wiped and petri-foo
+    is not running under session management such as NSM.
+
+    * it does not clear existing patch data *
+ */
+void    dish_file_state_reset(void);
+
+void    dish_file_state_cleanup(void);
 
 /*  dish_file_read reads a dish file and sets internal state accordingly
     to whether the bank is a full-save type or quick-save
  */
 int     dish_file_read(const char* path);
 
-/*  dish_file_write saves a dish file. depending on the internal state
-    it might write a quick-save dish file or full-save dir+file+symlinks
+/*  dish_file_write_quick saves a dish file without folders or symlinks
+    to samples.
  */
-int     dish_file_write(const char* path);
+int     dish_file_write_quick(const char* path);
 
-/*  dish_file_write_full saves the dish file within dir 'bank_dir'
+/*  dish_file_write_full saves to /parent/name/name.petri-foo
     and additionally creates symlinks to samples within dirs created
     from the hash of the original sample paths. it also modifies
     interal state so that dish_file_write does the right thing.
  */
-int     dish_file_write_full(const char* bank_dir);
+int     dish_file_write_full(const char* parent, const char* name);
 
-
-/*  dish_file_new resets internal implementation state. it should
-    not be called unless all patches have been wiped and petri-foo
-    is not running under session management such as NSM.
-
-    * it does not clear existing patch data *
- */
-void    dish_file_new(void);
+/*  dish_file_write saves again to the last opened/saved dish file */
+int     dish_file_write(void);
 
 #endif

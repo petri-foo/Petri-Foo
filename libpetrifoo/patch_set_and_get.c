@@ -36,6 +36,7 @@
 #include "pf_error.h"
 
 
+#include "patch_private/err_msg.h"
 #include "patch_private/patch_data.h"
 #include "patch_private/patch_defs.h"
 #include "patch_private/patch_macros.h"
