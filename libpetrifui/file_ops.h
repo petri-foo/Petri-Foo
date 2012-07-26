@@ -36,20 +36,39 @@
  */
 char*   file_ops_join_str(const char* str1, char join, const char* str2);
 
-int     file_ops_path_split(const char* path,   char** return_dir,
-                                                char** return_file);
-
-
-#define file_ops_make_path(dir, file) \
+#define file_ops_join_path(dir, file) \
         file_ops_join_str((dir), '/', (file))
 
-#define file_ops_add_ext(file, ext) \
+#define file_ops_join_ext(file, ext) \
         file_ops_join_str((file), '.', (ext))
 
-/*
-char*   file_ops_make_path(const char* dir, const char* file);
-char*   file_ops_add_extension(const char* file, const char* ext);
-*/
+/*  file_ops_split_str
+        splits two strings at the last occurrence of split argument,
+        placing the first part of the string in ret_str1 and the second
+        part of the string in ret_str2
+
+    return value:
+        0 on successful split
+        -1 on failed split
+
+    notes:
+        bias is used to indicate how to handle the split char
+            bias < 0    split char remains in first half
+            bias > 0    split char remains in second half
+            bias == 0   split char removed
+ */
+
+int     file_ops_split_str(const char* str, char split, char** ret_str1,
+                                                        char** ret_str2,
+                                                        int bias);
+
+#define file_ops_split_path(path, return_dir, return_file) \
+        file_ops_split_str((path), '/', (return_dir), (return_file), -1)
+
+#define file_ops_split_file(file, return_name, return_ext) \
+        file_ops_split_str((file), '.', (return_name), (return_ext), 1)
+
+
 char*   file_ops_make_relative(const char* path, const char* parent);
 char*   file_ops_dir_to_hash(const char* path);
 

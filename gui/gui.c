@@ -37,6 +37,7 @@
 #include "bank-ops.h"
 #include "channelsection.h"
 #include "config.h"
+#include "dish_file.h"
 #include "driver.h"
 #include "global_settings.h"
 #include "gui.h"
@@ -77,7 +78,7 @@ static GtkWidget* menu_file_open = 0;
 static GtkWidget* menu_file_import = 0;
 static GtkWidget* menu_file_recent = 0;
 static GtkWidget* menu_file_save = 0;
-static GtkWidget* menu_file_quick_save_as = 0;
+static GtkWidget* menu_file_basic_save_as = 0;
 static GtkWidget* menu_file_full_save_as = 0;
 static GtkWidget* menu_file_export = 0;
 
@@ -471,10 +472,10 @@ static void cb_menu_file_save(GtkWidget * widget, gpointer data)
     bank_ops_save(window);
 }
 
-static void cb_menu_file_quick_save_as(GtkWidget * widget, gpointer data)
+static void cb_menu_file_basic_save_as(GtkWidget * widget, gpointer data)
 {
     (void)widget;(void)data;
-    bank_ops_quick_save_as(window);
+    bank_ops_basic_save_as(window);
 }
 
 static void cb_menu_file_full_save_as(GtkWidget * widget, gpointer data)
@@ -626,9 +627,9 @@ int gui_init(void)
     menu_file_save = gui_menu_add(menu_file, "Save",
             G_CALLBACK(cb_menu_file_save),          window);
 
-    menu_file_quick_save_as =
+    menu_file_basic_save_as =
         gui_menu_add(menu_file, "Save As...",
-            G_CALLBACK(cb_menu_file_quick_save_as),  window);
+            G_CALLBACK(cb_menu_file_basic_save_as),  window);
 
     menu_file_full_save_as =
         gui_menu_add(menu_file, "Full Save As...",
@@ -640,8 +641,8 @@ int gui_init(void)
 
     gtk_widget_set_tooltip_text(menu_file_save,
                                 "Save bank");
-    gtk_widget_set_tooltip_text(menu_file_quick_save_as,
-                                "Quick Save bank as");
+    gtk_widget_set_tooltip_text(menu_file_basic_save_as,
+                                "Basic Save bank as");
     gtk_widget_set_tooltip_text(menu_file_full_save_as,
                     "Full bank save, link samples, ready for archiving");
 
@@ -759,7 +760,8 @@ int gui_init(void)
 
 void gui_refresh(void)
 {
-    gui_set_window_title_bank(bank_ops_bank());
+    const char* title = dish_file_state_path();
+    gui_set_window_title_bank(title ? title : "Untitled");
     master_section_update(MASTER_SECTION(master_section));
     patch_list_update(PATCH_LIST(patch_list), 0, PATCH_LIST_INDEX);
     cb_patch_list_changed(PATCH_LIST(patch_list), NULL);
@@ -853,7 +855,7 @@ void gui_set_session_mode(void)
     debug("GUI entering session mode\n");
     gtk_widget_set_sensitive(menu_file_open, FALSE);
     gtk_widget_set_sensitive(menu_file_recent, FALSE);
-    gtk_widget_set_sensitive(menu_file_quick_save_as, FALSE);
+    gtk_widget_set_sensitive(menu_file_basic_save_as, FALSE);
     gtk_widget_set_sensitive(menu_file_full_save_as, FALSE);
     gtk_menu_item_set_label(GTK_MENU_ITEM(menu_file_save),
                             "Save session bank");

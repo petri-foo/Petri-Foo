@@ -40,7 +40,6 @@ int     session_init(int argc, char* argv[]);
 void    session_cleanup(void);
 
 int         session_get_type(void);
-const char* session_get_path(void);
 const char* session_get_bank(void);
 
 

@@ -81,107 +81,72 @@ char* file_ops_join_str(const char* str1, char join, const char* str2)
 }
 
 
-int file_ops_path_split(const char* path, char** retdir, char** retfile)
+int file_ops_split_str(const char* str, char split, char** retstr1,
+                                                    char** retstr2,
+                                                    int bias)
 {
-    char* file;
+    char* str2 = 0;
     ptrdiff_t d;
 
-    assert(path != 0);
-    assert(strlen(path) > 0);
+    assert(str != 0);
+    assert(strlen(str) > 0);
+    assert(retstr1 != 0 || retstr2 != 0);
 
-    if (retdir)
-        *retdir = 0;
+    if (retstr1)
+        *retstr1 = 0;
 
-    if (retfile)
-        *retfile = 0;
+    if (retstr2)
+        *retstr2 = 0;
 
-    file = strrchr(path, '/');
+    str2 = strrchr(str, split);
 
-    if (!file)
+    if (!str2)
+        return -1;
+
+    if (bias < 0 || bias == 0)
     {
-        if (retfile)
-            *retfile = strdup(path);
+        ++str2;
 
-        return 0;
+        if (retstr2)
+            *retstr2 = (*str2 != '\0') ? strdup(str2) : 0;
+    }
+    else if (bias > 0)
+    {
+        if (retstr2)
+            *retstr2 = strdup(str2);
     }
 
-    ++file;
-
-    if (retfile)
-        *retfile = (*file != '\0') ? strdup(file) : 0;
-
-    if (!retdir)
+    if (!retstr1)
         return 0;
 
-    d = file - path;
 
-    assert(d > 0);
+    d = str2 - str;
 
-    if (d > 1)
+    int dtest = 0;
+    int index = 0;
+
+    if (bias < 0)
     {
-        *retdir = malloc(d + 1);
-        strncpy(*retdir, path, d);
-        (*retdir)[d] = '\0';
+        dtest = 1;
+        index = 1;
+    }
+
+    if (d > dtest)
+    {
+        *retstr1 = malloc(d + 1);
+        strncpy(*retstr1, str, d);
+        (*retstr1)[d] = '\0';
     }
     else
     {
-        *retdir = malloc(2);
-        (*retdir)[0] = '/';
-        (*retdir)[1] = '\0';
+        *retstr1 = malloc(index + 1);
+        if (index)
+            (*retstr1)[0] = split;
+        (*retstr1)[index] = '\0';
     }
 
     return 0;
 }
-
-/*
-char* file_ops_make_path(const char* dir, const char* file)
-{
-    char* path = 0;
-    const char* dlc;
-    size_t len;
-
-    if (!dir)
-        return (file != 0) ? strdup(file) : 0;
-
-    if (!file)
-        return strdup(dir);
-
-    dlc = strrchr(dir, '\0');
-    --dlc;
-
-    if (dlc < dir)
-        return strdup(file);
-
-    len = strlen(dir) + strlen(file);
-
-    if (*dlc == '/')
-    {
-        if (*file == '/')
-        {
-            ++file;
-            --len;
-        }
-    }
-    else if (*file != '/')
-    {
-        ++len;
-    }
-
-    path = malloc(len + 1);
-    strcpy(path, dir);
-
-    if (*dlc != '/' && *file != '/')
-    {
-        char* n = path + strlen(path);
-        *n++ = '/';
-        *n = '\0';
-    }
-
-    strcat(path, file);
-    return path;
-}
-*/
-
 
 
 char* file_ops_make_relative(const char* path, const char* parent)
@@ -233,7 +198,7 @@ char* file_ops_dir_to_hash(const char* path)
 
 char* file_ops_mkdir(const char* dir, const char* parent)
 {
-    char* newdir = file_ops_make_path(parent, dir);
+    char* newdir = file_ops_join_path(parent, dir);
 
     if (newdir)
     {
@@ -265,7 +230,7 @@ char* file_ops_hash_mkdir(const char* path, const char* parent)
     {
         debug("hash:'%s' path:'%s'\n", hash, path);
 
-        if ((hash_dir = file_ops_make_path(parent, hash)))
+        if ((hash_dir = file_ops_join_path(parent, hash)))
         {
             debug("hash dir path:'%s'\n", hash_dir);
 
@@ -278,7 +243,7 @@ char* file_ops_hash_mkdir(const char* path, const char* parent)
                     char* dfilename;
                     FILE* dfile;
 
-                    if ((dfilename = file_ops_make_path(hash_dir,
+                    if ((dfilename = file_ops_join_path(hash_dir,
                                                         "pathinfo.txt")))
                     {
                         if ((dfile = fopen(dfilename, "w")))
@@ -326,7 +291,7 @@ char* file_ops_sample_path_mangle(  const char* samplepath,
         return file_ops_make_relative(samplepath, bank_dir);
     }
 
-    file_ops_path_split(samplepath, &sdir, &sfile);
+    file_ops_split_path(samplepath, &sdir, &sfile);
 
     if (!sdir || !sfile)
     {
@@ -338,7 +303,7 @@ char* file_ops_sample_path_mangle(  const char* samplepath,
 
     if ((hash_dir = file_ops_hash_mkdir(sdir, samples_dir)))
     {
-        char* link = file_ops_make_path(hash_dir, sfile);
+        char* link = file_ops_join_path(hash_dir, sfile);
 
         if (link)
         {

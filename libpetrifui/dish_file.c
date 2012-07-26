@@ -46,9 +46,10 @@ typedef struct _dish_file_data
 {
     int     samplerate;
     bool    full_save;
-    char*   bank_dir;
-    char*   parent;
-    char*   name;
+    char*   bank_dir;   /* directory where dish file is located */
+    char*   parent_dir; /* parent directory (of full-save) */
+    char*   bank_name;  /* name of bank (without path or extension) */
+    char*   file_path;  /* full path to dish file */
 } dish_file_data;
 
 dish_file_data* dish_data = 0;
@@ -535,7 +536,10 @@ static int dish_write(void)
     int     patch_count;
     char*   samples_dir;
 
-    debug("attempting to write file:%s\n",name);
+    assert(dish_data != 0);
+    assert(dish_data->file_path != 0);
+
+    debug("attempting to write file:%s\n", dish_data->file_path);
 
     doc = xmlNewDoc(BAD_CAST "1.0");
 
@@ -554,17 +558,13 @@ static int dish_write(void)
     }
 
     xmlNewProp(noderoot, BAD_CAST "save-type",
-                         BAD_CAST (bank_dir ? "full" : "quick"));
-
-    if (bank_dir)
+                         BAD_CAST (dish_data->full_save ? "full"
+                                                        : "basic"));
+    if (dish_data->full_save)
     {
-        if (!last_bank_dir || strcmp(last_bank_dir, bank_dir) != 0)
-        {
-            free(last_bank_dir);
-            last_bank_dir = strdup(bank_dir);
-        }
+        samples_dir = file_ops_mkdir("samples", dish_data->bank_dir);
 
-        if (!(samples_dir = file_ops_mkdir("samples", bank_dir)))
+        if (!samples_dir)
             return -1;
     }
 
@@ -606,10 +606,11 @@ static int dish_write(void)
          */
         node1 = xmlNewTextChild(nodepatch, NULL, BAD_CAST "Sample", NULL);
 
-        if (bank_dir && samplepath && strcmp(samplepath, "Default") != 0)
+        if (samplepath && dish_data->full_save
+         && strcmp(samplepath, "Default") != 0)
         {
             char* path = file_ops_sample_path_mangle(samplepath,
-                                                     bank_dir,
+                                                     dish_data->bank_dir,
                                                      samples_dir);
 
             xmlNewProp(node1,   BAD_CAST "file", BAD_CAST path);
@@ -746,7 +747,7 @@ static int dish_write(void)
                                             MOD_SRC_GLFO + j);
     }
 
-    rc = xmlSaveFormatFile(name, doc, 1);
+    rc = xmlSaveFormatFile(dish_data->file_path, doc, 1);
     xmlFreeDoc(doc);
 
     return rc;
@@ -783,21 +784,22 @@ static int dish_file_read_sample(xmlNodePtr node,  int patch_id)
     int mode = PATCH_PLAY_SINGLESHOT;
     double sr_ratio = 1.0;
 
-    if (dish_file_samplerate
-     && dish_file_samplerate != patch_get_samplerate())
-        sr_ratio = patch_get_samplerate() / (double)dish_file_samplerate;
+    if (dish_data->samplerate
+     && dish_data->samplerate != patch_get_samplerate())
+        sr_ratio = patch_get_samplerate() / (double)dish_data->samplerate;
 
-    if ((prop = xmlGetProp(node, BAD_CAST "file"))
-     && strlen((const char*)prop) > 0)
+    prop = xmlGetProp(node, BAD_CAST "file");
+
+    if (prop && strlen((const char*)prop) > 0)
     {
         const char* p = (const char*)prop;
         bool default_sample = (strcmp(p, "Default") == 0);
 
         filename = (*p == '/' || default_sample)
-                                ? strdup(p)
-                                : file_ops_make_path(bank_dir, p);
+                            ? strdup(p)
+                            : file_ops_join_path(dish_data->bank_dir, p);
 
-        if (last_bank_dir && !default_sample)
+        if (dish_data->bank_dir && !default_sample)
         {
             char* tmp = file_ops_read_link(filename);
 
@@ -1376,124 +1378,7 @@ static int dish_file_read_voice(xmlNodePtr node, int patch_id)
 }
 
 
-
-
-
-
-void dish_file_state_init(void)
-{
-    if (dish_data)
-        return;
-
-    dish_data = malloc(sizeof(*dish_data));
-    dish_data->samplerate = 0;
-    dish_data->full_save = false;
-    dish_data->bank_dir = 0;
-    dish_data->parent = 0;
-    dish_data->name = 0;
-}
-
-
-void dish_file_state_reset(void)
-{
-    dish_data->full_save = false;
-    dish_data->samplerate = 0;
-    free(dish_data->bank_dir);
-    free(dish_data->parent);
-    free(dish_data->name);
-    dish_data->bank_dir = 0;
-    dish_data->parent = 0;
-    dish_data->name = 0;
-}
-
-
-void dish_file_state_cleanup(void)
-{
-    if (!dish_data)
-        return;
-
-    free(dish_data->bank_dir);
-    free(dish_data->parent);
-    free(dish_data->name);
-    free(dish_data);
-    dish_data = 0;
-}
-
-
-
-
-int dish_file_write_quick(const char *name)
-{
-    full_save = false;
-    free(last_bank);
-    free(last_bank_dir);
-    free(last_parent);
-    free(last_name);
-    last_bank_dir = 0;
-    last_bank = strdup(name);
-    return dish_write(name, 0);
-}
-
-
-int dish_file_write_full(const char* parent, const char* name)
-{
-    struct stat st;
-    char* bank_dir = 0;
-    char* filename = 0;
-    char* bank_path = 0;
-
-    if (!(bank_dir = file_ops_make_path(parent, name)))
-    {
-        msg_log(MSG_ERROR, "full-save path error\n");
-        return -1;
-    }
-
-    if (stat(bank_dir, &st) != 0)
-    {
-        if (mkdir(bank_dir, 0777) != 0)
-        {
-            msg_log(MSG_ERROR, "failed to create bank dir:'%s'\n",
-                                                        bank_dir);
-            free(bank_dir);
-            return -1;
-        }
-    }
-
-    if (!(filename = file_ops_add_ext(name, dish_file_extension())))
-    {
-        free(bank_dir);
-        msg_log(MSG_ERROR, "full-save filename error\n");
-        return -1;
-    }
-
-    if (!(bank_path = file_ops_make_path(bank_dir, filename)))
-    {
-        free(bank_dir);
-        free(filename);
-        msg_log(MSG_ERROR, "full-save bank error\n");
-        return -1;
-    }
-
-    if (strcmp(last_bank_dir, bank_dir) != 0)
-    {
-        free(last_bank_dir);
-        free(last_parent);
-        free(last_name);
-        last_bank_dir = bank_dir;
-        last_parent = strdup(parent);
-        last_name = strdup(name);
-    }
-
-    full_save = true;
-
-    dish_write(bank_path, bank_dir);
-    free(bank_path);
-
-    return 0;
-}
-
-
-int dish_file_read(const char *path)
+static int dish_read(const char *path)
 {
     struct stat st;
     xmlDocPtr   doc;
@@ -1502,8 +1387,8 @@ int dish_file_read(const char *path)
     xmlNodePtr  node1;
     xmlNodePtr  node2;
     xmlChar*    prop;
-    char*   bank_dir;
     float   n;
+    bool full_save = false;
 
     debug("Loading bank from file %s\n", path);
 
@@ -1513,7 +1398,6 @@ int dish_file_read(const char *path)
         return -1;
     }
 
-
     doc = xmlParseFile(path);
 
     if (doc == NULL)
@@ -1521,8 +1405,6 @@ int dish_file_read(const char *path)
         msg_log(MSG_ERROR, "Failed to parse %s\n", path);
         return -1;
     }
-
-    file_ops_path_split(path, &bank_dir, 0);
 
     noderoot = xmlDocGetRootElement(doc);
 
@@ -1544,22 +1426,13 @@ int dish_file_read(const char *path)
     if ((prop = xmlGetProp(noderoot, BAD_CAST "save-type")))
     {
         if (xmlStrcmp(prop, BAD_CAST "full") == 0)
-        {
-            if (!last_bank_dir || strcmp(last_bank_dir, bank_dir) != 0)
-            {
-                free(last_bank_dir);
-                last_bank_dir = strdup(bank_dir);
-            }
-        }
-        else
-        {
-            if (xmlStrcmp(prop, BAD_CAST "quick") != 0)
-                msg_log(MSG_WARNING,
-                        "unknown value for save-type property\n");
-
-            dish_file_new();
-        }
+            full_save = true;
+        else if (xmlStrcmp(prop, BAD_CAST "basic") != 0)
+            msg_log(MSG_WARNING, "Unknown save-type '%s'\n", prop);
     }
+
+    if (dish_file_state_set_by_path(path, full_save) == -1)
+        return -1;
 
     for (node1 = noderoot->children;
          node1 != NULL;
@@ -1579,9 +1452,9 @@ int dish_file_read(const char *path)
             if ((prop = xmlGetProp(node1, BAD_CAST "samplerate")))
             {
                 if (sscanf((const char*)prop, "%d", &sr) == 1)
-                    dish_file_samplerate = sr;
+                    dish_data->samplerate = sr;
                 else
-                    dish_file_samplerate = 0;
+                    dish_data->samplerate = 0;
             }
         }
         else if (xmlStrcmp(node1->name, BAD_CAST "Patch") == 0)
@@ -1613,7 +1486,7 @@ int dish_file_read(const char *path)
 
                 if (xmlStrcmp(node2->name, BAD_CAST "Sample") == 0)
                 {
-                    dish_file_read_sample(node2, patch_id, bank_dir);
+                    dish_file_read_sample(node2, patch_id);
                 }
                 else if (xmlStrcmp(node2->name, BAD_CAST "Amplitude") ==0)
                 {
@@ -1680,11 +1553,264 @@ int dish_file_read(const char *path)
         }
     }
 
-    #if DEBUG
-    patch_summary_dump();
-    #endif
+    return 0;
+}
 
-    free(bank_dir);
+
+#define DF_STATE_FREE(dfdata)   \
+    if ((dfdata)->bank_dir)  free((dfdata)->bank_dir);   \
+    if ((dfdata)->parent_dir)free((dfdata)->parent_dir); \
+    if ((dfdata)->bank_name) free((dfdata)->bank_name);  \
+    if ((dfdata)->file_path) free((dfdata)->file_path)
+
+#define DF_STATE_ZERO(dfdata)   \
+    (dfdata)->samplerate = 0;   \
+    (dfdata)->full_save = false;\
+    (dfdata)->bank_dir = 0;     \
+    (dfdata)->parent_dir = 0;   \
+    (dfdata)->bank_name = 0;    \
+    (dfdata)->file_path = 0
+
+
+void dish_file_state_init(void)
+{
+    if (dish_data)
+        return;
+
+    dish_data = malloc(sizeof(*dish_data));
+
+    DF_STATE_ZERO(dish_data);
+}
+
+
+void dish_file_state_reset(void)
+{
+    DF_STATE_FREE(dish_data);
+    DF_STATE_ZERO(dish_data);
+}
+
+
+void dish_file_state_cleanup(void)
+{
+    if (!dish_data)
+        return;
+
+    DF_STATE_FREE(dish_data);
+    free(dish_data);
+    dish_data = 0;
+}
+
+
+int dish_file_state_set_by_path(const char* file_path, bool full_save)
+{
+    if (dish_data->full_save != full_save
+     || !dish_data->file_path
+     || strcmp(file_path, dish_data->file_path) != 0)
+    {
+        DF_STATE_FREE(dish_data);
+        DF_STATE_ZERO(dish_data);
+
+        char* name;
+        char* filename;
+        char* bank_dir;
+        char* parent_dir;
+        size_t lc;
+
+        debug("path:        '%s'\n", file_path);
+
+        if (file_ops_split_path(file_path, &bank_dir, &filename) == -1)
+        {
+            debug("failed bank_dir/filename split\n");
+            goto fail;
+        }
+
+        debug("bank_dir:    '%s'\n", bank_dir);
+        debug("filename:    '%s'\n", filename);
+
+        lc = strlen(bank_dir) - 1;
+
+        if (*(bank_dir + lc) == '/')
+            *(bank_dir + lc) = '\0';
+
+        if (file_ops_split_path(bank_dir, &parent_dir, 0) == -1)
+        {
+            debug("failed parent_dir split\n");
+            goto fail;
+        }
+
+        debug("parent_dir:  '%s'\n", parent_dir);
+
+        if (file_ops_split_file(filename, &name, 0) == -1)
+        {
+            debug("failed name split\n");
+            goto fail;
+        }
+
+        debug("name:        '%s'\n", name);
+
+        dish_data->bank_dir = bank_dir;
+        dish_data->parent_dir = parent_dir;
+        dish_data->bank_name = name;
+        dish_data->file_path = strdup(file_path);
+        dish_data->full_save = full_save;
+
+        return 0;
+
+    fail:
+        free(parent_dir);
+        free(bank_dir);
+        free(filename);
+        msg_log(MSG_ERROR, "bad dish file path '%s'\n", file_path);
+
+        return -1;
+    }
 
     return 0;
 }
+
+
+bool dish_file_has_state(void)
+{
+    return dish_data->file_path != 0;
+}
+
+bool dish_file_state_is_full(void)
+{
+    debug("dish_data->full_save == '%s'\n",
+        dish_data->full_save ? "true" : "false");
+    return dish_data->full_save;
+}
+
+bool dish_file_state_is_basic(void)
+{
+    debug("dish_data->basic_save == '%s'\n",
+        !dish_data->full_save ? "true" : "false");
+    return !dish_data->full_save;
+}
+
+
+const char* dish_file_state_parent_dir(void)
+{
+    return dish_data->parent_dir;
+}
+
+const char* dish_file_state_bank_dir(void)
+{
+    return dish_data->bank_dir;
+}
+
+
+const char* dish_file_state_bank_name(void)
+{
+    return dish_data->bank_name;
+}
+
+
+const char* dish_file_state_path(void)
+{
+    return dish_data->file_path;
+}
+
+
+int dish_file_read(const char* path)
+{
+    patch_destroy_all();
+    return dish_read(path);
+}
+
+
+int dish_file_import(const char* path)
+{
+    int ret;
+    dish_file_data* tmp = dish_data;
+    dish_data = 0;
+    dish_file_state_init();
+    ret = dish_read(path);
+    dish_file_state_cleanup();
+    dish_data = tmp;
+    return ret;
+}
+
+
+int dish_file_export(const char* path)
+{
+    int ret;
+    dish_file_data* tmp = dish_data;
+    dish_data = 0;
+    dish_file_state_init();
+    dish_file_state_set_by_path(path, false);
+    ret = dish_write();
+    dish_file_state_cleanup();
+    dish_data = tmp;
+    return ret;
+}
+
+
+int dish_file_write_basic(const char *path)
+{
+    dish_file_state_set_by_path(path, false);
+    return dish_write();
+}
+
+
+int dish_file_write_full(const char* parent, const char* name)
+{
+    struct stat st;
+    char* bank_dir = 0;
+    char* filename = 0;
+    char* bank_path = 0;
+
+    if (!(bank_dir = file_ops_join_path(parent, name)))
+    {
+        msg_log(MSG_ERROR, "full-save path error\n");
+        return -1;
+    }
+
+    if (stat(bank_dir, &st) != 0)
+    {
+        if (mkdir(bank_dir, 0777) != 0)
+        {
+            msg_log(MSG_ERROR, "failed to create bank dir:'%s'\n",
+                                                        bank_dir);
+            free(bank_dir);
+            return -1;
+        }
+    }
+
+    if (!(filename = file_ops_join_ext(name, dish_file_extension())))
+    {
+        free(bank_dir);
+        msg_log(MSG_ERROR, "full-save filename error\n");
+        return -1;
+    }
+
+    if (!(bank_path = file_ops_join_path(bank_dir, filename)))
+    {
+        free(bank_dir);
+        free(filename);
+        msg_log(MSG_ERROR, "full-save bank error\n");
+        return -1;
+    }
+
+    if (!dish_data->full_save
+     || strcmp(dish_data->bank_dir, bank_dir) != 0)
+    {
+        /* either the last save was basic, or the bank_dir has changed */
+        DF_STATE_FREE(dish_data);
+        dish_data->bank_dir = bank_dir;
+        dish_data->parent_dir = strdup(parent);
+        dish_data->bank_name = strdup(name);
+        dish_data->file_path = bank_path;
+    }
+
+    dish_data->full_save = true;
+
+    return dish_write();
+}
+
+
+int dish_file_write(void)
+{
+    return dish_write();
+}
+

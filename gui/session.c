@@ -33,6 +33,7 @@
 #include "config.h"
 #include "dish_file.h"
 #include "driver.h"
+#include "file_ops.h"
 #include "gui.h"
 #include "instance.h"
 #include "jackdriver.h"
@@ -49,14 +50,60 @@ typedef struct _pf_session
 {
     int     type;
     int     state;
-    char*   path;
-    char*   bank;
+    char*   parent_dir;
+    char*   bank_name;
+    char*   bank_path;
 
     nsm_client_t*   nsm_client;
     int             nsm_state;
     char*           nsm_client_id;
 
 } pf_session;
+
+
+/*  dir = "/home/user/pf-banks/twiggle"
+        name = "twiggle"
+        parent = "/home/user/pf-banks"
+        path = "/home/user/pf-banks/twiggle/twiggle.petri-foo"
+ */
+char* name_and_paths_from_bank_dir(const char* dir, char** parent,
+                                                    char** path)
+{
+    char* name = 0;
+    char* file = 0;
+
+    *parent = 0;
+    *path = 0;
+
+    if (file_ops_split_path(dir, parent, &name) != 0)
+    {
+        debug("split_path failed for dir '%s'\n", dir);
+        return 0;
+    }
+
+    if (!(file = file_ops_join_ext(name, dish_file_extension())))
+    {
+        debug("join_ext failed for name '%s' + extension '%s'\n",
+                                    name, dish_file_extension());
+        free(name);
+        return 0;
+    }
+
+    if (!(*path = file_ops_join_path(dir, file)))
+    {
+        debug("join_path failed for dir '%s' + filename '%s'\n",
+                                        dir, file);
+        free(file);
+        free(name);
+        return 0;
+    }
+
+    debug("dir:'%s' name:   '%s'\n", dir, name);
+    debug("dir:'%s' *parent:'%s'\n", dir, *parent);
+    debug("dir:'%s' *path:  '%s'\n", dir, *path);
+
+    return name;
+}
 
 
 static pf_session* _session = 0;
@@ -104,22 +151,6 @@ void session_idle_add_event_poll(void)
 }
 
 
-static char* bankname(const char* path)
-{
-    char* filename;
-    const char* bank = "/bank.petri-foo";
-    size_t len = strlen(path);
-
-    if (path[len - 1] == '/')
-        ++bank;
-
-    len+= strlen(bank);
-    filename = malloc(len + 1);
-    snprintf(filename, len + 1, "%s%s", path, bank);
-    return filename;
-}
-
-
 int session_init(int argc, char* argv[])
 {
     assert(_session == 0);
@@ -152,8 +183,8 @@ int session_init(int argc, char* argv[])
     s = _session;
     s->type = SESSION_TYPE_NONE;
     s->state = SESSION_STATE_CLOSED;
-    s->path = 0;
-    s->bank = 0;
+    s->parent_dir = 0;
+    s->bank_name = 0;
 
     while((opt = getopt_long(argc, argv, "aj:uU:", opts, &opt_ix)) > 0)
     {
@@ -248,15 +279,8 @@ int session_init(int argc, char* argv[])
         /*msg_log_set_message_cb(msg_log_to_nsm);*/
     }
 
-    if (s->type == SESSION_TYPE_NONE)
-    {
-        msg_log(MSG_MESSAGE, "Session management not running\n");
-    }
-    else
-    {
-        msg_log(MSG_MESSAGE, "Session mangement running under %s\n",
-                                    session_names[s->type]);
-    }
+    msg_log(MSG_MESSAGE, "Session management: %s\n",
+                            session_names[s->type]);
 
     if (possibly_autoconnect && s->type == SESSION_TYPE_NONE)
         jackdriver_set_autoconnect(true);
@@ -274,10 +298,9 @@ int session_init(int argc, char* argv[])
         if (optind < argc)
             msg_log(MSG_WARNING, "Ignoring bank file option\n");
 
-        /* provide default patch if nothing saved in session */
-        if (stat(s->bank, &st) == 0)
-            dish_file_read(s->bank);
-        else
+        if (stat(s->bank_path, &st) == 0)
+            dish_file_read(s->bank_path);
+        else /* provide default patch if nothing saved in session */
             patch_create_default();
     }
     else
@@ -285,7 +308,6 @@ int session_init(int argc, char* argv[])
         if (optind < argc && stat(argv[optind], &st) == 0)
         {
             dish_file_read(argv[optind]);
-            bank_ops_force_name(argv[optind]);
         }
         else
             patch_create_default();
@@ -303,8 +325,9 @@ void session_cleanup(void)
     {
         debug("cleaning up session data\n");
 
-        free(_session->path);
-        free(_session->bank);
+        free(_session->parent_dir);
+        free(_session->bank_name);
+        free(_session->bank_path);
         free(_session->nsm_client_id);
 
         if (_session->nsm_client)
@@ -322,14 +345,9 @@ int session_get_type(void)
 }
 
 
-const char* session_get_path(void)
-{
-    return _session->path;
-}
-
 const char* session_get_bank(void)
 {
-    return _session->bank;
+    return _session->bank_path;
 }
 
 
@@ -352,11 +370,13 @@ int session_nsm_open_cb(const char* name, const char* display_name,
     {
         debug("Detected session switch\n");
         /* the switch */
-        free(s->path);
-        free(s->bank);
+        free(s->parent_dir);
+        free(s->bank_name);
+        free(s->bank_path);
         free(s->nsm_client_id);
-        s->path = 0;
-        s->bank = 0;
+        s->parent_dir = 0;
+        s->bank_name = 0;
+        s->bank_path = 0;
         s->nsm_client_id = 0;
         session_switch = TRUE;
     }
@@ -364,8 +384,24 @@ int session_nsm_open_cb(const char* name, const char* display_name,
     s->nsm_state = SESSION_STATE_OPEN;
     s->nsm_client_id = strdup(client_id);
     set_instance_name(client_id);
-    s->path = strdup(name);
-    s->bank = bankname(s->path);
+
+    {
+        char* parentd;
+        char* bankd;
+
+        if (file_ops_split_path(name, &parentd, &bankd) == -1)
+        {
+            msg_log(MSG_ERROR, "NSM session name path '%s' invalid\n",
+                                                                name);
+            return ERR_GENERAL;
+        }
+
+        s->parent_dir = parentd;
+
+        msg_log(MSG_ERROR, "nsm name:'%s' bankd:'%s'\n", name,bankd);
+
+    }
+
 
     /*  The best we can do here is make the directory if it
         does not exist. We cannot load a bank yet because
@@ -373,7 +409,8 @@ int session_nsm_open_cb(const char* name, const char* display_name,
         as we're not yet registered with JACK we don't know what
         rate to resample to.
      */
-    if (stat(s->path, &st) != 0)
+
+/*    if (stat(s->path, &st) != 0)
     {
         mkdir(s->path, 0777);
     }
@@ -392,7 +429,7 @@ int session_nsm_open_cb(const char* name, const char* display_name,
         bank_ops_force_name(s->bank);
         gui_refresh();
     }
-
+*/
     return ERR_OK;
 }
 
@@ -403,10 +440,9 @@ int session_nsm_save_cb(char** out_msg, void* userdata)
     pf_session* s = (pf_session*)userdata;
 
 
-    debug("\npath:'%s'\nbank:'%s'\nnsm_client_id:'%s'\n",
-            s->path,s->bank,s->nsm_client_id);
 
     debug("NSM Save\n");
+    msg_log(MSG_ERROR, "THIS IS NOT IMPLEMENTED!!!!\n");
 /*    dish_file_write_full(s->path);*/
     return ERR_OK;
 }
@@ -444,24 +480,36 @@ static gboolean gui_jack_session_cb(void *data)
 
     s->type = SESSION_TYPE_JACK;
 
-    /*  FIXME: tell the GUI to switch to session support mode
-        (that is, remove particular menu items/functionality).
-     */
+    {
+        char* parent = 0;
+        char* bank_name = 0;
+        char* bank_path = 0;
 
-    s->bank = bankname(ev->session_dir);
+        if (!(bank_name = name_and_paths_from_bank_dir(ev->session_dir,
+                                                    &parent, &bank_path)))
+        {
+            msg_log(MSG_ERROR, "failed to generate path information "
+                               "from session dir '%s'\n", ev->session_dir);
+            return FALSE;
+        }
+
+        s->parent_dir = parent;
+        s->bank_name = bank_name;
+        s->bank_path = bank_path;
+    }
 
     if (instancename)
         snprintf(   command_buf, sizeof(command_buf),
                     "petri-foo --jack-name %s --unconnected -U %s %s",
-                    instancename, ev->client_uuid, s->bank);
+                    instancename, ev->client_uuid, s->bank_path);
     else
         snprintf(   command_buf, sizeof(command_buf),
                     "petri-foo --unconnected -U %s %s",
-                    ev->client_uuid, s->bank);
+                    ev->client_uuid, s->bank_path);
 
     debug("command:%s\n", command_buf);
 
-    dish_file_write(s->bank);
+    dish_file_write_full(ev->session_dir, s->bank_name);
 
     ev->command_line = strdup(command_buf);
     jack_session_reply(jackdriver_get_client(), ev);
