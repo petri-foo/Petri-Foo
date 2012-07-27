@@ -534,7 +534,7 @@ static int dish_write(void)
     int     i, j;
     int*    patch_id;
     int     patch_count;
-    char*   samples_dir;
+    char*   samples_dir = 0;
 
     assert(dish_data != 0);
     assert(dish_data->file_path != 0);
@@ -1614,7 +1614,6 @@ int dish_file_state_set_by_path(const char* file_path, bool full_save)
         char* filename;
         char* bank_dir;
         char* parent_dir;
-        size_t lc;
 
         debug("path:        '%s'\n", file_path);
 
@@ -1627,12 +1626,7 @@ int dish_file_state_set_by_path(const char* file_path, bool full_save)
         debug("bank_dir:    '%s'\n", bank_dir);
         debug("filename:    '%s'\n", filename);
 
-        lc = strlen(bank_dir) - 1;
-
-        if (*(bank_dir + lc) == '/')
-            *(bank_dir + lc) = '\0';
-
-        if (file_ops_split_path(bank_dir, &parent_dir, 0) == -1)
+        if (!(parent_dir = file_ops_parent_dir(bank_dir)))
         {
             debug("failed parent_dir split\n");
             goto fail;
@@ -1642,8 +1636,8 @@ int dish_file_state_set_by_path(const char* file_path, bool full_save)
 
         if (file_ops_split_file(filename, &name, 0) == -1)
         {
-            debug("failed name split\n");
-            goto fail;
+            /* no extension so filename and name the same */
+            name = strdup(filename);
         }
 
         debug("name:        '%s'\n", name);
@@ -1657,6 +1651,8 @@ int dish_file_state_set_by_path(const char* file_path, bool full_save)
         return 0;
 
     fail:
+        free(filename);
+        free(name);
         free(parent_dir);
         free(bank_dir);
         free(filename);

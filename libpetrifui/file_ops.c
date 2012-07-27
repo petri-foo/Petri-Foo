@@ -149,6 +149,25 @@ int file_ops_split_str(const char* str, char split, char** retstr1,
 }
 
 
+char* file_ops_parent_dir(const char* _path)
+{
+    char* parent = 0;
+    char* path = strdup(_path);
+    size_t lc = strlen(path) - 1;
+
+    if (*(path + lc) == '/')
+        *(path + lc) = '\0';
+
+    if (file_ops_split_path(path, &parent, 0) == -1)
+    {
+        debug("failed parent_dir split\n");
+    }
+
+    free(path);
+    return parent;
+}
+
+
 char* file_ops_make_relative(const char* path, const char* parent)
 {
     const char* rel;

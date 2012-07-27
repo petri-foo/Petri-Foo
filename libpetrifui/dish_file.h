@@ -43,7 +43,9 @@ void    dish_file_state_cleanup(void);
 /*  wipe path data */
 void    dish_file_state_reset(void);
 
-
+/*  dish_file_state_set_by_path fills parent_dir, bank_dir, bank_name
+    state information from file_path.
+ */
 int     dish_file_state_set_by_path(const char* file_path, bool full_save);
 
 /*  dish_file_has_state must be used to determine if calling

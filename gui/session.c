@@ -44,66 +44,28 @@
 #include "nsm.h"
 
 
+enum {
+    SESSION_TYPE_NONE,
+    SESSION_TYPE_JACK,
+    SESSION_TYPE_NSM,
+    SESSION_STATE_OPEN,
+    SESSION_STATE_CLOSED
+};
+
+
 const char*  session_names[] = { "None", "JACK", "NSM", "OPEN", "CLOSED" };
+
 
 typedef struct _pf_session
 {
     int     type;
     int     state;
-    char*   parent_dir;
-    char*   bank_name;
     char*   bank_path;
-
     nsm_client_t*   nsm_client;
     int             nsm_state;
     char*           nsm_client_id;
 
 } pf_session;
-
-
-/*  dir = "/home/user/pf-banks/twiggle"
-        name = "twiggle"
-        parent = "/home/user/pf-banks"
-        path = "/home/user/pf-banks/twiggle/twiggle.petri-foo"
- */
-char* name_and_paths_from_bank_dir(const char* dir, char** parent,
-                                                    char** path)
-{
-    char* name = 0;
-    char* file = 0;
-
-    *parent = 0;
-    *path = 0;
-
-    if (file_ops_split_path(dir, parent, &name) != 0)
-    {
-        debug("split_path failed for dir '%s'\n", dir);
-        return 0;
-    }
-
-    if (!(file = file_ops_join_ext(name, dish_file_extension())))
-    {
-        debug("join_ext failed for name '%s' + extension '%s'\n",
-                                    name, dish_file_extension());
-        free(name);
-        return 0;
-    }
-
-    if (!(*path = file_ops_join_path(dir, file)))
-    {
-        debug("join_path failed for dir '%s' + filename '%s'\n",
-                                        dir, file);
-        free(file);
-        free(name);
-        return 0;
-    }
-
-    debug("dir:'%s' name:   '%s'\n", dir, name);
-    debug("dir:'%s' *parent:'%s'\n", dir, *parent);
-    debug("dir:'%s' *path:  '%s'\n", dir, *path);
-
-    return name;
-}
 
 
 static pf_session* _session = 0;
@@ -183,8 +145,7 @@ int session_init(int argc, char* argv[])
     s = _session;
     s->type = SESSION_TYPE_NONE;
     s->state = SESSION_STATE_CLOSED;
-    s->parent_dir = 0;
-    s->bank_name = 0;
+    s->bank_path = 0;
 
     while((opt = getopt_long(argc, argv, "aj:uU:", opts, &opt_ix)) > 0)
     {
@@ -300,8 +261,12 @@ int session_init(int argc, char* argv[])
 
         if (stat(s->bank_path, &st) == 0)
             dish_file_read(s->bank_path);
-        else /* provide default patch if nothing saved in session */
+        else
+        {
+             /* provide default patch if nothing saved in session */
             patch_create_default();
+            dish_file_state_set_by_path(s->bank_path, true);
+        }
     }
     else
     {
@@ -325,8 +290,6 @@ void session_cleanup(void)
     {
         debug("cleaning up session data\n");
 
-        free(_session->parent_dir);
-        free(_session->bank_name);
         free(_session->bank_path);
         free(_session->nsm_client_id);
 
@@ -339,15 +302,50 @@ void session_cleanup(void)
 }
 
 
-int session_get_type(void)
+bool session_is_active(void)
 {
-    return _session->type;
+    return _session->type != SESSION_TYPE_NONE;
 }
 
 
-const char* session_get_bank(void)
+bool session_is_nsm(void)
 {
-    return _session->bank_path;
+    return _session->type == SESSION_TYPE_NSM;
+}
+
+
+/* bank_dir_to_bank_path:
+
+    /home/user/pf-banks/bank_dir/
+
+        --->
+
+    /home/user/pf-banks/bank_dir/bank_dir.petri-foo
+ */
+
+static char* bank_dir_to_bank_path(const char* dir)
+{
+    size_t lc;
+    char* bank_path = 0;
+    char* bank_dir = 0;
+    char* name = 0;
+    char* filename = 0;
+
+    bank_dir = strdup(dir);
+    lc = strlen(bank_dir) - 1;
+
+    if (*(bank_dir + lc) == '/')
+        *(bank_dir + lc) = '\0';
+
+    file_ops_split_path(bank_dir, 0, &name);
+    filename = file_ops_join_ext(name, dish_file_extension());
+    bank_path = file_ops_join_path(bank_dir, filename);
+
+    free(filename);
+    free(name);
+    free(bank_dir);
+
+    return bank_path;
 }
 
 
@@ -356,6 +354,9 @@ int session_nsm_open_cb(const char* name, const char* display_name,
                         const char* client_id, char** out_msg,
                         void* userdata)
 {
+    /*
+        name == bank_dir
+     */
     (void)display_name;(void)out_msg;
     struct stat st;
     pf_session* s = (pf_session*)userdata;
@@ -370,12 +371,8 @@ int session_nsm_open_cb(const char* name, const char* display_name,
     {
         debug("Detected session switch\n");
         /* the switch */
-        free(s->parent_dir);
-        free(s->bank_name);
         free(s->bank_path);
         free(s->nsm_client_id);
-        s->parent_dir = 0;
-        s->bank_name = 0;
         s->bank_path = 0;
         s->nsm_client_id = 0;
         session_switch = TRUE;
@@ -385,65 +382,39 @@ int session_nsm_open_cb(const char* name, const char* display_name,
     s->nsm_client_id = strdup(client_id);
     set_instance_name(client_id);
 
-    {
-        char* parentd;
-        char* bankd;
-
-        if (file_ops_split_path(name, &parentd, &bankd) == -1)
-        {
-            msg_log(MSG_ERROR, "NSM session name path '%s' invalid\n",
-                                                                name);
-            return ERR_GENERAL;
-        }
-
-        s->parent_dir = parentd;
-
-        msg_log(MSG_ERROR, "nsm name:'%s' bankd:'%s'\n", name,bankd);
-
-    }
-
-
-    /*  The best we can do here is make the directory if it
-        does not exist. We cannot load a bank yet because
-        samples might need resampling to JACK's sample rate and
-        as we're not yet registered with JACK we don't know what
-        rate to resample to.
-     */
-
-/*    if (stat(s->path, &st) != 0)
-    {
-        mkdir(s->path, 0777);
-    }
+    s->bank_path = bank_dir_to_bank_path(name);
 
     if (session_switch)
     {
-        debug("re-initializing driver, and reading '%s'\n", s->bank);
+        debug("SSSWITCH.... '%s'\n", s->bank_path);
         driver_start();
         patch_destroy_all();
 
-        if (stat(s->bank, &st) == 0)
-            dish_file_read(s->bank);
+        if (stat(s->bank_path, &st) == 0)
+            dish_file_read(s->bank_path);
         else
+        {
             patch_create_default();
+            dish_file_state_set_by_path(s->bank_path, true);
+        }
 
-        bank_ops_force_name(s->bank);
         gui_refresh();
     }
-*/
+
     return ERR_OK;
 }
 
 
 int session_nsm_save_cb(char** out_msg, void* userdata)
 {
-    (void)out_msg;
-    pf_session* s = (pf_session*)userdata;
-
-
+    (void)out_msg; (void)userdata;
 
     debug("NSM Save\n");
-    msg_log(MSG_ERROR, "THIS IS NOT IMPLEMENTED!!!!\n");
-/*    dish_file_write_full(s->path);*/
+
+    assert(dish_file_has_state());
+
+    dish_file_write();
+
     return ERR_OK;
 }
 
@@ -480,23 +451,7 @@ static gboolean gui_jack_session_cb(void *data)
 
     s->type = SESSION_TYPE_JACK;
 
-    {
-        char* parent = 0;
-        char* bank_name = 0;
-        char* bank_path = 0;
-
-        if (!(bank_name = name_and_paths_from_bank_dir(ev->session_dir,
-                                                    &parent, &bank_path)))
-        {
-            msg_log(MSG_ERROR, "failed to generate path information "
-                               "from session dir '%s'\n", ev->session_dir);
-            return FALSE;
-        }
-
-        s->parent_dir = parent;
-        s->bank_name = bank_name;
-        s->bank_path = bank_path;
-    }
+    s->bank_path = bank_dir_to_bank_path(ev->session_dir);
 
     if (instancename)
         snprintf(   command_buf, sizeof(command_buf),
@@ -509,7 +464,8 @@ static gboolean gui_jack_session_cb(void *data)
 
     debug("command:%s\n", command_buf);
 
-    dish_file_write_full(ev->session_dir, s->bank_name);
+    dish_file_state_set_by_path(s->bank_path, true);
+    dish_file_write();
 
     ev->command_line = strdup(command_buf);
     jack_session_reply(jackdriver_get_client(), ev);

@@ -24,23 +24,14 @@
 #ifndef __SESSION_H__
 #define __SESSION_H__
 
-
-enum {
-    SESSION_TYPE_NONE,
-    SESSION_TYPE_JACK,
-    SESSION_TYPE_NSM,
-    SESSION_STATE_OPEN,
-    SESSION_STATE_CLOSED
-};
-
+#include <stdbool.h>
 
 /* session_init returns 0 on sucess */
 int     session_init(int argc, char* argv[]);
-
 void    session_cleanup(void);
 
-int         session_get_type(void);
-const char* session_get_bank(void);
+bool    session_is_active(void);
+bool    session_is_nsm(void);
 
 
 #endif /* __SESSION_H__ */

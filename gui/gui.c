@@ -689,7 +689,7 @@ int gui_init(void)
     gui_menu_add(menu_help, "About...",
             G_CALLBACK(cb_menu_help_about),         window);
 
-    if (session_get_type() != SESSION_TYPE_NSM)
+    if (!session_is_nsm())
         gui_recent_files_load();
 
     gtk_widget_show_all(menubar);
@@ -749,7 +749,7 @@ int gui_init(void)
 
     /* priming updates */
 
-    if (session_get_type() != SESSION_TYPE_NONE)
+    if (session_is_active())
         gui_set_session_mode();
 
     gui_refresh();
@@ -766,7 +766,7 @@ void gui_refresh(void)
     patch_list_update(PATCH_LIST(patch_list), 0, PATCH_LIST_INDEX);
     cb_patch_list_changed(PATCH_LIST(patch_list), NULL);
 
-    if (session_get_type() != SESSION_TYPE_NSM)
+    if (!session_is_nsm())
         gui_recent_files_load();
 }
 
@@ -786,7 +786,7 @@ void gui_set_window_title_bank(const char* title)
     if (!instancename)
         instancename = PACKAGE;
 
-    if (session_get_type() == SESSION_TYPE_NSM)
+    if (session_is_nsm())
     {
         gtk_window_set_title(GTK_WINDOW(window), instancename);
         return;

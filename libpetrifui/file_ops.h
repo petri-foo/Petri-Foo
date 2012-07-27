@@ -68,6 +68,7 @@ int     file_ops_split_str(const char* str, char split, char** ret_str1,
 #define file_ops_split_file(file, return_name, return_ext) \
         file_ops_split_str((file), '.', (return_name), (return_ext), 1)
 
+char*   file_ops_parent_dir(const char* path);
 
 char*   file_ops_make_relative(const char* path, const char* parent);
 char*   file_ops_dir_to_hash(const char* path);
