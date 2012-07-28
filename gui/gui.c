@@ -529,9 +529,21 @@ static void cb_menu_help_about (GtkWidget* widget, gpointer data)
         "logo", logo,
         "authors", authors,
         "version", VERSION,
+        "website", "http://petri-foo.sourceforge.net/",
         "copyright",    "(C) 2004-2005 Pete Bessman\n"
                         "(C) 2006-2007 others\n"
                         "(C) 2011-2012 James Morris\n",
+        "comments",
+        #if HAVE_LIBLO
+        "Built with Non-Session-Manager support\n"
+        #else
+        "Built without Non-Session-Manager support\n"
+        #endif
+        #if HAVE_JACK_SESSION_H
+        "Built with JACK Session Support",
+        #else
+        "Built without JACK Session Support",
+        #endif
         NULL);
 }
 

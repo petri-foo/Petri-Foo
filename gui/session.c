@@ -41,7 +41,10 @@
 #include "msg_log.h"
 #include "patch_util.h"
 #include "petri-foo.h"
+
+#if HAVE_LIBLO
 #include "nsm.h"
+#endif
 
 
 enum {
@@ -61,10 +64,11 @@ typedef struct _pf_session
     int     type;
     int     state;
     char*   bank_path;
+#if HAVE_LIBLO
     nsm_client_t*   nsm_client;
     int             nsm_state;
     char*           nsm_client_id;
-
+#endif
 } pf_session;
 
 
@@ -79,6 +83,7 @@ static gboolean gui_jack_session_cb(void*);
 #endif
 
 
+#if HAVE_LIBLO
 /* Non Session Management */
 static int  session_nsm_open_cb(const char* name, const char* display_name,
                                 const char* client_id, char** out_msg,
@@ -98,18 +103,20 @@ static void msg_log_to_nsm(const char* msg, int msg_base_type)
     nsm_send_message(_session->nsm_client, 3, msg);
 }
 */
+#endif /* HAVE_LIBLO */
 
 
 void session_idle_add_event_poll(void)
 {
     debug("session_type:'%s'\n", session_names[_session->type]);
-
+    #if HAVE_LIBLO
     if (_session->type == SESSION_TYPE_NSM)
     {
         debug("Adding NSM event poll\n");
 /*      g_idle_add(session_poll_nsm_events, _session->nsm_client);*/
         g_timeout_add(25, session_poll_nsm_events, _session->nsm_client);
     }
+    #endif
 }
 
 
@@ -196,6 +203,7 @@ int session_init(int argc, char* argv[])
 
     debug("Initializing session support data\n");
 
+    #if HAVE_LIBLO
     s->nsm_client = 0;
     s->nsm_state = SESSION_STATE_CLOSED;
     s->nsm_client_id = 0;
@@ -239,6 +247,7 @@ int session_init(int argc, char* argv[])
 
         /*msg_log_set_message_cb(msg_log_to_nsm);*/
     }
+    #endif /* HAVE_LIBLO */
 
     msg_log(MSG_MESSAGE, "Session management: %s\n",
                             session_names[s->type]);
@@ -248,7 +257,9 @@ int session_init(int argc, char* argv[])
 
     if (!nsm_url)
     {
+        #if HAVE_JACK_SESSION_H
         jackdriver_set_session_cb(session_jack_cb);
+        #endif /* HAVE_JACK_SESSION_H */
     }
 
     driver_start();
@@ -291,11 +302,13 @@ void session_cleanup(void)
         debug("cleaning up session data\n");
 
         free(_session->bank_path);
+        #if HAVE_LIBLO
         free(_session->nsm_client_id);
 
         if (_session->nsm_client)
             nsm_free(_session->nsm_client);
 
+        #endif /* HAVE_LIBLO */
         free(_session);
         _session = 0;
     }
@@ -349,6 +362,7 @@ static char* bank_dir_to_bank_path(const char* dir)
 }
 
 
+#if HAVE_LIBLO
 /* Non Session Management */
 int session_nsm_open_cb(const char* name, const char* display_name,
                         const char* client_id, char** out_msg,
@@ -417,6 +431,7 @@ int session_nsm_save_cb(char** out_msg, void* userdata)
 
     return ERR_OK;
 }
+#endif /* HAVE_LIBLO */
 
 
 #if HAVE_JACK_SESSION_H
