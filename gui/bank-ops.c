@@ -35,7 +35,6 @@
 #include "patch.h"
 #include "patch_util.h"
 #include "petri-foo.h"
-#include "msg_log.h"
 #include "session.h"
 
 
@@ -57,7 +56,7 @@ static int basic_save_as(GtkWidget* parent_window, gboolean not_export)
     GtkWidget *dialog;
     int val;
     const char* title;
-    char* filter = strconcat("*", dish_file_extension());
+    char* filter = file_ops_join_ext("*", dish_file_extension());
     char* untitled_dish = file_ops_join_ext(untitled_name,
                                             dish_file_extension());
 
@@ -126,7 +125,6 @@ static int basic_save_as(GtkWidget* parent_window, gboolean not_export)
 
         if ((val = dish_file_write_basic(name)) < 0)
         {
-            msg_log(MSG_ERROR, "Failed to write file %s\n", name);
             GtkWidget* msg = gtk_message_dialog_new(GTK_WINDOW(dialog),
                                     GTK_DIALOG_MODAL,
                                     GTK_MESSAGE_ERROR,
@@ -142,8 +140,6 @@ static int basic_save_as(GtkWidget* parent_window, gboolean not_export)
             if (recent_manager && not_export)
                 gtk_recent_manager_add_item (recent_manager, 
                     g_filename_to_uri(name, NULL, NULL));
-
-            msg_log(MSG_MESSAGE, "Successfully wrote file %s\n", name);
         }
     }
     else
@@ -280,7 +276,7 @@ static int open(GtkWidget* parent_window, gboolean not_import)
     GtkWidget* dialog;
     int val;
     const char* title;
-    char* filter = strconcat("*", dish_file_extension());
+    char* filter = file_ops_join_ext("*", dish_file_extension());
     global_settings* settings = settings_get();
 
     if (not_import)
@@ -316,14 +312,10 @@ static int open(GtkWidget* parent_window, gboolean not_import)
         char* name = (char*) gtk_file_chooser_get_filename(
                                         GTK_FILE_CHOOSER(dialog));
 
-        msg_log(MSG_MESSAGE, "Loading bank %s\n", name);
-        msg_log_reset_notification_state();
-
         val = (not_import)  ? dish_file_read(name)
                             : dish_file_import(name);
         if (val < 0)
         {
-            msg_log(MSG_ERROR, "Failed to read bank %s\n", name);
             GtkWidget* msg = gtk_message_dialog_new(GTK_WINDOW(dialog),
                                     GTK_DIALOG_MODAL,
                                     GTK_MESSAGE_ERROR,
@@ -336,13 +328,6 @@ static int open(GtkWidget* parent_window, gboolean not_import)
         }
         else
         {
-            if (msg_log_get_notification_state())
-            {
-                msg_log(MSG_WARNING, "Bank %s read with errors\n", name);
-            }
-            else
-                msg_log(MSG_MESSAGE, "Successfully read bank %s\n", name);
-
             if (recent_manager && not_import)
                 gtk_recent_manager_add_item(recent_manager,
                                     g_filename_to_uri(name, NULL, NULL));
@@ -391,16 +376,12 @@ int bank_ops_open_recent(GtkWidget* parent_window, char* filename)
     int val;
     assert(!session_is_active());
 
-    msg_log(MSG_MESSAGE, "Loading bank %s\n", filename);
-    msg_log_reset_notification_state();
-
     patch_destroy_all();
 
     val = dish_file_read(filename);
 
     if (val < 0)
     {
-         msg_log(MSG_ERROR, "Failed to read bank %s\n", filename);
          GtkWidget* msg = gtk_message_dialog_new(GTK_WINDOW(parent_window),
                                    GTK_DIALOG_MODAL,
                                    GTK_MESSAGE_ERROR,
@@ -413,13 +394,6 @@ int bank_ops_open_recent(GtkWidget* parent_window, char* filename)
     }
     else
     {
-        if (msg_log_get_notification_state())
-        {
-            msg_log(MSG_WARNING, "Bank %s read with errors\n", filename);
-        }
-        else
-            msg_log(MSG_MESSAGE, "Successfully read bank %s\n", filename);
-
         if (recent_manager)
             gtk_recent_manager_add_item (recent_manager, 
                             g_filename_to_uri(filename, NULL, NULL));

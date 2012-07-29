@@ -750,6 +750,9 @@ static int dish_write(void)
     rc = xmlSaveFormatFile(dish_data->file_path, doc, 1);
     xmlFreeDoc(doc);
 
+    msg_log(MSG_MESSAGE, "Successfully wrote dish file '%s'\n",
+                                                dish_data->file_path);
+
     return rc;
 }
 
@@ -1552,6 +1555,8 @@ static int dish_read(const char *path)
                                     (const char*)node1->name);
         }
     }
+
+    msg_log(MSG_MESSAGE, "Successfully read dish file '%s'\n", path);
 
     return 0;
 }
