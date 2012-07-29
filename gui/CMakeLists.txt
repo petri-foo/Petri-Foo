@@ -6,24 +6,11 @@ include_directories (
     ${Petri-Foo_SOURCE_DIR}/libphin
     ${GTK2_INCLUDE_DIRS}
     ${LIBGNOMECANVAS2_INCLUDE_DIRS}
-    ${LIBXML2_INCLUDE_DIRS}
-    )
-
-link_directories (
-    ${GTK2_LIBRARY_DIRS}
-    )
-
-if (HAVE_LIBLO)
-    link_libraries(lo)
-endif (HAVE_LIBLO)
-
-add_definitions (
-    ${GTK2_CFLAGS_OTHER}
+    ${LIBXML2_INCLUDE_DIR}
     )
 
 add_executable(petri-foo ${PETRI_FOO_SOURCES})
 
-
-target_link_Libraries(petri-foo petrifoo petrifui pthread phin )
+target_link_Libraries(petri-foo petrifoo petrifui pthread phin ${LIBLO_LIBRARIES})
 
 install (TARGETS petri-foo DESTINATION ${BINDIR})

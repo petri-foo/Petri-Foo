@@ -33,6 +33,7 @@
 #include "config.h"
 #include "dish_file.h"
 #include "driver.h"
+#include "file_ops.h"
 #include "gui.h"
 #include "instance.h"
 #include "jackdriver.h"
@@ -41,26 +42,33 @@
 #include "patch_util.h"
 #include "petri-foo.h"
 
-
 #if HAVE_LIBLO
 #include "nsm.h"
 #endif
 
+
+enum {
+    SESSION_TYPE_NONE,
+    SESSION_TYPE_JACK,
+    SESSION_TYPE_NSM,
+    SESSION_STATE_OPEN,
+    SESSION_STATE_CLOSED
+};
+
+
 const char*  session_names[] = { "None", "JACK", "NSM", "OPEN", "CLOSED" };
+
 
 typedef struct _pf_session
 {
     int     type;
     int     state;
-    char*   path;
-    char*   bank;
-
-    #if HAVE_LIBLO
+    char*   bank_path;
+#if HAVE_LIBLO
     nsm_client_t*   nsm_client;
     int             nsm_state;
     char*           nsm_client_id;
-    #endif
-
+#endif
 } pf_session;
 
 
@@ -77,7 +85,6 @@ static gboolean gui_jack_session_cb(void*);
 
 #if HAVE_LIBLO
 /* Non Session Management */
-
 static int  session_nsm_open_cb(const char* name, const char* display_name,
                                 const char* client_id, char** out_msg,
                                 void* userdata);
@@ -96,7 +103,7 @@ static void msg_log_to_nsm(const char* msg, int msg_base_type)
     nsm_send_message(_session->nsm_client, 3, msg);
 }
 */
-#endif
+#endif /* HAVE_LIBLO */
 
 
 void session_idle_add_event_poll(void)
@@ -113,35 +120,16 @@ void session_idle_add_event_poll(void)
 }
 
 
-static char* bankname(const char* path)
-{
-    char* filename;
-    const char* bank = "/bank.petri-foo";
-    size_t len = strlen(path);
-
-    if (path[len - 1] == '/')
-        ++bank;
-
-    len+= strlen(bank);
-    filename = malloc(len + 1);
-    snprintf(filename, len + 1, "%s%s", path, bank);
-    return filename;
-}
-
-
 int session_init(int argc, char* argv[])
 {
     assert(_session == 0);
     pf_session* s;
     gboolean possibly_autoconnect = FALSE;
-
-    #if HAVE_LIBLO
     const char* nsm_url;
-    #endif
-
     int opt = 0;
     int opt_ix = 0;
     extern int optind;
+    struct stat st;
 
     static struct option opts[] =
     {
@@ -164,8 +152,7 @@ int session_init(int argc, char* argv[])
     s = _session;
     s->type = SESSION_TYPE_NONE;
     s->state = SESSION_STATE_CLOSED;
-    s->path = 0;
-    s->bank = 0;
+    s->bank_path = 0;
 
     while((opt = getopt_long(argc, argv, "aj:uU:", opts, &opt_ix)) > 0)
     {
@@ -260,46 +247,43 @@ int session_init(int argc, char* argv[])
 
         /*msg_log_set_message_cb(msg_log_to_nsm);*/
     }
-    #endif
+    #endif /* HAVE_LIBLO */
 
-    if (s->type == SESSION_TYPE_NONE)
-    {
-        msg_log(MSG_MESSAGE, "Session management not running\n");
-    }
-    else
-    {
-        msg_log(MSG_MESSAGE, "Session mangement running under %s\n",
-                                    session_names[s->type]);
-    }
+    msg_log(MSG_MESSAGE, "Session management: %s\n",
+                            session_names[s->type]);
 
     if (possibly_autoconnect && s->type == SESSION_TYPE_NONE)
         jackdriver_set_autoconnect(true);
 
-    #if HAVE_LIBLO
     if (!nsm_url)
-    #endif
     {
+        #if HAVE_JACK_SESSION_H
         jackdriver_set_session_cb(session_jack_cb);
+        #endif /* HAVE_JACK_SESSION_H */
     }
 
     driver_start();
     midi_start();
 
-    #if HAVE_LIBLO
     if (nsm_url)
     {
         if (optind < argc)
             msg_log(MSG_WARNING, "Ignoring bank file option\n");
 
-        dish_file_read(s->bank);
+        if (stat(s->bank_path, &st) == 0)
+            dish_file_read(s->bank_path);
+        else
+        {
+             /* provide default patch if nothing saved in session */
+            patch_create_default();
+            dish_file_state_set_by_path(s->bank_path, true);
+        }
     }
     else
-    #endif
     {
-        if (optind < argc)
+        if (optind < argc && stat(argv[optind], &st) == 0)
         {
             dish_file_read(argv[optind]);
-            bank_ops_force_name(argv[optind]);
         }
         else
             patch_create_default();
@@ -317,36 +301,64 @@ void session_cleanup(void)
     {
         debug("cleaning up session data\n");
 
-        free(_session->path);
-        free(_session->bank);
-
+        free(_session->bank_path);
         #if HAVE_LIBLO
         free(_session->nsm_client_id);
 
         if (_session->nsm_client)
             nsm_free(_session->nsm_client);
-        #endif
 
+        #endif /* HAVE_LIBLO */
         free(_session);
         _session = 0;
     }
 }
 
 
-int session_get_type(void)
+bool session_is_active(void)
 {
-    return _session->type;
+    return _session->type != SESSION_TYPE_NONE;
 }
 
 
-const char* session_get_path(void)
+bool session_is_nsm(void)
 {
-    return _session->path;
+    return _session->type == SESSION_TYPE_NSM;
 }
 
-const char* session_get_bank(void)
+
+/* bank_dir_to_bank_path:
+
+    /home/user/pf-banks/bank_dir/
+
+        --->
+
+    /home/user/pf-banks/bank_dir/bank_dir.petri-foo
+ */
+
+static char* bank_dir_to_bank_path(const char* dir)
 {
-    return _session->bank;
+    size_t lc;
+    char* bank_path = 0;
+    char* bank_dir = 0;
+    char* name = 0;
+    char* filename = 0;
+
+    bank_dir = strdup(dir);
+    lc = strlen(bank_dir) - 1;
+
+    if (*(bank_dir + lc) == '/')
+        *(bank_dir + lc) = '\0';
+
+    file_ops_split_path(bank_dir, 0, &name);
+    filename = file_ops_join_ext(name, dish_file_extension());
+    bank_path = file_ops_join_path(bank_dir, filename);
+
+    free(filename);
+    free(name);
+    free(bank_dir);
+
+    return bank_path;
 }
 
 
@@ -356,6 +368,9 @@ int session_nsm_open_cb(const char* name, const char* display_name,
                         const char* client_id, char** out_msg,
                         void* userdata)
 {
+    /*
+        name == bank_dir
+     */
     (void)display_name;(void)out_msg;
     struct stat st;
     pf_session* s = (pf_session*)userdata;
@@ -363,18 +378,16 @@ int session_nsm_open_cb(const char* name, const char* display_name,
 
     debug("NSM Open\n");
     debug("name:'%s'\ndisplay_name:'%s'\nclient_id:'%s'\n",
-        name, display_name, client_id);
+                                name, display_name, client_id);
     debug("session callback data:%p\n", s);
 
     if (s->nsm_client_id)
     {
         debug("Detected session switch\n");
         /* the switch */
-        free(s->path);
-        free(s->bank);
+        free(s->bank_path);
         free(s->nsm_client_id);
-        s->path = 0;
-        s->bank = 0;
+        s->bank_path = 0;
         s->nsm_client_id = 0;
         session_switch = TRUE;
     }
@@ -382,27 +395,23 @@ int session_nsm_open_cb(const char* name, const char* display_name,
     s->nsm_state = SESSION_STATE_OPEN;
     s->nsm_client_id = strdup(client_id);
     set_instance_name(client_id);
-    s->path = strdup(name);
-    s->bank = bankname(s->path);
 
-    /*  The best we can do here is make the directory if it
-        does not exist. We cannot load a bank yet because
-        samples might need resampling to JACK's sample rate and
-        as we're not yet registered with JACK we don't know what
-        rate to resample to.
-     */
-    if (stat(s->path, &st) != 0)
-    {
-        mkdir(s->path, 0777);
-    }
+    s->bank_path = bank_dir_to_bank_path(name);
 
     if (session_switch)
     {
-        debug("re-initializing driver, and reading '%s'\n", s->bank);
+        debug("SSSWITCH.... '%s'\n", s->bank_path);
         driver_start();
         patch_destroy_all();
-        dish_file_read(s->bank);
-        bank_ops_force_name(s->bank);
+
+        if (stat(s->bank_path, &st) == 0)
+            dish_file_read(s->bank_path);
+        else
+        {
+            patch_create_default();
+            dish_file_state_set_by_path(s->bank_path, true);
+        }
+
         gui_refresh();
     }
 
@@ -412,12 +421,17 @@ int session_nsm_open_cb(const char* name, const char* display_name,
 
 int session_nsm_save_cb(char** out_msg, void* userdata)
 {
-    (void)out_msg;
-    pf_session* s = (pf_session*)userdata;
+    (void)out_msg; (void)userdata;
+
     debug("NSM Save\n");
-    dish_file_write(s->bank);
+
+    assert(dish_file_has_state());
+
+    dish_file_write();
+
     return ERR_OK;
 }
+#endif /* HAVE_LIBLO */
 
 
 #if HAVE_JACK_SESSION_H
@@ -452,24 +466,21 @@ static gboolean gui_jack_session_cb(void *data)
 
     s->type = SESSION_TYPE_JACK;
 
-    /*  FIXME: tell the GUI to switch to session support mode
-        (that is, remove particular menu items/functionality).
-     */
-
-    s->bank = bankname(ev->session_dir);
+    s->bank_path = bank_dir_to_bank_path(ev->session_dir);
 
     if (instancename)
         snprintf(   command_buf, sizeof(command_buf),
                     "petri-foo --jack-name %s --unconnected -U %s %s",
-                    instancename, ev->client_uuid, s->bank);
+                    instancename, ev->client_uuid, s->bank_path);
     else
         snprintf(   command_buf, sizeof(command_buf),
                     "petri-foo --unconnected -U %s %s",
-                    ev->client_uuid, s->bank);
+                    ev->client_uuid, s->bank_path);
 
     debug("command:%s\n", command_buf);
 
-    dish_file_write(s->bank);
+    dish_file_state_set_by_path(s->bank_path, true);
+    dish_file_write();
 
     ev->command_line = strdup(command_buf);
     jack_session_reply(jackdriver_get_client(), ev);
@@ -483,7 +494,6 @@ static gboolean gui_jack_session_cb(void *data)
 
     return FALSE;
 }
-#endif
 
 
 #endif

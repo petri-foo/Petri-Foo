@@ -32,6 +32,7 @@
 
 #include "instance.h"
 #include "driver.h"
+#include "patch_private/err_msg.h"
 #include "petri-foo.h"
 #include "mixer.h"
 #include "midi.h"

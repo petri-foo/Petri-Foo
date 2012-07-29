@@ -69,6 +69,7 @@ void cleanup(void)
 {
     msg_log(MSG_MESSAGE, "Cleanup...\n");
     session_cleanup();
+    dish_file_state_cleanup();
     midi_stop();
     driver_stop();
     patch_shutdown();
@@ -141,6 +142,7 @@ int main(int argc, char *argv[])
     lfo_tables_init();
     mixer_init();
     patch_control_init();
+    dish_file_state_init();
     session_init(argc, argv);
     gui_init();
 

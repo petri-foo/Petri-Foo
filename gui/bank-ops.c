@@ -29,37 +29,16 @@
 #include <string.h>
 
 #include "dish_file.h"
+#include "file_ops.h"
 #include "global_settings.h"
 #include "gui.h"
 #include "patch.h"
 #include "patch_util.h"
 #include "petri-foo.h"
-#include "msg_log.h"
 #include "session.h"
 
 
-static char *last_bank = 0;
-
-static const char* untitled_bank = "Untitled bank";
-char* bankname = 0;
-
-
-const char* bank_ops_bank(void)
-{
-    if (session_get_type() == SESSION_TYPE_NONE)
-        return (bankname) ? bankname : untitled_bank;
-
-    return session_get_bank();
-}
-
-
-static void set_bankname(const char* name)
-{
-    if (bankname)
-        free(bankname);
-
-    bankname = (name) ? strdup(name) : NULL;
-}
+static const char* untitled_name = "untitled";
 
 
 static void file_chooser_add_filter(GtkWidget* chooser, const char* name,
@@ -72,20 +51,21 @@ static void file_chooser_add_filter(GtkWidget* chooser, const char* name,
 }
 
 
-static int save_as(GtkWidget* parent_window, gboolean not_export)
+static int basic_save_as(GtkWidget* parent_window, gboolean not_export)
 {
     GtkWidget *dialog;
     int val;
     const char* title;
-    char* filter = strconcat("*", dish_file_extension());
-    char* untitled_dish = strconcat("untitled", dish_file_extension());
-    
+    char* filter = file_ops_join_ext("*", dish_file_extension());
+    char* untitled_dish = file_ops_join_ext(untitled_name,
+                                            dish_file_extension());
+
     global_settings* settings = settings_get();
 
     if (not_export)
-        title = "Save bank as";
+        title = "Basic Save bank as";
     else
-        title = "Export bank from session as";
+        title = "Basic Export as";
 
     dialog = gtk_file_chooser_dialog_new(title,
                                     GTK_WINDOW(parent_window),
@@ -96,16 +76,44 @@ static int save_as(GtkWidget* parent_window, gboolean not_export)
 
     gtk_file_chooser_set_do_overwrite_confirmation(
                                     GTK_FILE_CHOOSER(dialog), TRUE);
-
-    if (last_bank == 0)
+    if (!dish_file_has_state())
+    {
         gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),
                                             settings->last_bank_dir);
+        gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(dialog),
+                                            untitled_dish);
+    }
     else
-        gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),
-                                            g_path_get_dirname(last_bank));
+    {
+        const char* tmp = 0;
+        char* fn = 0;
+        char* pdir = 0; /* parent of session dir */
 
-    gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(dialog),
-                        (last_bank != 0) ? last_bank : untitled_dish);
+        if (dish_file_state_is_full())
+        {
+            tmp = dish_file_state_parent_dir();
+
+            if (session_is_active()
+             && (pdir = file_ops_parent_dir(tmp)) != 0)
+            {
+                tmp = pdir;
+            }
+        }
+        else
+            tmp = dish_file_state_bank_dir();
+
+        debug("tmp:     '%s'\n", tmp);
+        debug("parent:  '%s'\n", dish_file_state_parent_dir());
+        debug("bank:    '%s'\n", dish_file_state_bank_dir());
+
+        gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), tmp);
+        fn = file_ops_join_ext( dish_file_state_bank_name(),
+                                dish_file_extension());
+
+        gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(dialog), fn);
+        free(fn);
+        free(pdir);
+    }
 
     file_chooser_add_filter(dialog, "Petri-Foo files", filter);
     file_chooser_add_filter(dialog, "All files", "*");
@@ -115,9 +123,8 @@ static int save_as(GtkWidget* parent_window, gboolean not_export)
         char *name = (char *)
             gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
 
-        if ((val = dish_file_write(name)) < 0)
+        if ((val = dish_file_write_basic(name)) < 0)
         {
-            msg_log(MSG_ERROR, "Failed to write file %s\n", name);
             GtkWidget* msg = gtk_message_dialog_new(GTK_WINDOW(dialog),
                                     GTK_DIALOG_MODAL,
                                     GTK_MESSAGE_ERROR,
@@ -130,19 +137,9 @@ static int save_as(GtkWidget* parent_window, gboolean not_export)
         }
         else
         {
-            if (recent_manager)
+            if (recent_manager && not_export)
                 gtk_recent_manager_add_item (recent_manager, 
                     g_filename_to_uri(name, NULL, NULL));
-
-            msg_log(MSG_MESSAGE, "Successfully wrote file %s\n", name);
-
-            if (not_export)
-            {
-                free(last_bank);
-                last_bank = strdup(name);
-            }
-
-            set_bankname(name);
         }
     }
     else
@@ -152,10 +149,125 @@ static int save_as(GtkWidget* parent_window, gboolean not_export)
 
     gtk_widget_destroy(dialog);
 
-    free(untitled_dish);
     free(filter);
 
     return val;
+}
+
+
+void name_buf_txt_ins_cb(GtkEntryBuffer* buf,   guint pos, gchar* chars,
+                                                guint count,
+                                                gpointer user_data)
+{
+    /*  maybe this will be used one day... but for now let's remove
+        unused variable warnings... */
+    (void)buf; (void)pos; (void)chars; (void)count; (void)user_data;
+}
+
+
+static int full_save_as(GtkWidget* parent_window, gboolean not_export)
+{
+    GtkWidget* dialog = 0;
+    GtkWidget* content_area = 0;
+    GtkWidget* alignment = 0;
+    GtkWidget* vbox = 0;
+    GtkWidget* table = 0;
+    GtkTable* t = 0;
+    GtkWidget* name_entry = 0;
+    GtkWidget* folder_button = 0;
+
+    enum { TABLE_WIDTH = 4, TABLE_HEIGHT = 2 };
+
+    int a1 = 0, a2 = 1;
+    int b1 = 1, b2 = TABLE_WIDTH;
+    int y = 0;
+
+    const char* title = 0;
+    char* folder = 0;
+
+    if (not_export)
+        title = "Full Save bank as";
+    else
+        title = "Full Export bank from session as";
+
+    dialog = gtk_dialog_new_with_buttons(title, GTK_WINDOW(parent_window),
+                        GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+                        GTK_STOCK_OK,       GTK_RESPONSE_ACCEPT,
+                        GTK_STOCK_CANCEL,   GTK_RESPONSE_REJECT,    NULL);
+
+    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    alignment = gtk_alignment_new(0, 0, 1, 1);
+    gtk_alignment_set_padding(GTK_ALIGNMENT(alignment), GUI_BORDERSPACE,
+                                                        GUI_BORDERSPACE,
+                                                        GUI_BORDERSPACE,
+                                                        GUI_BORDERSPACE);
+    gtk_container_add(GTK_CONTAINER(content_area), alignment);
+    vbox = gtk_vbox_new(FALSE, GUI_SPACING);
+    gtk_container_add(GTK_CONTAINER(alignment), vbox);
+
+    table = gtk_table_new(TABLE_HEIGHT, TABLE_WIDTH, TRUE);
+    gui_pack(GTK_BOX(vbox), table);
+    t = GTK_TABLE(table);
+    gtk_table_set_col_spacing(t, 0, GUI_TEXTSPACE);
+    gui_label_attach("Name:", t, a1, a2, y, y + 1);
+    name_entry = gtk_entry_new();
+    gui_attach(t, name_entry, b1, b2, y, y + 1);
+
+    if (dish_file_has_state())
+        gtk_entry_set_text(GTK_ENTRY(name_entry),
+                            dish_file_state_bank_name());
+    else
+        gtk_entry_set_text(GTK_ENTRY(name_entry), untitled_name);
+
+    g_signal_connect(G_OBJECT(gtk_entry_get_buffer(GTK_ENTRY(name_entry))),
+        "inserted-text", G_CALLBACK(name_buf_txt_ins_cb), NULL);
+
+    ++y;
+    gui_label_attach("Create Folder in:", t, a1, a2, y, y + 1);
+    folder_button = gtk_file_chooser_button_new("Select folder",
+                                GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER);
+    gui_attach(t, folder_button, b1, b2, y, y + 1);
+
+    gtk_widget_show_all(dialog);
+
+    while(1)
+    {
+        if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT)
+        {
+            char* uri = 0;
+            const char* name = 0;
+
+            uri = gtk_file_chooser_get_uri(GTK_FILE_CHOOSER(folder_button));
+
+            if (uri && strncmp(uri, "file://", 7) == 0)
+            {
+                folder = strdup(uri + 7);
+                free(uri);
+            }
+            else
+                folder = uri;
+
+            name = gtk_entry_get_text(GTK_ENTRY(name_entry));
+            debug("folder:'%s'\tname (name_entry):'%s'\n", folder,name);
+
+            if (folder && name)
+            {
+                dish_file_write_full(folder, name);
+
+                if (recent_manager)
+                    gtk_recent_manager_add_item(recent_manager,
+                                g_filename_to_uri(dish_file_state_path(),
+                                                            NULL, NULL));
+                break;
+            }
+        }
+        else
+            break;
+    }
+
+    gtk_widget_destroy(dialog);
+
+    return 0;
 }
 
 
@@ -164,7 +276,7 @@ static int open(GtkWidget* parent_window, gboolean not_import)
     GtkWidget* dialog;
     int val;
     const char* title;
-    char* filter = strconcat("*", dish_file_extension());
+    char* filter = file_ops_join_ext("*", dish_file_extension());
     global_settings* settings = settings_get();
 
     if (not_import)
@@ -179,9 +291,14 @@ static int open(GtkWidget* parent_window, gboolean not_import)
                                           GTK_RESPONSE_CANCEL,
                                           GTK_STOCK_OPEN,
                                           GTK_RESPONSE_ACCEPT, NULL);
-    if (last_bank)
-        gtk_file_chooser_select_filename(GTK_FILE_CHOOSER(dialog),
-                                                        last_bank);
+
+    if (dish_file_has_state())
+    {
+        const char* tmp = 0;
+        tmp = dish_file_state_is_full() ? dish_file_state_parent_dir()
+                                        : dish_file_state_bank_dir();
+        gtk_file_chooser_select_filename(GTK_FILE_CHOOSER(dialog), tmp);
+    }
     else
         gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),
                                            settings->last_bank_dir);
@@ -191,16 +308,14 @@ static int open(GtkWidget* parent_window, gboolean not_import)
 
     if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT)
     {
+
         char* name = (char*) gtk_file_chooser_get_filename(
                                         GTK_FILE_CHOOSER(dialog));
 
-        msg_log(MSG_MESSAGE, "Loading bank %s\n", name);
-        msg_log_reset_notification_state();
-        val = dish_file_read(name);
-
+        val = (not_import)  ? dish_file_read(name)
+                            : dish_file_import(name);
         if (val < 0)
         {
-            msg_log(MSG_ERROR, "Failed to read bank %s\n", name);
             GtkWidget* msg = gtk_message_dialog_new(GTK_WINDOW(dialog),
                                     GTK_DIALOG_MODAL,
                                     GTK_MESSAGE_ERROR,
@@ -213,24 +328,14 @@ static int open(GtkWidget* parent_window, gboolean not_import)
         }
         else
         {
-            if (msg_log_get_notification_state())
-            {
-                msg_log(MSG_WARNING, "Bank %s read with errors\n", name);
-            }
-            else
-                msg_log(MSG_MESSAGE, "Successfully read bank %s\n", name);
-
-            if (recent_manager)
+            if (recent_manager && not_import)
                 gtk_recent_manager_add_item(recent_manager,
                                     g_filename_to_uri(name, NULL, NULL));
-            free(last_bank);
-            last_bank = strdup(name);
 
             if (settings->last_bank_dir)
                 free(settings->last_bank_dir);
 
             settings->last_bank_dir = g_path_get_dirname(name);
-            set_bankname(name);
         }
     }
     else
@@ -249,17 +354,13 @@ static int open(GtkWidget* parent_window, gboolean not_import)
 int bank_ops_new(void)
 {
     patch_destroy_all();
-    free(last_bank);
-    last_bank = NULL;
-    set_bankname(NULL);
     return 0;
 }
 
 
 int bank_ops_open(GtkWidget* parent_window)
 {
-    assert(session_get_type() == SESSION_TYPE_NONE);
-    patch_destroy_all();
+    assert(!session_is_active());
     return open(parent_window, TRUE);
 }
 
@@ -273,10 +374,7 @@ int bank_ops_import(GtkWidget* parent_window)
 int bank_ops_open_recent(GtkWidget* parent_window, char* filename)
 {
     int val;
-    assert(session_get_type() == SESSION_TYPE_NONE);
-
-    msg_log(MSG_MESSAGE, "Loading bank %s\n", filename);
-    msg_log_reset_notification_state();
+    assert(!session_is_active());
 
     patch_destroy_all();
 
@@ -284,7 +382,6 @@ int bank_ops_open_recent(GtkWidget* parent_window, char* filename)
 
     if (val < 0)
     {
-         msg_log(MSG_ERROR, "Failed to read bank %s\n", filename);
          GtkWidget* msg = gtk_message_dialog_new(GTK_WINDOW(parent_window),
                                    GTK_DIALOG_MODAL,
                                    GTK_MESSAGE_ERROR,
@@ -297,52 +394,39 @@ int bank_ops_open_recent(GtkWidget* parent_window, char* filename)
     }
     else
     {
-        if (msg_log_get_notification_state())
-        {
-            msg_log(MSG_WARNING, "Bank %s read with errors\n", filename);
-        }
-        else
-            msg_log(MSG_MESSAGE, "Successfully read bank %s\n", filename);
-
-        gtk_recent_manager_add_item (recent_manager, 
-             g_filename_to_uri(filename, NULL, NULL));
-        free(last_bank);
-        last_bank = strdup(filename);
-        set_bankname(filename);
+        if (recent_manager)
+            gtk_recent_manager_add_item (recent_manager, 
+                            g_filename_to_uri(filename, NULL, NULL));
     }
 
     return val;
 }
 
 
-int bank_ops_save_as(GtkWidget* parent_window)
+int bank_ops_basic_save_as(GtkWidget* parent_window)
 {
-    assert(session_get_type() == SESSION_TYPE_NONE);
-    return save_as(parent_window, TRUE);
+    assert(!session_is_active());
+    return basic_save_as(parent_window, TRUE);
+}
+
+int bank_ops_full_save_as(GtkWidget* parent_window)
+{
+    assert(!session_is_active());
+    return full_save_as(parent_window, TRUE);
 }
 
 
 int bank_ops_save(GtkWidget* parent_window)
 {
-    if (session_get_type() == SESSION_TYPE_NONE)
-    {
-        return (last_bank != 0)
-                    ? dish_file_write(last_bank)
-                    : save_as(parent_window, TRUE);
-    }
+    if (dish_file_has_state())
+        return dish_file_write();
 
-    return dish_file_write(session_get_bank());
+    return bank_ops_basic_save_as(parent_window);
 }
 
 
 int bank_ops_export(GtkWidget* parent_window)
 {
-    return save_as(parent_window, FALSE);
+    return basic_save_as(parent_window, FALSE);
 }
 
-
-void bank_ops_force_name(const char* name)
-{
-    set_bankname(name);
-    last_bank = strdup(name);
-}

@@ -37,6 +37,7 @@
 #include "bank-ops.h"
 #include "channelsection.h"
 #include "config.h"
+#include "dish_file.h"
 #include "driver.h"
 #include "global_settings.h"
 #include "gui.h"
@@ -77,7 +78,8 @@ static GtkWidget* menu_file_open = 0;
 static GtkWidget* menu_file_import = 0;
 static GtkWidget* menu_file_recent = 0;
 static GtkWidget* menu_file_save = 0;
-static GtkWidget* menu_file_save_as = 0;
+static GtkWidget* menu_file_basic_save_as = 0;
+static GtkWidget* menu_file_full_save_as = 0;
 static GtkWidget* menu_file_export = 0;
 
 /* settings */
@@ -464,16 +466,22 @@ static void cb_menu_file_import(GtkWidget * widget, gpointer data)
         gui_refresh();
 }
 
-static void cb_menu_file_save_bank(GtkWidget * widget, gpointer data)
+static void cb_menu_file_save(GtkWidget * widget, gpointer data)
 {
     (void)widget;(void)data;
     bank_ops_save(window);
 }
 
-static void cb_menu_file_save_bank_as(GtkWidget * widget, gpointer data)
+static void cb_menu_file_basic_save_as(GtkWidget * widget, gpointer data)
 {
     (void)widget;(void)data;
-    bank_ops_save_as(window);
+    bank_ops_basic_save_as(window);
+}
+
+static void cb_menu_file_full_save_as(GtkWidget * widget, gpointer data)
+{
+    (void)widget;(void)data;
+    bank_ops_full_save_as(window);
 }
 
 static void cb_menu_file_export(GtkWidget * widget, gpointer data)
@@ -521,9 +529,21 @@ static void cb_menu_help_about (GtkWidget* widget, gpointer data)
         "logo", logo,
         "authors", authors,
         "version", VERSION,
+        "website", "http://petri-foo.sourceforge.net/",
         "copyright",    "(C) 2004-2005 Pete Bessman\n"
                         "(C) 2006-2007 others\n"
                         "(C) 2011-2012 James Morris\n",
+        "comments",
+        #if HAVE_LIBLO
+        "Built with Non-Session-Manager support\n"
+        #else
+        "Built without Non-Session-Manager support\n"
+        #endif
+        #if HAVE_JACK_SESSION_H
+        "Built with JACK Session Support",
+        #else
+        "Built without JACK Session Support",
+        #endif
         NULL);
 }
 
@@ -596,23 +616,47 @@ int gui_init(void)
 
     menu_file = gui_menu_add(menubar, "File", NULL, NULL);
 
-    menu_file_new = gui_menu_add(menu_file, "New Bank",
+    menu_file_new = gui_menu_add(menu_file, "New",
             G_CALLBACK(cb_menu_file_new_bank),      window);
-    menu_file_open = gui_menu_add(menu_file, "Open Bank...",
+    menu_file_open = gui_menu_add(menu_file, "Open...",
             G_CALLBACK(cb_menu_file_open_bank),     window);
     menu_file_import = gui_menu_add(menu_file, "Import...",
             G_CALLBACK(cb_menu_file_import),        window);
 
+    gtk_widget_set_tooltip_text(menu_file_new,
+                                "New bank");
+    gtk_widget_set_tooltip_text(menu_file_open,
+                                "Open a saved bank");
+    gtk_widget_set_tooltip_text(menu_file_import,
+                                "Import a saved bank into current bank");
+
     menu_file_recent = gtk_menu_item_new_with_label("Open Recent");
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_file), menu_file_recent);
 
-    menu_file_save = gui_menu_add(menu_file, "Save Bank",
-            G_CALLBACK(cb_menu_file_save_bank),     window);
-    menu_file_save_as = gui_menu_add(menu_file, "Save Bank As...",
-            G_CALLBACK(cb_menu_file_save_bank_as),  window);
-    menu_file_export = gui_menu_add(menu_file,"Export bank from session...",
+    /* seperator */
+    gui_menu_add(menu_file, NULL, NULL, NULL);
+
+    menu_file_save = gui_menu_add(menu_file, "Save",
+            G_CALLBACK(cb_menu_file_save),          window);
+
+    menu_file_basic_save_as =
+        gui_menu_add(menu_file, "Save As...",
+            G_CALLBACK(cb_menu_file_basic_save_as),  window);
+
+    menu_file_full_save_as =
+        gui_menu_add(menu_file, "Full Save As...",
+            G_CALLBACK(cb_menu_file_full_save_as),  window);
+
+    menu_file_export = gui_menu_add(menu_file,"Export from session...",
             G_CALLBACK(cb_menu_file_export),       window);
     gtk_widget_set_sensitive(menu_file_export, FALSE);
+
+    gtk_widget_set_tooltip_text(menu_file_save,
+                                "Save bank");
+    gtk_widget_set_tooltip_text(menu_file_basic_save_as,
+                                "Basic Save bank as");
+    gtk_widget_set_tooltip_text(menu_file_full_save_as,
+                    "Full bank save, link samples, ready for archiving");
 
     /* seperator */
     gui_menu_add(menu_file, NULL, NULL, NULL);
@@ -657,7 +701,7 @@ int gui_init(void)
     gui_menu_add(menu_help, "About...",
             G_CALLBACK(cb_menu_help_about),         window);
 
-    if (session_get_type() != SESSION_TYPE_NSM)
+    if (!session_is_nsm())
         gui_recent_files_load();
 
     gtk_widget_show_all(menubar);
@@ -717,7 +761,7 @@ int gui_init(void)
 
     /* priming updates */
 
-    if (session_get_type() != SESSION_TYPE_NONE)
+    if (session_is_active())
         gui_set_session_mode();
 
     gui_refresh();
@@ -728,12 +772,13 @@ int gui_init(void)
 
 void gui_refresh(void)
 {
-    gui_set_window_title_bank(bank_ops_bank());
+    const char* title = dish_file_state_path();
+    gui_set_window_title_bank(title ? title : "Untitled");
     master_section_update(MASTER_SECTION(master_section));
     patch_list_update(PATCH_LIST(patch_list), 0, PATCH_LIST_INDEX);
     cb_patch_list_changed(PATCH_LIST(patch_list), NULL);
 
-    if (session_get_type() != SESSION_TYPE_NSM)
+    if (!session_is_nsm())
         gui_recent_files_load();
 }
 
@@ -753,7 +798,7 @@ void gui_set_window_title_bank(const char* title)
     if (!instancename)
         instancename = PACKAGE;
 
-    if (session_get_type() == SESSION_TYPE_NSM)
+    if (session_is_nsm())
     {
         gtk_window_set_title(GTK_WINDOW(window), instancename);
         return;
@@ -822,7 +867,8 @@ void gui_set_session_mode(void)
     debug("GUI entering session mode\n");
     gtk_widget_set_sensitive(menu_file_open, FALSE);
     gtk_widget_set_sensitive(menu_file_recent, FALSE);
-    gtk_widget_set_sensitive(menu_file_save_as, FALSE);
+    gtk_widget_set_sensitive(menu_file_basic_save_as, FALSE);
+    gtk_widget_set_sensitive(menu_file_full_save_as, FALSE);
     gtk_menu_item_set_label(GTK_MENU_ITEM(menu_file_save),
                             "Save session bank");
     gtk_widget_set_sensitive(menu_file_export, TRUE);

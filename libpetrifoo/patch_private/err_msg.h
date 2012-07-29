@@ -1,8 +1,6 @@
 /*  Petri-Foo is a fork of the Specimen audio sampler.
 
-    Original Specimen author Pete Bessman
-    Copyright 2005 Pete Bessman
-    Copyright 2011 James W. Morris
+    Copyright 2012 James W. Morris
 
     This file is part of Petri-Foo.
 
@@ -20,18 +18,17 @@
 
 */
 
+#ifndef PRIVATE_ERR_MSG
+#define PRIVATE_ERR_MSG
 
-#ifndef __SESSION_H__
-#define __SESSION_H__
+#include <stdio.h>
 
-#include <stdbool.h>
+#define errmsg(...)                         \
+{                                           \
+    fprintf(stderr, "%40s:%5d  %-35s: ",    \
+            __FILE__ + SRC_DIR_STRLEN + 1,  \
+            __LINE__, __FUNCTION__);        \
+    fprintf(stderr, __VA_ARGS__);           \
+}
 
-/* session_init returns 0 on sucess */
-int     session_init(int argc, char* argv[]);
-void    session_cleanup(void);
-
-bool    session_is_active(void);
-bool    session_is_nsm(void);
-
-
-#endif /* __SESSION_H__ */
+#endif

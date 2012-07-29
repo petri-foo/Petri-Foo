@@ -25,6 +25,7 @@ string( LENGTH "${PROJECT_SOURCE_DIR}" SRC_DIR_STRLEN)
 include (CheckCSourceCompiles)
 INCLUDE (CheckIncludeFiles)
 
+
 mark_as_advanced(EXECUTABLE_OUTPUT_PATH)
 mark_as_advanced(LIBRARY_OUTPUT_PATH)
 mark_as_advanced(CMAKE_BUILD_TYPE)
@@ -58,13 +59,8 @@ if (GtkDeprecatedChecks)
     add_definitions(-DGTK_DISABLE_DEPRECATED -DGDK_DISABLE_DEPRECATED -DGSEAL_ENABLE -DGTK_DISABLE_SINGLE_INCLUDES)
 endif (GtkDeprecatedChecks)
 
-# PKG-CONFIG
-find_package(PkgConfig REQUIRED)
-if(PKG_CONFIG_FOUND)
-    message(STATUS "Found pkg-config ${PKG_CONFIG_EXECUTABLE}")
-else(PKG_CONFIG_FOUND)
-    message(FATAL_ERROR "pkg-config required but not found")
-endif(PKG_CONFIG_FOUND)
+
+include(FindPkgConfig)
 
 
 # JACK
@@ -76,13 +72,8 @@ else (JACK_FOUND)
 endif (JACK_FOUND)
 
 
-# ALSA
-pkg_check_modules(ALSA REQUIRED alsa>=1.0.17)
-if (ALSA_FOUND)
-  message(STATUS "Found alsa ${ALSA_VERSION}")
-else (ALSA_FOUND)
-  message(FATAL_ERROR "alsa not found.")
-endif (ALSA_FOUND)
+include (FindALSA)
+
 
 
 # SNDFILE
@@ -112,13 +103,7 @@ else (GLIB2_FOUND)
 endif (GLIB2_FOUND)
 
 
-# GTK2
-pkg_check_modules (GTK2 REQUIRED gtk+-2.0)
-if(GTK2_FOUND)
-    message(STATUS "Found gtk2 ${GTK2_VERSION}")
-else(GTK2_FOUND)
-    message(FATAL_ERROR "gtk2 required but not found")
-endif(GTK2_FOUND)
+include(FindGTK2)
 
 
 # LIBGNOMECANVAS2
@@ -130,16 +115,11 @@ else (LIBGNOMECANVAS2_FOUND)
 endif (LIBGNOMECANVAS2_FOUND)
 
 
-# LIBXML2
-pkg_check_modules (LIBXML2 REQUIRED libxml-2.0)
-if (LIBXML2_FOUND)
-    message(STATUS "Found libxml2 ${LIBXML2_VERSION}")
-else (LIBXML2_FOUND)
-    message(FATAL_ERROR "libxml2 was not found")
-endif (LIBXML2_FOUND)
+include(FindLibXml2)
+
 
 # LIBLO
-pkg_check_modules (LIBLO liblo)
+pkg_check_modules (LIBLO liblo>=0.26)
 if (LIBLO_FOUND)
     message(STATUS "Found liblo ${LIBLO_VERSION}, support for NSM will be built")
     set (HAVE_LIBLO 1)
@@ -147,6 +127,10 @@ else (LIBLO_FOUND)
     message(STATUS "liblo was not found, support for NSM will not be built")
     set (HAVE_LIBLO 0)
 endif (LIBLO_FOUND)
+
+
+include(FindOpenSSL)
+
 
 # Check for CAIRO_OPERATOR_HSL_LUMINOSITY
 check_c_source_compiles (
@@ -163,7 +147,8 @@ CHECK_INCLUDE_FILES (jack/session.h HAVE_JACK_SESSION_H)
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
                 ${CMAKE_CURRENT_SOURCE_DIR}/config.h )
 
-link_libraries(m)
+link_libraries(m ${LIBLO_LIBRARIES})
+
 
 include_directories ( . )
 

@@ -30,9 +30,12 @@
     *** NOT for usage by RT thread ***
  */
 
+#ifdef errmsg
+#undef errmsg
+#define errmsg do_not_use_errmsg_here
+#endif
 
 #include <stdbool.h>
-
 
 
 /*  type of the callback that will handle the string formed by
