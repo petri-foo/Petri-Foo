@@ -32,6 +32,7 @@
 #include "file_ops.h"
 #include "global_settings.h"
 #include "gui.h"
+#include "msg_log.h"
 #include "patch.h"
 #include "patch_util.h"
 #include "petri-foo.h"
@@ -353,6 +354,7 @@ static int open(GtkWidget* parent_window, gboolean not_import)
 
 int bank_ops_new(void)
 {
+    msg_log(MSG_MESSAGE, "all patches destroyed\n");
     patch_destroy_all();
     return 0;
 }

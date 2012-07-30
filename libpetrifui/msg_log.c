@@ -26,6 +26,7 @@
 #include <time.h>
 
 
+#include "instance.h"
 #include "petri-foo.h"
 #include "msg_log.h"
 
@@ -87,6 +88,7 @@ int msg_log(int type, const char* fmt, ...)
         "CRITICAL!"
     };
 
+    const char* instance_name = 0;
     char    msg[1024];
     char    tm[20];
     char    tmp[1024];
@@ -114,6 +116,9 @@ int msg_log(int type, const char* fmt, ...)
         return -1;
     }
 
+    if (!(instance_name = get_instance_name()))
+        instance_name = "Petri-Foo";
+
     timestamp(tm, 20);
 
     va_start(ap, fmt);
@@ -123,7 +128,8 @@ int msg_log(int type, const char* fmt, ...)
 
     va_end(ap);
 
-    rc = snprintf(msg, 1023, "%s %s: %s", tm, types[base_type], tmp);
+    rc = snprintf(msg, 1023, "[%s] %s %s: %s",
+                        instance_name, tm, types[base_type], tmp);
 
     if (rc >= 1023)
     {

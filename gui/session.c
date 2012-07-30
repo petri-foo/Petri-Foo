@@ -213,9 +213,12 @@ int session_init(int argc, char* argv[])
         int timeout = 50;
         debug("NSM_URL:'%s'\n", nsm_url);
 
+        msg_log(MSG_MESSAGE,    "Initializing as Non Session client "
+                                "with url '%s'\n", nsm_url);
+
         if (!(s->nsm_client = nsm_new()))
         {
-            debug("Failed to create NSM client\n");
+            msg_log(MSG_ERROR, "Failed to initialize as NSM client\n");
             return 0;
         }
 
@@ -224,13 +227,15 @@ int session_init(int argc, char* argv[])
 
         if (nsm_init(s->nsm_client, nsm_url) != 0)
         {
-            debug("Failed to initialize NSM\n");
+            msg_log(MSG_ERROR, "Failed to initialize as NSM client\n");
             nsm_free(s->nsm_client);
             s->nsm_client = 0;
             return -1;
         }
 
         debug("NSM initialized sending announce and waiting for open..\n");
+
+        msg_log(MSG_MESSAGE, "Awaiting response to NSM announce...\n");
 
         nsm_send_announce(  s->nsm_client,
                             "Petri-Foo",
@@ -249,11 +254,17 @@ int session_init(int argc, char* argv[])
     }
     #endif /* HAVE_LIBLO */
 
-    msg_log(MSG_MESSAGE, "Session management: %s\n",
-                            session_names[s->type]);
+    if (s->type == SESSION_TYPE_NONE)
+        msg_log(MSG_MESSAGE, "Not running under session management\n");
+    else
+        msg_log(MSG_MESSAGE, "Running under %s session management\n",
+                                                session_names[s->type]);
 
     if (possibly_autoconnect && s->type == SESSION_TYPE_NONE)
+    {
+        msg_log(MSG_MESSAGE, "Telling JACK driver to auto-connect ports\n");
         jackdriver_set_autoconnect(true);
+    }
 
     if (!nsm_url)
     {
@@ -381,6 +392,8 @@ int session_nsm_open_cb(const char* name, const char* display_name,
                                 name, display_name, client_id);
     debug("session callback data:%p\n", s);
 
+    msg_log(MSG_MESSAGE, "NSM client recieved open command\n");
+
     if (s->nsm_client_id)
     {
         debug("Detected session switch\n");
@@ -427,6 +440,8 @@ int session_nsm_save_cb(char** out_msg, void* userdata)
 
     assert(dish_file_has_state());
 
+    msg_log(MSG_MESSAGE, "NSM client recieved save command\n");
+
     dish_file_write();
 
     return ERR_OK;
@@ -454,6 +469,8 @@ static gboolean gui_jack_session_cb(void *data)
     jack_session_event_t *ev = (jack_session_event_t *)data;
     pf_session* s = _session;
 
+    msg_log(MSG_MESSAGE, "JACK Session activated\n");
+
     if (s->type != SESSION_TYPE_JACK
      && s->type != SESSION_TYPE_NONE)
     {
@@ -477,7 +494,7 @@ static gboolean gui_jack_session_cb(void *data)
                     "petri-foo --unconnected -U %s %s",
                     ev->client_uuid, s->bank_path);
 
-    debug("command:%s\n", command_buf);
+    msg_log(MSG_MESSAGE, "JACK Session command: '%s'\n", command_buf);
 
     dish_file_state_set_by_path(s->bank_path, true);
     dish_file_write();

@@ -23,14 +23,15 @@
 
 #include <gtk/gtk.h>
 
-#include "instance.h"
 #include "audio-settings.h"
-#include "gui.h"
-#include "petri-foo.h"
-#include "jackdriver.h"
-#include "driver.h"
-#include "sync.h"
 #include "dish_file.h"
+#include "driver.h"
+#include "gui.h"
+#include "instance.h"
+#include "jackdriver.h"
+#include "msg_log.h"
+#include "petri-foo.h"
+#include "sync.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -44,9 +45,15 @@ static void sync_cb(GtkToggleButton* button, gpointer data)
     (void)data;
 
     if (gtk_toggle_button_get_active (button))
+    {
         sync_set_method (SYNC_METHOD_JACK);
+        msg_log(MSG_MESSAGE, "LFOs syncing to JACK\n");
+    }
     else
+    {
         sync_set_method (SYNC_METHOD_MIDI);
+        msg_log(MSG_MESSAGE, "LFOs syncing to MIDI\n");
+    }
 }
 
 
@@ -54,12 +61,14 @@ static void restart_cb(GtkButton *button, gpointer data)
 {
     (void)button;(void)data;
     driver_restart();
+    msg_log(MSG_MESSAGE, "Driver restarted\n");
 }
 
 static void stop_cb(GtkButton *button, gpointer data)
 {
     (void)button;(void)data;
     driver_stop();
+    msg_log(MSG_MESSAGE, "Driver stopped\n");
 }
 
 

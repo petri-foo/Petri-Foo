@@ -1,3 +1,23 @@
+2012-07-29 James Morris <james@jwm-art.net>
+
+	* Petri-Foo 0.1.85
+
+	* Again, more information is available by looking at
+	  commit message history than reading this file.
+
+	* Non Session Manager support (provided optional
+	  dependency on liblo is met).
+
+	* "Full Save" for a more archive friendly save. Saves
+	  the .petri-foo dish file under a folder and creates
+          symlinks to external samples.
+
+	* Cleanup of cmake listfiles (CMakeLists.txt).
+
+	* Re-instated gui/log_display.[ch] and made it perhaps
+	  more useful but only just.
+
+
 2012-07-07 James Morris <james@jwm-art.net>
 
 	* dish_file_read no longer destroys existing patches

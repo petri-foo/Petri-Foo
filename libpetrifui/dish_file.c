@@ -613,7 +613,9 @@ static int dish_write(void)
                                                      dish_data->bank_dir,
                                                      samples_dir);
 
-            xmlNewProp(node1,   BAD_CAST "file", BAD_CAST path);
+            xmlNewProp(node1, BAD_CAST "file", BAD_CAST path);
+            msg_log(MSG_MESSAGE, "patch %d symlink %s to %s\n",
+                                                    i, path, samplepath);
             free(path);
         }
         else

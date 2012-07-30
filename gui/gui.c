@@ -41,6 +41,7 @@
 #include "driver.h"
 #include "global_settings.h"
 #include "gui.h"
+#include "log_display.h"
 #include "mastersection.h"
 #include "midisection.h"
 #include "mixer.h"
@@ -70,6 +71,7 @@ static GtkWidget* menubar = 0;
 static GtkWidget* menu_file = 0;
 static GtkWidget* menu_settings = 0;
 static GtkWidget* menu_patch = 0;
+static GtkWidget* menu_view = 0;
 static GtkWidget* menu_help = 0;
 
 /* file menu */
@@ -83,8 +85,10 @@ static GtkWidget* menu_file_full_save_as = 0;
 static GtkWidget* menu_file_export = 0;
 
 /* settings */
-/*static GtkWidget* menu_settings_fans = 0;*/
 static GtkWidget* menu_settings_auto_preview = 0;
+
+/* view */
+static GtkWidget* menu_view_log_display = 0;
 
 /* current patch, makes passing patch id to sample editor easier */
 static int cur_patch = -1;
@@ -286,6 +290,7 @@ void cb_menu_patch_add(GtkWidget* menu_item, gpointer data)
     if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
     {
         int id = patch_create();
+        const char* name = gtk_entry_get_text(GTK_ENTRY(entry));
 
         if (id < 0)
         {
@@ -294,12 +299,10 @@ void cb_menu_patch_add(GtkWidget* menu_item, gpointer data)
             return;
         }
 
-        patch_set_name(id, (char *)gtk_entry_get_text(GTK_ENTRY(entry)));
-
-        patch_set_channel(id,
-                channel_section_get_channel(
-                        CHANNEL_SECTION(channel_section)));
-
+        patch_set_name(id, name);
+        patch_set_channel(id, channel_section_get_channel(
+                                    CHANNEL_SECTION(channel_section)));
+        msg_log(MSG_MESSAGE, "created new patch '%s'\n", name);
         patch_list_update(PATCH_LIST(patch_list), id, PATCH_LIST_PATCH);
     }
 
@@ -322,6 +325,7 @@ void cb_menu_patch_add_default(GtkWidget* menu_item, gpointer data)
     patch_set_channel(id,
             channel_section_get_channel(
                         CHANNEL_SECTION(channel_section)));
+    msg_log(MSG_MESSAGE, "added Default patch\n");
 
     patch_list_update(PATCH_LIST(patch_list), id, PATCH_LIST_PATCH);
 }
@@ -345,6 +349,9 @@ void cb_menu_patch_duplicate(GtkWidget* menu_item, gpointer data)
                                             pf_error_str(pf_error_get()));
         return;
     }
+
+    msg_log(MSG_MESSAGE, "patch %d duplicated as %d '%s'\n", cp, id,
+                                                    patch_get_name(id));
 
     patch_list_update(PATCH_LIST(patch_list), id, PATCH_LIST_PATCH);
 }
@@ -402,8 +409,9 @@ void cb_menu_patch_rename(GtkWidget* menu_item, gpointer data)
      * due to sensitivity callback */
     if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
     {
-        val = patch_set_name (cp,
-                (char *)gtk_entry_get_text (GTK_ENTRY (entry)));
+        char* oname = patch_get_name(cp);
+        const char* name = gtk_entry_get_text(GTK_ENTRY(entry));
+        val = patch_set_name(cp, name);
 
         if (val < 0)
         {
@@ -412,6 +420,7 @@ void cb_menu_patch_rename(GtkWidget* menu_item, gpointer data)
             return;
         }
 
+        msg_log(MSG_MESSAGE, "patch '%s' renamed as '%s'\n", oname, name);
         index = patch_list_get_current_index (PATCH_LIST(patch_list));
         patch_list_update (PATCH_LIST(patch_list), index, PATCH_LIST_INDEX);
     }
@@ -426,6 +435,7 @@ void cb_menu_patch_remove(GtkWidget* menu_item, gpointer data)
 
     int cp;
     int index;
+    const char* name;
 
     if ((cp = patch_list_get_current_patch(PATCH_LIST(patch_list))) < 0)
     {
@@ -433,8 +443,11 @@ void cb_menu_patch_remove(GtkWidget* menu_item, gpointer data)
         return;
     }
 
+    name = patch_get_name(cp);
     index = patch_list_get_current_index (PATCH_LIST(patch_list));
     patch_destroy(cp);
+
+    msg_log(MSG_MESSAGE, "destroyed patch '%s'\n", name);
 
     if (index == 0)
         patch_list_update(PATCH_LIST(patch_list), index,
@@ -505,6 +518,31 @@ static void cb_menu_settings_auto_preview(GtkWidget* widget, gpointer data)
     settings->sample_auto_preview = gtk_check_menu_item_get_active(
                         GTK_CHECK_MENU_ITEM(menu_settings_auto_preview));
 }
+
+
+void cb_menu_view_log_display_showing(gboolean active)
+{
+    gtk_check_menu_item_set_active(
+                    GTK_CHECK_MENU_ITEM(menu_view_log_display), active);
+}
+
+
+static void cb_menu_view_log_display(GtkWidget* widget, gpointer data)
+{
+    (void)widget; (void)data;
+    if (gtk_check_menu_item_get_active(
+                GTK_CHECK_MENU_ITEM(menu_view_log_display)))
+    {
+        log_display_show();
+    }
+    else
+        log_display_hide();
+}
+
+
+
+
+
 
 static void cb_menu_help_stfu (GtkWidget* widget, gpointer data)
 {
@@ -694,6 +732,12 @@ int gui_init(void)
                                         menu_settings_auto_preview);
     gtk_widget_show(menu_settings_auto_preview);
 
+    /* view menu */
+    menu_view = gui_menu_add(menubar, "View", NULL, NULL);
+    menu_view_log_display =
+        gui_menu_check_add(menu_view, "Message Log", FALSE,
+                G_CALLBACK(cb_menu_view_log_display), window);
+
     /* help menu */
     menu_help = gui_menu_add(menubar, "Help", NULL, NULL);
     gui_menu_add(menu_help, "All Sound Off!",
@@ -758,6 +802,7 @@ int gui_init(void)
     /* intialize children */
     sample_editor_init(window);
     audio_settings_init(window);
+    log_display_init(window);
 
     /* priming updates */
 

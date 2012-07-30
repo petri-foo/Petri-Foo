@@ -139,6 +139,9 @@ static void cb_load(raw_box* rb)
         }
     }
 
+    msg_log(MSG_MESSAGE, "loaded sample '%s' for patch %d '%s'\n",
+                                name, patch, patch_get_name(patch));
+
     if (name)
     {
         char* dirname = g_path_get_dirname(name);
