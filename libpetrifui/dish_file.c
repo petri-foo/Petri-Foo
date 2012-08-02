@@ -562,6 +562,7 @@ static int dish_write(void)
                                                         : "basic"));
     if (dish_data->full_save)
     {
+        free(file_ops_mkdir(0, dish_data->bank_dir));
         samples_dir = file_ops_mkdir("samples", dish_data->bank_dir);
 
         if (!samples_dir)
@@ -754,6 +755,8 @@ static int dish_write(void)
 
     msg_log(MSG_MESSAGE, "Successfully wrote dish file '%s'\n",
                                                 dish_data->file_path);
+
+    free(samples_dir);
 
     return rc;
 }

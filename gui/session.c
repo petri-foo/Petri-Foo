@@ -338,41 +338,6 @@ bool session_is_nsm(void)
 }
 
 
-/* bank_dir_to_bank_path:
-
-    /home/user/pf-banks/bank_dir/
-
-        --->
-
-    /home/user/pf-banks/bank_dir/bank_dir.petri-foo
- */
-
-static char* bank_dir_to_bank_path(const char* dir)
-{
-    size_t lc;
-    char* bank_path = 0;
-    char* bank_dir = 0;
-    char* name = 0;
-    char* filename = 0;
-
-    bank_dir = strdup(dir);
-    lc = strlen(bank_dir) - 1;
-
-    if (*(bank_dir + lc) == '/')
-        *(bank_dir + lc) = '\0';
-
-    file_ops_split_path(bank_dir, 0, &name);
-    filename = file_ops_join_ext(name, dish_file_extension());
-    bank_path = file_ops_join_path(bank_dir, filename);
-
-    free(filename);
-    free(name);
-    free(bank_dir);
-
-    return bank_path;
-}
-
-
 #if HAVE_LIBLO
 /* Non Session Management */
 int session_nsm_open_cb(const char* name, const char* display_name,
@@ -409,7 +374,12 @@ int session_nsm_open_cb(const char* name, const char* display_name,
     s->nsm_client_id = strdup(client_id);
     set_instance_name(client_id);
 
-    s->bank_path = bank_dir_to_bank_path(name);
+    {
+        char* filename = 0;
+        filename = file_ops_join_ext(client_id, dish_file_extension());
+        s->bank_path = file_ops_join_path(name, filename);
+        free(filename);
+    }
 
     if (session_switch)
     {
@@ -460,6 +430,33 @@ void session_jack_cb(jack_session_event_t *event, void *arg )
      */
     g_idle_add(gui_jack_session_cb, event);
 }
+
+
+static char* bank_dir_to_bank_path(const char* dir)
+{
+    size_t lc;
+    char* bank_path = 0;
+    char* bank_dir = 0;
+    char* name = 0;
+    char* filename = 0;
+
+    bank_dir = strdup(dir);
+    lc = strlen(bank_dir) - 1;
+
+    if (*(bank_dir + lc) == '/')
+        *(bank_dir + lc) = '\0';
+
+    file_ops_split_path(bank_dir, 0, &name);
+    filename = file_ops_join_ext(name, dish_file_extension());
+    bank_path = file_ops_join_path(bank_dir, filename);
+
+    free(filename);
+    free(name);
+    free(bank_dir);
+
+    return bank_path;
+}
+
 
 
 static gboolean gui_jack_session_cb(void *data)
