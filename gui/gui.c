@@ -739,7 +739,7 @@ int gui_init(void)
                 G_CALLBACK(cb_menu_view_log_display), window);
 
     /* help menu */
-    menu_help = gui_menu_add(menubar, "Help", NULL, NULL);
+    menu_help = gui_menu_add(menubar, ">Help", NULL, NULL);
     gui_menu_add(menu_help, "All Sound Off!",
             G_CALLBACK(cb_menu_help_stfu),          NULL);
     gui_menu_add(menu_help, "About...",
@@ -872,6 +872,14 @@ GtkWidget* gui_menu_add(GtkWidget* menu, const char* label, GCallback cb,
 
     if (label)
     {
+        gboolean rightjustify = FALSE;
+
+        if (*label == '>')
+        {
+            ++label;
+            rightjustify = TRUE;
+        }
+
         item = gtk_menu_item_new_with_label(label);
 
         if (cb)
@@ -881,6 +889,9 @@ GtkWidget* gui_menu_add(GtkWidget* menu, const char* label, GCallback cb,
             submenu = gtk_menu_new();
             gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), submenu);
         }
+
+        if (rightjustify)
+            gtk_menu_item_set_right_justified (GTK_MENU_ITEM(item), TRUE);
     }
     else
         item = gtk_menu_item_new();
