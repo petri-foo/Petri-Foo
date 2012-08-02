@@ -7,7 +7,7 @@ endif (COMMAND CMAKE_POLICY)
 project(Petri-Foo)
 
 set(Petri-Foo_VERSION_MAJOR 1)
-set(Petri-Foo_VERSION_MINOR 85)
+set(Petri-Foo_VERSION_MINOR 86)
 set(BINDIR  "bin" CACHE STRING "Where to install binaries")
 set(DATADIR "share/petri-foo" CACHE STRING "Where to install data files")
 set(APPLICATIONS_DIR "share/applications" CACHE STRING "Where to install desktop files")
