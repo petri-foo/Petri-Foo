@@ -220,6 +220,8 @@ int midi_get_client_id(void)
 
 void midi_stop(void)
 {
+    debug("midi stop\n");
+
     if (!running)
     {
         debug ("MIDI not running, so not stopping\n");

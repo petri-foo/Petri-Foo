@@ -795,12 +795,10 @@ bool patch_get_monophonic(int patch_id)
 }
 
 /* get the name */
-char *patch_get_name(int patch_id)
+const char *patch_get_name(int patch_id)
 {
-    char *name;
     assert(patchok(patch_id));
-    name = strdup (patches[patch_id]->name);
-    return name;
+    return patches[patch_id]->name;
 }
 
 

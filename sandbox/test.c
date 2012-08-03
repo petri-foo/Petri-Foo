@@ -66,6 +66,145 @@
 
 
 
+#include <getopt.h>
+#include <pthread.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "dish_file.h"
+#include "driver.h"
+#include "instance.h"
+#include "jackdriver.h"
+#include "lfo.h"
+#include "midi.h"
+#include "mixer.h"
+#include "mod_src.h"
+#include "msg_log.h"
+#include "names.h"
+#include "patch.h"
+#include "patch_util.h"
+#include "petri-foo.h"
+
+
+void show_usage (void)
+{
+    printf ("Usage: petri-foo [options] [bank]\n");
+    printf("(Bank files use .petri-foo extension)\n\n");
+
+    printf ("Options:\n");
+    printf("  -a, --autoconnect         Auto-connect through JACK to "
+                                        "system playback ports\n");
+    printf("  -j, --jack-name <name>    Specify JACK client name, "
+                                        "defaults to \"Petri-Foo\"\n" );
+    printf("  -u, --unconnected         Don't auto-connect to JACK system "
+                                        "playback ports (deprecated)\n");
+    printf("  -U, --uuid <uuid>         Set UUID for JACK session\n");
+    printf("  -h, --help                Display this help message\n\n");
+    printf("For more information, please see:"
+            "http://petri-foo.sourceforge.net/\n");
+}
+
+
+void cleanup(void)
+{
+    msg_log(MSG_MESSAGE, "Cleanup...\n");
+    dish_file_state_cleanup();
+    midi_stop();
+    driver_stop();
+    patch_shutdown();
+    mixer_shutdown();
+    free_instance_name();
+    mod_src_destroy();
+
+    msg_log(MSG_MESSAGE, "Goodbye!\n");
+
+    exit(0);
+}
+
+
+void sigint_handler()
+{
+    puts("\n");
+    msg_log(MSG_MESSAGE, "Caught SIGINT signal\n");
+    cleanup();
+}
+
+void sighup_handler()
+{
+    puts("\n");
+    msg_log(MSG_MESSAGE, "Caught SIGHUP signal\n");
+    cleanup();
+}
+
+void sigterm_handler()
+{
+    puts("\n");
+    msg_log(MSG_MESSAGE, "Caught SIGTERM signal\n");
+    cleanup();
+}
+
+
+int main(int argc, char *argv[])
+{
+    enum { SC = 3 };
+    int opt, n;
+    int sigs[] = { SIGINT, SIGHUP, SIGTERM };
+    void (*sighandlers[])() = { sigint_handler,
+                                sighup_handler,
+                                sigterm_handler };
+    struct sigaction s[SC];
+
+    for (n = 0; n < SC; ++n)
+    {
+        s[n].sa_handler = SIG_IGN;
+        sigfillset(&s[n].sa_mask);
+        s[n].sa_flags = 0;
+        sigaction(sigs[n], &s[n], NULL);
+    }
+
+    for (opt = 1; opt < argc; ++opt)
+    {
+        if (strcmp(argv[opt], "-h") == 0
+         || strcmp(argv[opt], "--help") == 0)
+        {
+            show_usage();
+            return 0;
+        }
+    }
+
+    mod_src_create();
+    driver_init();
+    lfo_tables_init();
+    mixer_init();
+    patch_control_init();
+    dish_file_state_init();
+    driver_start();
+    midi_start();
+
+    dish_file_read( "/home/sirrom/Audio_Sketchbook/"
+                    "pf-banks/ftest001/ftest001.petri-foo");
+
+    for (n = 0; n < SC; ++n)
+    {
+        s[n].sa_handler = sighandlers[n];
+        sigfillset(&s[n].sa_mask);
+        s[n].sa_flags = 0;
+        sigaction(sigs[n], &s[n], NULL);
+    }
+
+    while(1)
+        sleep(1);
+
+    cleanup();
+
+    return 0;
+}
+
+
+
+/*
+
 int main(int argc, char *argv[])
 {
 
@@ -129,10 +268,10 @@ int main(int argc, char *argv[])
 }
 
 
+*/
 
 
 /*
-
 int main(int argc, char *argv[])
 {
     mod_src_create();
@@ -166,7 +305,6 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-
 
 */
 

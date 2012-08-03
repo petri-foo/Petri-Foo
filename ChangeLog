@@ -1,5 +1,14 @@
 2012-08-02 James Morris <james@jwm-art.net>
 
+	* dish_file.c: call xmlFreeDoc on sucessful read.
+	* dish_file.c: free str from xmlGetProp.
+	* patch_voice.c: free voice data.
+	* patch_data.c: call lfo_free on glfos.
+	* patch_data.c: call sample_free.
+	* patch_get_name return const char*.
+
+2012-08-02 James Morris <james@jwm-art.net>
+
         * Petri-Foo 0.1.86
 
 	* Always create session dir for new sessions.

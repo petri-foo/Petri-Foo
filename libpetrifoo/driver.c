@@ -72,6 +72,8 @@ int driver_start(void)
 
 void driver_stop(void)
 {
+    debug("driver stop\n");
+
     if (curdriver < 0)
         return;
 

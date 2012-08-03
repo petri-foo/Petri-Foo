@@ -757,6 +757,7 @@ static int dish_write(void)
                                                 dish_data->file_path);
 
     free(samples_dir);
+    free(patch_id);
 
     return rc;
 }
@@ -768,10 +769,54 @@ static bool xmlstr_to_bool(xmlChar* str)
      || xmlStrcasecmp(str, BAD_CAST "on") == 0
      || xmlStrcasecmp(str, BAD_CAST "yes") == 0)
     {
+        xmlFree(str);
         return true;
     }
 
+    xmlFree(str);
     return false;
+}
+
+
+int get_prop_int(xmlNodePtr node, const char* name, int* value)
+{
+    int ret = 0;
+    xmlChar* prop = xmlGetProp(node, BAD_CAST name);
+
+    if (prop)
+    {
+        ret = sscanf((const char*)prop, "%d", value);
+        xmlFree(prop);
+    }
+
+    return ret;
+}
+
+int get_prop_float(xmlNodePtr node, const char* name, float* value)
+{
+    int ret = 0;
+    xmlChar* prop = xmlGetProp(node, BAD_CAST name);
+
+    if (prop)
+    {
+        ret = sscanf((const char*)prop, "%f", value);
+        xmlFree(prop);
+    }
+
+    return ret;
+}
+
+
+int get_prop_mod_src(xmlNodePtr node, const char* name, int* mod_id)
+{
+    xmlChar* prop = xmlGetProp(node, BAD_CAST name);
+
+    if (!prop)
+        return 0;
+
+    *mod_id = mod_src_id((const char*)prop, MOD_SRC_ALL);
+    xmlFree(prop);
+    return 1;
 }
 
 
@@ -779,7 +824,6 @@ static int dish_file_read_sample(xmlNodePtr node,  int patch_id)
 {
     xmlChar* prop;
     xmlNodePtr node1;
-    int s;
     char* filename = 0;
     bool sample_loaded = false;
 
@@ -819,6 +863,9 @@ static int dish_file_read_sample(xmlNodePtr node,  int patch_id)
         }
     }
 
+    if (prop)
+        xmlFree(prop);
+
     if ((prop = xmlGetProp(node, BAD_CAST "mode")))
     {
         if (xmlStrcmp(prop, BAD_CAST "singleshot") == 0)
@@ -833,15 +880,21 @@ static int dish_file_read_sample(xmlNodePtr node,  int patch_id)
         {
             msg_log(MSG_ERROR, "Invalid sample play mode:%s\n", prop);
         }
+
+        xmlFree(prop);
     }
 
     if ((prop = xmlGetProp(node, BAD_CAST "reverse"))
-                                                && xmlstr_to_bool(prop))
+     && xmlstr_to_bool(prop))
+    {
         mode |= PATCH_PLAY_REVERSE;
+    }
 
     if ((prop = xmlGetProp(node, BAD_CAST "to_end"))
-                                                && xmlstr_to_bool(prop))
+     && xmlstr_to_bool(prop))
+    {
         mode |= PATCH_PLAY_TO_END;
+    }
 
     patch_set_play_mode(patch_id, mode);
 
@@ -849,28 +902,26 @@ static int dish_file_read_sample(xmlNodePtr node,  int patch_id)
         node1 != NULL;
         node1 = node1->next)
     {
+        int n;
+
         if (node1->type != XML_ELEMENT_NODE)
             continue;
 
         if (!sample_loaded && filename)
         {
-            int n;
             int raw_samplerate = 0;
             int raw_channels = 0;
             int sndfile_format = 0;
 
             if (xmlStrcmp(node1->name, BAD_CAST "Raw") == 0)
             {
-                if ((prop = xmlGetProp(node1, BAD_CAST "samplerate")))
-                    if (sscanf((const char*)prop, "%d", &n) == 1)
+                if (get_prop_int(node1, "samplerate", &n))
                         raw_samplerate = n;
 
-                if ((prop = xmlGetProp(node1, BAD_CAST "channels")))
-                    if (sscanf((const char*)prop, "%d", &n) == 1)
+                if (get_prop_int(node1, "channels", &n))
                         raw_channels = n;
 
-                if ((prop = xmlGetProp(node1, BAD_CAST "sndfile_format")))
-                    if (sscanf((const char*)prop, "%d", &n) == 1)
+                if (get_prop_int(node1, "sndfile_format", &n))
                         sndfile_format = n;
             }
 
@@ -895,56 +946,63 @@ static int dish_file_read_sample(xmlNodePtr node,  int patch_id)
 
         if (xmlStrcmp(node1->name, BAD_CAST "Play") == 0)
         {
-            if ((prop = xmlGetProp(node1, BAD_CAST "start")))
-            {
-                if (sscanf((const char*)prop, "%d", &s) == 1)
-                    play_start = s * sr_ratio;
-            }
-            if ((prop = xmlGetProp(node1, BAD_CAST "stop")))
-                if (sscanf((const char*)prop, "%d", &s) == 1)
-                    play_stop = s * sr_ratio;
+            if (get_prop_int(node1, "start", &n))
+                play_start = n * sr_ratio;
 
-            if ((prop = xmlGetProp(node1, BAD_CAST "fade_samples")))
-                if (sscanf((const char*)prop, "%d", &s) == 1)
-                    fade_samples = s * sr_ratio;
+            if (get_prop_int(node1, "stop", &n))
+                play_stop = n * sr_ratio;
+
+            if (get_prop_int(node1, "fade_samples", &n))
+                fade_samples = n * sr_ratio;
         }
         else if (xmlStrcmp(node1->name, BAD_CAST "Loop") == 0)
         {
-            if ((prop = xmlGetProp(node1, BAD_CAST "start")))
-                if (sscanf((const char*)prop, "%d", &s) == 1)
-                    loop_start = s * sr_ratio;
+            if (get_prop_int(node1, "start", &n))
+                loop_start = n * sr_ratio;
 
-            if ((prop = xmlGetProp(node1, BAD_CAST "stop")))
-                if (sscanf((const char*)prop, "%d", &s) == 1)
-                    loop_stop = s * sr_ratio;
+            if (get_prop_int(node1, "stop", &n))
+                loop_stop = n * sr_ratio;
 
-            if ((prop = xmlGetProp(node1, BAD_CAST "xfade_samples")))
-                if (sscanf((const char*)prop, "%d", &s) == 1)
-                    xfade_samples = s * sr_ratio;
+            if (get_prop_int(node1, "xfade_samples", &n))
+                xfade_samples = n * sr_ratio;
         }
         else if (xmlStrcmp(node1->name, BAD_CAST "Note") == 0)
         {
-            int lower, root, upper, lower_vel, upper_vel;
+            int lower = 60, root = 60, upper = 60;
+            int lower_vel = 0;
+            int upper_vel = 127;
 
-            if ((prop = xmlGetProp(node1, BAD_CAST "root")))
-                if (sscanf((const char*)prop, "%d", &root) == 1)
-                    patch_set_root_note(patch_id,  root);
+            get_prop_int(node1, "root", &root);
+            get_prop_int(node1, "lower", &lower);
+            get_prop_int(node1, "upper", &upper);
+            get_prop_int(node1, "velocity_lower", &lower_vel);
+            get_prop_int(node1, "velocity_upper", &upper_vel);
 
-            if ((prop = xmlGetProp(node1, BAD_CAST "lower")))
-                if (sscanf((const char*)prop, "%d", &lower) == 1)
-                    patch_set_lower_note(patch_id,  lower);
+            if (lower > upper)
+            {
+                int tmp = lower;
+                lower = upper;
+                upper = tmp;
+                msg_log(MSG_WARNING, "swapped lower/upper note values\n");
+            }
 
-            if ((prop = xmlGetProp(node1, BAD_CAST "upper")))
-                if (sscanf((const char*)prop, "%d", &upper) == 1)
-                    patch_set_upper_note(patch_id,  upper);
-            
-            if ((prop = xmlGetProp(node1, BAD_CAST "velocity_lower")))
-                if (sscanf((const char*)prop, "%d", &lower_vel) == 1)
-                    patch_set_lower_vel(patch_id,  lower_vel);
+            if (root < lower)
+            {
+                msg_log(MSG_WARNING,"adjusting root note to lower value\n");
+                root = lower;
+            }
 
-            if ((prop = xmlGetProp(node1, BAD_CAST "velocity_upper")))
-                if (sscanf((const char*)prop, "%d", &upper_vel) == 1)
-                    patch_set_upper_vel(patch_id,  upper_vel);
+            if (root > upper)
+            {
+                msg_log(MSG_WARNING,"adjusting root note to upper value\n");
+                root = upper;
+            }
+
+            patch_set_root_note(patch_id, root);
+            patch_set_lower_note(patch_id, lower);
+            patch_set_upper_note(patch_id, upper);
+            patch_set_lower_vel(patch_id, lower_vel);
+            patch_set_upper_vel(patch_id, upper_vel);
         }
         else
         {
@@ -984,33 +1042,26 @@ static int dish_file_read_eg(xmlNodePtr node, int patch_id)
     if ((prop = xmlGetProp(node, BAD_CAST "active")))
         patch_set_env_active(patch_id, eg_id, xmlstr_to_bool(prop));
 
-    if ((prop = xmlGetProp(node, BAD_CAST "delay")))
-        if (sscanf((const char*)prop, "%f", &n) == 1)
-            patch_set_env_delay(patch_id, eg_id, n);
+    if (get_prop_float(node, "delay", &n))
+        patch_set_env_delay(patch_id, eg_id, n);
 
-    if ((prop = xmlGetProp(node, BAD_CAST "attack")))
-        if (sscanf((const char*)prop, "%f", &n) == 1)
-            patch_set_env_attack(patch_id, eg_id, n);
+    if (get_prop_float(node, "attack", &n))
+        patch_set_env_attack(patch_id, eg_id, n);
 
-    if ((prop = xmlGetProp(node, BAD_CAST "hold")))
-        if (sscanf((const char*)prop, "%f", &n) == 1)
-            patch_set_env_hold(patch_id, eg_id, n);
+    if (get_prop_float(node, "hold", &n))
+        patch_set_env_hold(patch_id, eg_id, n);
 
-    if ((prop = xmlGetProp(node, BAD_CAST "decay")))
-        if (sscanf((const char*)prop, "%f", &n) == 1)
-            patch_set_env_decay(patch_id, eg_id, n);
+    if (get_prop_float(node, "decay", &n))
+        patch_set_env_decay(patch_id, eg_id, n);
 
-    if ((prop = xmlGetProp(node, BAD_CAST "sustain")))
-        if (sscanf((const char*)prop, "%f", &n) == 1)
-            patch_set_env_sustain(patch_id, eg_id, n);
+    if (get_prop_float(node, "sustain", &n))
+        patch_set_env_sustain(patch_id, eg_id, n);
 
-    if ((prop = xmlGetProp(node, BAD_CAST "release")))
-        if (sscanf((const char*)prop, "%f", &n) == 1)
-            patch_set_env_release(patch_id, eg_id, n);
+    if (get_prop_float(node, "release", &n))
+        patch_set_env_release(patch_id, eg_id, n);
 
-    if ((prop = xmlGetProp(node, BAD_CAST "key_tracking")))
-        if (sscanf((const char*)prop, "%f", &n) == 1)
-            patch_set_env_key_amt(patch_id, eg_id, n);
+    if (get_prop_float(node, "key_tracking", &n))
+        patch_set_env_key_amt(patch_id, eg_id, n);
 
     return 0;
 }
@@ -1021,14 +1072,13 @@ dish_file_read_lfo_freq_data(xmlNodePtr node, int patch_id, int lfo_id)
     xmlNodePtr node1;
     xmlChar* prop;
     float n;
+    int mod;
 
-    if ((prop = xmlGetProp(node, BAD_CAST "hrtz")))
-        if (sscanf((const char*)prop, "%f", &n) == 1)
-            patch_set_lfo_freq(patch_id, lfo_id, n);
+    if (get_prop_float(node, "hrtz", &n))
+        patch_set_lfo_freq(patch_id, lfo_id, n);
 
-    if ((prop = xmlGetProp(node, BAD_CAST "beats")))
-        if (sscanf((const char*)prop, "%f", &n) == 1)
-            patch_set_lfo_sync_beats(patch_id, lfo_id, n);
+    if (get_prop_float(node, "beats", &n))
+        patch_set_lfo_sync_beats(patch_id, lfo_id, n);
 
     if ((prop = xmlGetProp(node, BAD_CAST "sync")))
         patch_set_lfo_sync(patch_id, lfo_id, xmlstr_to_bool(prop));
@@ -1042,23 +1092,19 @@ dish_file_read_lfo_freq_data(xmlNodePtr node, int patch_id, int lfo_id)
 
         if (xmlStrcmp(node1->name, BAD_CAST "Mod1") == 0)
         {
-            if ((prop = xmlGetProp(node1, BAD_CAST "source")))
-                patch_set_lfo_fm1_src(patch_id, lfo_id,
-                    mod_src_id((const char*)prop, MOD_SRC_ALL));
+            if (get_prop_mod_src(node1, "source", &mod))
+                patch_set_lfo_fm1_src(patch_id, lfo_id, mod);
 
-            if ((prop = xmlGetProp(node1, BAD_CAST "amount")))
-                if (sscanf((const char*)prop, "%f", &n) == 1)
-                    patch_set_lfo_fm1_amt(patch_id, lfo_id, n);
+            if (get_prop_float(node1, "amount", &n))
+                patch_set_lfo_fm1_amt(patch_id, lfo_id, n);
         }
         else if (xmlStrcmp(node1->name, BAD_CAST "Mod2") == 0)
         {
-            if ((prop = xmlGetProp(node1, BAD_CAST "source")))
-                patch_set_lfo_fm2_src(patch_id, lfo_id,
-                    mod_src_id((const char*)prop, MOD_SRC_ALL));
+            if (get_prop_mod_src(node1, "source", &mod))
+                patch_set_lfo_fm2_src(patch_id, lfo_id, mod);
 
-            if ((prop = xmlGetProp(node1, BAD_CAST "amount")))
-                if (sscanf((const char*)prop, "%f", &n) == 1)
-                    patch_set_lfo_fm2_amt(patch_id, lfo_id, n);
+            if (get_prop_float(node1, "amount", &n))
+                patch_set_lfo_fm2_amt(patch_id, lfo_id, n);
         }
         else
         {
@@ -1077,23 +1123,25 @@ dish_file_read_lfo_amp_data(xmlNodePtr node, int patch_id, int lfo_id)
     xmlNodePtr node1;
     xmlChar* prop;
     float n;
+    int mod;
 
     if ((prop = xmlGetProp(node, BAD_CAST "shape")))
+    {
         patch_set_lfo_shape(patch_id, lfo_id,
             (LFOShape)names_lfo_shapes_id_from_str((const char*)prop));
+        xmlFree(prop);
+    }
 
     if ((prop = xmlGetProp(node, BAD_CAST "positive")))
         patch_set_lfo_positive(patch_id, lfo_id, xmlstr_to_bool(prop));
 
     if (!mod_src_is_global(lfo_id)) /* already know it IS an LFO id */
     {
-        if ((prop = xmlGetProp(node, BAD_CAST "delay")))
-            if (sscanf((const char*)prop, "%f", &n) == 1)
-                patch_set_lfo_delay(patch_id, lfo_id, n);
+        if (get_prop_float(node, "delay", &n))
+            patch_set_lfo_delay(patch_id, lfo_id, n);
 
-        if ((prop = xmlGetProp(node, BAD_CAST "attack")))
-            if (sscanf((const char*)prop, "%f", &n) == 1)
-                patch_set_lfo_attack(patch_id, lfo_id, n);
+        if (get_prop_float(node, "attack", &n))
+            patch_set_lfo_attack(patch_id, lfo_id, n);
     }
 
     for (   node1 = node->children;
@@ -1105,23 +1153,19 @@ dish_file_read_lfo_amp_data(xmlNodePtr node, int patch_id, int lfo_id)
 
         if (xmlStrcmp(node1->name, BAD_CAST "Mod1") == 0)
         {
-            if ((prop = xmlGetProp(node1, BAD_CAST "source")))
-                patch_set_lfo_am1_src(patch_id, lfo_id,
-                    mod_src_id((const char*)prop, MOD_SRC_ALL));
+            if (get_prop_mod_src(node1, "source", &mod))
+                patch_set_lfo_am1_src(patch_id, lfo_id, mod);
 
-            if ((prop = xmlGetProp(node1, BAD_CAST "amount")))
-                if (sscanf((const char*)prop, "%f", &n) == 1)
-                    patch_set_lfo_am1_amt(patch_id, lfo_id, n);
+            if (get_prop_float(node1, "amount", &n))
+                patch_set_lfo_am1_amt(patch_id, lfo_id, n);
         }
         else if (xmlStrcmp(node1->name, BAD_CAST "Mod2") == 0)
         {
-            if ((prop = xmlGetProp(node1, BAD_CAST "source")))
-                patch_set_lfo_am2_src(patch_id, lfo_id,
-                    mod_src_id((const char*)prop, MOD_SRC_ALL));
+            if (get_prop_mod_src(node1, "source", &mod))
+                patch_set_lfo_am2_src(patch_id, lfo_id, mod);
 
-            if ((prop = xmlGetProp(node1, BAD_CAST "amount")))
-                if (sscanf((const char*)prop, "%f", &n) == 1)
-                    patch_set_lfo_am2_amt(patch_id, lfo_id, n);
+            if (get_prop_float(node1, "amount", &n))
+                patch_set_lfo_am2_amt(patch_id, lfo_id, n);
         }
         else
         {
@@ -1181,8 +1225,8 @@ static int
 dish_file_read_param(xmlNodePtr node, int patch_id, PatchParamType param)
 {
     const char* pname = 0;
-    float   n;
-    xmlChar* prop;
+    float n;
+    int s;
     xmlNodePtr node1;
 
     switch(param)
@@ -1196,27 +1240,20 @@ dish_file_read_param(xmlNodePtr node, int patch_id, PatchParamType param)
         return -1;
     }
 
-    if ((prop = xmlGetProp(node, BAD_CAST pname)))
-        if (sscanf((const char*)prop, "%f", &n) == 1)
-            patch_param_set_value(patch_id, param, n);
+    if (get_prop_float(node, pname, &n))
+        patch_param_set_value(patch_id, param, n);
 
     if (param == PATCH_PARAM_PITCH)
     {
-        if ((prop = xmlGetProp(node, BAD_CAST "tuning_range")))
-        {
-            int steps;
-            if (sscanf((const char*)prop, "%d", &steps) == 1)
-                patch_set_pitch_steps(patch_id, steps);
-        }
+        if (get_prop_int(node, "tuning_range", &s))
+            patch_set_pitch_steps(patch_id, s);
     }
 
-    if ((prop = xmlGetProp(node, BAD_CAST "velocity_sensing")))
-        if (sscanf((const char*)prop, "%f", &n) == 1)
-            patch_param_set_vel_amount(patch_id, param, n);
+    if (get_prop_float(node, "velocity_sensing", &n))
+        patch_param_set_vel_amount(patch_id, param, n);
 
-    if ((prop = xmlGetProp(node, BAD_CAST "key_tracking")))
-        if (sscanf((const char*)prop, "%f", &n) == 1)
-            patch_param_set_key_amount(patch_id, param, n);
+    if (get_prop_float(node, "key_tracking", &n))
+        patch_param_set_key_amount(patch_id, param, n);
 
     for (   node1 = node->children;
             node1 != NULL;
@@ -1226,26 +1263,24 @@ dish_file_read_param(xmlNodePtr node, int patch_id, PatchParamType param)
             continue;
 
         int slot = -1;
+        int mod;
 
         if (sscanf((const char*)node1->name, "Mod%d", &slot) == 1
             && slot > 0 && slot <= MAX_MOD_SLOTS)
         {
             --slot; /* slot 0 is named as MOD1 */
 
-            if ((prop = xmlGetProp(node1, BAD_CAST "source")))
-                patch_param_set_mod_src(patch_id, param, slot,
-                            mod_src_id((const char*)prop, MOD_SRC_ALL));
+            if (get_prop_mod_src(node1, "source", &mod))
+                patch_param_set_mod_src(patch_id, param, slot, mod);
 
-            if ((prop = xmlGetProp(node1, BAD_CAST "amount")))
-                if (sscanf((const char*)prop, "%f", &n) == 1)
-                    patch_param_set_mod_amt(patch_id, param, slot, n);
+            if (get_prop_float(node1, "amount", &n))
+                patch_param_set_mod_amt(patch_id, param, slot, n);
         }
         else if ((param == PATCH_PARAM_AMPLITUDE
                 && xmlStrcmp(node1->name, BAD_CAST "Env") == 0))
         {
-            if ((prop = xmlGetProp(node1, BAD_CAST "source")))
-                patch_param_set_mod_src(patch_id, param, EG_MOD_SLOT,
-                            mod_src_id((const char*)prop, MOD_SRC_ALL));
+            if (get_prop_mod_src(node1, "source", &mod))
+                patch_param_set_mod_src(patch_id, param, EG_MOD_SLOT, mod);
         }
         else
         {
@@ -1276,14 +1311,16 @@ dish_file_read_bool(xmlNodePtr node, int patch_id, PatchBoolType bool_type)
             continue;
 
         if (xmlStrcmp(node1->name, BAD_CAST "Mod") == 0)
-        {
+        {   /*  don't use get_prop_mod_src as it doesn't do masking */
             if ((prop = xmlGetProp(node1, BAD_CAST "source")))
+            {
                 patch_bool_set_mod_src(patch_id, bool_type,
                             mod_src_id((const char*)prop, MOD_SRC_GLOBALS));
+                xmlFree(prop);
+            }
 
-            if ((prop = xmlGetProp(node1, BAD_CAST "threshold")))
-                if (sscanf((const char*)prop, "%f", &n) == 1)
-                    patch_bool_set_thresh(patch_id, bool_type, n);
+            if (get_prop_float(node1, "threshold", &n))
+                patch_bool_set_thresh(patch_id, bool_type, n);
         }
         else
         {
@@ -1317,14 +1354,16 @@ dish_file_read_float(xmlNodePtr node, int patch_id,
             continue;
 
         if (xmlStrcmp(node1->name, BAD_CAST "Mod") == 0)
-        {
+        {   /*  don't use get_prop_mod_src as it doesn't do masking */
             if ((prop = xmlGetProp(node1, BAD_CAST "source")))
+            {
                 patch_float_set_mod_src(patch_id, float_type,
                             mod_src_id((const char*)prop, MOD_SRC_GLOBALS));
+                xmlFree(prop);
+            }
 
-            if ((prop = xmlGetProp(node1, BAD_CAST "amount")))
-                if (sscanf((const char*)prop, "%f", &n) == 1)
-                    patch_float_set_mod_amt(patch_id, float_type, n);
+            if (get_prop_float(node1, "amount", &n))
+                patch_float_set_mod_amt(patch_id, float_type, n);
         }
         else
         {
@@ -1344,13 +1383,11 @@ static int dish_file_read_voice(xmlNodePtr node, int patch_id)
 
     int i;
 
-    if ((prop = xmlGetProp(node, BAD_CAST "cut")))
-        if (sscanf((const char*)prop, "%d", &i))
-            patch_set_cut(patch_id, i);
+    if (get_prop_int(node, "cut", &i))
+        patch_set_cut(patch_id, i);
 
-    if ((prop = xmlGetProp(node, BAD_CAST "cut_by")))
-        if (sscanf((const char*)prop, "%d", &i))
-            patch_set_cut_by(patch_id, i);
+    if (get_prop_int(node, "cut_by", &i))
+        patch_set_cut_by(patch_id, i);
 
     if ((prop = xmlGetProp(node, BAD_CAST "monophonic")))
         patch_set_monophonic(patch_id, xmlstr_to_bool(prop));
@@ -1396,6 +1433,7 @@ static int dish_read(const char *path)
     xmlNodePtr  node2;
     xmlChar*    prop;
     float   n;
+    int i;
     bool full_save = false;
 
     debug("Loading bank from file %s\n", path);
@@ -1437,10 +1475,13 @@ static int dish_read(const char *path)
             full_save = true;
         else if (xmlStrcmp(prop, BAD_CAST "basic") != 0)
             msg_log(MSG_WARNING, "Unknown save-type '%s'\n", prop);
+        xmlFree(prop);
     }
 
     if (dish_file_state_set_by_path(path, full_save) == -1)
         return -1;
+
+    dish_data->samplerate = 0;
 
     for (node1 = noderoot->children;
          node1 != NULL;
@@ -1451,19 +1492,11 @@ static int dish_read(const char *path)
 
         if (xmlStrcmp(node1->name, BAD_CAST "Master") == 0)
         {
-            int sr;
+            if (get_prop_float(node1, "level", &n))
+                mixer_set_amplitude(n);
 
-            if ((prop = xmlGetProp(node1, BAD_CAST "level")))
-                if (sscanf((const char*)prop, "%f", &n) == 1)
-                    mixer_set_amplitude(n);
-
-            if ((prop = xmlGetProp(node1, BAD_CAST "samplerate")))
-            {
-                if (sscanf((const char*)prop, "%d", &sr) == 1)
-                    dish_data->samplerate = sr;
-                else
-                    dish_data->samplerate = 0;
-            }
+            if (get_prop_int(node1, "samplerate", &i))
+                dish_data->samplerate = i;
         }
         else if (xmlStrcmp(node1->name, BAD_CAST "Patch") == 0)
         {
@@ -1473,14 +1506,13 @@ static int dish_read(const char *path)
 
             /* patch name */
             if ((prop = xmlGetProp(nodepatch, BAD_CAST "name")))
-                patch_set_name(patch_id, (const char*)prop);
-
-            if ((prop = xmlGetProp(nodepatch, BAD_CAST "channel")))
             {
-                int c;
-                if (sscanf((const char*)prop, "%d", &c))
-                    patch_set_channel(patch_id, c);
+                patch_set_name(patch_id, (const char*)prop);
+                xmlFree(prop);
             }
+
+            if (get_prop_int(nodepatch, "channel", &i))
+                patch_set_channel(patch_id, i);
 
             msg_log(MSG_MESSAGE, "Reading data for patch %d '%s'\n",
                                  patch_id, patch_get_name(patch_id));
@@ -1561,6 +1593,8 @@ static int dish_read(const char *path)
         }
     }
 
+    xmlFreeDoc(doc);
+
     msg_log(MSG_MESSAGE, "Successfully read dish file '%s'\n", path);
 
     return 0;
@@ -1602,6 +1636,8 @@ void dish_file_state_reset(void)
 
 void dish_file_state_cleanup(void)
 {
+    debug("cleanup\n");
+
     if (!dish_data)
         return;
 
@@ -1647,7 +1683,11 @@ int dish_file_state_set_by_path(const char* file_path, bool full_save)
         if (file_ops_split_file(filename, &name, 0) == -1)
         {
             /* no extension so filename and name the same */
-            name = strdup(filename);
+            name = filename;
+        }
+        else
+        {
+            free(filename);
         }
 
         debug("name:        '%s'\n", name);

@@ -148,7 +148,7 @@ GtkWidget* patch_section_new(void)
 void patch_section_set_patch(PatchSection* self, int patch)
 {
     PatchSectionPrivate* p = PATCH_SECTION_GET_PRIVATE(self);
-    char* name;
+    const char* name;
     char* title;
 
     p->patch = patch;
@@ -165,7 +165,6 @@ void patch_section_set_patch(PatchSection* self, int patch)
         title = g_strdup_printf("<b>%s</b>", name);
         gtk_label_set_markup(GTK_LABEL(p->title), title);
         g_free(title);
-        g_free(name);
     }
 
     sample_tab_set_patch(SAMPLE_TAB(p->sample_tab), patch);

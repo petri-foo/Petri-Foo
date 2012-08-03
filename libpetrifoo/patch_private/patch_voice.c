@@ -114,4 +114,6 @@ void patch_voice_free(PatchVoice* pv)
 
     for (i = 0; i < VOICE_MAX_LFOS; ++i)
         lfo_free(pv->lfo[i]);
+
+    free(pv);
 }

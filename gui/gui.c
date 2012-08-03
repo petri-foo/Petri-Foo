@@ -409,7 +409,7 @@ void cb_menu_patch_rename(GtkWidget* menu_item, gpointer data)
      * due to sensitivity callback */
     if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
     {
-        char* oname = patch_get_name(cp);
+        const char* oname = patch_get_name(cp);
         const char* name = gtk_entry_get_text(GTK_ENTRY(entry));
         val = patch_set_name(cp, name);
 

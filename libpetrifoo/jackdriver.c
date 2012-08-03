@@ -380,6 +380,8 @@ static int start(void)
 
 static int stop(void)
 {
+    debug("stopping jack...\n");
+
     pthread_mutex_lock (&running_mutex);
 
     if (running)
@@ -388,12 +390,16 @@ static int stop(void)
         jack_deactivate (client);
         jack_client_close (client);
 
+        debug("JACK stopped\n");
+
         if (buffer != NULL)
             free (buffer);
     }
 
     running = 0;
     pthread_mutex_unlock (&running_mutex);
+
+    debug("jackdriver stopped\n");
 
     return 0;
 }

@@ -250,7 +250,7 @@ void patch_list_update(PatchList* self, int target, int type)
     int* patches;
     GtkTreeIter iter;
     GtkTreePath* path;
-    char* str;
+    const char* str;
     int i;
     int index = 0;
 
@@ -265,7 +265,6 @@ void patch_list_update(PatchList* self, int target, int type)
         gtk_list_store_append(p->patch_store, &iter);
         gtk_list_store_set(p->patch_store, &iter, PATCH_NAME, str,
                                                   PATCH_ID, patches[i], -1);
-        g_free(str);
 
         if (type == PATCH_LIST_PATCH && patches[i] == target)
             index = i;

@@ -192,13 +192,16 @@ void patch_free(Patch* p)
     debug("freeing patch:'%s'\n", p->name);
     debug("********************************\n");
 
-    sample_free_data(p->sample);
+    sample_free(p->sample);
 
     for (i = 0; i < PATCH_VOICE_COUNT; ++i)
         patch_voice_free(p->voices[i]);
 
     for (i = 0; i < PATCH_MAX_LFOS; ++i)
+    {
         free(p->glfo_table[i]);
+        lfo_free(p->glfo[i]);
+    }
 
     pthread_mutex_destroy(&p->mutex);
 

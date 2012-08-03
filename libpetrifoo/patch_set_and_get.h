@@ -143,7 +143,7 @@ int     patch_get_mark_frame_range  (int patch_id, int mark_id,
                                                    int* frame_max);
 
 bool            patch_get_monophonic        (int id);
-char*           patch_get_name              (int id);
+const char*     patch_get_name              (int id);
 int             patch_get_root_note         (int id);
 float           patch_get_panning           (int id);
 float           patch_get_pitch             (int id);
