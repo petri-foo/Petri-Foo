@@ -7,7 +7,7 @@ endif (COMMAND CMAKE_POLICY)
 project(Petri-Foo)
 
 set(Petri-Foo_VERSION_MAJOR 1)
-set(Petri-Foo_VERSION_MINOR 86)
+set(Petri-Foo_VERSION_MINOR 87)
 set(BINDIR  "bin" CACHE STRING "Where to install binaries")
 set(DATADIR "share/petri-foo" CACHE STRING "Where to install data files")
 set(APPLICATIONS_DIR "share/applications" CACHE STRING "Where to install desktop files")
@@ -34,6 +34,11 @@ mark_as_advanced(CMAKE_INSTALL_PREFIX)
 option (BuildForDebug "Include gdb debugging support" OFF)
 option (GtkDeprecatedChecks "Check against use of API deprecated in GTK3" OFF)
 
+if (IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/sandbox )
+    option (BuildSandbox "Build sandbox test code " OFF)
+endif (IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/sandbox )
+ 
+
 # DEBUG
 set (BuildOptionsDebug "-O0 -ggdb" CACHE STRING "Debug build flags")
 
@@ -56,7 +61,13 @@ else (BuildForDebug)
 endif (BuildForDebug)
 
 if (GtkDeprecatedChecks)
-    add_definitions(-DGTK_DISABLE_DEPRECATED -DGDK_DISABLE_DEPRECATED -DGSEAL_ENABLE -DGTK_DISABLE_SINGLE_INCLUDES)
+    add_definitions(
+        -DGDK_PIXBUF_DISABLE_DEPRECATED
+        -DGTK_DISABLE_DEPRECATED
+        -DGDK_DISABLE_DEPRECATED
+        -DGSEAL_ENABLE
+        -DGTK_DISABLE_SINGLE_INCLUDES)
+    message (STATUS "Building with GTK_DISABLE_DEPRECATED...")
 endif (GtkDeprecatedChecks)
 
 
@@ -73,7 +84,6 @@ endif (JACK_FOUND)
 
 
 include (FindALSA)
-
 
 
 # SNDFILE
@@ -160,12 +170,12 @@ ADD_SUBDIRECTORY( libphin )
 ADD_SUBDIRECTORY( gui )
 
 
-if (BuildForDebug)
+if (BuildSandbox)
     if (IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/sandbox )
         message( STATUS "Will build sandbox test target" )
         ADD_SUBDIRECTORY( sandbox )
     endif (IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/sandbox )
-endif (BuildForDebug)
+endif (BuildSandbox)
 
 #ADD_SUBDIRECTORY( pixmaps )
 

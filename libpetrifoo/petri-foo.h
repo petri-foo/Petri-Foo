@@ -54,7 +54,7 @@
     fprintf(stderr, __VA_ARGS__);           \
 }
 #else
-# define debug(...)
+#define debug(...)
 #endif
 
 

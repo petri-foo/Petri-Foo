@@ -32,7 +32,7 @@ enum {
 
 
 
-GtkWidget*      mod_src_new_combo_with_cell();
+GtkWidget*      mod_src_new_combo_with_cell(void);
 
 /*  mod_src_new_pitch_adjustment
         creates a phin slider button with semitones label within.

@@ -161,12 +161,7 @@ Patch* patch_new(void)
 
     for (i = 0; i < PATCH_VOICE_COUNT; ++i)
     {
-        int j;
-
         p->voices[i] = patch_voice_new();
-
-        for (j = 0; j < VOICE_MAX_ENVS; ++j)
-            adsr_init(p->voices[i]->env[j]);
     }
 
     p->last_note = -1;

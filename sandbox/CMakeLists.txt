@@ -19,6 +19,5 @@ add_definitions (
 
 add_executable(test ${TEST_SOURCES})
 
-
-target_link_Libraries(test petrifoo petrifui pthread phin )
+target_link_Libraries( test petrifoo petrifui pthread phin )
 

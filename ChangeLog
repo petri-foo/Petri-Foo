@@ -1,3 +1,35 @@
+2012-08-06 James Morris <james@jwm-art.net>
+
+	* patch_set_and_get.c, lfopar_from_id: found nasty side
+	  effect where an lfo id was calculated from a modulation
+	  source id from within an assert... eeek!
+
+	* gui/mod_section.[ch]: remove mod_section_set_list_*
+	  these two functions were unused.
+
+	* midi.c: replace some debug with errmsg.
+
+	* patch_private/ move initialization of adsr parameters
+	  from within patch_data.c to patch_voice.c
+
+	* make building of "sandbox test code" into an option
+	  no longer dependant on debug build.
+
+
+2012-08-05 James Morris <james@jwm-art.net>
+
+	* only get port data when auto-connect, plus
+	  free data obtained.
+
+	* don't resample audio files when JACK is not
+	  running (for debug/test).
+
+	* remove MODAL property from audio-settings
+	  dialog.
+
+	* #define NDEBUG so assert are disabled when
+	  building for release.
+
 2012-08-02 James Morris <james@jwm-art.net>
 
 	* dish_file.c: call xmlFreeDoc on sucessful read.

@@ -409,29 +409,6 @@ create_mod_srcs:
 }
 
 
-void mod_section_set_list_global(ModSection* self)
-{
-    ModSectionPrivate* p = MOD_SECTION_GET_PRIVATE(self);
-    int i;
-
-    for (i = 0; i < MAX_MOD_SLOTS; ++i)
-        mod_src_combo_set_model(GTK_COMBO_BOX(p->mod_combo[i]),
-                                    MOD_SRC_GLOBALS);
-}
-
-
-void mod_section_set_list_all(ModSection* self)
-{
-    ModSectionPrivate* p = MOD_SECTION_GET_PRIVATE(self);
-
-    int i;
-
-    for (i = 0; i < MAX_MOD_SLOTS; ++i)
-        mod_src_combo_set_model(GTK_COMBO_BOX(p->mod_combo[i]),
-                                    MOD_SRC_ALL);
-}
-
-
 GtkWidget* mod_section_new(void)
 {
     return (GtkWidget*)g_object_new(MOD_SECTION_TYPE, NULL);

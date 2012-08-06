@@ -167,7 +167,7 @@ static int open_seq(snd_seq_t** handle)
 
     if (snd_seq_open(handle, "default", SND_SEQ_OPEN_INPUT, 0) < 0)
     {
-        debug ("Failed to open ALSA sequencer\n");
+        errmsg("Failed to open ALSA sequencer\n");
         return MIDI_ERR_SEQ;
     }
 
@@ -179,7 +179,7 @@ static int open_seq(snd_seq_t** handle)
                                 SND_SEQ_PORT_CAP_SUBS_WRITE,
                                 SND_SEQ_PORT_TYPE_APPLICATION)) < 0)
     {
-        debug ("Failed to create ALSA sequencer port\n");
+        errmsg("Failed to create ALSA sequencer port\n");
         return MIDI_ERR_PORT;
     }
 

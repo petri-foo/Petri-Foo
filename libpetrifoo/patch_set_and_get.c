@@ -299,11 +299,13 @@ static LFOParams* lfopar_from_id(int patch_id, int id, LFO** lfo)
 
     if (id & MOD_SRC_VLFO)
     {
-        assert ((id -= MOD_SRC_VLFO) < VOICE_MAX_LFOS);
+        id -= MOD_SRC_VLFO;
+        assert (id < VOICE_MAX_LFOS);
         return &patches[patch_id]->vlfo_params[id];
     }
 
-    assert((id -= MOD_SRC_GLFO) < PATCH_MAX_LFOS);
+    id -= MOD_SRC_GLFO;
+    assert(id < PATCH_MAX_LFOS);
 
     if (lfo)
         *lfo = patches[patch_id]->glfo[id];

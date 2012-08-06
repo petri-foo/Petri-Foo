@@ -410,6 +410,7 @@ static void lfo_tab_init(LfoTab* self)
                     ID_SELECTOR_V);
 
     mod_src_free(lfo_ids);
+    lfo_ids = 0;
 
     gui_pack(selfbox, p->idsel);
     gui_pack(selfbox, gui_hpad_new(GUI_SECSPACE));

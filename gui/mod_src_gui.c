@@ -56,7 +56,6 @@ static void mod_src_create_models(void)
     mod_src_list_global = gtk_list_store_new(N_COLUMNS,
                                              G_TYPE_STRING,
                                              G_TYPE_INT);
-
     mod_src_ids = mod_src_get(MOD_SRC_ALL);
 
     for (msp = mod_src_ids; msp->name; ++msp)
@@ -84,7 +83,7 @@ static void mod_src_create_models(void)
 }
 
 
-GtkWidget* mod_src_new_combo_with_cell()
+GtkWidget* mod_src_new_combo_with_cell(void)
 {
     GtkWidget*          combo;
     GtkCellRenderer*    cell;

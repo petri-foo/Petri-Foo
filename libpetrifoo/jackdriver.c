@@ -62,8 +62,8 @@ static jack_port_t*     rport;
 static jack_port_t*     midiport;
 
 
-static jack_client_t*   client;
-static float*           buffer;
+static jack_client_t*   client = 0;
+static float*           buffer = 0;
 static int              rate = 44100;
 static int              periodsize = 2048;
 static int              running = 0;
@@ -244,7 +244,6 @@ static void init(void)
 
 static int start(void)
 {
-    const char** ports;
     const char* instancename = get_instance_name();
     jack_status_t status;
 
@@ -279,7 +278,7 @@ static int start(void)
 
     mixer_set_jack_client(jackdriver_get_client());
 
-    jack_set_process_callback (client, process, 0);
+    jack_set_process_callback(client, process, 0);
 
     #if HAVE_JACK_SESSION_H
     if (!disable_jacksession && jack_set_session_callback)
@@ -292,7 +291,7 @@ static int start(void)
     }
     #endif
 
-    jack_on_shutdown (client, shutdown, 0);
+    jack_on_shutdown(client, shutdown, 0);
 
     lport = jack_port_register( client,
                                 "out_left",
@@ -338,35 +337,31 @@ static int start(void)
         return -1;
     }
 
-    ports = jack_get_ports(client, NULL, NULL,
-                            JackPortIsInput | JackPortIsPhysical);
-
     if (autoconnect)
     {
-        if (ports[0] != NULL)
+        const char** ports = jack_get_ports(client, NULL, NULL,
+                                    JackPortIsInput | JackPortIsPhysical);
+        if (ports)
         {
-            if (jack_connect(client, jack_port_name(lport), ports[0]))
+            if (!ports[0]
+             || jack_connect(client, jack_port_name(lport), ports[0]) != 0)
             {
-                debug("JACK failed to connect left output port\n");
+                free(ports);
+                goto ac_full_fail;
             }
 
-            if (ports[1] != NULL)
+            if (!ports[1]
+             || jack_connect(client, jack_port_name(rport), ports[1]) != 0)
             {
-                if (jack_connect(client, jack_port_name (rport), ports[1]))
-                {
-                    debug("JACK failed to connect right output port\n");
-                }
-            }
-            else
-            {
-                debug("JACK failed to connect right output port\n");
+                printf("failed to auto-connect to stereo h/w ports\n");
             }
 
-            free (ports);
+            free(ports);
         }
         else
         {
-            debug("JACK failed to connect output ports\n");
+            ac_full_fail:
+            printf("failed to auto-connect to h/w ports\n");
         }
     }
 
@@ -386,10 +381,10 @@ static int stop(void)
 
     if (running)
     {
-        debug("JACK shutting down...\n");
+        debug("JACK deactivate...\n");
         jack_deactivate (client);
+        debug("JACK close..\n");
         jack_client_close (client);
-
         debug("JACK stopped\n");
 
         if (buffer != NULL)

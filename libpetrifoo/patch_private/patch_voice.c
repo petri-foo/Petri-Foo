@@ -69,10 +69,16 @@ PatchVoice* patch_voice_new(void)
     }
 
     for (i = 0; i < VOICE_MAX_ENVS; i++)
+    {
         pv->env[i] = adsr_new();
+        adsr_init(pv->env[i]);
+    }
 
     for (i = 0; i < VOICE_MAX_LFOS; i++)
+    {
         pv->lfo[i] = lfo_new();
+        lfo_init(pv->lfo[i]);
+    }
 
     pv->fll =           0;
     pv->fbl =           0;

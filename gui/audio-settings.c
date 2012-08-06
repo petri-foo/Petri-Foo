@@ -98,7 +98,7 @@ void audio_settings_init (GtkWidget* parent)
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW (window), "Audio Settings");
     gtk_window_set_transient_for(GTK_WINDOW(window), GTK_WINDOW(parent));
-    gtk_window_set_modal (GTK_WINDOW (window), TRUE);
+    gtk_window_set_modal (GTK_WINDOW (window), FALSE);
     g_signal_connect(GTK_WINDOW(window), "delete-event",
                                 G_CALLBACK(cb_close), NULL);
 

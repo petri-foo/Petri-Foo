@@ -362,8 +362,9 @@ int sample_load_file(Sample* sample, const char* name,
     }
 
     if (resample_sndfile)
-    {
-        if (sfinfo.samplerate != rate)
+    {   /*  ignore resample if rate is invalid (ie rate == -1 when
+            JACK is not running, useful under debug conditions. */
+        if (rate > 0 && sfinfo.samplerate != rate)
         {
             float* tmp2 = resample(tmp, rate, &sfinfo);
 

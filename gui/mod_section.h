@@ -66,8 +66,6 @@ void        mod_section_set_mod_only(ModSection*);
 void        mod_section_set_param(ModSection*, PatchParamType);
 
 void        mod_section_set_lfo_id(ModSection*, int lfo_id);
-void        mod_section_set_list_global(ModSection*);
-void        mod_section_set_list_all(ModSection*);
 
 void        mod_section_set_patch(ModSection*, int patch_id);
 

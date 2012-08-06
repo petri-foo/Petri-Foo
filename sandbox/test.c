@@ -12,6 +12,7 @@
 
 
 
+#include <assert.h>
 
 
 
@@ -173,18 +174,20 @@ int main(int argc, char *argv[])
         }
     }
 
+
     mod_src_create();
     driver_init();
     lfo_tables_init();
     mixer_init();
     patch_control_init();
     dish_file_state_init();
+/*
     driver_start();
     midi_start();
 
     dish_file_read( "/home/sirrom/Audio_Sketchbook/"
                     "pf-banks/ftest001/ftest001.petri-foo");
-
+*/
     for (n = 0; n < SC; ++n)
     {
         s[n].sa_handler = sighandlers[n];
@@ -193,8 +196,7 @@ int main(int argc, char *argv[])
         sigaction(sigs[n], &s[n], NULL);
     }
 
-    while(1)
-        sleep(1);
+    sleep(1);
 
     cleanup();
 
