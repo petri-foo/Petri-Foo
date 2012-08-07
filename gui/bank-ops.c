@@ -384,20 +384,22 @@ int bank_ops_open_recent(GtkWidget* parent_window, char* filename)
 
     if (val < 0)
     {
-         GtkWidget* msg = gtk_message_dialog_new(GTK_WINDOW(parent_window),
-                                   GTK_DIALOG_MODAL,
-                                   GTK_MESSAGE_ERROR,
-                                   GTK_BUTTONS_CLOSE,
-                                   "Failed to read bank %s\n.", filename);
+        GtkWidget* msg = gtk_message_dialog_new(GTK_WINDOW(parent_window),
+                                    GTK_DIALOG_MODAL,
+                                    GTK_MESSAGE_ERROR,
+                                    GTK_BUTTONS_CLOSE,
+                                    "Failed to read bank %s\n.", filename);
 
-         g_signal_connect_swapped(G_OBJECT(msg), "response",
-                                   G_CALLBACK(gtk_widget_destroy), msg);
-         gtk_widget_show (msg);
+        g_signal_connect_swapped(G_OBJECT(msg), "response",
+                                    G_CALLBACK(gtk_widget_destroy), msg);
+        gtk_widget_show (msg);
+
+        gtk_recent_manager_remove_item(recent_manager, filename, NULL);
     }
     else
     {
         if (recent_manager)
-            gtk_recent_manager_add_item (recent_manager, 
+            gtk_recent_manager_add_item (recent_manager,
                             g_filename_to_uri(filename, NULL, NULL));
     }
 

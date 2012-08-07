@@ -1440,7 +1440,7 @@ static int dish_read(const char *path)
 
     if (stat(path, &st) != 0)
     {
-        msg_log(MSG_ERROR, "file '%s' does not exist\n");
+        msg_log(MSG_ERROR, "file '%s' does not exist\n", path);
         return -1;
     }
 
