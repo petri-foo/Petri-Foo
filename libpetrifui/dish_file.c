@@ -804,11 +804,20 @@ int get_prop_int(xmlNodePtr node, const char* name, int* value)
 int get_prop_float(xmlNodePtr node, const char* name, float* value)
 {
     int ret = 0;
+	int int_val;
     xmlChar* prop = xmlGetProp(node, BAD_CAST name);
 
     if (prop)
     {
         ret = sscanf((const char*)prop, "%f", value);
+        sscanf((const char*)prop, "%d", &int_val);
+
+		if ((float)int_val == *value)
+		{
+			setlocale(LC_NUMERIC, "");
+	        ret = sscanf((const char*)prop, "%f", value);
+			setlocale(LC_NUMERIC, "C");
+		}
         xmlFree(prop);
     }
 
