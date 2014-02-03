@@ -28,6 +28,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <locale.h>
 
 #include "config.h"
 #include "file_ops.h"
@@ -536,6 +537,8 @@ static int dish_write(void)
     int     patch_count;
     char*   samples_dir = 0;
 
+	setlocale(LC_NUMERIC, "C");
+
     assert(dish_data != 0);
     assert(dish_data->file_path != 0);
 
@@ -546,6 +549,7 @@ static int dish_write(void)
     if (!doc)
     {
         msg_log(MSG_ERROR, "XML error!\n");
+		setlocale(LC_NUMERIC, "");
         return -1;
     }
 
@@ -554,6 +558,7 @@ static int dish_write(void)
     if (!noderoot)
     {
         msg_log(MSG_ERROR, "XML error!\n");
+		setlocale(LC_NUMERIC, "");
         return -1;
     }
 
@@ -565,8 +570,11 @@ static int dish_write(void)
         free(file_ops_mkdir(0, dish_data->bank_dir));
         samples_dir = file_ops_mkdir("samples", dish_data->bank_dir);
 
-        if (!samples_dir)
+        if (!samples_dir) 
+		{
+			setlocale(LC_NUMERIC, "");
             return -1;
+		}
     }
 
     xmlDocSetRootElement(doc, noderoot);
@@ -759,6 +767,7 @@ static int dish_write(void)
     free(samples_dir);
     free(patch_id);
 
+	setlocale(LC_NUMERIC, "");
     return rc;
 }
 
@@ -1436,11 +1445,14 @@ static int dish_read(const char *path)
     int i;
     bool full_save = false;
 
-    debug("Loading bank from file %s\n", path);
+	setlocale(LC_NUMERIC, "C");
+    
+	debug("Loading bank from file %s\n", path);
 
     if (stat(path, &st) != 0)
     {
         msg_log(MSG_ERROR, "file '%s' does not exist\n", path);
+		setlocale(LC_NUMERIC, "");
         return -1;
     }
 
@@ -1449,6 +1461,7 @@ static int dish_read(const char *path)
     if (doc == NULL)
     {
         msg_log(MSG_ERROR, "Failed to parse %s\n", path);
+		setlocale(LC_NUMERIC, "");
         return -1;
     }
 
@@ -1458,6 +1471,7 @@ static int dish_read(const char *path)
     {
         msg_log(MSG_ERROR, "%s is empty\n", path);
         xmlFreeDoc(doc);
+		setlocale(LC_NUMERIC, "");
         return -1;
     }
 
@@ -1466,6 +1480,7 @@ static int dish_read(const char *path)
         msg_log(MSG_ERROR, "%s is not a valid 'Petri-Foo-Dish' file\n",
                                                                 path);
         xmlFreeDoc(doc);
+		setlocale(LC_NUMERIC, "");
         return -1;
     }
 
@@ -1479,7 +1494,10 @@ static int dish_read(const char *path)
     }
 
     if (dish_file_state_set_by_path(path, full_save) == -1)
+	{
+		setlocale(LC_NUMERIC, "");
         return -1;
+	}
 
     dish_data->samplerate = 0;
 
@@ -1596,6 +1614,8 @@ static int dish_read(const char *path)
     xmlFreeDoc(doc);
 
     msg_log(MSG_MESSAGE, "Successfully read dish file '%s'\n", path);
+
+	setlocale(LC_NUMERIC, "");
 
     return 0;
 }
