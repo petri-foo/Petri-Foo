@@ -537,7 +537,7 @@ static int dish_write(void)
     int     patch_count;
     char*   samples_dir = 0;
 
-	setlocale(LC_NUMERIC, "C");
+    setlocale(LC_NUMERIC, "C");
 
     assert(dish_data != 0);
     assert(dish_data->file_path != 0);
@@ -549,7 +549,7 @@ static int dish_write(void)
     if (!doc)
     {
         msg_log(MSG_ERROR, "XML error!\n");
-		setlocale(LC_NUMERIC, "");
+        setlocale(LC_NUMERIC, "");
         return -1;
     }
 
@@ -558,7 +558,7 @@ static int dish_write(void)
     if (!noderoot)
     {
         msg_log(MSG_ERROR, "XML error!\n");
-		setlocale(LC_NUMERIC, "");
+        setlocale(LC_NUMERIC, "");
         return -1;
     }
 
@@ -571,10 +571,10 @@ static int dish_write(void)
         samples_dir = file_ops_mkdir("samples", dish_data->bank_dir);
 
         if (!samples_dir) 
-		{
-			setlocale(LC_NUMERIC, "");
+        {
+            setlocale(LC_NUMERIC, "");
             return -1;
-		}
+        }
     }
 
     xmlDocSetRootElement(doc, noderoot);
@@ -767,7 +767,7 @@ static int dish_write(void)
     free(samples_dir);
     free(patch_id);
 
-	setlocale(LC_NUMERIC, "");
+    setlocale(LC_NUMERIC, "");
     return rc;
 }
 
@@ -804,7 +804,7 @@ int get_prop_int(xmlNodePtr node, const char* name, int* value)
 int get_prop_float(xmlNodePtr node, const char* name, float* value)
 {
     int ret = 0;
-	int int_val;
+    int int_val;
     xmlChar* prop = xmlGetProp(node, BAD_CAST name);
 
     if (prop)
@@ -812,12 +812,12 @@ int get_prop_float(xmlNodePtr node, const char* name, float* value)
         ret = sscanf((const char*)prop, "%f", value);
         sscanf((const char*)prop, "%d", &int_val);
 
-		if ((float)int_val == *value)
-		{
-			setlocale(LC_NUMERIC, "");
-	        ret = sscanf((const char*)prop, "%f", value);
-			setlocale(LC_NUMERIC, "C");
-		}
+        if ((float)int_val == *value)
+        {
+            setlocale(LC_NUMERIC, "");
+            ret = sscanf((const char*)prop, "%f", value);
+            setlocale(LC_NUMERIC, "C");
+        }
         xmlFree(prop);
     }
 
@@ -1454,14 +1454,14 @@ static int dish_read(const char *path)
     int i;
     bool full_save = false;
 
-	setlocale(LC_NUMERIC, "C");
+    setlocale(LC_NUMERIC, "C");
     
 	debug("Loading bank from file %s\n", path);
 
     if (stat(path, &st) != 0)
     {
         msg_log(MSG_ERROR, "file '%s' does not exist\n", path);
-		setlocale(LC_NUMERIC, "");
+        setlocale(LC_NUMERIC, "");
         return -1;
     }
 
@@ -1470,7 +1470,7 @@ static int dish_read(const char *path)
     if (doc == NULL)
     {
         msg_log(MSG_ERROR, "Failed to parse %s\n", path);
-		setlocale(LC_NUMERIC, "");
+        setlocale(LC_NUMERIC, "");
         return -1;
     }
 
@@ -1480,7 +1480,7 @@ static int dish_read(const char *path)
     {
         msg_log(MSG_ERROR, "%s is empty\n", path);
         xmlFreeDoc(doc);
-		setlocale(LC_NUMERIC, "");
+        setlocale(LC_NUMERIC, "");
         return -1;
     }
 
@@ -1489,7 +1489,7 @@ static int dish_read(const char *path)
         msg_log(MSG_ERROR, "%s is not a valid 'Petri-Foo-Dish' file\n",
                                                                 path);
         xmlFreeDoc(doc);
-		setlocale(LC_NUMERIC, "");
+        setlocale(LC_NUMERIC, "");
         return -1;
     }
 
@@ -1504,7 +1504,7 @@ static int dish_read(const char *path)
 
     if (dish_file_state_set_by_path(path, full_save) == -1)
 	{
-		setlocale(LC_NUMERIC, "");
+        setlocale(LC_NUMERIC, "");
         return -1;
 	}
 
@@ -1624,7 +1624,7 @@ static int dish_read(const char *path)
 
     msg_log(MSG_MESSAGE, "Successfully read dish file '%s'\n", path);
 
-	setlocale(LC_NUMERIC, "");
+    setlocale(LC_NUMERIC, "");
 
     return 0;
 }
