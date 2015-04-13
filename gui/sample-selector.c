@@ -294,6 +294,7 @@ static raw_box* raw_box_new(GtkWidget* dialog)
     GtkTable* t;
     int y = 0;
     global_settings* settings = settings_get();
+    id_name* ids;
 
     raw_box* rb = malloc(sizeof(*rb));
 
@@ -337,7 +338,8 @@ static raw_box* raw_box_new(GtkWidget* dialog)
 
     t = GTK_TABLE(rb->table);
 
-    rb->format = basic_combo_id_name_create(names_sample_raw_format_get());
+    ids = names_sample_raw_format_get();
+    rb->format = basic_combo_id_name_create(ids);
     gui_attach(t, rb->format, 0, 2, y, y + 1);
 
     gui_label_attach("Sample rate:", t, 2, 4, y, y + 1);
@@ -383,6 +385,7 @@ static raw_box* raw_box_new(GtkWidget* dialog)
 
     g_signal_connect(GTK_OBJECT(rb->check), "toggled",
                                             G_CALLBACK(raw_toggled_cb), rb);
+    free(ids);
     return rb;
 }
 

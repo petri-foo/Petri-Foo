@@ -1030,7 +1030,10 @@ static int dish_file_read_sample(xmlNodePtr node,  int patch_id)
     }
 
     if (!sample_loaded)
+    {
+        free(filename);
         return 0;
+    }
 
     if (sanitize_sample_points( &play_start,    &play_stop,
                                 &loop_start,    &loop_stop,
@@ -1685,10 +1688,10 @@ int dish_file_state_set_by_path(const char* file_path, bool full_save)
         DF_STATE_FREE(dish_data);
         DF_STATE_ZERO(dish_data);
 
-        char* name;
+        char* name = 0;
         char* filename;
         char* bank_dir;
-        char* parent_dir;
+        char* parent_dir = 0;
 
         debug("path:        '%s'\n", file_path);
 
@@ -1734,7 +1737,6 @@ int dish_file_state_set_by_path(const char* file_path, bool full_save)
         free(name);
         free(parent_dir);
         free(bank_dir);
-        free(filename);
         msg_log(MSG_ERROR, "bad dish file path '%s'\n", file_path);
 
         return -1;
@@ -1872,13 +1874,16 @@ int dish_file_write_full(const char* parent, const char* name)
     {
         /* either the last save was basic, or the bank_dir has changed */
         DF_STATE_FREE(dish_data);
-        dish_data->bank_dir = bank_dir;
+        dish_data->bank_dir = strdup(bank_dir);
         dish_data->parent_dir = strdup(parent);
         dish_data->bank_name = strdup(name);
-        dish_data->file_path = bank_path;
+        dish_data->file_path = strdup(bank_path);
     }
 
     dish_data->full_save = true;
+    free(bank_path);
+    free(bank_dir);
+    free(filename);
 
     return dish_write();
 }

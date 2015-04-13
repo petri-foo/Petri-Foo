@@ -232,6 +232,7 @@ char* file_ops_mkdir(const char* dir, const char* parent)
 
     msg_log(MSG_ERROR, "failed to create dir '%s' within '%s'\n",
                                                     dir, parent);
+    free(newdir);
     return 0;
 }
 
