@@ -248,7 +248,6 @@ static int full_save_as(GtkWidget* parent_window, gboolean not_export)
             }
             else
             {
-                free(folder);
                 folder = uri;
             }
 
