@@ -116,7 +116,6 @@ void param_tab_set_param(ParamTab* self, PatchParamType param)
         gtk_box_pack_start(box, p->modsect1, FALSE, FALSE, 0);
         gtk_widget_show(p->modsect1);
     }
-    else {debug("param1 invalid\n");}
 
     if (ms2 != PATCH_PARAM_INVALID)
     {

@@ -286,6 +286,7 @@ static int start(void)
         if (jack_set_session_callback(client, session_cb, 0))
         {
             pf_error(PF_ERR_JACK_SESSION_CB);
+            pthread_mutex_unlock (&running_mutex);
             return -1;
         }
     }
