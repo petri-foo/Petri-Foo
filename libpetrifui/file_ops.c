@@ -15,7 +15,7 @@
 
     You should have received a copy of the GNU General Public License
     along with Petri-Foo.  If not, see <http://www.gnu.org/licenses/>.
-*/
+    */
 
 
 #include "file_ops.h"
@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <errno.h>
 #include <unistd.h>
 
 #include "msg_log.h"
@@ -82,8 +83,8 @@ char* file_ops_join_str(const char* str1, char join, const char* str2)
 
 
 int file_ops_split_str(const char* str, char split, char** retstr1,
-                                                    char** retstr2,
-                                                    int bias)
+        char** retstr2,
+        int bias)
 {
     char* str2 = 0;
     ptrdiff_t d;
@@ -221,17 +222,12 @@ char* file_ops_mkdir(const char* dir, const char* parent)
 
     if (newdir)
     {
-        struct stat st;
-
-        if (stat(newdir, &st) != 0)
-            mkdir(newdir, 0777);
-
-        if (stat(newdir, &st) == 0)
+        if (mkdir(newdir, 0777) == 0 || errno == EEXIST)
             return newdir;
     }
 
     msg_log(MSG_ERROR, "failed to create dir '%s' within '%s'\n",
-                                                    dir, parent);
+            dir, parent);
     free(newdir);
     return 0;
 }
@@ -254,31 +250,26 @@ char* file_ops_hash_mkdir(const char* path, const char* parent)
         {
             debug("hash dir path:'%s'\n", hash_dir);
 
-            if (stat(hash_dir, &st) != 0)
+            if (mkdir(hash_dir, 0777) == 0)
             {
-                debug("must create hash dir\n");
+                char* dfilename;
+                FILE* dfile;
 
-                if (mkdir(hash_dir, 0777) == 0)
+                if ((dfilename = file_ops_join_path(hash_dir,
+                                "pathinfo.txt")))
                 {
-                    char* dfilename;
-                    FILE* dfile;
-
-                    if ((dfilename = file_ops_join_path(hash_dir,
-                                                        "pathinfo.txt")))
+                    if ((dfile = fopen(dfilename, "w")))
                     {
-                        if ((dfile = fopen(dfilename, "w")))
-                        {
-                            debug("writing '%s' as path to pathinfo.txt\n",
-                                                                    path);
-                            fprintf(dfile, "%s\n", path);
-                            fclose(dfile);
-                        }
-                        free(dfilename);
+                        debug("writing '%s' as path to pathinfo.txt\n",
+                                path);
+                        fprintf(dfile, "%s\n", path);
+                        fclose(dfile);
                     }
+                    free(dfilename);
                 }
-                else{
-                    debug("failed to create hash dir\n");}
             }
+            else if (errno != EEXIST) {
+                debug("failed to create hash dir\n");}
 
             if (stat(hash_dir, &st) == 0)
             {
@@ -293,14 +284,14 @@ char* file_ops_hash_mkdir(const char* path, const char* parent)
     }
 
     msg_log(MSG_ERROR, "failed to create hash dir in '%s' for '%s'\n",
-                                                        parent, path);
+            parent, path);
     return 0;
 }
 
 
 char* file_ops_sample_path_mangle(  const char* samplepath,
-                                    const char* bank_dir,
-                                    const char* samples_dir)
+        const char* bank_dir,
+        const char* samples_dir)
 {
     char* sdir;     /* sample dir */
     char* sfile;    /* sample filename */
