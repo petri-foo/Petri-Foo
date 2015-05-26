@@ -1532,7 +1532,9 @@ static int dish_read(const char *path)
         else if (xmlStrcmp(node1->name, BAD_CAST "Patch") == 0)
         {
             int patch_id = patch_create();
-            assert(patch_id >= 0);
+
+            if (patch_id < 0)
+                continue;
 
             nodepatch = node1;
 

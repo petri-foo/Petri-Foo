@@ -208,6 +208,9 @@ static void cb_preview(raw_box* rb)
 {
     char *name;
 
+    if (!rb)
+        return;
+
     name = gtk_file_chooser_get_filename(
             GTK_FILE_CHOOSER(rb->dialog));
     if (!name)
@@ -638,6 +641,7 @@ int sample_selector_show(int id, GtkWidget* parent_window,
 
 again:
 
+    assert(rawbox);
     switch(gtk_dialog_run(GTK_DIALOG(dialog)))
     {
         case GTK_RESPONSE_ACCEPT:
