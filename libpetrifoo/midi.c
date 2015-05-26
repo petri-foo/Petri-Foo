@@ -68,7 +68,7 @@ static float calc_bpm(snd_seq_t* handle, int q)
         return 120.0;
     }
 
-    bpm = 60000000 / snd_seq_queue_tempo_get_tempo(tempo);
+    bpm = 60000000.0 / snd_seq_queue_tempo_get_tempo(tempo);
 
     return bpm;
 }

@@ -15,7 +15,7 @@
 
     You should have received a copy of the GNU General Public License
     along with Petri-Foo.  If not, see <http://www.gnu.org/licenses/>.
-*/
+    */
 
 
 #include "dish_file.h"
@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <errno.h>
 #include <unistd.h>
 #include <locale.h>
 
@@ -64,17 +65,17 @@ const char* dish_file_extension(void)
 
 
 static int sanitize_sample_points(  int* play_start, int* play_stop,
-                                    int* loop_start, int* loop_stop,
-    /* oh this is fun... */         int* fade_samples,
-                                    int* xfade_samples,
-                                    int sample_stop)
+        int* loop_start, int* loop_stop,
+        /* oh this is fun... */         int* fade_samples,
+        int* xfade_samples,
+        int sample_stop)
 {
     /*  the sanity check procedure goes like this:
 
-            1) check start above zero
-            2) check end below sample_stop (ie length - 1)
-            3) check start before end
-            4) check fade < end - start*
+        1) check start above zero
+        2) check end below sample_stop (ie length - 1)
+        3) check start before end
+        4) check fade < end - start*
 
         this is done first for the play marks
         and secondly for the loop marks.
@@ -83,8 +84,8 @@ static int sanitize_sample_points(  int* play_start, int* play_stop,
         the fades so that the fades are adjusted to
         accomadate the mark positions.
 
-        *note:  the fade check is different to this
-                for both play points and loop points.
+     *note:  the fade check is different to this
+     for both play points and loop points.
      */
 
     if (*play_start < 0)
@@ -174,11 +175,11 @@ static int dish_file_write_sample_mode_props(xmlNodePtr node, int patch_id)
 
     xmlNewProp(node,    BAD_CAST "mode", BAD_CAST mode);
     xmlNewProp(node,    BAD_CAST "reverse",
-                        BAD_CAST (playmode & PATCH_PLAY_REVERSE ? "true"
-                                                                : "false"));
+            BAD_CAST (playmode & PATCH_PLAY_REVERSE ? "true"
+                : "false"));
     xmlNewProp(node,    BAD_CAST "to_end",
-                        BAD_CAST (playmode & PATCH_PLAY_TO_END  ? "true"
-                                                                : "false"));
+            BAD_CAST (playmode & PATCH_PLAY_TO_END  ? "true"
+                : "false"));
     return 0;
 }
 
@@ -207,9 +208,9 @@ static int dish_file_write_sample_raw(xmlNodePtr nodeparent, int patch_id)
 }
 
 
-static int
+    static int
 dish_file_write_param(xmlNodePtr nodeparent, int patch_id,
-                                                PatchParamType param)
+        PatchParamType param)
 {
     xmlNodePtr  node1;
     xmlNodePtr  node2;
@@ -235,68 +236,68 @@ dish_file_write_param(xmlNodePtr nodeparent, int patch_id,
 
     switch(param)
     {
-    case PATCH_PARAM_AMPLITUDE: prop1 = "level";    prop2 = 0;
-                                --last_mod_slot;                break;
-    case PATCH_PARAM_PANNING:   prop1 = "position"; prop2 = 0;  break;
-    case PATCH_PARAM_CUTOFF:    prop1 = "value";    prop2 = 0;  break;
-    case PATCH_PARAM_RESONANCE: prop1 = "amount";   prop2 = 0;  break;
-    case PATCH_PARAM_PITCH:     val2 = patch_get_pitch_steps(patch_id);
-                                prop1 = "tuning";
-                                prop2 = "tuning_range";         break;
-    default:    /* probably won't ever get here if this is the case ;-} */
-        return -1;
-    }
+        case PATCH_PARAM_AMPLITUDE: prop1 = "level";    prop2 = 0;
+                                    --last_mod_slot;                break;
+        case PATCH_PARAM_PANNING:   prop1 = "position"; prop2 = 0;  break;
+        case PATCH_PARAM_CUTOFF:    prop1 = "value";    prop2 = 0;  break;
+        case PATCH_PARAM_RESONANCE: prop1 = "amount";   prop2 = 0;  break;
+        case PATCH_PARAM_PITCH:     val2 = patch_get_pitch_steps(patch_id);
+                                    prop1 = "tuning";
+                                    prop2 = "tuning_range";         break;
+        default:    /* probably won't ever get here if this is the case ;-} */
+                                    return -1;
+}
 
-    node1 = xmlNewTextChild(nodeparent, NULL,
-                            BAD_CAST param_names[param], NULL);
+node1 = xmlNewTextChild(nodeparent, NULL,
+        BAD_CAST param_names[param], NULL);
 
-    snprintf(buf, CHARBUFSIZE, "%f", val1);
-    xmlNewProp(node1, BAD_CAST prop1, BAD_CAST buf);
+snprintf(buf, CHARBUFSIZE, "%f", val1);
+xmlNewProp(node1, BAD_CAST prop1, BAD_CAST buf);
 
-    if (prop2)
-    {
-        snprintf(buf, CHARBUFSIZE, "%f", val2);
-        xmlNewProp(node1, BAD_CAST prop2, BAD_CAST buf);
-    }
+if (prop2)
+{
+    snprintf(buf, CHARBUFSIZE, "%f", val2);
+    xmlNewProp(node1, BAD_CAST prop2, BAD_CAST buf);
+}
 
-    /* velocity sensing */
-    vel_amt = patch_param_get_vel_amount(patch_id, param);
-    snprintf(buf, CHARBUFSIZE, "%f", vel_amt);
-    xmlNewProp(node1, BAD_CAST "velocity_sensing", BAD_CAST buf);
+/* velocity sensing */
+vel_amt = patch_param_get_vel_amount(patch_id, param);
+snprintf(buf, CHARBUFSIZE, "%f", vel_amt);
+xmlNewProp(node1, BAD_CAST "velocity_sensing", BAD_CAST buf);
 
-    /* keyboard tracking */
-    key_trk = patch_param_get_key_amount(patch_id, param);
-    snprintf(buf, CHARBUFSIZE, "%f", key_trk);
-    xmlNewProp(node1, BAD_CAST "key_tracking", BAD_CAST buf);
+/* keyboard tracking */
+key_trk = patch_param_get_key_amount(patch_id, param);
+snprintf(buf, CHARBUFSIZE, "%f", key_trk);
+xmlNewProp(node1, BAD_CAST "key_tracking", BAD_CAST buf);
 
-    for (i = 0; i < last_mod_slot; ++i)
-    {
-        snprintf(buf, CHARBUFSIZE, "Mod%d", i + 1);
+for (i = 0; i < last_mod_slot; ++i)
+{
+    snprintf(buf, CHARBUFSIZE, "Mod%d", i + 1);
 
-        modsrc = patch_param_get_mod_src(patch_id, param, i);
-        modamt = patch_param_get_mod_amt(patch_id, param, i);
+    modsrc = patch_param_get_mod_src(patch_id, param, i);
+    modamt = patch_param_get_mod_amt(patch_id, param, i);
 
-        node2 = xmlNewTextChild(node1, NULL, BAD_CAST buf, NULL);
-        xmlNewProp(node2, BAD_CAST "source", BAD_CAST mod_src_name(modsrc));
-        snprintf(buf, CHARBUFSIZE, "%f", modamt);
-        xmlNewProp(node2, BAD_CAST "amount", BAD_CAST buf);
-    }
+    node2 = xmlNewTextChild(node1, NULL, BAD_CAST buf, NULL);
+    xmlNewProp(node2, BAD_CAST "source", BAD_CAST mod_src_name(modsrc));
+    snprintf(buf, CHARBUFSIZE, "%f", modamt);
+    xmlNewProp(node2, BAD_CAST "amount", BAD_CAST buf);
+}
 
-    if (param == PATCH_PARAM_AMPLITUDE)
-    {
-        modsrc = patch_param_get_mod_src(patch_id, PATCH_PARAM_AMPLITUDE,
-                                                   EG_MOD_SLOT);
-        node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Env", NULL);
-        xmlNewProp(node2, BAD_CAST "source", BAD_CAST mod_src_name(modsrc));
-    }
+if (param == PATCH_PARAM_AMPLITUDE)
+{
+    modsrc = patch_param_get_mod_src(patch_id, PATCH_PARAM_AMPLITUDE,
+            EG_MOD_SLOT);
+    node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Env", NULL);
+    xmlNewProp(node2, BAD_CAST "source", BAD_CAST mod_src_name(modsrc));
+}
 
-    return 0;
+return 0;
 }
 
 
-static int
+    static int
 dish_file_write_bool(xmlNodePtr nodeparent, int patch_id,
-                                                PatchBoolType bool_type)
+        PatchBoolType bool_type)
 {
     xmlNodePtr  node1;
     xmlNodePtr  node2;
@@ -309,17 +310,17 @@ dish_file_write_bool(xmlNodePtr nodeparent, int patch_id,
 
     switch(bool_type)
     {
-    case PATCH_BOOL_PORTAMENTO:
-        nodestr = "Portamento";
-        break;
-    case PATCH_BOOL_MONO:
-        nodestr = "Mono";
-        break;
-    case PATCH_BOOL_LEGATO:
-        nodestr = "Legato";
-        break;
-    default:
-        return -1;
+        case PATCH_BOOL_PORTAMENTO:
+            nodestr = "Portamento";
+            break;
+        case PATCH_BOOL_MONO:
+            nodestr = "Mono";
+            break;
+        case PATCH_BOOL_LEGATO:
+            nodestr = "Legato";
+            break;
+        default:
+            return -1;
     }
 
     patch_bool_get_all(patch_id, bool_type, &set, &thresh, &modsrc);
@@ -327,7 +328,7 @@ dish_file_write_bool(xmlNodePtr nodeparent, int patch_id,
     node1 = xmlNewTextChild(nodeparent, NULL, BAD_CAST nodestr, NULL);
 
     xmlNewProp(node1, BAD_CAST "active",
-                        BAD_CAST ((set) ? "true" : "false"));
+            BAD_CAST ((set) ? "true" : "false"));
 
     node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Mod", NULL);
 
@@ -340,9 +341,9 @@ dish_file_write_bool(xmlNodePtr nodeparent, int patch_id,
 }
 
 
-static int
+    static int
 dish_file_write_float(xmlNodePtr nodeparent, int patch_id,
-                                                PatchFloatType float_type)
+        PatchFloatType float_type)
 {
     xmlNodePtr  node1;
     xmlNodePtr  node2;
@@ -355,11 +356,11 @@ dish_file_write_float(xmlNodePtr nodeparent, int patch_id,
 
     switch(float_type)
     {
-    case PATCH_FLOAT_PORTAMENTO_TIME:
-        nodestr = "Portamento_time";
-        break;
-    default:
-        return -1;
+        case PATCH_FLOAT_PORTAMENTO_TIME:
+            nodestr = "Portamento_time";
+            break;
+        default:
+            return -1;
     }
 
     patch_float_get_all(patch_id, float_type, &val, &modamt, &modsrc);
@@ -380,7 +381,7 @@ dish_file_write_float(xmlNodePtr nodeparent, int patch_id,
 }
 
 
-static int
+    static int
 dish_file_write_eg(xmlNodePtr nodeparent, int patch_id, int eg_id)
 {
     xmlNodePtr  node1;
@@ -391,10 +392,10 @@ dish_file_write_eg(xmlNodePtr nodeparent, int patch_id, int eg_id)
     active = patch_get_env_active(patch_id, eg_id);
 
     node1 = xmlNewTextChild(nodeparent, NULL,
-                            BAD_CAST mod_src_name(eg_id), NULL);
+            BAD_CAST mod_src_name(eg_id), NULL);
 
     xmlNewProp(node1,   BAD_CAST "active",
-                        BAD_CAST (active ? "true" : "false"));
+            BAD_CAST (active ? "true" : "false"));
 
     val = patch_get_env_delay(patch_id, eg_id);
     snprintf(buf, CHARBUFSIZE, "%f", val);
@@ -428,7 +429,7 @@ dish_file_write_eg(xmlNodePtr nodeparent, int patch_id, int eg_id)
 }
 
 
-static int
+    static int
 dish_file_write_lfo(xmlNodePtr nodeparent, int patch_id, int lfo_id)
 {
     xmlNodePtr  node1;
@@ -447,10 +448,10 @@ dish_file_write_lfo(xmlNodePtr nodeparent, int patch_id, int lfo_id)
     state = patch_get_lfo_active(patch_id, lfo_id);
 
     node1 = xmlNewTextChild(nodeparent, NULL,
-                            BAD_CAST mod_src_name(lfo_id), NULL);
+            BAD_CAST mod_src_name(lfo_id), NULL);
 
     xmlNewProp(node1,   BAD_CAST "active",
-                        BAD_CAST (state ? "true" : "false"));
+            BAD_CAST (state ? "true" : "false"));
 
     node2 = xmlNewTextChild(node1, NULL, BAD_CAST "Frequency", NULL);
     val = patch_get_lfo_freq(patch_id, lfo_id);
@@ -463,7 +464,7 @@ dish_file_write_lfo(xmlNodePtr nodeparent, int patch_id, int lfo_id)
 
     state = patch_get_lfo_sync(patch_id, lfo_id);
     xmlNewProp(node2,   BAD_CAST "sync",
-                        BAD_CAST (state ? "true" : "false"));
+            BAD_CAST (state ? "true" : "false"));
 
     mod1src = patch_get_lfo_fm1_src(patch_id, lfo_id);
     mod1amt = patch_get_lfo_fm1_amt(patch_id, lfo_id);
@@ -488,7 +489,7 @@ dish_file_write_lfo(xmlNodePtr nodeparent, int patch_id, int lfo_id)
 
     state = patch_get_lfo_positive(patch_id, lfo_id);
     xmlNewProp(node2,   BAD_CAST "positive",
-                        BAD_CAST (state ? "true" : "false"));
+            BAD_CAST (state ? "true" : "false"));
 
     /* assured by caller that lfo_id IS an lfo_id */
     if (!mod_src_is_global(lfo_id))
@@ -563,8 +564,8 @@ static int dish_write(void)
     }
 
     xmlNewProp(noderoot, BAD_CAST "save-type",
-                         BAD_CAST (dish_data->full_save ? "full"
-                                                        : "basic"));
+            BAD_CAST (dish_data->full_save ? "full"
+                : "basic"));
     if (dish_data->full_save)
     {
         free(file_ops_mkdir(0, dish_data->bank_dir));
@@ -581,7 +582,7 @@ static int dish_write(void)
 
     /*  ------------------------
         master
-     */
+        */
     node1 = xmlNewTextChild(noderoot, NULL, BAD_CAST "Master", NULL);
 
     snprintf(buf, CHARBUFSIZE, "%f", mixer_get_amplitude());
@@ -593,7 +594,7 @@ static int dish_write(void)
 
     /*  ------------------------
         patches
-     */
+        */
     patch_count = patch_dump(&patch_id);
 
     for (i = 0; i < patch_count; ++i)
@@ -602,29 +603,29 @@ static int dish_write(void)
         debug("writing patch:%d\n", patch_id[i]);
 
         nodepatch = xmlNewTextChild(noderoot, NULL,
-                                BAD_CAST "Patch", NULL);
+                BAD_CAST "Patch", NULL);
 
         xmlNewProp(nodepatch,   BAD_CAST "name",
-                                BAD_CAST patch_get_name(patch_id[i]));
+                BAD_CAST patch_get_name(patch_id[i]));
 
         snprintf(buf, CHARBUFSIZE, "%d", patch_get_channel(patch_id[i]));
         xmlNewProp(nodepatch,   BAD_CAST "channel", BAD_CAST buf);
 
         /*  ------------------------
             sample
-         */
+            */
         node1 = xmlNewTextChild(nodepatch, NULL, BAD_CAST "Sample", NULL);
 
         if (samplepath && dish_data->full_save
-         && strcmp(samplepath, "Default") != 0)
+                && strcmp(samplepath, "Default") != 0)
         {
             char* path = file_ops_sample_path_mangle(samplepath,
-                                                     dish_data->bank_dir,
-                                                     samples_dir);
+                    dish_data->bank_dir,
+                    samples_dir);
 
             xmlNewProp(node1, BAD_CAST "file", BAD_CAST path);
             msg_log(MSG_MESSAGE, "patch %d symlink %s to %s\n",
-                                                    i, path, samplepath);
+                    i, path, samplepath);
             free(path);
         }
         else
@@ -650,7 +651,7 @@ static int dish_write(void)
             xmlNewProp(node2,   BAD_CAST "stop", BAD_CAST buf);
 
             snprintf(buf, CHARBUFSIZE, "%d",
-                                patch_get_fade_samples(patch_id[i]));
+                    patch_get_fade_samples(patch_id[i]));
             xmlNewProp(node2,   BAD_CAST "fade_samples", BAD_CAST buf);
 
             /* sample loop */
@@ -680,7 +681,7 @@ static int dish_write(void)
 
         snprintf(buf, CHARBUFSIZE, "%d", patch_get_upper_note(patch_id[i]));
         xmlNewProp(node2,   BAD_CAST "upper", BAD_CAST buf);
-        
+
         snprintf(buf, CHARBUFSIZE, "%d", patch_get_lower_vel(patch_id[i]));
         xmlNewProp(node2,   BAD_CAST "velocity_lower", BAD_CAST buf);
 
@@ -690,29 +691,29 @@ static int dish_write(void)
 
         /*  ------------------------
             amplitude
-         */
+            */
         dish_file_write_param(nodepatch, patch_id[i],PATCH_PARAM_AMPLITUDE);
 
         /*  ------------------------
             panning
-         */
+            */
         dish_file_write_param(nodepatch, patch_id[i], PATCH_PARAM_PANNING);
 
         /*  ------------------------
             pitch
-         */
+            */
         dish_file_write_param(nodepatch, patch_id[i], PATCH_PARAM_PITCH);
 
         /*  ------------------------
             lowpass
-         */
+            */
         node1 = xmlNewTextChild(nodepatch, NULL, BAD_CAST "Lowpass", NULL);
         dish_file_write_param(node1, patch_id[i], PATCH_PARAM_CUTOFF);
         dish_file_write_param(node1, patch_id[i], PATCH_PARAM_RESONANCE);
 
         /*  ------------------------
             voice
-         */
+            */
         node1 = xmlNewTextChild(nodepatch, NULL, BAD_CAST "Voice", NULL);
 
         /* voice cut */
@@ -728,41 +729,41 @@ static int dish_write(void)
 
         /* voice portamento_time */
         dish_file_write_float(node1, patch_id[i], 
-                                            PATCH_FLOAT_PORTAMENTO_TIME);
+                PATCH_FLOAT_PORTAMENTO_TIME);
 
         /* voice monophonic */
         xmlNewProp(node1,   BAD_CAST "monophonic",
-                            BAD_CAST (patch_get_monophonic(patch_id[i])
-                                        ? "true"
-                                        : "false"));
+                BAD_CAST (patch_get_monophonic(patch_id[i])
+                    ? "true"
+                    : "false"));
 
         /* voice legato */
         dish_file_write_bool(node1, patch_id[i], PATCH_BOOL_LEGATO);
 
         /*  ------------------------
             envelopes
-         */
+            */
         for (j = 0; j < VOICE_MAX_ENVS; ++j)
             dish_file_write_eg(nodepatch,   patch_id[i],
-                                            MOD_SRC_EG + j);
+                    MOD_SRC_EG + j);
 
         /*  ------------------------
             lfos
-         */
+            */
         for (j = 0; j < VOICE_MAX_LFOS; ++j)
             dish_file_write_lfo(nodepatch,  patch_id[i],
-                                            MOD_SRC_VLFO + j);
+                    MOD_SRC_VLFO + j);
 
         for (j = 0; j < PATCH_MAX_LFOS; ++j)
             dish_file_write_lfo(nodepatch,  patch_id[i],
-                                            MOD_SRC_GLFO + j);
+                    MOD_SRC_GLFO + j);
     }
 
     rc = xmlSaveFormatFile(dish_data->file_path, doc, 1);
     xmlFreeDoc(doc);
 
     msg_log(MSG_MESSAGE, "Successfully wrote dish file '%s'\n",
-                                                dish_data->file_path);
+            dish_data->file_path);
 
     free(samples_dir);
     free(patch_id);
@@ -775,8 +776,8 @@ static int dish_write(void)
 static bool xmlstr_to_bool(xmlChar* str)
 {
     if (xmlStrcasecmp(str, BAD_CAST "true") == 0
-     || xmlStrcasecmp(str, BAD_CAST "on") == 0
-     || xmlStrcasecmp(str, BAD_CAST "yes") == 0)
+            || xmlStrcasecmp(str, BAD_CAST "on") == 0
+            || xmlStrcasecmp(str, BAD_CAST "yes") == 0)
     {
         xmlFree(str);
         return true;
@@ -855,7 +856,7 @@ static int dish_file_read_sample(xmlNodePtr node,  int patch_id)
     double sr_ratio = 1.0;
 
     if (dish_data->samplerate
-     && dish_data->samplerate != patch_get_samplerate())
+            && dish_data->samplerate != patch_get_samplerate())
         sr_ratio = patch_get_samplerate() / (double)dish_data->samplerate;
 
     prop = xmlGetProp(node, BAD_CAST "file");
@@ -866,8 +867,8 @@ static int dish_file_read_sample(xmlNodePtr node,  int patch_id)
         bool default_sample = (strcmp(p, "Default") == 0);
 
         filename = (*p == '/' || default_sample)
-                            ? strdup(p)
-                            : file_ops_join_path(dish_data->bank_dir, p);
+            ? strdup(p)
+            : file_ops_join_path(dish_data->bank_dir, p);
 
         if (dish_data->bank_dir && !default_sample)
         {
@@ -903,13 +904,13 @@ static int dish_file_read_sample(xmlNodePtr node,  int patch_id)
     }
 
     if ((prop = xmlGetProp(node, BAD_CAST "reverse"))
-     && xmlstr_to_bool(prop))
+            && xmlstr_to_bool(prop))
     {
         mode |= PATCH_PLAY_REVERSE;
     }
 
     if ((prop = xmlGetProp(node, BAD_CAST "to_end"))
-     && xmlstr_to_bool(prop))
+            && xmlstr_to_bool(prop))
     {
         mode |= PATCH_PLAY_TO_END;
     }
@@ -917,8 +918,8 @@ static int dish_file_read_sample(xmlNodePtr node,  int patch_id)
     patch_set_play_mode(patch_id, mode);
 
     for(node1 = node->children;
-        node1 != NULL;
-        node1 = node1->next)
+            node1 != NULL;
+            node1 = node1->next)
     {
         int n;
 
@@ -934,27 +935,27 @@ static int dish_file_read_sample(xmlNodePtr node,  int patch_id)
             if (xmlStrcmp(node1->name, BAD_CAST "Raw") == 0)
             {
                 if (get_prop_int(node1, "samplerate", &n))
-                        raw_samplerate = n;
+                    raw_samplerate = n;
 
                 if (get_prop_int(node1, "channels", &n))
-                        raw_channels = n;
+                    raw_channels = n;
 
                 if (get_prop_int(node1, "sndfile_format", &n))
-                        sndfile_format = n;
+                    sndfile_format = n;
             }
 
             if (patch_sample_load(patch_id, filename,
-                                            raw_samplerate,
-                                            raw_channels,
-                                            sndfile_format) < 0)
+                        raw_samplerate,
+                        raw_channels,
+                        sndfile_format) < 0)
             {
                 msg_log(MSG_ERROR, "failed to load sample: %s error (%s)\n",
-                    filename, pf_error_str(pf_error_get()));
+                        filename, pf_error_str(pf_error_get()));
             }
             else
             {
                 msg_log(MSG_MESSAGE, "loaded sample %s into patch %d\n",
-                                     filename, patch_id);
+                        filename, patch_id);
                 sample_loaded = true;
             }
 
@@ -1025,25 +1026,28 @@ static int dish_file_read_sample(xmlNodePtr node,  int patch_id)
         else
         {
             msg_log(MSG_WARNING, "ignoring XML NODE: %s\n",
-                                    (const char*)node1->name);
+                    (const char*)node1->name);
         }
     }
 
     if (!sample_loaded)
+    {
+        free(filename);
         return 0;
+    }
 
     if (sanitize_sample_points( &play_start,    &play_stop,
-                                &loop_start,    &loop_stop,
-                                &fade_samples,  &xfade_samples,
-                    patch_get_mark_frame(patch_id, WF_MARK_STOP)) < 0)
+                &loop_start,    &loop_stop,
+                &fade_samples,  &xfade_samples,
+                patch_get_mark_frame(patch_id, WF_MARK_STOP)) < 0)
     {
         /* it's all so borked that sanity becomes impossible */
         return -1;
     }
 
     patch_sample_set_points(patch_id,   play_start,     play_stop,
-                                        loop_start,     loop_stop,
-                                        fade_samples,   xfade_samples);
+            loop_start,     loop_stop,
+            fade_samples,   xfade_samples);
     return 0;
 }
 
@@ -1084,7 +1088,7 @@ static int dish_file_read_eg(xmlNodePtr node, int patch_id)
     return 0;
 }
 
-static int
+    static int
 dish_file_read_lfo_freq_data(xmlNodePtr node, int patch_id, int lfo_id)
 {
     xmlNodePtr node1;
@@ -1127,7 +1131,7 @@ dish_file_read_lfo_freq_data(xmlNodePtr node, int patch_id, int lfo_id)
         else
         {
             msg_log(MSG_WARNING, "ignoring XML NODE: %s\n",
-                                    (const char*)node1->name);
+                    (const char*)node1->name);
         }
     }
 
@@ -1135,7 +1139,7 @@ dish_file_read_lfo_freq_data(xmlNodePtr node, int patch_id, int lfo_id)
 }
 
 
-static int
+    static int
 dish_file_read_lfo_amp_data(xmlNodePtr node, int patch_id, int lfo_id)
 {
     xmlNodePtr node1;
@@ -1146,7 +1150,7 @@ dish_file_read_lfo_amp_data(xmlNodePtr node, int patch_id, int lfo_id)
     if ((prop = xmlGetProp(node, BAD_CAST "shape")))
     {
         patch_set_lfo_shape(patch_id, lfo_id,
-            (LFOShape)names_lfo_shapes_id_from_str((const char*)prop));
+                (LFOShape)names_lfo_shapes_id_from_str((const char*)prop));
         xmlFree(prop);
     }
 
@@ -1188,7 +1192,7 @@ dish_file_read_lfo_amp_data(xmlNodePtr node, int patch_id, int lfo_id)
         else
         {
             msg_log(MSG_WARNING, "ignoring XML NODE: %s\n",
-                                    (const char*)node1->name);
+                    (const char*)node1->name);
         }
     }
 
@@ -1196,7 +1200,7 @@ dish_file_read_lfo_amp_data(xmlNodePtr node, int patch_id, int lfo_id)
 }
 
 
-static int
+    static int
 dish_file_read_lfo(xmlNodePtr node, int patch_id)
 {
     int lfo_id;
@@ -1232,14 +1236,14 @@ dish_file_read_lfo(xmlNodePtr node, int patch_id)
         else
         {
             msg_log(MSG_WARNING, "ignoring XML NODE: %s\n",
-                                    (const char*)node1->name);
+                    (const char*)node1->name);
         }
     }
 
     return 0;
 }
 
-static int
+    static int
 dish_file_read_param(xmlNodePtr node, int patch_id, PatchParamType param)
 {
     const char* pname = 0;
@@ -1249,69 +1253,69 @@ dish_file_read_param(xmlNodePtr node, int patch_id, PatchParamType param)
 
     switch(param)
     {
-    case PATCH_PARAM_AMPLITUDE: pname = "level";    break;
-    case PATCH_PARAM_PANNING:   pname = "position"; break;
-    case PATCH_PARAM_CUTOFF:    pname = "value";    break;
-    case PATCH_PARAM_RESONANCE: pname = "amount";   break;
-    case PATCH_PARAM_PITCH:     pname = "tuning";   break;
-    default:    /* shouldn't ever get here if this is the case ;-} */
-        return -1;
-    }
+        case PATCH_PARAM_AMPLITUDE: pname = "level";    break;
+        case PATCH_PARAM_PANNING:   pname = "position"; break;
+        case PATCH_PARAM_CUTOFF:    pname = "value";    break;
+        case PATCH_PARAM_RESONANCE: pname = "amount";   break;
+        case PATCH_PARAM_PITCH:     pname = "tuning";   break;
+        default:    /* shouldn't ever get here if this is the case ;-} */
+                                    return -1;
+}
 
-    if (get_prop_float(node, pname, &n))
-        patch_param_set_value(patch_id, param, n);
+if (get_prop_float(node, pname, &n))
+    patch_param_set_value(patch_id, param, n);
 
-    if (param == PATCH_PARAM_PITCH)
-    {
-        if (get_prop_int(node, "tuning_range", &s))
-            patch_set_pitch_steps(patch_id, s);
-    }
+if (param == PATCH_PARAM_PITCH)
+{
+    if (get_prop_int(node, "tuning_range", &s))
+        patch_set_pitch_steps(patch_id, s);
+}
 
-    if (get_prop_float(node, "velocity_sensing", &n))
-        patch_param_set_vel_amount(patch_id, param, n);
+if (get_prop_float(node, "velocity_sensing", &n))
+patch_param_set_vel_amount(patch_id, param, n);
 
-    if (get_prop_float(node, "key_tracking", &n))
-        patch_param_set_key_amount(patch_id, param, n);
+if (get_prop_float(node, "key_tracking", &n))
+patch_param_set_key_amount(patch_id, param, n);
 
-    for (   node1 = node->children;
-            node1 != NULL;
-            node1 = node1->next)
-    {
-        if (node1->type != XML_ELEMENT_NODE)
-            continue;
+for (   node1 = node->children;
+        node1 != NULL;
+        node1 = node1->next)
+{
+    if (node1->type != XML_ELEMENT_NODE)
+        continue;
 
-        int slot = -1;
-        int mod;
+    int slot = -1;
+    int mod;
 
-        if (sscanf((const char*)node1->name, "Mod%d", &slot) == 1
+    if (sscanf((const char*)node1->name, "Mod%d", &slot) == 1
             && slot > 0 && slot <= MAX_MOD_SLOTS)
-        {
-            --slot; /* slot 0 is named as MOD1 */
+    {
+        --slot; /* slot 0 is named as MOD1 */
 
-            if (get_prop_mod_src(node1, "source", &mod))
-                patch_param_set_mod_src(patch_id, param, slot, mod);
+        if (get_prop_mod_src(node1, "source", &mod))
+            patch_param_set_mod_src(patch_id, param, slot, mod);
 
-            if (get_prop_float(node1, "amount", &n))
-                patch_param_set_mod_amt(patch_id, param, slot, n);
-        }
-        else if ((param == PATCH_PARAM_AMPLITUDE
-                && xmlStrcmp(node1->name, BAD_CAST "Env") == 0))
-        {
-            if (get_prop_mod_src(node1, "source", &mod))
-                patch_param_set_mod_src(patch_id, param, EG_MOD_SLOT, mod);
-        }
-        else
-        {
-            msg_log(MSG_WARNING, "ignoring XML NODE: %s\n",
-                                    (const char*)node1->name);
-        }
+        if (get_prop_float(node1, "amount", &n))
+            patch_param_set_mod_amt(patch_id, param, slot, n);
     }
+    else if ((param == PATCH_PARAM_AMPLITUDE
+                && xmlStrcmp(node1->name, BAD_CAST "Env") == 0))
+    {
+        if (get_prop_mod_src(node1, "source", &mod))
+            patch_param_set_mod_src(patch_id, param, EG_MOD_SLOT, mod);
+    }
+    else
+    {
+        msg_log(MSG_WARNING, "ignoring XML NODE: %s\n",
+                (const char*)node1->name);
+    }
+}
 
-    return 0;
+return 0;
 }
 
 
-static int
+    static int
 dish_file_read_bool(xmlNodePtr node, int patch_id, PatchBoolType bool_type)
 {
     float       n;
@@ -1333,7 +1337,7 @@ dish_file_read_bool(xmlNodePtr node, int patch_id, PatchBoolType bool_type)
             if ((prop = xmlGetProp(node1, BAD_CAST "source")))
             {
                 patch_bool_set_mod_src(patch_id, bool_type,
-                            mod_src_id((const char*)prop, MOD_SRC_GLOBALS));
+                        mod_src_id((const char*)prop, MOD_SRC_GLOBALS));
                 xmlFree(prop);
             }
 
@@ -1343,7 +1347,7 @@ dish_file_read_bool(xmlNodePtr node, int patch_id, PatchBoolType bool_type)
         else
         {
             msg_log(MSG_WARNING, "ignoring XML NODE: %s\n",
-                                    (const char*)node1->name);
+                    (const char*)node1->name);
         }
     }
 
@@ -1352,16 +1356,16 @@ dish_file_read_bool(xmlNodePtr node, int patch_id, PatchBoolType bool_type)
 
 
 
-static int
+    static int
 dish_file_read_float(xmlNodePtr node, int patch_id,
-                                      PatchFloatType float_type)
+        PatchFloatType float_type)
 {
     float       n;
     xmlChar*    prop;
     xmlNodePtr  node1;
 
     if ((prop = xmlGetProp(node, BAD_CAST "active")))
-    /* FIXME: needs value bounds testing */
+        /* FIXME: needs value bounds testing */
         patch_float_set_value(patch_id, float_type, xmlstr_to_bool(prop));
 
     for (   node1 = node->children;
@@ -1376,7 +1380,7 @@ dish_file_read_float(xmlNodePtr node, int patch_id,
             if ((prop = xmlGetProp(node1, BAD_CAST "source")))
             {
                 patch_float_set_mod_src(patch_id, float_type,
-                            mod_src_id((const char*)prop, MOD_SRC_GLOBALS));
+                        mod_src_id((const char*)prop, MOD_SRC_GLOBALS));
                 xmlFree(prop);
             }
 
@@ -1386,7 +1390,7 @@ dish_file_read_float(xmlNodePtr node, int patch_id,
         else
         {
             msg_log(MSG_WARNING, "ignoring XML NODE: %s\n",
-                                    (const char*)node1->name);
+                    (const char*)node1->name);
         }
     }
 
@@ -1424,7 +1428,7 @@ static int dish_file_read_voice(xmlNodePtr node, int patch_id)
         else if (xmlStrcmp(node1->name, BAD_CAST "Portamento_time") == 0)
         {
             dish_file_read_float(node1, patch_id,
-                                            PATCH_FLOAT_PORTAMENTO_TIME);
+                    PATCH_FLOAT_PORTAMENTO_TIME);
         }
         else if (xmlStrcmp(node1->name, BAD_CAST "Legato") == 0)
         {
@@ -1433,7 +1437,7 @@ static int dish_file_read_voice(xmlNodePtr node, int patch_id)
         else
         {
             msg_log(MSG_WARNING, "ignoring XML NODE: %s\n",
-                                    (const char*)node1->name);
+                    (const char*)node1->name);
         }
     }
 
@@ -1455,8 +1459,8 @@ static int dish_read(const char *path)
     bool full_save = false;
 
     setlocale(LC_NUMERIC, "C");
-    
-	debug("Loading bank from file %s\n", path);
+
+    debug("Loading bank from file %s\n", path);
 
     if (stat(path, &st) != 0)
     {
@@ -1487,7 +1491,7 @@ static int dish_read(const char *path)
     if (xmlStrcmp(noderoot->name, BAD_CAST "Petri-Foo-Dish") != 0)
     {
         msg_log(MSG_ERROR, "%s is not a valid 'Petri-Foo-Dish' file\n",
-                                                                path);
+                path);
         xmlFreeDoc(doc);
         setlocale(LC_NUMERIC, "");
         return -1;
@@ -1503,16 +1507,16 @@ static int dish_read(const char *path)
     }
 
     if (dish_file_state_set_by_path(path, full_save) == -1)
-	{
+    {
         setlocale(LC_NUMERIC, "");
         return -1;
-	}
+    }
 
     dish_data->samplerate = 0;
 
     for (node1 = noderoot->children;
-         node1 != NULL;
-         node1 = node1->next)
+            node1 != NULL;
+            node1 = node1->next)
     {
         if (node1->type != XML_ELEMENT_NODE)
             continue;
@@ -1529,6 +1533,9 @@ static int dish_read(const char *path)
         {
             int patch_id = patch_create();
 
+            if (patch_id < 0)
+                continue;
+
             nodepatch = node1;
 
             /* patch name */
@@ -1542,11 +1549,11 @@ static int dish_read(const char *path)
                 patch_set_channel(patch_id, i);
 
             msg_log(MSG_MESSAGE, "Reading data for patch %d '%s'\n",
-                                 patch_id, patch_get_name(patch_id));
+                    patch_id, patch_get_name(patch_id));
 
             for (node2 = nodepatch->children;
-                 node2 != NULL;
-                 node2 = node2->next)
+                    node2 != NULL;
+                    node2 = node2->next)
             {
                 if (node2->type != XML_ELEMENT_NODE)
                     continue;
@@ -1558,25 +1565,25 @@ static int dish_read(const char *path)
                 else if (xmlStrcmp(node2->name, BAD_CAST "Amplitude") ==0)
                 {
                     dish_file_read_param(node2, patch_id,
-                                                PATCH_PARAM_AMPLITUDE);
+                            PATCH_PARAM_AMPLITUDE);
                 }
                 else if (xmlStrcmp(node2->name, BAD_CAST "Pan") ==0)
                 {
                     dish_file_read_param(node2, patch_id,
-                                                PATCH_PARAM_PANNING);
+                            PATCH_PARAM_PANNING);
                 }
                 else if (xmlStrcmp(node2->name, BAD_CAST "Pitch") == 0)
                 {
                     dish_file_read_param(node2, patch_id,
-                                                PATCH_PARAM_PITCH);
+                            PATCH_PARAM_PITCH);
                 }
                 else if (xmlStrcmp(node2->name, BAD_CAST "Lowpass") == 0)
                 {
                     xmlNodePtr node3;
 
                     for (node3 = node2->children;
-                         node3 != NULL;
-                         node3 = node3->next)
+                            node3 != NULL;
+                            node3 = node3->next)
                     {
                         if (node3->type != XML_ELEMENT_NODE)
                             continue;
@@ -1584,13 +1591,13 @@ static int dish_read(const char *path)
                         if (xmlStrcmp(node3->name, BAD_CAST "Cutoff") == 0)
                         {
                             dish_file_read_param(node3, patch_id,
-                                                    PATCH_PARAM_CUTOFF);
+                                    PATCH_PARAM_CUTOFF);
                         }
                         else if (xmlStrcmp(node3->name,
-                                           BAD_CAST "Resonance") == 0)
+                                    BAD_CAST "Resonance") == 0)
                         {
                             dish_file_read_param(node3, patch_id,
-                                                    PATCH_PARAM_RESONANCE);
+                                    PATCH_PARAM_RESONANCE);
                         }
                     }
                 }
@@ -1603,20 +1610,20 @@ static int dish_read(const char *path)
                     if (mod_src_maybe_eg((const char*)node2->name))
                         dish_file_read_eg(node2, patch_id);
                     else
-                    if (mod_src_maybe_lfo((const char*)node2->name))
+                        if (mod_src_maybe_lfo((const char*)node2->name))
                             dish_file_read_lfo(node2, patch_id);
-                    else
-                    {
-                        msg_log(MSG_WARNING, "ignoring XML NODE: %s\n",
-                                            (const char*)node2->name);
-                    }
+                        else
+                        {
+                            msg_log(MSG_WARNING, "ignoring XML NODE: %s\n",
+                                    (const char*)node2->name);
+                        }
                 }
             }
         }
         else
         {
             msg_log(MSG_WARNING, "ignoring XML NODE: %s\n",
-                                    (const char*)node1->name);
+                    (const char*)node1->name);
         }
     }
 
@@ -1632,17 +1639,17 @@ static int dish_read(const char *path)
 
 #define DF_STATE_FREE(dfdata)   \
     if ((dfdata)->bank_dir)  free((dfdata)->bank_dir);   \
-    if ((dfdata)->parent_dir)free((dfdata)->parent_dir); \
-    if ((dfdata)->bank_name) free((dfdata)->bank_name);  \
-    if ((dfdata)->file_path) free((dfdata)->file_path)
+if ((dfdata)->parent_dir)free((dfdata)->parent_dir); \
+if ((dfdata)->bank_name) free((dfdata)->bank_name);  \
+if ((dfdata)->file_path) free((dfdata)->file_path)
 
 #define DF_STATE_ZERO(dfdata)   \
     (dfdata)->samplerate = 0;   \
-    (dfdata)->full_save = false;\
-    (dfdata)->bank_dir = 0;     \
-    (dfdata)->parent_dir = 0;   \
-    (dfdata)->bank_name = 0;    \
-    (dfdata)->file_path = 0
+(dfdata)->full_save = false;\
+(dfdata)->bank_dir = 0;     \
+(dfdata)->parent_dir = 0;   \
+(dfdata)->bank_name = 0;    \
+(dfdata)->file_path = 0
 
 
 void dish_file_state_init(void)
@@ -1679,16 +1686,16 @@ void dish_file_state_cleanup(void)
 int dish_file_state_set_by_path(const char* file_path, bool full_save)
 {
     if (dish_data->full_save != full_save
-     || !dish_data->file_path
-     || strcmp(file_path, dish_data->file_path) != 0)
+            || !dish_data->file_path
+            || strcmp(file_path, dish_data->file_path) != 0)
     {
         DF_STATE_FREE(dish_data);
         DF_STATE_ZERO(dish_data);
 
-        char* name;
+        char* name = 0;
         char* filename;
         char* bank_dir;
-        char* parent_dir;
+        char* parent_dir = 0;
 
         debug("path:        '%s'\n", file_path);
 
@@ -1729,12 +1736,11 @@ int dish_file_state_set_by_path(const char* file_path, bool full_save)
 
         return 0;
 
-    fail:
+fail:
         free(filename);
         free(name);
         free(parent_dir);
         free(bank_dir);
-        free(filename);
         msg_log(MSG_ERROR, "bad dish file path '%s'\n", file_path);
 
         return -1;
@@ -1752,14 +1758,14 @@ bool dish_file_has_state(void)
 bool dish_file_state_is_full(void)
 {
     debug("dish_data->full_save == '%s'\n",
-        dish_data->full_save ? "true" : "false");
+            dish_data->full_save ? "true" : "false");
     return dish_data->full_save;
 }
 
 bool dish_file_state_is_basic(void)
 {
     debug("dish_data->basic_save == '%s'\n",
-        !dish_data->full_save ? "true" : "false");
+            !dish_data->full_save ? "true" : "false");
     return !dish_data->full_save;
 }
 
@@ -1830,7 +1836,6 @@ int dish_file_write_basic(const char *path)
 
 int dish_file_write_full(const char* parent, const char* name)
 {
-    struct stat st;
     char* bank_dir = 0;
     char* filename = 0;
     char* bank_path = 0;
@@ -1841,15 +1846,12 @@ int dish_file_write_full(const char* parent, const char* name)
         return -1;
     }
 
-    if (stat(bank_dir, &st) != 0)
+    if (mkdir(bank_dir, 0777) != 0 && errno != EEXIST)
     {
-        if (mkdir(bank_dir, 0777) != 0)
-        {
-            msg_log(MSG_ERROR, "failed to create bank dir:'%s'\n",
-                                                        bank_dir);
-            free(bank_dir);
-            return -1;
-        }
+        msg_log(MSG_ERROR, "failed to create bank dir:'%s'\n",
+                bank_dir);
+        free(bank_dir);
+        return -1;
     }
 
     if (!(filename = file_ops_join_ext(name, dish_file_extension())))
@@ -1868,17 +1870,20 @@ int dish_file_write_full(const char* parent, const char* name)
     }
 
     if (!dish_data->full_save
-     || strcmp(dish_data->bank_dir, bank_dir) != 0)
+            || strcmp(dish_data->bank_dir, bank_dir) != 0)
     {
         /* either the last save was basic, or the bank_dir has changed */
         DF_STATE_FREE(dish_data);
-        dish_data->bank_dir = bank_dir;
+        dish_data->bank_dir = strdup(bank_dir);
         dish_data->parent_dir = strdup(parent);
         dish_data->bank_name = strdup(name);
-        dish_data->file_path = bank_path;
+        dish_data->file_path = strdup(bank_path);
     }
 
     dish_data->full_save = true;
+    free(bank_path);
+    free(bank_dir);
+    free(filename);
 
     return dish_write();
 }
