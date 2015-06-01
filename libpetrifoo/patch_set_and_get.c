@@ -753,7 +753,7 @@ int patch_get_frames(int patch_id)
 {
     assert(patchok(patch_id));
     if (patches[patch_id]->sample->sp == NULL)
-        return 0;
+        return -1;
     return patches[patch_id]->sample->frames;
 }
 

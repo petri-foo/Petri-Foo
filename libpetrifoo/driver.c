@@ -47,9 +47,6 @@ void driver_init(void)
 
     for (i = 0; drivers[i] != NULL; i++, ndrivers++)
         drivers[i]->init();
-
-    if ((ndrivers = i) < 0)
-        ndrivers = 0;
 }
 
 int driver_restart(void)

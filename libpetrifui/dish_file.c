@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <errno.h>
 #include <unistd.h>
 #include <locale.h>
 
@@ -680,7 +681,7 @@ static int dish_write(void)
 
         snprintf(buf, CHARBUFSIZE, "%d", patch_get_upper_note(patch_id[i]));
         xmlNewProp(node2,   BAD_CAST "upper", BAD_CAST buf);
-        
+
         snprintf(buf, CHARBUFSIZE, "%d", patch_get_lower_vel(patch_id[i]));
         xmlNewProp(node2,   BAD_CAST "velocity_lower", BAD_CAST buf);
 
@@ -1030,7 +1031,10 @@ static int dish_file_read_sample(xmlNodePtr node,  int patch_id)
     }
 
     if (!sample_loaded)
+    {
+        free(filename);
         return 0;
+    }
 
     if (sanitize_sample_points( &play_start,    &play_stop,
                                 &loop_start,    &loop_stop,
@@ -1455,8 +1459,8 @@ static int dish_read(const char *path)
     bool full_save = false;
 
     setlocale(LC_NUMERIC, "C");
-    
-	debug("Loading bank from file %s\n", path);
+
+    debug("Loading bank from file %s\n", path);
 
     if (stat(path, &st) != 0)
     {
@@ -1503,10 +1507,10 @@ static int dish_read(const char *path)
     }
 
     if (dish_file_state_set_by_path(path, full_save) == -1)
-	{
+    {
         setlocale(LC_NUMERIC, "");
         return -1;
-	}
+    }
 
     dish_data->samplerate = 0;
 
@@ -1528,6 +1532,9 @@ static int dish_read(const char *path)
         else if (xmlStrcmp(node1->name, BAD_CAST "Patch") == 0)
         {
             int patch_id = patch_create();
+
+            if (patch_id < 0)
+                continue;
 
             nodepatch = node1;
 
@@ -1602,9 +1609,8 @@ static int dish_read(const char *path)
                 {
                     if (mod_src_maybe_eg((const char*)node2->name))
                         dish_file_read_eg(node2, patch_id);
-                    else
-                    if (mod_src_maybe_lfo((const char*)node2->name))
-                            dish_file_read_lfo(node2, patch_id);
+                    else if (mod_src_maybe_lfo((const char*)node2->name))
+                        dish_file_read_lfo(node2, patch_id);
                     else
                     {
                         msg_log(MSG_WARNING, "ignoring XML NODE: %s\n",
@@ -1685,10 +1691,10 @@ int dish_file_state_set_by_path(const char* file_path, bool full_save)
         DF_STATE_FREE(dish_data);
         DF_STATE_ZERO(dish_data);
 
-        char* name;
+        char* name = 0;
         char* filename;
         char* bank_dir;
-        char* parent_dir;
+        char* parent_dir = 0;
 
         debug("path:        '%s'\n", file_path);
 
@@ -1734,7 +1740,6 @@ int dish_file_state_set_by_path(const char* file_path, bool full_save)
         free(name);
         free(parent_dir);
         free(bank_dir);
-        free(filename);
         msg_log(MSG_ERROR, "bad dish file path '%s'\n", file_path);
 
         return -1;
@@ -1830,7 +1835,6 @@ int dish_file_write_basic(const char *path)
 
 int dish_file_write_full(const char* parent, const char* name)
 {
-    struct stat st;
     char* bank_dir = 0;
     char* filename = 0;
     char* bank_path = 0;
@@ -1841,15 +1845,12 @@ int dish_file_write_full(const char* parent, const char* name)
         return -1;
     }
 
-    if (stat(bank_dir, &st) != 0)
+    if (mkdir(bank_dir, 0777) != 0 && errno != EEXIST)
     {
-        if (mkdir(bank_dir, 0777) != 0)
-        {
-            msg_log(MSG_ERROR, "failed to create bank dir:'%s'\n",
-                                                        bank_dir);
-            free(bank_dir);
-            return -1;
-        }
+        msg_log(MSG_ERROR, "failed to create bank dir:'%s'\n",
+                bank_dir);
+        free(bank_dir);
+        return -1;
     }
 
     if (!(filename = file_ops_join_ext(name, dish_file_extension())))
@@ -1872,13 +1873,16 @@ int dish_file_write_full(const char* parent, const char* name)
     {
         /* either the last save was basic, or the bank_dir has changed */
         DF_STATE_FREE(dish_data);
-        dish_data->bank_dir = bank_dir;
+        dish_data->bank_dir = strdup(bank_dir);
         dish_data->parent_dir = strdup(parent);
         dish_data->bank_name = strdup(name);
-        dish_data->file_path = bank_path;
+        dish_data->file_path = strdup(bank_path);
     }
 
     dish_data->full_save = true;
+    free(bank_path);
+    free(bank_dir);
+    free(filename);
 
     return dish_write();
 }

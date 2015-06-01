@@ -43,3 +43,6 @@ cmake_install.cmake
 Makefile.am
 
 sandbox/test
+
+# Coverity
+cov-int/**/*

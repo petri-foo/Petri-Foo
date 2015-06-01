@@ -208,6 +208,9 @@ static void cb_preview(raw_box* rb)
 {
     char *name;
 
+    if (!rb)
+        return;
+
     name = gtk_file_chooser_get_filename(
                                 GTK_FILE_CHOOSER(rb->dialog));
     if (!name)
@@ -294,6 +297,7 @@ static raw_box* raw_box_new(GtkWidget* dialog)
     GtkTable* t;
     int y = 0;
     global_settings* settings = settings_get();
+    id_name* ids;
 
     raw_box* rb = malloc(sizeof(*rb));
 
@@ -337,7 +341,8 @@ static raw_box* raw_box_new(GtkWidget* dialog)
 
     t = GTK_TABLE(rb->table);
 
-    rb->format = basic_combo_id_name_create(names_sample_raw_format_get());
+    ids = names_sample_raw_format_get();
+    rb->format = basic_combo_id_name_create(ids);
     gui_attach(t, rb->format, 0, 2, y, y + 1);
 
     gui_label_attach("Sample rate:", t, 2, 4, y, y + 1);
@@ -383,6 +388,7 @@ static raw_box* raw_box_new(GtkWidget* dialog)
 
     g_signal_connect(GTK_OBJECT(rb->check), "toggled",
                                             G_CALLBACK(raw_toggled_cb), rb);
+    free(ids);
     return rb;
 }
 
@@ -621,17 +627,21 @@ int sample_selector_show(int id, GtkWidget* parent_window,
         signal is emitted on a) when the dialog is created, b) when the
         current-folder is changed.
      */
-    rawbox->dont_preview = true;
-    g_timeout_add(250, timeout_cancel_dont_preview, rawbox);
+    if (rawbox)
+    {
+        rawbox->dont_preview = true;
+        g_timeout_add(250, timeout_cancel_dont_preview, rawbox);
 
-    g_signal_connect(rawbox->dialog, "current-folder-changed",
-                                G_CALLBACK(folder_changed_cb), rawbox);
+        g_signal_connect(rawbox->dialog, "current-folder-changed",
+                                    G_CALLBACK(folder_changed_cb), rawbox);
 
-    g_signal_connect(rawbox->dialog, "selection-changed",
-                                G_CALLBACK(selection_changed_cb), rawbox);
+        g_signal_connect(rawbox->dialog, "selection-changed",
+                                    G_CALLBACK(selection_changed_cb), rawbox);
+    }
 
 again:
 
+    assert(rawbox);
     switch(gtk_dialog_run(GTK_DIALOG(dialog)))
     {
     case GTK_RESPONSE_ACCEPT:

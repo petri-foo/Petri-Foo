@@ -1173,7 +1173,7 @@ void patch_control_init(void)
 
     for (c = 0; c < 16; ++c)
     {
-        for (p = 0; p < CC_ARR_SIZE + 1; ++p)
+        for (p = 0; p < CC_ARR_SIZE; ++p)
             cc[c][p] = 0.0f;
     }
 }
