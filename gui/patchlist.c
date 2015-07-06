@@ -144,7 +144,7 @@ pressed_cb(GtkWidget *treeview, GdkEventButton *event, gpointer data)
 
     if (event->type == GDK_BUTTON_PRESS && event->button == 3)
     {
-        GtkTreePath* path;
+        GtkTreePath* path = NULL;
         GtkTreeSelection* selection;
         gboolean full_menu = FALSE;
 

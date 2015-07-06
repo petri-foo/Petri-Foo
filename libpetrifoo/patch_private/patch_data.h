@@ -87,7 +87,7 @@ struct _Patch
     Sample* sample;         /* sample data */
     int     display_index;  /* order in which this Patch to be displayed */
 
-    char    name[PATCH_MAX_NAME];
+    char    name[PATCH_MAX_NAME + 1];
 
     int     channel;        /* midi channel to listen on */
     int     root_note;      /* midi note to listen on */

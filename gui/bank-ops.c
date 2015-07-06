@@ -151,6 +151,7 @@ static int basic_save_as(GtkWidget* parent_window, gboolean not_export)
     gtk_widget_destroy(dialog);
 
     free(filter);
+    free(untitled_dish);
 
     return val;
 }
@@ -246,7 +247,9 @@ static int full_save_as(GtkWidget* parent_window, gboolean not_export)
                 free(uri);
             }
             else
+            {
                 folder = uri;
+            }
 
             name = gtk_entry_get_text(GTK_ENTRY(name_entry));
             debug("folder:'%s'\tname (name_entry):'%s'\n", folder,name);
@@ -267,6 +270,7 @@ static int full_save_as(GtkWidget* parent_window, gboolean not_export)
     }
 
     gtk_widget_destroy(dialog);
+    free(folder);
 
     return 0;
 }
