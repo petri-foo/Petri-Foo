@@ -20,11 +20,15 @@ set(ARCHIVE_NAME petri-foo-0.${Petri-Foo_VERSION_MAJOR}.${Petri-Foo_VERSION_MINO
 # two #defines to aid stripping path info from debug message output:
 # see config.h.in
 set(SRC_DIR $PROJECT_SOURCE_DIR)
-string( LENGTH "${PROJECT_SOURCE_DIR}" SRC_DIR_STRLEN)
 
+# where to look first for cmake modules, before ${CMAKE_ROOT}/Modules/ is checked
+set(CMAKE_MODULE_PATH
+  ${CMAKE_SOURCE_DIR}/cmake/Modules
+)
+
+string( LENGTH "${PROJECT_SOURCE_DIR}" SRC_DIR_STRLEN)
 include (CheckCSourceCompiles)
 INCLUDE (CheckIncludeFiles)
-
 
 mark_as_advanced(EXECUTABLE_OUTPUT_PATH)
 mark_as_advanced(LIBRARY_OUTPUT_PATH)
@@ -85,7 +89,6 @@ endif (JACK_FOUND)
 
 include (FindALSA)
 
-
 # SNDFILE
 pkg_check_modules (SNDFILE REQUIRED sndfile)
 if (SNDFILE_FOUND)
@@ -139,9 +142,6 @@ else (LIBLO_FOUND)
 endif (LIBLO_FOUND)
 
 
-include(FindOpenSSL)
-
-
 # Check for CAIRO_OPERATOR_HSL_LUMINOSITY
 check_c_source_compiles (
     "#include <cairo/cairo.h>
@@ -154,6 +154,8 @@ check_c_source_compiles (
 
 CHECK_INCLUDE_FILES (malloc.h HAVE_MALLOC_H)
 CHECK_INCLUDE_FILES (jack/session.h HAVE_JACK_SESSION_H)
+
+find_package(GCrypt 1.5.0 REQUIRED)
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
                 ${CMAKE_CURRENT_SOURCE_DIR}/config.h )
 

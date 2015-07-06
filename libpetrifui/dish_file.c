@@ -21,7 +21,6 @@
 #include "dish_file.h"
 
 #include <libxml/parser.h>
-#include <openssl/sha.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>

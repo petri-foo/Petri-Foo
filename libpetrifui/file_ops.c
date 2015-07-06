@@ -22,7 +22,7 @@
 
 #include <assert.h>
 #include <limits.h>
-#include <openssl/sha.h>
+#include <gcrypt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -192,6 +192,7 @@ char* file_ops_dir_to_hash(const char* path)
 {
     size_t len;
     unsigned char* h;
+    size_t h_len;
     char* buf;
     char* b;
     int n;
@@ -206,11 +207,16 @@ char* file_ops_dir_to_hash(const char* path)
     if (path[len - 1] == '/')
         --len;
 
-    h = SHA1((unsigned char*)path, len, NULL);
-    buf = malloc(sizeof(*b) * SHA_DIGEST_LENGTH * 2 + 1);
+    h_len = gcry_md_get_algo_dlen(GCRY_MD_SHA1);
+    h = malloc(sizeof(char) * h_len);
+    gcry_md_hash_buffer(GCRY_MD_SHA1, h, path, len);
 
-    for (n = 0, b = buf; n < SHA_DIGEST_LENGTH; ++n, b += 2, ++h)
+    buf = malloc(sizeof(*b) * h_len * 2 + 1);
+
+    for (n = 0, b = buf; n < h_len; ++n, b += 2, ++h)
         snprintf(b, 3, "%02x", (unsigned)*h);
+
+    free(h);
 
     return buf;
 }
