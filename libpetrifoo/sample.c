@@ -255,7 +255,7 @@ static SNDFILE* open_sample(SF_INFO* sfinfo, const char* name,
 
     if (raw)
     {
-        #if DEBUG
+        /* why was this DEBUG build only? #if DEBUG */
         id_name* idnames = names_sample_raw_format_get();
         char* fmt_name = 0;
         int i;
@@ -272,7 +272,7 @@ static SNDFILE* open_sample(SF_INFO* sfinfo, const char* name,
                                 name, raw_samplerate,
                                 (raw_channels == 2)? "stereo" : "mono",
                                 fmt_name);
-        #endif
+        /* #endif */
 
         if (!sf_format_check(sfinfo))
         {
