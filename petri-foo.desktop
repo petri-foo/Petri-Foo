@@ -5,6 +5,7 @@ Name=Petri-Foo
 GenericName=Petri-Foo
 Comment=Sound Sampler
 Comment[ru]=Звуковой сэмплер Petri-Foo
+Comment[fr]=Échantillonneur de sons
 Icon=petri-foo
 TryExec=petri-foo
 Exec=petri-foo
