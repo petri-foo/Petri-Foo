@@ -141,7 +141,7 @@ static void set_mode(SampleTabPrivate* p)
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(p->reverse_check)))
         mode |= PATCH_PLAY_REVERSE;
 
-    if (mode & PATCH_PLAY_LOOP
+    if ((mode & PATCH_PLAY_LOOP)
      && gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(p->to_end_check)))
     {
         mode |= PATCH_PLAY_TO_END;

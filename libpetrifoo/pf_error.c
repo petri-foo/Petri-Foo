@@ -24,8 +24,6 @@
 #include "pf_error.h"
 #include "petri-foo.h"
 
-#include <stdio.h>
-
 static int last_error_no = PF_ERR_INVALID_ERROR;
 
 /* FIXME: still not happy with this... */
@@ -133,7 +131,6 @@ const char* pf_error_str(int pf_error_no)
     case PF_ERR_SAMPLE_SRC_SIMPLE:
         return "Secret Rabbit Code resample failed";
     default:
-        printf("uncategorized error number: %d\n", pf_error_no);
         return "uncategorized error";
     }
 }

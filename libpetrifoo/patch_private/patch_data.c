@@ -238,7 +238,7 @@ float const* patch_mod_id_to_pointer(int id, Patch* p, PatchVoice* v)
         return &((*cc_arr)[p->channel][0]);
     }
 
-    if (id & MOD_SRC_EG && v)
+    if ((id & MOD_SRC_EG) && v)
     {
         id &= ~MOD_SRC_EG;
 
@@ -246,7 +246,7 @@ float const* patch_mod_id_to_pointer(int id, Patch* p, PatchVoice* v)
             return adsr_output(v->env[id]);
     }
 
-    if (id & MOD_SRC_VLFO && v)
+    if ((id & MOD_SRC_VLFO) && v)
     {
         id &= ~MOD_SRC_VLFO;
 
