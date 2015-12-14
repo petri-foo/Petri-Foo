@@ -41,7 +41,6 @@ CMakeCache.txt
 cmake_install.cmake
 
 Makefile.am
-install_manifest.txt
 
 sandbox/test
 
