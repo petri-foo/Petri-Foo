@@ -570,7 +570,7 @@ static int dish_write(void)
         free(file_ops_mkdir(0, dish_data->bank_dir));
         samples_dir = file_ops_mkdir("samples", dish_data->bank_dir);
 
-        if (!samples_dir) 
+        if (!samples_dir)
         {
             setlocale(LC_NUMERIC, "");
             return -1;
@@ -727,7 +727,7 @@ static int dish_write(void)
         dish_file_write_bool(node1, patch_id[i], PATCH_BOOL_PORTAMENTO);
 
         /* voice portamento_time */
-        dish_file_write_float(node1, patch_id[i], 
+        dish_file_write_float(node1, patch_id[i],
                                             PATCH_FLOAT_PORTAMENTO_TIME);
 
         /* voice monophonic */
@@ -946,7 +946,8 @@ static int dish_file_read_sample(xmlNodePtr node,  int patch_id)
             if (patch_sample_load(patch_id, filename,
                                             raw_samplerate,
                                             raw_channels,
-                                            sndfile_format) < 0)
+                                            sndfile_format,
+                                            false) < 0)
             {
                 msg_log(MSG_ERROR, "failed to load sample: %s error (%s)\n",
                     filename, pf_error_str(pf_error_get()));

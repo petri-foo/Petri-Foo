@@ -119,7 +119,8 @@ static void cb_load(raw_box* rb)
 
         if (patch_sample_load(patch, name,    samplerate,
                                                 rb->channels,
-                                                get_format(rb)) < 0)
+                                                get_format(rb),
+                                                true) < 0)
         {
             err = pf_error_get();
             goto fail;
@@ -132,7 +133,7 @@ static void cb_load(raw_box* rb)
         if (s->filename && strcmp(name, s->filename) == 0)
             return;
 
-        if (patch_sample_load(patch, name, 0, 0, 0))
+        if (patch_sample_load(patch, name, 0, 0, 0, true))
         {
             err = pf_error_get();
             goto fail;
@@ -255,7 +256,8 @@ static void cb_cancel(void)
         patch_sample_load(patch, last_sample->filename,
                                  last_sample->raw_samplerate,
                                  last_sample->raw_channels,
-                                 last_sample->sndfile_format);
+                                 last_sample->sndfile_format,
+                                 true);
     }
 
     return;
@@ -407,7 +409,7 @@ void create_filters(GtkWidget* chooser)
      *  each format it is capable of reading. Here are some additional
      *  extensions for selected formats:
      *  (followed by sndfile provided extension in comments)
-     */ 
+     */
         { SF_FORMAT_AIFF,   "aif",    0}, /* aiff */
         { SF_FORMAT_CAF,    "caff",   0}, /* caf */
         { SF_FORMAT_OGG,    "ogg",    0}, /* oga */
@@ -610,9 +612,9 @@ int sample_selector_show(int id, GtkWidget* parent_window,
                                 last_sample->filename);
         gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),
                          g_path_get_dirname(last_sample->filename));
-    } 
+    }
     else {
-        if ( settings->last_sample_dir) 
+        if ( settings->last_sample_dir)
             gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),
                                           settings->last_sample_dir);
     }

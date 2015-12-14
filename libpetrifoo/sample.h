@@ -55,6 +55,10 @@ struct _Sample
     int raw_channels;   /* with a header, then these fields will be  */
     int sndfile_format; /* zero. if raw, they will be non-zero       */
 
+    int loop_start;     /* info present in the sample */
+    int loop_end;
+    bool loop_valid;
+
     char*   filename;
 
     bool    default_sample;

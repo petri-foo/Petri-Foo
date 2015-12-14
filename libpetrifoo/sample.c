@@ -325,6 +325,28 @@ int sample_get_resampled_size(const char* name, int rate,
 }
 
 
+static bool sample_get_loop_info(SNDFILE *sndfile, unsigned int *start, unsigned int *end)
+{
+    SF_INSTRUMENT inst;
+    bool result = false;
+
+    sf_command(sndfile, SFC_GET_INSTRUMENT, &inst, sizeof (inst));
+
+    if ( inst.loop_count > 0 )
+    {
+        if ( (inst.loops[0].mode >= 800) && (inst.loops[0].mode <= 809) &&
+             (inst.loops[0].start <  inst.loops[0].end) )
+        {
+            *start = inst.loops[0].start;
+            *end = inst.loops[0].end;
+            result = true;
+        }
+    }
+
+    return result;
+}
+
+
 int sample_load_file(Sample* sample, const char* name,
                                         int rate,
                                         int raw_samplerate,
@@ -336,6 +358,10 @@ int sample_load_file(Sample* sample, const char* name,
     SF_INFO sfinfo;
     SNDFILE* sfp;
 
+    unsigned int lstart = 0;
+    unsigned int lend = 0;
+    bool sf_loop_ret;
+
     if (!(sfp = open_sample(&sfinfo, name,  raw_samplerate,
                                             raw_channels,
                                             sndfile_format)))
@@ -345,6 +371,10 @@ int sample_load_file(Sample* sample, const char* name,
 
     if (!(tmp = read_audio(sfp, &sfinfo)))
         return -1;
+
+    sf_loop_ret = sample_get_loop_info( sfp, &lstart, &lend);
+
+    debug("read sample loop data: %d %d\n", lstart, lend);
 
     sf_close(sfp);
 
@@ -366,6 +396,7 @@ int sample_load_file(Sample* sample, const char* name,
             JACK is not running, useful under debug conditions. */
         if (rate > 0 && sfinfo.samplerate != rate)
         {
+            int size_o = sfinfo.frames;
             float* tmp2 = resample(tmp, rate, &sfinfo);
 
             if (!tmp2)
@@ -376,6 +407,17 @@ int sample_load_file(Sample* sample, const char* name,
 
             free(tmp);
             tmp = tmp2;
+
+            /* modify loop points according to the new length */
+            if ( sf_loop_ret )
+            {
+                int size_r = sfinfo.frames;
+                double ratio = size_r / (size_o * 1.0f);
+                debug("resample ratio: %f\n", ratio);
+                lstart = lstart * ratio;
+                lend = lend * ratio;
+                debug("resampled loop data: %d %d\n", lstart, lend);
+            }
         }
     }
 
@@ -402,6 +444,21 @@ int sample_load_file(Sample* sample, const char* name,
     sample->frames = sfinfo.frames;
 
     sample->default_sample = false;
+
+    if ( sf_loop_ret )  // mod1 github#1
+    {
+        if ( lstart > (unsigned int) sample->frames )
+            lstart = sample->frames;
+        if ( lend > (unsigned int) sample->frames )
+            lend = sample->frames;
+        sample->loop_start = lstart;
+        sample->loop_end = lend;
+        sample->loop_valid = true;
+    }
+    else
+    {
+        sample->loop_valid = false;
+    }
 
     return 0;
 }
