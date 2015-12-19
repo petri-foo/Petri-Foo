@@ -32,7 +32,7 @@
 /*  **ALL** IDs passed to these functions **MUST** be VALID.
  *  in debugging mode, this is ensured with assertions.
  *
- *  patch_id:   0,1,2,3... < 
+ *  patch_id:   0,1,2,3... <
  *  env_id:     MOD_SRC_EG, +0, +1, +2, +3...
  *  lfo_id:     MOD_SRC_LFO, +0, +1, +2, +3...
  *  slot:       0,1,2,3... < MAX_MOD_SLOTS
@@ -41,8 +41,6 @@
  *  range), and -1 on failure (value set was out of range) and
  *  additionally set an error code (retrievable via pf_error_get).
  */
-
-
 
 
 
@@ -56,6 +54,8 @@ int patch_set_env_sustain (int patch_id, int env_id, float level);
 int patch_set_env_release (int patch_id, int env_id, float secs);
 int patch_set_env_key_amt (int patch_id, int env_id, float val);
 int patch_set_env_vel_amt (int patch_id, int env_id, float val);
+int patch_set_env_exp     (int patch_id, int env_id, bool state);
+
 
 /* envelope getters */
 bool    patch_get_env_active  (int patch_id, int env_id);
@@ -67,6 +67,7 @@ float   patch_get_env_sustain (int patch_id, int env_id);
 float   patch_get_env_release (int patch_id, int env_id);
 float   patch_get_env_key_amt (int patch_id, int env_id);
 float   patch_get_env_vel_amt (int patch_id, int env_id);
+bool    patch_get_env_exp     (int patch_id, int env_id);
 
 /* lfo setters */
 int patch_set_lfo_active    (int patch_id, int lfo_id, bool state);

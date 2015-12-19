@@ -28,6 +28,7 @@
 #include "ticks.h"
 
 
+#include <math.h>
 #include <stdlib.h>
 
 
@@ -58,6 +59,7 @@ struct _ADSR
 
     float key_amt;
 /*  float vel_amt; */
+    bool    exp;        /* exp/lin slope                                */
 
 };
 
@@ -74,6 +76,7 @@ void adsr_params_init(ADSRParams* params, float attack, float release)
 
     params->key_amt = 0.0;
 /*  params->vel_amt = 0.0; */
+    params->exp =       false;
 }
 
 
@@ -118,6 +121,7 @@ void adsr_init(ADSR* env)
     env->release = 0;
 
     env->key_amt = 0.0;
+    env->exp     = false;
 }
 
 
@@ -127,6 +131,17 @@ void adsr_trigger(ADSR* env, float key, float vel)
     env->state = ADSR_STATE_DELAY;
     env->ticks = 0;
     env->aval = env->val;
+
+    #if 0
+    /* FIXME: clarify bug and that this fix doesn't break certain
+              desired behaviour
+     */
+    /* if mono & !legato, envelope starts from 0 */
+    if ( mono )
+        env->aval = 0;
+    else
+        env->aval = env->val;
+    #endif
 
     if (env->key_amt < 0)
     {
@@ -181,7 +196,7 @@ void adsr_release (ADSR* env)
 /* return current value between 0 and 1 and advance */
 float adsr_tick(ADSR* e)
 {
-    float d;
+    const float NTAU = 5.0f;
 
     switch (e->state)
     {
@@ -203,8 +218,16 @@ float adsr_tick(ADSR* e)
         }
         else
         {
-            d = (e->ticks * 1.0) / e->attack;
-            e->val = lerp (e->aval, 1.0, d);
+            float d = (e->ticks * 1.0) / e->attack;
+            /* linear or exponential slope */
+            if (! e->exp )
+            {
+                e->val = lerp (e->aval, 1.0, d);
+            }
+            else
+            {
+                e->val = 1.0 - exp(-d * NTAU) * (1 - e->aval);
+            }
         }
 
         if (++e->ticks > e->attack)
@@ -231,8 +254,16 @@ float adsr_tick(ADSR* e)
         }
         else
         {
-            d = (e->ticks * 1.0) / e->decay;
-            e->val = lerp (1.0, e->sustain, d);
+            float d = (e->ticks * 1.0) / e->decay;
+            /* linear or exponential slope */
+            if (! e->exp )
+            {
+                e->val = lerp (1.0, e->sustain, d);
+            }
+            else
+            {
+                e->val = exp(-d * NTAU) * (1 - e->sustain) + e->sustain;
+            }
         }
 
         if (++e->ticks > e->decay)
@@ -260,8 +291,16 @@ float adsr_tick(ADSR* e)
         }
         else
         {
-            d = (e->ticks * 1.0) / e->release;
-            e->val = lerp (e->rval, 0.0, d);
+            float d = (e->ticks * 1.0) / e->release;
+            /* linear or exponential slope */
+            if (! e->exp )
+            {
+                e->val = lerp (e->rval, 0.0, d);
+            }
+            else
+            {
+                e->val = exp(-d * NTAU) * e->rval;
+            }
         }
 
         if (++e->ticks > e->release)
@@ -283,14 +322,19 @@ float adsr_tick(ADSR* e)
 
 void adsr_set_params (ADSR* env, ADSRParams* params)
 {
+    /* for exp slope, the length of the segment is mult by 2
+     * to give almost the same feeling in exp and lin mode
+     * ie -20dB in exp -> 0dB in lin mode */
+    float length  = (params->exp ? 2.0f : 1.0f);
     env->_delay   = ticks_secs_to_ticks (params->delay);
-    env->_attack  = ticks_secs_to_ticks (params->attack);
+    env->_attack  = ticks_secs_to_ticks (params->attack * length);
     env->_hold    = ticks_secs_to_ticks (params->hold);
-    env->_decay   = ticks_secs_to_ticks (params->decay);
+    env->_decay   = ticks_secs_to_ticks (params->decay * length);
     env->_sustain = params->sustain;
-    env->_release = ticks_secs_to_ticks (params->release);
+    env->_release = ticks_secs_to_ticks (params->release * length);
     env->key_amt  = params->key_amt;
 /*  env->vel_amt  = params->vel_amt; */
+    env->exp      = params->exp;
 }
 
 

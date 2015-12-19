@@ -424,6 +424,10 @@ dish_file_write_eg(xmlNodePtr nodeparent, int patch_id, int eg_id)
     snprintf(buf, CHARBUFSIZE, "%f", val);
     xmlNewProp(node1,   BAD_CAST "key_tracking",   BAD_CAST buf);
 
+    active = patch_get_env_exp(patch_id, eg_id);
+    xmlNewProp(node1,   BAD_CAST "exponential",
+                        BAD_CAST (active ? "true" : "false"));
+
     return 0;
 }
 
@@ -1084,6 +1088,9 @@ static int dish_file_read_eg(xmlNodePtr node, int patch_id)
 
     if (get_prop_float(node, "key_tracking", &n))
         patch_set_env_key_amt(patch_id, eg_id, n);
+
+    if ((prop = xmlGetProp(node, BAD_CAST "exponential")))
+        patch_set_env_exp(patch_id, eg_id, xmlstr_to_bool(prop));
 
     return 0;
 }

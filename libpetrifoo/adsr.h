@@ -59,6 +59,7 @@ typedef struct _ADSRParams
 
     float key_amt;  /* key tracking amount      */
 /*  float vel_amt;     velocity sensing amount  */
+    bool  exp;      /* exp/lin slope            */
 
 } ADSRParams;
 

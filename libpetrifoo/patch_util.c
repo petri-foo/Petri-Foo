@@ -209,6 +209,7 @@ int patch_create_default(void)
     eg1->attack  = 0.005;
     eg1->release = 0.375;
     eg1->key_amt = -0.99;
+    eg1->exp     = false;
 
     /* controllers... */
 

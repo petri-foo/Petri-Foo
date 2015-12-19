@@ -250,6 +250,15 @@ int patch_set_env_key_amt(int patch_id, int eg, float val)
 }
 
 
+int patch_set_env_exp(int patch_id, int eg, bool state)
+{
+    assert(patchok(patch_id));
+    eg = mod_src_to_eg_index(eg);
+    patches[patch_id]->env_params[eg].exp = state;
+    return 0;
+}
+
+
 /**************************************************************************/
 /************************* ENVELOPE GETTERS *******************************/
 /**************************************************************************/
@@ -257,7 +266,7 @@ int patch_set_env_key_amt(int patch_id, int eg, float val)
 #define PATCH_GET_ENV_PARAM( _EGPAR, _EGPARTYPE)        \
 _EGPARTYPE patch_get_env_##_EGPAR(int patch_id, int eg) \
 {                                                       \
-    assert(patchok(patch_id));                             \
+    assert(patchok(patch_id));                          \
     eg = mod_src_to_eg_index(eg);                       \
     return patches[patch_id]->env_params[eg]._EGPAR;    \
 }
@@ -269,6 +278,7 @@ PATCH_GET_ENV_PARAM( hold,      float )
 PATCH_GET_ENV_PARAM( decay,     float )
 PATCH_GET_ENV_PARAM( sustain,   float )
 PATCH_GET_ENV_PARAM( key_amt,   float )
+PATCH_GET_ENV_PARAM( exp,       bool  )
 
 /* special cases: */
 float patch_get_env_release (int patch_id, int eg)
