@@ -5,7 +5,7 @@ include_directories (
     ${Petri-Foo_SOURCE_DIR}/libpetrifui
     ${Petri-Foo_SOURCE_DIR}/libphin
     ${GTK2_INCLUDE_DIRS}
-    ${LIBGNOMECANVAS2_INCLUDE_DIRS}
+	${GOOCANVAS_INCLUDE_DIRS}
     ${LIBXML2_INCLUDE_DIR}
     )
 
