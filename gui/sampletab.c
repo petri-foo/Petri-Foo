@@ -67,7 +67,7 @@ G_DEFINE_TYPE(SampleTab, sample_tab, GTK_TYPE_VBOX);
 
 static void sample_tab_class_init(SampleTabClass* klass)
 {
-    GtkObjectClass *object_class = GTK_OBJECT_CLASS(klass);
+    GtkWidgetClass *object_class = GTK_WIDGET_CLASS(klass);
     sample_tab_parent_class = g_type_class_peek_parent(klass);
     g_type_class_add_private(object_class, sizeof(SampleTabPrivate));
 }

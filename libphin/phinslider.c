@@ -113,6 +113,12 @@ static void phin_slider_unrealize   (GtkWidget *widget);
 static void phin_slider_map         (GtkWidget *widget);
 static void phin_slider_unmap       (GtkWidget *widget);
 
+static void phin_slider_get_preferred_width (GtkWidget *widget,
+                                gint      *minimal_height,
+                                gint      *natural_height);
+static void phin_slider_get_preferred_height (GtkWidget *widget,
+                                gint      *minimal_height,
+                                gint      *natural_height);
 static void phin_slider_size_request        (GtkWidget*widget,
                                             GtkRequisition* requisition);
 
@@ -341,7 +347,7 @@ void phin_slider_set_adjustment (PhinSlider* slider,
 
     p->adjustment = adjustment;
     g_object_ref (adjustment);
-    g_object_ref_sink (GTK_OBJECT (adjustment));
+    g_object_ref_sink (G_OBJECT (adjustment));
 
     phin_slider_adjustment_changed(p->adjustment, slider);
 
@@ -443,8 +449,9 @@ static void phin_slider_class_init (PhinSliderClass* klass)
     widget_class->unrealize =               phin_slider_unrealize;
     widget_class->map =                     phin_slider_map;
     widget_class->unmap =                   phin_slider_unmap;
-    widget_class->expose_event =            phin_slider_expose;
-    widget_class->size_request =            phin_slider_size_request;
+    /* TODO: widget_class->expose_event =            phin_slider_expose;*/
+    widget_class->get_preferred_width =     phin_slider_get_preferred_width;
+    widget_class->get_preferred_height =    phin_slider_get_preferred_height;
     widget_class->size_allocate =           phin_slider_size_allocate;
     widget_class->button_press_event =      phin_slider_button_press;
     widget_class->button_release_event =    phin_slider_button_release;
@@ -712,6 +719,30 @@ static void phin_slider_unmap (GtkWidget *widget)
     GTK_WIDGET_CLASS(phin_slider_parent_class)->unmap(widget);
 }
 
+static void phin_slider_get_preferred_width (GtkWidget *widget,
+                                gint      *minimal_width,
+                                gint      *natural_width)
+{
+  GtkRequisition requisition;
+
+  phin_slider_size_request (widget, &requisition);
+
+  *minimal_width = *natural_width = requisition.width;
+}
+
+
+static void phin_slider_get_preferred_height (GtkWidget *widget,
+                                gint      *minimal_height,
+                                gint      *natural_height)
+{
+  GtkRequisition requisition;
+
+  phin_slider_size_request (widget, &requisition);
+
+  *minimal_height = *natural_height = requisition.height;
+}
+
+
 static void phin_slider_size_request (GtkWidget*      widget,
                                           GtkRequisition* requisition)
 {
@@ -933,6 +964,7 @@ static gboolean phin_slider_expose (GtkWidget*      widget,
     if (gtk_widget_has_focus (widget))
     {
         int focus_width, focus_pad, pad;
+		cairo_t* cr;
 
         gtk_widget_style_get (widget, "focus-line-width", &focus_width,
                                       "focus-padding", &focus_pad, NULL);
@@ -942,10 +974,12 @@ static gboolean phin_slider_expose (GtkWidget*      widget,
         w += 2 * pad + 1;
         h += 2 * pad + 1;
 
-        gtk_paint_focus (style, gtk_widget_get_window(widget),
+		cr = gdk_cairo_create(gtk_widget_get_window(widget));
+        gtk_paint_focus (style, cr,
                                 gtk_widget_get_state (widget),
-                                NULL, widget, NULL,
+                                widget, NULL,
                                 x, y, w, h);
+		cairo_destroy(cr);
     }
 
     return FALSE;
@@ -1030,16 +1064,16 @@ static gboolean phin_slider_key_press (GtkWidget* widget,
     {
         switch (event->keyval)
         {
-        case GDK_Up:
+        case GDK_KEY_Up:
             inc = gtk_adjustment_get_step_increment(adj);
             break;
-        case GDK_Down:
+        case GDK_KEY_Down:
             inc = -gtk_adjustment_get_step_increment(adj);
             break;
-        case GDK_Page_Up:
+        case GDK_KEY_Page_Up:
             inc = gtk_adjustment_get_page_increment(adj);
             break;
-        case GDK_Page_Down:
+        case GDK_KEY_Page_Down:
             inc = -gtk_adjustment_get_page_increment(adj);
             break;
         default:
@@ -1050,16 +1084,16 @@ static gboolean phin_slider_key_press (GtkWidget* widget,
     {
         switch (event->keyval)
         {
-        case GDK_Right:
+        case GDK_KEY_Right:
             inc = gtk_adjustment_get_step_increment(adj);
             break;
-        case GDK_Left:
+        case GDK_KEY_Left:
             inc = -gtk_adjustment_get_step_increment(adj);
             break;
-        case GDK_Page_Up:
+        case GDK_KEY_Page_Up:
             inc = gtk_adjustment_get_page_increment(adj);
             break;
-        case GDK_Page_Down:
+        case GDK_KEY_Page_Down:
             inc = -gtk_adjustment_get_page_increment(adj);
             break;
         default:
@@ -1152,8 +1186,7 @@ static gboolean phin_slider_motion_notify (GtkWidget*      widget,
         int destx = event->x_root;
         int width;
 
-        gdk_window_get_geometry (p->event_window,
-                                 NULL, NULL, &width, NULL, NULL);
+        gdk_window_get_geometry (p->event_window, NULL, NULL, &width, NULL);
 
         if (event->state & GDK_CONTROL_MASK)
         {
@@ -1168,8 +1201,7 @@ static gboolean phin_slider_motion_notify (GtkWidget*      widget,
         int desty = event->y_root;
         int height;
 
-        gdk_window_get_geometry (p->event_window,
-                                 NULL, NULL, NULL, &height, NULL);
+        gdk_window_get_geometry (p->event_window, NULL, NULL, NULL, &height);
 
         if (event->state & GDK_CONTROL_MASK)
         {

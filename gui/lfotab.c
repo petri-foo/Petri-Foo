@@ -100,7 +100,7 @@ static void update_lfo(LfoTabPrivate* p);
 
 static void lfo_tab_class_init(LfoTabClass* klass)
 {
-    GtkObjectClass *object_class = GTK_OBJECT_CLASS(klass);
+    GtkWidgetClass *object_class = GTK_WIDGET_CLASS(klass);
     lfo_tab_parent_class = g_type_class_peek_parent(klass);
     g_type_class_add_private(object_class, sizeof(LfoTabPrivate));
 }

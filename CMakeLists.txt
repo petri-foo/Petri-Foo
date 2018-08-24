@@ -115,7 +115,7 @@ else (GLIB2_FOUND)
   message(FATAL_ERROR "glib2 was not found.")
 endif (GLIB2_FOUND)
 
-include(FindGTK2)
+include(FindGTK)
 
 include(FindLibXml2)
 

@@ -372,21 +372,21 @@ static raw_box* raw_box_new(GtkWidget* dialog)
     gui_attach(t, rb->little_endian, 3, 4, y, y + 1);
     gui_attach(t, rb->big_endian, 4, 5, y, y + 1);
 
-    g_signal_connect(GTK_OBJECT(rb->mono),          "toggled",
+    g_signal_connect(G_OBJECT(rb->mono),          "toggled",
                                 G_CALLBACK(raw_toggles_toggled_cb), rb);
-    g_signal_connect(GTK_OBJECT(rb->stereo),        "toggled",
+    g_signal_connect(G_OBJECT(rb->stereo),        "toggled",
                                 G_CALLBACK(raw_toggles_toggled_cb), rb);
-    g_signal_connect(GTK_OBJECT(rb->file_endian),   "toggled",
+    g_signal_connect(G_OBJECT(rb->file_endian),   "toggled",
                                 G_CALLBACK(raw_toggles_toggled_cb), rb);
-    g_signal_connect(GTK_OBJECT(rb->little_endian), "toggled",
+    g_signal_connect(G_OBJECT(rb->little_endian), "toggled",
                                 G_CALLBACK(raw_toggles_toggled_cb), rb);
-    g_signal_connect(GTK_OBJECT(rb->big_endian),    "toggled",
+    g_signal_connect(G_OBJECT(rb->big_endian),    "toggled",
                                 G_CALLBACK(raw_toggles_toggled_cb), rb);
 
     /* table should be hidden by default */
     gtk_widget_hide(rb->table);
 
-    g_signal_connect(GTK_OBJECT(rb->check), "toggled",
+    g_signal_connect(G_OBJECT(rb->check), "toggled",
                                             G_CALLBACK(raw_toggled_cb), rb);
     free(ids);
     return rb;

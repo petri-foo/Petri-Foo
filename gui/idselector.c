@@ -68,7 +68,7 @@ G_DEFINE_TYPE(IDSelector, id_selector, GTK_TYPE_HBOX)
 
 static void id_selector_class_init(IDSelectorClass* klass)
 {
-    GtkObjectClass* object_class = GTK_OBJECT_CLASS(klass);
+    GtkWidgetClass* object_class = GTK_WIDGET_CLASS(klass);
     id_selector_parent_class = g_type_class_peek_parent(klass);
     g_type_class_add_private(object_class, sizeof(IDSelectorPrivate));
 
@@ -93,9 +93,9 @@ press_cb(GtkToggleButton* button, GdkEvent* event, IDSelectorPrivate* p)
     switch (event->type)
     {
     case GDK_KEY_PRESS:
-        if (event->key.keyval == GDK_Return ||
-            event->key.keyval == GDK_KP_Enter ||
-            event->key.keyval == GDK_space)
+        if (event->key.keyval == GDK_KEY_Return ||
+            event->key.keyval == GDK_KEY_KP_Enter ||
+            event->key.keyval == GDK_KEY_space)
         {
             toggle = TRUE;
         }

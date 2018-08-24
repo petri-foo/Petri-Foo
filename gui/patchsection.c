@@ -73,7 +73,7 @@ G_DEFINE_TYPE(PatchSection, patch_section, GTK_TYPE_VBOX);
 
 static void patch_section_class_init(PatchSectionClass* klass)
 {
-    GtkObjectClass *object_class = GTK_OBJECT_CLASS(klass);
+    GtkWidgetClass *object_class = GTK_WIDGET_CLASS(klass);
     patch_section_parent_class = g_type_class_peek_parent(klass);
     g_type_class_add_private(object_class, sizeof(PatchSectionPrivate));
 }
