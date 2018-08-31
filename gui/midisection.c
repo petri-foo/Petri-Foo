@@ -285,7 +285,7 @@ static void midi_section_init(MidiSection* self)
 					 (gdouble)PHIN_KEYBOARD_KEY_WIDTH,
 					 (gdouble)y2,
 					"fill-color-rgba", RANGE_COLOR,
-					"outline-color", "black",
+					"stroke-color", "black",
 					NULL);
 	g_value_init(&style_value, G_TYPE_INT);
 	g_value_set_int(&style_value, GOO_CANVAS_ITEM_HIDDEN);
@@ -298,9 +298,8 @@ static void midi_section_init(MidiSection* self)
 				        (gdouble)PHIN_KEYBOARD_KEY_WIDTH,
 				        (gdouble)y2,
 				       "fill-color-rgba", NOTE_COLOR,
-				       "outline-color", "black",
+				       "stroke-color", "black",
 				       NULL);
-	g_value_init(&style_value, G_TYPE_INT);
 	g_value_set_int(&style_value, GOO_CANVAS_ITEM_HIDDEN);
 	goo_canvas_item_set(p->note, "visibility", &style_value);
 
@@ -318,9 +317,18 @@ static void midi_section_init(MidiSection* self)
     points->coords[6] = x2-1;
     points->coords[7] = y2;
 
-    goo_canvas_path_new(goo_canvas_get_root_item(canvas),
-			  "points", points,
-			  "width-units", (gdouble)1,
+	char path[512];
+	g_snprintf(&path, 511, "M %d %d L %d %d L %d %d Z", 
+			points->coords[0], 
+			points->coords[1], 
+			points->coords[2], 
+			points->coords[3], 
+			points->coords[4], 
+			points->coords[5], 
+			points->coords[6], 
+			points->coords[7]);
+
+    goo_canvas_path_new(goo_canvas_get_root_item(canvas), path,
 			  "fill-color-rgba", 0,
 			  NULL);
     goo_canvas_points_unref(points);

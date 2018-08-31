@@ -291,7 +291,7 @@ static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
     /* key group */
     key->group = goo_canvas_group_new(goo_canvas_get_root_item(p->canvas));
 
-    g_signal_connect(G_OBJECT(key->group), "event",
+    g_signal_connect(G_OBJECT(key->group), "button_press_event",
                      G_CALLBACK(key_press_cb), (gpointer)key);
 
     key->index = index;
@@ -331,10 +331,17 @@ static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
         points->coords[4] = x2;     points->coords[5] = y2;
     }
 
-    goo_canvas_path_new((GooCanvasItem *)key->group,
-                          "points", points,
-                          "width-units", (gdouble)1,
-                          "fill-color-rgba", hi);
+	char path[512];
+	g_snprintf(&path, 511, "M %d %d L %d %d L %d %d Z", 
+			points->coords[0], 
+			points->coords[1], 
+			points->coords[2], 
+			points->coords[3], 
+			points->coords[4], 
+			points->coords[5]);
+
+    goo_canvas_path_new((GooCanvasItem *)key->group, path,
+                          "fill-color-rgba", hi, NULL);
 
     goo_canvas_points_unref(points);
                         
@@ -355,11 +362,18 @@ static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
         points->coords[4] = x1;     points->coords[5] = y2;
         points->coords[6] = x2;     points->coords[7] = y2;
     }
+	g_snprintf(&path, 511, "M %d %d L %d %d L %d %d L %d %d Z", 
+			points->coords[0], 
+			points->coords[1], 
+			points->coords[2], 
+			points->coords[3], 
+			points->coords[4], 
+			points->coords[5], 
+			points->coords[6], 
+			points->coords[7]);
 
-    goo_canvas_path_new((GooCanvasItem *)key->group,
-                          "points", points,
-                          "width-units", (gdouble)1,
-                          "fill-color-rgba", low);
+    goo_canvas_path_new((GooCanvasItem *)key->group, path,
+                          "fill-color-rgba", low, NULL);
 
     goo_canvas_points_unref(points);
 
@@ -441,7 +455,7 @@ static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
                          GOO_CANVAS_ANCHOR_EAST,
                         "fill-color-rgba", (gint)KEY_TEXT_BG,
                         "font", "sans",
-                        "size-points", (gdouble)TEXT_POINTS, NULL);
+                        /* TODO "size-points", (gdouble)TEXT_POINTS,*/ NULL);
         }
         else
         {
@@ -453,8 +467,8 @@ static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
                          GOO_CANVAS_ANCHOR_SOUTH,
                         "fill-color-rgba", (gint)KEY_TEXT_BG,
                         "font", "sans",
-                        "size-points", (gdouble)TEXT_POINTS,
-                        "justification", GTK_JUSTIFY_CENTER, NULL);
+                        /* TODO "size-points", (gdouble)TEXT_POINTS,
+                        "justification", GTK_JUSTIFY_CENTER,*/ NULL);
         }
 
         g_free(s);

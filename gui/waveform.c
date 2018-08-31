@@ -156,7 +156,7 @@ static void waveform_class_init (WaveformClass * klass)
 
     object_class->dispose =             waveform_dispose;
     /* TODO widget_class->expose_event =        waveform_expose; */
-    widget_class->configure_event =     waveform_configure;
+    /* TODO widget_class->configure_event =     waveform_configure;*/
     /* TODO widget_class->size_request =        waveform_size_request;*/
     widget_class->button_press_event =  waveform_button_press;
     widget_class->scroll_event =        waveform_scroll_event;
