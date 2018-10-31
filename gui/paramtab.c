@@ -57,7 +57,7 @@ G_DEFINE_TYPE(ParamTab, param_tab, GTK_TYPE_VBOX);
 
 static void param_tab_class_init(ParamTabClass* klass)
 {
-    GtkObjectClass *object_class = GTK_OBJECT_CLASS(klass);
+    GtkWidgetClass *object_class = GTK_WIDGET_CLASS(klass);
     param_tab_parent_class = g_type_class_peek_parent(klass);
     g_type_class_add_private(object_class, sizeof(ParamTabPrivate));
 }

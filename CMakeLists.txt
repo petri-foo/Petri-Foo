@@ -115,20 +115,17 @@ else (GLIB2_FOUND)
   message(FATAL_ERROR "glib2 was not found.")
 endif (GLIB2_FOUND)
 
-
-include(FindGTK2)
-
-
-# LIBGNOMECANVAS2
-pkg_check_modules (LIBGNOMECANVAS2 REQUIRED libgnomecanvas-2.0)
-if (LIBGNOMECANVAS2_FOUND)
-  message(STATUS "Found libgnomecanvas2 ${LIBGNOMECANVAS2_VERSION}")
-else (LIBGNOMECANVAS2_FOUND)
-  message(FATAL_ERROR "libgnomecanvas2 was not found.")
-endif (LIBGNOMECANVAS2_FOUND)
-
+include(FindGTK)
 
 include(FindLibXml2)
+
+# GOOCANVAS
+pkg_check_modules(GOOCANVAS REQUIRED goocanvas-2.0)
+if (GOOCANVAS_FOUND)
+  message(STATUS "Found goocanvas ${GOOCANVAS_VERSION}")
+else (GOOCANVAS_FOUND)
+  message(FATAL_ERROR "goocanvas was not found.")
+endif (GOOCANVAS_FOUND)
 
 
 # LIBLO

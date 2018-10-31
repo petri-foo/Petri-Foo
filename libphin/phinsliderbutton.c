@@ -260,7 +260,7 @@ void phin_slider_button_set_adjustment (PhinSliderButton* button,
 
     p->adjustment = adj;
     g_object_ref (adj);
-    g_object_ref_sink (GTK_OBJECT(adj));
+    g_object_ref_sink (G_OBJECT(adj));
 
     g_signal_connect (adj, "changed",
                   G_CALLBACK(phin_slider_button_adjustment_changed),
@@ -580,7 +580,7 @@ static void phin_slider_button_class_init (PhinSliderButtonClass* klass)
     widget_class->map =                 phin_slider_button_map;
     widget_class->unmap =               phin_slider_button_unmap;
     widget_class->size_allocate =       phin_slider_button_size_allocate;
-    widget_class->expose_event =        phin_slider_button_expose;
+    /* TODO widget_class->expose_event =        phin_slider_button_expose;*/
     widget_class->button_press_event =  phin_slider_button_button_press;
     widget_class->button_release_event= phin_slider_button_button_release;
     widget_class->key_press_event =     phin_slider_button_key_press;
@@ -980,6 +980,7 @@ static gboolean phin_slider_button_expose (GtkWidget*      widget,
     GtkStyle* style;
     GdkWindow* window;
     int pad;                      /* pad */
+	cairo_t* cr;
 
     g_return_val_if_fail (widget != NULL, FALSE);
     g_return_val_if_fail (PHIN_IS_SLIDER_BUTTON (widget), FALSE);
@@ -1002,30 +1003,32 @@ static gboolean phin_slider_button_expose (GtkWidget*      widget,
     pad = gtk_container_get_border_width (GTK_CONTAINER (widget));
 
     /* clear the box */
-    gtk_paint_box (style, window,
+	cr = gdk_cairo_create(window);
+	gtk_paint_box (style, cr,
                    GTK_STATE_NORMAL,
                    GTK_SHADOW_NONE,
-                   NULL,
                    widget,
                    NULL,        /* if this is "buttondefault" the
                                  * smooth engine crashes */
                    a.x, a.y, a.width, a.height);
+	cairo_destroy(cr);
 
     /* paint any applicable hilites */
     if (p->state == STATE_NORMAL)
     {
         if (p->hilite == LEFT_ARROW)
         {
-            gtk_paint_box (style, window,
+			cr = gdk_cairo_create(window);
+            gtk_paint_box (style, cr,
                            GTK_STATE_PRELIGHT,
                            GTK_SHADOW_NONE,
-                           NULL,
                            widget,
                            "button",
                            a.x, a.y,
                            arrow_a.width + pad,
                            a.height);
-        }
+			cairo_destroy(cr);
+		}
         else if (p->hilite == RIGHT_ARROW)
         {
             int offset;
@@ -1049,12 +1052,13 @@ static gboolean phin_slider_button_expose (GtkWidget*      widget,
                 offset += post_a.width;
             }
                
-            gtk_paint_box (style, window,
+			cr = gdk_cairo_create(window);
+            gtk_paint_box (style, cr,
                            GTK_STATE_PRELIGHT,
                            GTK_SHADOW_NONE,
-                           NULL,
                            widget, "button",
                            offset, a.y, width, a.height);
+			cairo_destroy(cr);
         }
         else if (p->hilite == LABEL)
         {
@@ -1079,31 +1083,32 @@ static gboolean phin_slider_button_expose (GtkWidget*      widget,
                 width += post_a.width;
             }
 
-            gtk_paint_box (style, window,
+			cr = gdk_cairo_create(window);
+			gtk_paint_box (style, cr,
                            GTK_STATE_PRELIGHT,
                            GTK_SHADOW_NONE,
-                           NULL,
                            widget, "button",
-                           offset, a.y, width, a.height);
+						   offset, a.y, width, a.height);
+			cairo_destroy(cr);
         }
     }
      
     /* paint our border */
-    gtk_paint_shadow (style, window,
+	cr = gdk_cairo_create(window);
+	gtk_paint_shadow (style, cr,
                       GTK_STATE_NORMAL,
                       GTK_SHADOW_OUT,
-                      NULL,
                       widget,
                       "buttondefault",
                       a.x, a.y, a.width, a.height);
 
-    gtk_paint_shadow (style, window,
+    gtk_paint_shadow (style, cr,
                       GTK_STATE_NORMAL,
                       GTK_SHADOW_OUT,
-                      NULL,
                       widget,
                       "button",
                       a.x, a.y, a.width, a.height);
+	cairo_destroy(cr);
 
     /* paint the focus if we have it */
     if (gtk_widget_has_focus (widget))
@@ -1121,13 +1126,16 @@ static gboolean phin_slider_button_expose (GtkWidget*      widget,
         width -= 2 * pad;
         height -= 2 * pad;
 
-        gtk_paint_focus (style, window, gtk_widget_get_state (widget),
-                         NULL, widget, "button",
-                         x, y, width, height);
+		cr = gdk_cairo_create(gtk_widget_get_window(widget));
+        gtk_paint_focus (style, cr,
+                                gtk_widget_get_state (widget),
+                                widget, "button",
+                                x, y, width, height);
+		cairo_destroy(cr);
     }
 
-    GTK_WIDGET_CLASS(phin_slider_button_parent_class)
-                            ->expose_event (widget, event);
+    /*TODO GTK_WIDGET_CLASS(phin_slider_button_parent_class)
+                            ->expose_event (widget, event);*/
      
     return FALSE;
 }
@@ -1228,7 +1236,7 @@ static gboolean phin_slider_button_entry_key_press(GtkEntry* entry,
     (void)entry;
     debug ("entry key press\n");
 
-    if (event->keyval == GDK_Escape)
+    if (event->keyval == GDK_KEY_Escape)
     {
         entry_cancel (button);
         gtk_widget_grab_focus (GTK_WIDGET (button));
@@ -1371,19 +1379,19 @@ static gboolean phin_slider_button_key_press (GtkWidget* widget,
 
     switch (event->keyval)
     {
-    case GDK_Up:
+    case GDK_KEY_Up:
         gtk_adjustment_set_value(adj,
                         val + gtk_adjustment_get_step_increment(adj));
         break;
-    case GDK_Down:
+    case GDK_KEY_Down:
         gtk_adjustment_set_value (adj,
                         val - gtk_adjustment_get_step_increment(adj));
         break;
-    case GDK_Page_Up:
+    case GDK_KEY_Page_Up:
         gtk_adjustment_set_value (adj,
                         val + gtk_adjustment_get_page_increment(adj));
         break;
-    case GDK_Page_Down:
+    case GDK_KEY_Page_Down:
         gtk_adjustment_set_value (adj,
                         val - gtk_adjustment_get_page_increment(adj));
         break;

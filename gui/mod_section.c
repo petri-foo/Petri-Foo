@@ -57,7 +57,7 @@ G_DEFINE_TYPE(ModSection, mod_section, GTK_TYPE_VBOX);
 
 static void mod_section_class_init(ModSectionClass* klass)
 {
-    GtkObjectClass *object_class = GTK_OBJECT_CLASS(klass);
+    GtkWidgetClass *object_class = GTK_WIDGET_CLASS(klass);
     mod_section_parent_class = g_type_class_peek_parent(klass);
     g_type_class_add_private(object_class, sizeof(ModSectionPrivate));
 }

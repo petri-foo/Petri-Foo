@@ -113,7 +113,7 @@ typedef struct _WaveformPrivate WaveformPrivate;
 
 struct _WaveformPrivate
 {
-    GdkPixmap * pixmap;
+    GdkPixbuf * pixmap;
     gboolean   interactive;
     int        width;
     int        height;
@@ -155,9 +155,9 @@ static void waveform_class_init (WaveformClass * klass)
     waveform_parent_class = g_type_class_peek_parent(klass);
 
     object_class->dispose =             waveform_dispose;
-    widget_class->expose_event =        waveform_expose;
-    widget_class->configure_event =     waveform_configure;
-    widget_class->size_request =        waveform_size_request;
+    /* TODO widget_class->expose_event =        waveform_expose; */
+    /* TODO widget_class->configure_event =     waveform_configure;*/
+    /* TODO widget_class->size_request =        waveform_size_request;*/
     widget_class->button_press_event =  waveform_button_press;
     widget_class->scroll_event =        waveform_scroll_event;
 
@@ -262,10 +262,10 @@ waveform_configure(GtkWidget * widget, GdkEventConfigure * event)
 
     if (p->pixmap)
         g_object_unref(p->pixmap);
-
-    p->pixmap = gdk_pixmap_new(gtk_widget_get_window(widget),
+/* TODO
+    p->pixmap = gdk_pixbuf_get_from_surface(gtk_widget_get_window(widget),
                                     p->width, p->height, -1);
-
+*/
     waveform_draw(WAVEFORM(widget));
 
     return TRUE;

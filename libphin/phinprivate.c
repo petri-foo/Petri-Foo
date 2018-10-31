@@ -74,12 +74,12 @@ void phin_screen_changed(GtkWidget *widget, GdkScreen *old_screen,
     (void)old_screen; (void)userdata;
     /* To check if the display supports alpha channels, get the colormap */
     GdkScreen *screen = gtk_widget_get_screen(widget);
-    GdkColormap *colormap = gdk_screen_get_rgba_colormap(screen);
+    GdkVisual *colormap = gdk_screen_get_rgba_visual(screen);
 
     if (!colormap)
     {
         debug("Your screen does not support alpha channels!\n");
-        colormap = gdk_screen_get_rgb_colormap(screen);
+        colormap = gdk_screen_get_system_visual(screen);
         supports_alpha = FALSE;
     }
     else
@@ -89,5 +89,5 @@ void phin_screen_changed(GtkWidget *widget, GdkScreen *old_screen,
     }
 
     /* Now we have a colormap appropriate for the screen, use it */
-    gtk_widget_set_colormap(widget, colormap);
+    gtk_widget_set_visual(widget, colormap);
 }

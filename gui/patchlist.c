@@ -78,7 +78,7 @@ G_DEFINE_TYPE(PatchList, patch_list, GTK_TYPE_HBOX);
 
 static void patch_list_class_init(PatchListClass* klass)
 {
-    GtkObjectClass *object_class = GTK_OBJECT_CLASS(klass);
+    GtkWidgetClass *object_class = GTK_WIDGET_CLASS(klass);
     patch_list_parent_class = g_type_class_peek_parent(klass);
 
     signals[CHANGED] =

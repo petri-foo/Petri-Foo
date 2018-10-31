@@ -23,9 +23,9 @@
 */
 #include <stdio.h>
 #include <gtk/gtk.h>
-#include <libgnomecanvas/libgnomecanvas.h>
-#include "phinkeyboard.h"
+#include <goocanvas-2.0/goocanvas.h>
 
+#include "phinkeyboard.h"
 
 /* properties */
 enum
@@ -84,10 +84,10 @@ struct __Key
 {
     int index;
     PhinKeyboard* keyboard;     /* the keyboard we belong to */
-    GnomeCanvasGroup* group;    /* the group this key belongs to */
-    GnomeCanvasItem* pre;       /* prelight rectangle */
-    GnomeCanvasItem* on;        /* active (depressed) rectangle */
-    GnomeCanvasItem* shad;      /* active shadow */
+    GooCanvasItem* group;    /* the group this key belongs to */
+    GooCanvasItem* pre;       /* prelight rectangle */
+    GooCanvasItem* on;        /* active (depressed) rectangle */
+    GooCanvasItem* shad;      /* active shadow */
 };
 
 
@@ -103,7 +103,7 @@ struct _PhinKeyboardPrivate
     int     nkeys;
     int     label;
 
-    GnomeCanvas*    canvas;
+    GooCanvas*    canvas;
     GtkOrientation  orientation;
 };
 
@@ -207,30 +207,30 @@ static void phin_keyboard_class_init(PhinKeyboardClass* klass)
 
 
 static gboolean
-key_press_cb(GnomeCanvasItem* item, GdkEvent* event, _Key* key)
+key_press_cb(GooCanvasItem* item, GdkEvent* event, _Key* key)
 {
-    (void)item;
+	(void)item;
 
     switch (event->type)
     {
     case GDK_BUTTON_PRESS:
-        gnome_canvas_item_show(key->on);
-        gnome_canvas_item_show(key->shad);
+		g_object_set_property(key->on, "visibility", GOO_CANVAS_ITEM_VISIBLE);
+		g_object_set_property(key->shad, "visibility", GOO_CANVAS_ITEM_VISIBLE);
         g_signal_emit(key->keyboard, signals[KEY_PRESSED], 0, key->index);
         break;
 
     case GDK_BUTTON_RELEASE:
-        gnome_canvas_item_hide(key->on);
-        gnome_canvas_item_hide(key->shad);
+		g_object_set_property(key->on, "visibility", GOO_CANVAS_ITEM_HIDDEN);
+		g_object_set_property(key->shad, "visibility", GOO_CANVAS_ITEM_HIDDEN);
         g_signal_emit(key->keyboard, signals[KEY_RELEASED], 0, key->index);
         break;
 
     case GDK_ENTER_NOTIFY:
-        gnome_canvas_item_show(key->pre);
+		g_object_set_property(key->pre, "visibility", GOO_CANVAS_ITEM_VISIBLE);
         break;
 
     case GDK_LEAVE_NOTIFY:
-        gnome_canvas_item_hide(key->pre);
+		g_object_set_property(key->pre, "visibility", GOO_CANVAS_ITEM_HIDDEN);
         break;
 
     default:
@@ -241,24 +241,26 @@ key_press_cb(GnomeCanvasItem* item, GdkEvent* event, _Key* key)
 }
 
 
-/* so much gayness in here, either I suck or gnome-canvas does; most
- * likely, we both do */
 static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
                      guint hi, guint low, guint pre, guint on, guint shad)
 {
     PhinKeyboardPrivate* p = PHIN_KEYBOARD_GET_PRIVATE(self);
 
     _Key* key = &p->keys[index];
-    GnomeCanvasPoints* points;
+    GooCanvasPoints* points;
     int x1;
     int y1;
     int x2;
     int y2;
+	GValue hidden = G_VALUE_INIT;
 
-    if (p->orientation == GTK_ORIENTATION_VERTICAL)
+	g_value_init(&hidden, G_TYPE_INT);
+	g_value_set_int(&hidden, GOO_CANVAS_ITEM_HIDDEN);
+   
+	if (p->orientation == GTK_ORIENTATION_VERTICAL)
     {
         x1 = 0;
-        y1 = pos + 1;           /* teh gayz0r */
+        y1 = pos + 1;     
         x2 = PHIN_KEYBOARD_KEY_LENGTH - 1;
         y2 = pos - PHIN_KEYBOARD_KEY_WIDTH + 1;
     }
@@ -271,40 +273,34 @@ static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
     }
 
     /* key group */
-    key->group = (GnomeCanvasGroup*)
-        gnome_canvas_item_new(  gnome_canvas_root(p->canvas),
-                                gnome_canvas_group_get_type(), NULL);
+    key->group = goo_canvas_group_new(goo_canvas_get_root_item(p->canvas));
 
-    g_signal_connect(G_OBJECT(key->group), "event",
+    g_signal_connect(G_OBJECT(key->group), "button_press_event",
                      G_CALLBACK(key_press_cb), (gpointer)key);
 
     key->index = index;
     key->keyboard = self;
 
     /* draw main key rect */
-    gnome_canvas_item_new(key->group,
-                          gnome_canvas_rect_get_type(),
-                          "x1", (gdouble)x1,
-                          "y1", (gdouble)y1,
-                          "x2", (gdouble)x2,
-                          "y2", (gdouble)y2,
-                          "fill-color-rgba", bg,
-                          NULL);
+    goo_canvas_rect_new((GooCanvasItem *)key->group,
+                           (gdouble)x1,
+                           (gdouble)y1,
+                           (gdouble)x2,
+                           (gdouble)y2,
+						   "fill-color-rgba", bg,
+						   NULL);
 
     /* draw prelight rect */
-    key->pre = gnome_canvas_item_new(key->group,
-                                     gnome_canvas_rect_get_type(),
-                                     "x1", (gdouble)x1,
-                                     "y1", (gdouble)y1,
-                                     "x2", (gdouble)x2,
-                                     "y2", (gdouble)y2,
-                                     "fill-color-rgba", pre,
-                                     NULL);
-
-    gnome_canvas_item_hide(key->pre);
+    key->pre = goo_canvas_rect_new((GooCanvasItem *)key->group,
+                                      (gdouble)x1,
+                                      (gdouble)y1,
+                                      (gdouble)x2,
+                                      (gdouble)y2,
+									  "visibility", GOO_CANVAS_ITEM_HIDDEN,
+									  "stroke-color-rgba", pre, NULL);
 
     /* draw key highlight */
-    points = gnome_canvas_points_new(3);
+    points = goo_canvas_points_new(3);
 
     if (p->orientation == GTK_ORIENTATION_VERTICAL)
     {
@@ -319,17 +315,22 @@ static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
         points->coords[4] = x2;     points->coords[5] = y2;
     }
 
-    gnome_canvas_item_new(key->group,
-                          gnome_canvas_line_get_type(),
-                          "points", points,
-                          "width-units", (gdouble)1,
-                          "fill-color-rgba", hi,
-                          NULL);
+	char path[512];
+	g_snprintf(&path, 511, "M %d %d L %d %d L %d %d Z", 
+			points->coords[0], 
+			points->coords[1], 
+			points->coords[2], 
+			points->coords[3], 
+			points->coords[4], 
+			points->coords[5]);
 
-    gnome_canvas_points_unref(points);
+    goo_canvas_path_new((GooCanvasItem *)key->group, path,
+                          "fill-color-rgba", hi, NULL);
+
+    goo_canvas_points_unref(points);
                         
     /* draw key border */
-    points = gnome_canvas_points_new(4);
+    points = goo_canvas_points_new(4);
     
     if (p->orientation == GTK_ORIENTATION_VERTICAL)
     {
@@ -345,45 +346,47 @@ static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
         points->coords[4] = x1;     points->coords[5] = y2;
         points->coords[6] = x2;     points->coords[7] = y2;
     }
+	g_snprintf(&path, 511, "M %d %d L %d %d L %d %d L %d %d Z", 
+			points->coords[0], 
+			points->coords[1], 
+			points->coords[2], 
+			points->coords[3], 
+			points->coords[4], 
+			points->coords[5], 
+			points->coords[6], 
+			points->coords[7]);
 
-    gnome_canvas_item_new(key->group,
-                          gnome_canvas_line_get_type(),
-                          "points", points,
-                          "width-units", (gdouble)1,
-                          "fill-color-rgba", low,
-                          NULL);
+    goo_canvas_path_new((GooCanvasItem *)key->group, path,
+                          "fill-color-rgba", low, NULL);
 
-    gnome_canvas_points_unref(points);
+    goo_canvas_points_unref(points);
 
     if (p->orientation == GTK_ORIENTATION_VERTICAL)
     {
         /* draw active rect */
-        key->on = gnome_canvas_item_new(key->group,
-                                        gnome_canvas_rect_get_type(),
-                                        "x1", (gdouble)x1+1,
-                                        "y1", (gdouble)y1,
-                                        "x2", (gdouble)x2,
-                                        "y2", (gdouble)y2+1,
-                                        "fill-color-rgba", on,
-                                        NULL);
+        key->on = goo_canvas_rect_new((GooCanvasItem *)key->group,
+                                         (gdouble)x1+1,
+                                         (gdouble)y1,
+                                         (gdouble)x2,
+                                         (gdouble)y2+1,
+										 "visibility", GOO_CANVAS_ITEM_HIDDEN,
+										 "fill-color-rgba", on, NULL);
     }
     else
     {
         /* draw active rect */
-        key->on = gnome_canvas_item_new(key->group,
-                                        gnome_canvas_rect_get_type(),
-                                        "x1", (gdouble)x1,
-                                        "y1", (gdouble)y1+1,
-                                        "x2", (gdouble)x2,
-                                        "y2", (gdouble)y2,
-                                        "fill-color-rgba", on,
-                                        NULL);
+        key->on = goo_canvas_rect_new((GooCanvasItem *)key->group,
+                                         (gdouble)x1,
+                                         (gdouble)y1+1,
+                                         (gdouble)x2,
+										 (gdouble)y2,
+										 "visibility", GOO_CANVAS_ITEM_HIDDEN,
+										 "fill-color-rgba", on, NULL);
     }
 
-    gnome_canvas_item_hide(key->on);
 
     /* draw active shadow */
-    points = gnome_canvas_points_new(6);
+    points = goo_canvas_points_new(6);
 
     if (p->orientation == GTK_ORIENTATION_VERTICAL)
     {
@@ -404,13 +407,23 @@ static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
         points->coords[10] = x1;    points->coords[11] = y1 + 3;
     }
 
-    key->shad = gnome_canvas_item_new(key->group,
-                                      gnome_canvas_polygon_get_type(),
-                                      "points", points,
+    key->shad = goo_canvas_polyline_new((GooCanvasItem *)key->group,
+                                      (gdouble)points->coords[0],
+                                      (gdouble)points->coords[1],
+                                      (gdouble)points->coords[2],
+                                      (gdouble)points->coords[3],
+                                      (gdouble)points->coords[4],
+                                      (gdouble)points->coords[5],
+                                      (gdouble)points->coords[6],
+                                      (gdouble)points->coords[7],
+                                      (gdouble)points->coords[8],
+                                      (gdouble)points->coords[9],
+                                      (gdouble)points->coords[10],
+                                      (gdouble)points->coords[11],
                                       "fill-color-rgba", shad,
-                                      NULL);
-    gnome_canvas_item_hide(key->shad);
-    gnome_canvas_points_unref(points);
+									  /*"visibility", GOO_CANVAS_ITEM_HIDDEN,*/
+									  NULL);
+    goo_canvas_points_unref(points);
 
     /* draw label if applicable */
     if (p->label && (index % 12) == 0)
@@ -419,28 +432,28 @@ static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
 
         if (p->orientation == GTK_ORIENTATION_VERTICAL)
         {
-            gnome_canvas_item_new(key->group,
-                        gnome_canvas_text_get_type(),
-                        "text", s,
-                        "x", (gdouble)(x2 - 2),
-                        "y", (gdouble)(y1 - (PHIN_KEYBOARD_KEY_WIDTH / 2)),
-                        "anchor", GTK_ANCHOR_EAST,
+            goo_canvas_text_new((GooCanvasItem *)key->group,
+                         s,
+                         (gdouble)(x2 - 2),
+                         (gdouble)(y1 - (PHIN_KEYBOARD_KEY_WIDTH / 2)),
+						 -1,
+                         GOO_CANVAS_ANCHOR_EAST,
                         "fill-color-rgba", (gint)KEY_TEXT_BG,
                         "font", "sans",
-                        "size-points", (gdouble)TEXT_POINTS, NULL);
+                        /* TODO "size-points", (gdouble)TEXT_POINTS,*/ NULL);
         }
         else
         {
-            gnome_canvas_item_new(key->group,
-                        gnome_canvas_text_get_type(),
-                        "text", s,
-                        "x", (gdouble)(x1 - (PHIN_KEYBOARD_KEY_WIDTH / 2)),
-                        "y", (gdouble)(y2 - 2),
-                        "anchor", GTK_ANCHOR_SOUTH,
+            goo_canvas_text_new((GooCanvasItem *)key->group,
+                         s,
+                         (gdouble)(x1 - (PHIN_KEYBOARD_KEY_WIDTH / 2)),
+                         (gdouble)(y2 - 2), 
+						 -1,
+                         GOO_CANVAS_ANCHOR_SOUTH,
                         "fill-color-rgba", (gint)KEY_TEXT_BG,
                         "font", "sans",
-                        "size-points", (gdouble)TEXT_POINTS,
-                        "justification", GTK_JUSTIFY_CENTER, NULL);
+                        /* TODO "size-points", (gdouble)TEXT_POINTS,
+                        "justification", GTK_JUSTIFY_CENTER,*/ NULL);
         }
 
         g_free(s);
@@ -468,9 +481,9 @@ static void draw_keyboard(PhinKeyboard* self)
         gtk_widget_set_size_request(GTK_WIDGET(p->canvas),
                                     PHIN_KEYBOARD_KEY_LENGTH,
                                     (PHIN_KEYBOARD_KEY_WIDTH * p->nkeys));
-        gnome_canvas_set_scroll_region(p->canvas, 0, 0,
+        /*TODO: goo_canvas_set_scroll_region(p->canvas, 0, 0,
                                     PHIN_KEYBOARD_KEY_LENGTH - 1,
-                                    (PHIN_KEYBOARD_KEY_WIDTH * p->nkeys)-1);
+                                    (PHIN_KEYBOARD_KEY_WIDTH * p->nkeys)-1);*/
     }
     else
     {
@@ -479,9 +492,9 @@ static void draw_keyboard(PhinKeyboard* self)
         gtk_widget_set_size_request(GTK_WIDGET(p->canvas),
                                     (PHIN_KEYBOARD_KEY_WIDTH * p->nkeys),
                                     PHIN_KEYBOARD_KEY_LENGTH);
-        gnome_canvas_set_scroll_region(p->canvas, 0, 0,
+        /* TODO: goo_canvas_set_scroll_region(p->canvas, 0, 0,
                                     (PHIN_KEYBOARD_KEY_WIDTH * p->nkeys)-1,
-                                    PHIN_KEYBOARD_KEY_LENGTH - 1);
+                                    PHIN_KEYBOARD_KEY_LENGTH - 1);*/
     }
 
     if (p->orientation == GTK_ORIENTATION_VERTICAL)
@@ -549,7 +562,7 @@ static void phin_keyboard_init(PhinKeyboard* self)
     p->orientation = -1;
     p->label = -1;
 
-    p->canvas = (GnomeCanvas*) gnome_canvas_new();
+    p->canvas = (GooCanvas*) goo_canvas_new();
     gtk_container_add(GTK_CONTAINER(self), GTK_WIDGET(p->canvas));
     gtk_widget_show(GTK_WIDGET(p->canvas));
 }

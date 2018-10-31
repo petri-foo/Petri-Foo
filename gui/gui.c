@@ -725,7 +725,7 @@ int gui_init(void)
         GTK_CHECK_MENU_ITEM(menu_settings_auto_preview),
             settings->sample_auto_preview);
 
-    g_signal_connect(GTK_OBJECT(menu_settings_auto_preview), "toggled",
+    g_signal_connect(G_OBJECT(menu_settings_auto_preview), "toggled",
         G_CALLBACK(cb_menu_settings_auto_preview), NULL);
 
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_settings),
@@ -955,7 +955,7 @@ void gui_recent_files_load(void)
             GTK_RECENT_CHOOSER(menu_file_recent_items), FALSE);
     gtk_recent_chooser_menu_set_show_numbers(
             GTK_RECENT_CHOOSER_MENU(menu_file_recent_items), TRUE);
-    g_signal_connect(GTK_OBJECT(menu_file_recent_items),
+    g_signal_connect(G_OBJECT(menu_file_recent_items),
                     "item-activated",
                      G_CALLBACK(cb_recent_chooser_item_activated), window);
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(menu_file_recent), 

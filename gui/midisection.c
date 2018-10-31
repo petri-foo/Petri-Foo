@@ -23,7 +23,7 @@
 
 
 #include <gtk/gtk.h>
-/*#include <libgnomecanvas/libgnomecanvas.h>*/
+#include <goocanvas-2.0/goocanvas.h>
 
 #include "phin.h"
 
@@ -35,7 +35,6 @@
 #include "mixer.h"
 #include "patch_set_and_get.h"
 #include "driver.h"
-
 
 /* magic numbers */
 enum
@@ -58,9 +57,9 @@ struct _MidiSectionPrivate
     int                 patch;
     GtkAdjustment*      adj;
     GtkWidget*          keyboard;
-    GnomeCanvasItem*    range;
-    GnomeCanvasItem*    note;
-    GnomeCanvas*        canvas;
+    GooCanvasItem*    range;
+    GooCanvasItem*    note;
+    GooCanvas*        canvas;
     gboolean            ignore;
 };
 
@@ -70,7 +69,7 @@ G_DEFINE_TYPE(MidiSection, midi_section, GTK_TYPE_VBOX);
 
 static void midi_section_class_init(MidiSectionClass* klass)
 {
-    GtkObjectClass *object_class = GTK_OBJECT_CLASS(klass);
+    GtkWidgetClass *object_class = GTK_WIDGET_CLASS(klass);
     midi_section_parent_class = g_type_class_peek_parent(klass);
     g_type_class_add_private(object_class, sizeof(MidiSectionPrivate));
 }
@@ -102,7 +101,7 @@ static void released_cb(GtkWidget* widget, int key, MidiSectionPrivate* p)
 }
 
 
-static gboolean range_cb(GnomeCanvasItem* item, GdkEvent* event,
+static gboolean range_cb(GooCanvasItem* item, GdkEvent* event,
                                                 MidiSectionPrivate* p)
 {
     (void)item;
@@ -112,6 +111,7 @@ static gboolean range_cb(GnomeCanvasItem* item, GdkEvent* event,
     int upper;
     gboolean change_range = FALSE;
     PatchList* list;
+	GValue style_value = G_VALUE_INIT;
 
     /* a ghetto form of set-insensitive */
     if (p->patch < 0)
@@ -157,29 +157,28 @@ static gboolean range_cb(GnomeCanvasItem* item, GdkEvent* event,
         lower = upper = note;
 
     /* reposition note */
-    gnome_canvas_item_set(p->note, "x1",
-                    (gdouble)(note * PHIN_KEYBOARD_KEY_WIDTH - 1),  NULL);
-    gnome_canvas_item_set(p->note, "x2",
-                    (gdouble) (note * PHIN_KEYBOARD_KEY_WIDTH
-                                    + PHIN_KEYBOARD_KEY_WIDTH - 1), NULL);
+	cairo_matrix_t note_matrix;
+	cairo_matrix_init_translate(&note_matrix, (gdouble)(note * PHIN_KEYBOARD_KEY_WIDTH - 1), 0);
+	cairo_matrix_scale(&note_matrix, PHIN_KEYBOARD_KEY_WIDTH, 1);
+    goo_canvas_item_set_transform(p->note, &note_matrix);
 
     /* reposition range */
-    gnome_canvas_item_set(p->range, "x1",
-                    (gdouble)(lower * PHIN_KEYBOARD_KEY_WIDTH - 1), NULL);
-    gnome_canvas_item_set(p->range, "x2",
-                    (gdouble)(upper * PHIN_KEYBOARD_KEY_WIDTH
-                                    + PHIN_KEYBOARD_KEY_WIDTH - 1), NULL);
+	cairo_matrix_t range_matrix;
+	cairo_matrix_init_translate(&range_matrix, (gdouble)(note * PHIN_KEYBOARD_KEY_WIDTH - 1), 1);
+	cairo_matrix_scale(&range_matrix, (gdouble)((upper - lower) * PHIN_KEYBOARD_KEY_WIDTH), 1);
+    goo_canvas_item_set_transform(p->range, &range_matrix);
 
     /* apply changes */
     patch_set_root_note(p->patch, note);
     patch_set_lower_note(p->patch, lower);
     patch_set_upper_note(p->patch, upper);
-
-    if (lower == upper)
-        gnome_canvas_item_hide(p->range);
-    else
-        gnome_canvas_item_show(p->range);
-
+/*
+    if (lower == upper) {
+		g_object_set_property(p->range, "visibility", GOO_CANVAS_ITEM_HIDDEN);
+	} else {
+		g_object_set_property(p->range, "visibility", GOO_CANVAS_ITEM_VISIBLE);
+	}
+*/
     /* we might have moved this patch around relative to the list;
      * update the list and try to keep this patch selected */
     p->ignore = TRUE;
@@ -192,9 +191,9 @@ static gboolean range_cb(GnomeCanvasItem* item, GdkEvent* event,
 
 static void connect(MidiSectionPrivate* p)
 {
-    g_signal_connect(G_OBJECT(p->keyboard), "key-pressed",
+    g_signal_connect(p->keyboard, "key-pressed",
 		     G_CALLBACK(pressed_cb), (gpointer)p);
-    g_signal_connect(G_OBJECT(p->keyboard), "key-released",
+    g_signal_connect(p->keyboard, "key-released",
 		     G_CALLBACK(released_cb), (gpointer)p);
 }
 
@@ -227,9 +226,10 @@ static void midi_section_init(MidiSection* self)
     GtkWidget* pad;
     GtkWidget* view;
     GtkWidget* scroll;
-    GnomeCanvas* canvas;
-    GnomeCanvasPoints* points;
+    GooCanvas* canvas;
+    GooCanvasPoints* points;
     int x1, x2, y1, y2;
+	GValue style_value = G_VALUE_INIT;
 
     p->patch = -1;
     p->ignore = FALSE;
@@ -249,51 +249,48 @@ static void midi_section_init(MidiSection* self)
     gtk_widget_show(view);
 
     /* canvas */
-    canvas = (GnomeCanvas*) gnome_canvas_new();
+    canvas = (GooCanvas*) goo_canvas_new();
     gtk_widget_set_size_request(GTK_WIDGET(canvas), x2,	y2);
-    gnome_canvas_set_scroll_region(canvas, 0, 0, x2 - 1, y2 -1);
+    /*TODO: goo_canvas_set_scroll_region(canvas, 0, 0, x2 - 1, y2 -1);*/
     gtk_container_add(GTK_CONTAINER(view), GTK_WIDGET(canvas));
     g_signal_connect(G_OBJECT(canvas), "event",
 		     G_CALLBACK(range_cb), (gpointer)p);
     gtk_widget_show(GTK_WIDGET(canvas));
 
     /* range display backdrop */
-    gnome_canvas_item_new(gnome_canvas_root(canvas),
-			  gnome_canvas_rect_get_type(),
-			  "x1", (gdouble)0,
-			  "y1", (gdouble)0,
-			  "x2", (gdouble)x2,
-			  "y2", (gdouble)y2,
+    goo_canvas_rect_new(goo_canvas_get_root_item(canvas),
+			   (gdouble)0,
+			   (gdouble)0,
+			   (gdouble)x2,
+			   (gdouble)y2,
 			  "fill-color-rgba", BG_COLOR,
 			  NULL);
     /* range */
-    p->range = gnome_canvas_item_new(gnome_canvas_root(canvas),
-					gnome_canvas_rect_get_type(),
-					"x1", (gdouble)x1,
-					"y1", (gdouble)y1,
-					"x2", (gdouble)PHIN_KEYBOARD_KEY_WIDTH,
-					"y2", (gdouble)y2,
+    p->range = goo_canvas_rect_new(goo_canvas_get_root_item(canvas),
+					 (gdouble)x1,
+					 (gdouble)y1,
+					 (gdouble)PHIN_KEYBOARD_KEY_WIDTH,
+					 (gdouble)y2,
 					"fill-color-rgba", RANGE_COLOR,
-					"outline-color", "black",
+					"stroke-color", "black",
+					"visibility",  GOO_CANVAS_ITEM_HIDDEN,
 					NULL);
-    gnome_canvas_item_hide(p->range);
-    
+
     /* range root note */
-    p->note = gnome_canvas_item_new(gnome_canvas_root(canvas),
-				       gnome_canvas_rect_get_type(),
-				       "x1", (gdouble)x1,
-				       "y1", (gdouble)y1,
-				       "x2", (gdouble)PHIN_KEYBOARD_KEY_WIDTH,
-				       "y2", (gdouble)y2,
+    p->note = goo_canvas_rect_new(goo_canvas_get_root_item(canvas),
+				        (gdouble)x1,
+				        (gdouble)y1,
+				        (gdouble)PHIN_KEYBOARD_KEY_WIDTH,
+				        (gdouble)y2,
 				       "fill-color-rgba", NOTE_COLOR,
-				       "outline-color", "black",
-				       NULL);
-    gnome_canvas_item_hide(p->note);
+				       "stroke-color", "black",
+					   "visibility",  GOO_CANVAS_ITEM_HIDDEN,
+					   NULL);
 
     p->canvas = canvas;
 
     /* range display border */
-    points = gnome_canvas_points_new(4);
+    points = goo_canvas_points_new(4);
 
     points->coords[0] = x1;
     points->coords[1] = y2;
@@ -304,13 +301,21 @@ static void midi_section_init(MidiSection* self)
     points->coords[6] = x2-1;
     points->coords[7] = y2;
 
-    gnome_canvas_item_new(gnome_canvas_root(canvas),
-			  gnome_canvas_line_get_type(),
-			  "points", points,
-			  "width-units", (gdouble)1,
+	char path[512];
+	g_snprintf(&path, 511, "M %d %d L %d %d L %d %d Z", 
+			points->coords[0], 
+			points->coords[1], 
+			points->coords[2], 
+			points->coords[3], 
+			points->coords[4], 
+			points->coords[5], 
+			points->coords[6], 
+			points->coords[7]);
+
+    goo_canvas_path_new(goo_canvas_get_root_item(canvas), path,
 			  "fill-color-rgba", 0,
 			  NULL);
-    gnome_canvas_points_unref(points);
+    goo_canvas_points_unref(points);
 
 
     /* keyboard */
@@ -345,14 +350,16 @@ void midi_section_set_patch(MidiSection* self, int patch)
     int note;
     int lower;
     int upper;
+	GValue width= G_VALUE_INIT;
 
-    p->patch = patch;
+	g_value_init(&width, G_TYPE_DOUBLE);
+	p->patch = patch;
 
     if (patch < 0)
     {
         set_sensitive(p, FALSE);
-        gnome_canvas_item_hide(p->note);
-        gnome_canvas_item_hide(p->range);
+		g_object_set_property(p->note, "visibility", GOO_CANVAS_ITEM_VISIBLE);
+		g_object_set_property(p->range, "visibility", GOO_CANVAS_ITEM_VISIBLE);
 
         if (p->ignore)
             p->ignore = FALSE;
@@ -371,34 +378,34 @@ void midi_section_set_patch(MidiSection* self, int patch)
         upper = patch_get_upper_note(patch);
 
         block(p);
-
-        gnome_canvas_item_set(p->note, "x1",
-                (gdouble)(note * PHIN_KEYBOARD_KEY_WIDTH - 1), NULL);
-        gnome_canvas_item_set(p->note, "x2",
-                (gdouble)(note * PHIN_KEYBOARD_KEY_WIDTH
-                               + PHIN_KEYBOARD_KEY_WIDTH - 1), NULL);
-        gnome_canvas_item_show(p->note);
-
-        gnome_canvas_item_set(p->range, "x1",
-                (gdouble) (lower * PHIN_KEYBOARD_KEY_WIDTH - 1), NULL);
-        gnome_canvas_item_set(p->range, "x2",
+        set_sensitive(p, FALSE);
+		g_value_set_double(&width, (gdouble)(note * PHIN_KEYBOARD_KEY_WIDTH - 1));
+		g_object_set_property(p->note, "x", &width);
+		g_value_set_double(&width, (gdouble)(note * PHIN_KEYBOARD_KEY_WIDTH + PHIN_KEYBOARD_KEY_WIDTH - 1));
+		g_object_set_property(p->note, "width", &width);
+		/*g_object_set_property(p->note, "visibility", GOO_CANVAS_ITEM_VISIBLE);*/
+		g_value_set_double(&width, (gdouble) (lower * PHIN_KEYBOARD_KEY_WIDTH - 1));
+		g_object_set_property(p->range, "x", &width);
+		g_value_set_double(&width,
                 (gdouble) (upper * PHIN_KEYBOARD_KEY_WIDTH
-                                 + PHIN_KEYBOARD_KEY_WIDTH - 1), NULL);
-        if (lower != upper)
-            gnome_canvas_item_show(p->range);
-        else
-            gnome_canvas_item_hide(p->range);
+                                 + PHIN_KEYBOARD_KEY_WIDTH - 1));
+		g_object_set_property(p->range, "width", &width);
+	/*		if (lower != upper) {
+			g_object_set_property(p->range, "visibility", GOO_CANVAS_ITEM_VISIBLE);
+		} else {
+			g_object_set_property(p->range, "visibility", GOO_CANVAS_ITEM_HIDDEN);
+		}
+*/
+		/* scroll the keyboard to show the root note */
+		if (p->ignore)
+			p->ignore = FALSE;
+		else
+			gtk_adjustment_set_value(p->adj,
+					((note + 1.0) / MIDI_NOTES)
+					* gtk_adjustment_get_upper(p->adj)
+					- gtk_adjustment_get_page_size(p->adj) / 2);
 
-        /* scroll the keyboard to show the root note */
-        if (p->ignore)
-            p->ignore = FALSE;
-        else
-            gtk_adjustment_set_value(p->adj,
-                ((note + 1.0) / MIDI_NOTES)
-                    * gtk_adjustment_get_upper(p->adj)
-                    - gtk_adjustment_get_page_size(p->adj) / 2);
-
-        unblock(p);
-    }
+		unblock(p);
+	}
 }
 

@@ -51,7 +51,7 @@ struct _SampleEditorPrivate
     GtkWidget*  toolbar2;
     GtkWidget*  waveform;
     GtkWidget*  hscroll;
-    GtkObject*  hscrolladj;
+    GtkAdjustment*  hscrolladj;
     GtkWidget*  fade_spin;
     GtkWidget*  xfade_spin;
     GtkWidget*  mark_combo;

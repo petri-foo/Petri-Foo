@@ -25,7 +25,7 @@
 #define __PHIN_KEYBOARD__
 
 #include <gtk/gtk.h>
-#include <libgnomecanvas/libgnomecanvas.h>
+#include <goocanvas-2.0/goocanvas.h>
 
 G_BEGIN_DECLS
 
