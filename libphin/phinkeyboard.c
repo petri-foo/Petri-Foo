@@ -27,13 +27,6 @@
 
 #include "phinkeyboard.h"
 
-static void goo_canvas_item_set(GooCanvasItem *item, const char *property, GValue *value){
-	GooCanvasStyle *current_style = goo_canvas_item_get_style(item);
-	GooCanvasStyle *clone = goo_canvas_style_copy(current_style);
-	goo_canvas_style_set_property(clone, g_quark_from_string(property), value);
-	goo_canvas_item_set_style(item, clone);
-}
-
 /* properties */
 enum
 {
@@ -218,33 +211,26 @@ key_press_cb(GooCanvasItem* item, GdkEvent* event, _Key* key)
 {
 	(void)item;
 
-	GValue visible = G_VALUE_INIT;
-	GValue hidden = G_VALUE_INIT;
-	g_value_init(&visible, G_TYPE_INT);
-	g_value_init(&hidden, G_TYPE_INT);
-	g_value_set_int(&visible, GOO_CANVAS_ITEM_VISIBLE);
-	g_value_set_int(&hidden, GOO_CANVAS_ITEM_HIDDEN);
-
     switch (event->type)
     {
     case GDK_BUTTON_PRESS:
-		goo_canvas_item_set(key->on, "visibility", &visible);
-		goo_canvas_item_set(key->shad, "visibility", &visible);
+		g_object_set_property(key->on, "visibility", GOO_CANVAS_ITEM_VISIBLE);
+		g_object_set_property(key->shad, "visibility", GOO_CANVAS_ITEM_VISIBLE);
         g_signal_emit(key->keyboard, signals[KEY_PRESSED], 0, key->index);
         break;
 
     case GDK_BUTTON_RELEASE:
-		goo_canvas_item_set(key->on, "visibility", &hidden);
-		goo_canvas_item_set(key->shad, "visibility", &hidden);
+		g_object_set_property(key->on, "visibility", GOO_CANVAS_ITEM_HIDDEN);
+		g_object_set_property(key->shad, "visibility", GOO_CANVAS_ITEM_HIDDEN);
         g_signal_emit(key->keyboard, signals[KEY_RELEASED], 0, key->index);
         break;
 
     case GDK_ENTER_NOTIFY:
-		goo_canvas_item_set(key->pre, "visibility", &visible);
+		g_object_set_property(key->pre, "visibility", GOO_CANVAS_ITEM_VISIBLE);
         break;
 
     case GDK_LEAVE_NOTIFY:
-		goo_canvas_item_set(key->pre, "visibility", &hidden);
+		g_object_set_property(key->pre, "visibility", GOO_CANVAS_ITEM_HIDDEN);
         break;
 
     default:
@@ -255,8 +241,6 @@ key_press_cb(GooCanvasItem* item, GdkEvent* event, _Key* key)
 }
 
 
-/* so much gayness in here, either I suck or gnome-canvas does; most
- * likely, we both do */
 static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
                      guint hi, guint low, guint pre, guint on, guint shad)
 {
@@ -276,7 +260,7 @@ static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
 	if (p->orientation == GTK_ORIENTATION_VERTICAL)
     {
         x1 = 0;
-        y1 = pos + 1;           /* teh gayz0r */
+        y1 = pos + 1;     
         x2 = PHIN_KEYBOARD_KEY_LENGTH - 1;
         y2 = pos - PHIN_KEYBOARD_KEY_WIDTH + 1;
     }
@@ -303,7 +287,8 @@ static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
                            (gdouble)y1,
                            (gdouble)x2,
                            (gdouble)y2,
-                          "fill-color-rgba", bg, NULL);
+						   "fill-color-rgba", bg,
+						   NULL);
 
     /* draw prelight rect */
     key->pre = goo_canvas_rect_new((GooCanvasItem *)key->group,
@@ -311,9 +296,8 @@ static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
                                       (gdouble)y1,
                                       (gdouble)x2,
                                       (gdouble)y2,
-                                     "fill-color-rgba", pre, NULL);
-
-	goo_canvas_item_set(key->pre, "visibility", &hidden);
+									  "visibility", GOO_CANVAS_ITEM_HIDDEN,
+									  "stroke-color-rgba", pre, NULL);
 
     /* draw key highlight */
     points = goo_canvas_points_new(3);
@@ -385,7 +369,8 @@ static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
                                          (gdouble)y1,
                                          (gdouble)x2,
                                          (gdouble)y2+1,
-                                        "fill-color-rgba", on, NULL);
+										 "visibility", GOO_CANVAS_ITEM_HIDDEN,
+										 "fill-color-rgba", on, NULL);
     }
     else
     {
@@ -394,11 +379,11 @@ static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
                                          (gdouble)x1,
                                          (gdouble)y1+1,
                                          (gdouble)x2,
-                                         (gdouble)y2,
-                                        "fill-color-rgba", on, NULL);
+										 (gdouble)y2,
+										 "visibility", GOO_CANVAS_ITEM_HIDDEN,
+										 "fill-color-rgba", on, NULL);
     }
 
-	goo_canvas_item_set(key->on, "visibility", &hidden);
 
     /* draw active shadow */
     points = goo_canvas_points_new(6);
@@ -436,8 +421,8 @@ static void draw_key(PhinKeyboard* self, int index, int pos, guint bg,
                                       (gdouble)points->coords[10],
                                       (gdouble)points->coords[11],
                                       "fill-color-rgba", shad,
-                                      NULL);
-	goo_canvas_item_set(key->shad, "visibility", &hidden);
+									  /*"visibility", GOO_CANVAS_ITEM_HIDDEN,*/
+									  NULL);
     goo_canvas_points_unref(points);
 
     /* draw label if applicable */

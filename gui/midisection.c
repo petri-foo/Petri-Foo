@@ -36,13 +36,6 @@
 #include "patch_set_and_get.h"
 #include "driver.h"
 
-static void goo_canvas_item_set(GooCanvasItem *item, const char *property, GValue *value){
-	GooCanvasStyle *current_style = goo_canvas_item_get_style(item);
-	GooCanvasStyle *clone = goo_canvas_style_copy(current_style);
-	goo_canvas_style_set_property(clone, g_quark_from_string(property), value);
-	goo_canvas_item_set_style(item, clone);
-}
-
 /* magic numbers */
 enum
 {
@@ -164,34 +157,28 @@ static gboolean range_cb(GooCanvasItem* item, GdkEvent* event,
         lower = upper = note;
 
     /* reposition note */
-    goo_canvas_item_set_simple_transform(p->note, 
-			(gdouble)(note * PHIN_KEYBOARD_KEY_WIDTH - 1),
-			0,
-			PHIN_KEYBOARD_KEY_WIDTH,
-			1);
+	cairo_matrix_t note_matrix;
+	cairo_matrix_init_translate(&note_matrix, (gdouble)(note * PHIN_KEYBOARD_KEY_WIDTH - 1), 0);
+	cairo_matrix_scale(&note_matrix, PHIN_KEYBOARD_KEY_WIDTH, 1);
+    goo_canvas_item_set_transform(p->note, &note_matrix);
 
     /* reposition range */
-    goo_canvas_item_set_simple_transform(p->range, 
-                    (gdouble)(lower * PHIN_KEYBOARD_KEY_WIDTH - 1),
-					1,
-                    (gdouble)((upper - lower) * PHIN_KEYBOARD_KEY_WIDTH),
-					1);
+	cairo_matrix_t range_matrix;
+	cairo_matrix_init_translate(&range_matrix, (gdouble)(note * PHIN_KEYBOARD_KEY_WIDTH - 1), 1);
+	cairo_matrix_scale(&range_matrix, (gdouble)((upper - lower) * PHIN_KEYBOARD_KEY_WIDTH), 1);
+    goo_canvas_item_set_transform(p->range, &range_matrix);
 
     /* apply changes */
     patch_set_root_note(p->patch, note);
     patch_set_lower_note(p->patch, lower);
     patch_set_upper_note(p->patch, upper);
-
+/*
     if (lower == upper) {
-		g_value_init(&style_value, G_TYPE_INT);
-		g_value_set_int(&style_value, GOO_CANVAS_ITEM_HIDDEN);
-        goo_canvas_item_set(p->range, "visibility", &style_value);
+		g_object_set_property(p->range, "visibility", GOO_CANVAS_ITEM_HIDDEN);
 	} else {
-		g_value_init(&style_value, G_TYPE_INT);
-		g_value_set_int(&style_value, GOO_CANVAS_ITEM_VISIBLE);
-        goo_canvas_item_set(p->range, "visibility", &style_value);
+		g_object_set_property(p->range, "visibility", GOO_CANVAS_ITEM_VISIBLE);
 	}
-
+*/
     /* we might have moved this patch around relative to the list;
      * update the list and try to keep this patch selected */
     p->ignore = TRUE;
@@ -204,9 +191,9 @@ static gboolean range_cb(GooCanvasItem* item, GdkEvent* event,
 
 static void connect(MidiSectionPrivate* p)
 {
-    g_signal_connect(G_OBJECT(p->keyboard), "key-pressed",
+    g_signal_connect(p->keyboard, "key-pressed",
 		     G_CALLBACK(pressed_cb), (gpointer)p);
-    g_signal_connect(G_OBJECT(p->keyboard), "key-released",
+    g_signal_connect(p->keyboard, "key-released",
 		     G_CALLBACK(released_cb), (gpointer)p);
 }
 
@@ -286,10 +273,8 @@ static void midi_section_init(MidiSection* self)
 					 (gdouble)y2,
 					"fill-color-rgba", RANGE_COLOR,
 					"stroke-color", "black",
+					"visibility",  GOO_CANVAS_ITEM_HIDDEN,
 					NULL);
-	g_value_init(&style_value, G_TYPE_INT);
-	g_value_set_int(&style_value, GOO_CANVAS_ITEM_HIDDEN);
-	goo_canvas_item_set(p->range, "visibility", &style_value);
 
     /* range root note */
     p->note = goo_canvas_rect_new(goo_canvas_get_root_item(canvas),
@@ -299,9 +284,8 @@ static void midi_section_init(MidiSection* self)
 				        (gdouble)y2,
 				       "fill-color-rgba", NOTE_COLOR,
 				       "stroke-color", "black",
-				       NULL);
-	g_value_set_int(&style_value, GOO_CANVAS_ITEM_HIDDEN);
-	goo_canvas_item_set(p->note, "visibility", &style_value);
+					   "visibility",  GOO_CANVAS_ITEM_HIDDEN,
+					   NULL);
 
     p->canvas = canvas;
 
@@ -366,19 +350,16 @@ void midi_section_set_patch(MidiSection* self, int patch)
     int note;
     int lower;
     int upper;
-	GValue visible_value = G_VALUE_INIT;
-	GValue width_value = G_VALUE_INIT;
+	GValue width= G_VALUE_INIT;
 
-	g_value_init(&visible_value, G_TYPE_INT);
-	g_value_init(&width_value, G_TYPE_DOUBLE);
+	g_value_init(&width, G_TYPE_DOUBLE);
 	p->patch = patch;
 
     if (patch < 0)
     {
         set_sensitive(p, FALSE);
-		g_value_set_int(&visible_value, GOO_CANVAS_ITEM_HIDDEN);
-		goo_canvas_item_set(p->note, "visibility", &visible_value);
-		goo_canvas_item_set(p->range, "visibility", &visible_value);
+		g_object_set_property(p->note, "visibility", GOO_CANVAS_ITEM_VISIBLE);
+		g_object_set_property(p->range, "visibility", GOO_CANVAS_ITEM_VISIBLE);
 
         if (p->ignore)
             p->ignore = FALSE;
@@ -398,28 +379,23 @@ void midi_section_set_patch(MidiSection* self, int patch)
 
         block(p);
         set_sensitive(p, FALSE);
-		g_value_set_double(&width_value, (gdouble)(note * PHIN_KEYBOARD_KEY_WIDTH - 1));
-        goo_canvas_item_set(p->note, "x1", &width_value);
-		g_value_set_double(&width_value,
-				(gdouble)(note * PHIN_KEYBOARD_KEY_WIDTH
-					+ PHIN_KEYBOARD_KEY_WIDTH - 1));
-		goo_canvas_item_set(p->note, "x2", &width_value);
-		g_value_set_int(&visible_value, GOO_CANVAS_ITEM_VISIBLE);
-		goo_canvas_item_set(p->note, "visibility", &visible_value);
-		g_value_set_double(&width_value, (gdouble) (lower * PHIN_KEYBOARD_KEY_WIDTH - 1));
-        goo_canvas_item_set(p->range, "x1", &width_value);
-		g_value_set_double(&width_value,
+		g_value_set_double(&width, (gdouble)(note * PHIN_KEYBOARD_KEY_WIDTH - 1));
+		g_object_set_property(p->note, "x", &width);
+		g_value_set_double(&width, (gdouble)(note * PHIN_KEYBOARD_KEY_WIDTH + PHIN_KEYBOARD_KEY_WIDTH - 1));
+		g_object_set_property(p->note, "width", &width);
+		/*g_object_set_property(p->note, "visibility", GOO_CANVAS_ITEM_VISIBLE);*/
+		g_value_set_double(&width, (gdouble) (lower * PHIN_KEYBOARD_KEY_WIDTH - 1));
+		g_object_set_property(p->range, "x", &width);
+		g_value_set_double(&width,
                 (gdouble) (upper * PHIN_KEYBOARD_KEY_WIDTH
                                  + PHIN_KEYBOARD_KEY_WIDTH - 1));
-        goo_canvas_item_set(p->range, "x2", &width_value);
-		if (lower != upper) {
-			g_value_set_int(&visible_value, GOO_CANVAS_ITEM_VISIBLE);
-			goo_canvas_item_set(p->range, "visibility", &visible_value);
+		g_object_set_property(p->range, "width", &width);
+	/*		if (lower != upper) {
+			g_object_set_property(p->range, "visibility", GOO_CANVAS_ITEM_VISIBLE);
 		} else {
-			g_value_set_int(&visible_value, GOO_CANVAS_ITEM_HIDDEN);
-			goo_canvas_item_set(p->range, "visibility", &visible_value);
+			g_object_set_property(p->range, "visibility", GOO_CANVAS_ITEM_HIDDEN);
 		}
-
+*/
 		/* scroll the keyboard to show the root note */
 		if (p->ignore)
 			p->ignore = FALSE;
