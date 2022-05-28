@@ -56,6 +56,7 @@
 #include "session.h"
 #include "waveform.h"
 
+GtkRecentManager *recent_manager;
 
 /* windows */
 static GtkWidget* window = 0;

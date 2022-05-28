@@ -107,6 +107,6 @@ GtkWidget*
 
 void gui_set_session_mode(void);
 
-GtkRecentManager *recent_manager;
+extern GtkRecentManager *recent_manager;
  
 #endif /* __GUI_H__ */
