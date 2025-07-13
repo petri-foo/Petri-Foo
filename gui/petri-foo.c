@@ -85,21 +85,21 @@ void cleanup(void)
 }
 
 
-void sigint_handler()
+void sigint_handler(int dummy)
 {
     puts("\n");
     msg_log(MSG_MESSAGE, "Caught SIGINT signal\n");
     cleanup();
 }
 
-void sighup_handler()
+void sighup_handler(int dummy)
 {
     puts("\n");
     msg_log(MSG_MESSAGE, "Caught SIGHUP signal\n");
     cleanup();
 }
 
-void sigterm_handler()
+void sigterm_handler(int dummy)
 {
     puts("\n");
     msg_log(MSG_MESSAGE, "Caught SIGTERM signal\n");
@@ -112,9 +112,9 @@ int main(int argc, char *argv[])
     enum { SC = 3 };
     int opt, n;
     int sigs[] = { SIGINT, SIGHUP, SIGTERM };
-    void (*sighandlers[])() = { sigint_handler,
-                                sighup_handler,
-                                sigterm_handler };
+    void (*sighandlers[])(int) = { sigint_handler,
+                                   sighup_handler,
+                                   sigterm_handler };
     struct sigaction s[SC];
 
     for (n = 0; n < SC; ++n)
